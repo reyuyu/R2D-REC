@@ -1,0 +1,21 @@
+# Training artifacts and user data
+outputs/
+models/
+data/sft_datasets/
+data/*
+!data/dataset_info.json
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+checkpoint-*/
+wandb/
+runs/
+logs/
+monitor/metrics.jsonl
+*.log
+.env
+.env.*
+__pycache__/
+*.py[cod]
