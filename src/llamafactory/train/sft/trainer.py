@@ -27,20 +27,21 @@ import torch
 from transformers import Seq2SeqTrainer
 from typing_extensions import override
 
+from ...data.multitask import (
+    SUBTASK_RATIOS,
+    TASK_IDS,
+    Balanced40SuperCycle,
+    MultiTaskMacroStepLoader,
+    TaskDataLoader,
+    TaskPackCollator,
+    split_global_microbatch_allocation,
+)
 from ...extras import logging
 from ...extras.constants import IGNORE_INDEX
 from ..callbacks import SaveProcessorCallback
 from ..fp8_utils import configure_fp8_environment, patch_accelerator_for_fp8, verify_fp8_status
 from ..trainer_utils import create_custom_optimizer, create_custom_scheduler
-from ...data.multitask import (
-    Balanced40SuperCycle,
-    SUBTASK_RATIOS,
-    TASK_IDS,
-    MultiTaskMacroStepLoader,
-    TaskPackCollator,
-    TaskDataLoader,
-    split_global_microbatch_allocation,
-)
+from .multitask_gradient_controller import MultiTaskGradientController
 
 
 if TYPE_CHECKING:
@@ -260,6 +261,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 "multitask_macro_training requires gradient_accumulation_steps=1, "
                 "because one macro-step already contains multiple task microbatches."
             )
+        self._pending_gradient_log_metrics: dict[str, float] | None = None
         super().__init__(**kwargs)
         self.multitask_datasets = multitask_datasets
         self.multitask_data_args = data_args
@@ -321,9 +323,16 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         # spread over two ranks, divide each local loss by 4 so that its DDP
         # average is exactly the global mean over all eight microbatches.
         self._loss_scale_denominator = 8 // self.multitask_world_size if self.global_microbatch_ddp else sum(self.local_multitask_allocation.values())
+        self.gradient_controller = None
+        if data_args.multitask_gradient_control_enabled:
+            self.gradient_controller = MultiTaskGradientController(
+                self.model,
+                data_args,
+                loss_divisor=self._loss_scale_denominator,
+            )
         self.monitoring_enabled = bool(data_args.multitask_monitoring)
         self.monitoring_path = os.path.join(training_args.output_dir, "monitor", "metrics.jsonl")
-        if self.monitoring_enabled and self.is_world_process_zero():
+        if (self.monitoring_enabled or self.gradient_controller is not None) and self.is_world_process_zero():
             os.makedirs(os.path.dirname(self.monitoring_path), exist_ok=True)
         # Loader state, not Trainer's default data-skip, is the source of truth on resume.
         self.args.ignore_data_skip = True
@@ -369,15 +378,11 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
     def compute_task_microbatches(
         self, model, task_name: str, microbatches: list[dict[str, Any]], collect_metrics: bool = False
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
-        """Backprop one task group while preserving an extension point for GradNorm.
-
-        This v1 intentionally uses ordinary equal-microbatch gradient averaging.
-        Future task-gradient algorithms can override this method without changing
-        sampling, packing, macro-step ordering, or optimizer boundaries.
-        """
+        """Backprop one task group without changing the macro-step optimizer boundary."""
         total_loss = torch.zeros((), device=self.args.device)
         total_microbatches = self._loss_scale_denominator
         statistics = torch.zeros(5, device=self.args.device) if collect_metrics else None
+        task_weight = self.gradient_controller.task_weight(task_name) if self.gradient_controller is not None else 1.0
         for microbatch in microbatches:
             prepared = self._prepare_inputs(microbatch)
             model_inputs = {key: value for key, value in prepared.items() if key in self._MODEL_INPUT_KEYS}
@@ -391,12 +396,24 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 statistics[2] += model_inputs["input_ids"].numel()
                 statistics[3] += int(microbatch["supervised_token_count"])
                 statistics[4] += int(microbatch["num_segments"])
-            scaled_loss = loss / total_microbatches
-            self.accelerator.backward(scaled_loss)
+            weighted_loss = loss * task_weight if self.gradient_controller is not None else loss
+            scaled_loss = weighted_loss / total_microbatches
+            if self.gradient_controller is not None:
+                self.gradient_controller.set_current_task(task_name)
+            try:
+                self.accelerator.backward(scaled_loss)
+            finally:
+                if self.gradient_controller is not None:
+                    self.gradient_controller.clear_current_task()
             total_loss = total_loss + scaled_loss.detach()
         return total_loss, statistics
 
-    def _write_monitor_record(self, task_statistics: torch.Tensor, macro_seconds: float) -> None:
+    def _write_monitor_record(
+        self,
+        task_statistics: torch.Tensor,
+        macro_seconds: float,
+        gradient_metrics: dict[str, float] | None = None,
+    ) -> None:
         if torch.distributed.is_available() and torch.distributed.is_initialized():
             torch.distributed.all_reduce(task_statistics, op=torch.distributed.ReduceOp.SUM)
         if not self.is_world_process_zero():
@@ -421,8 +438,17 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 record[f"{task_name}_avg_supervised_tokens"] = supervised_tokens / count
                 record[f"{task_name}_avg_segments"] = segments / count
                 record[f"{task_name}_microbatches"] = int(count)
+        if gradient_metrics is not None:
+            record.update(gradient_metrics)
         with open(self.monitoring_path, "a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    @override
+    def log(self, logs: dict[str, float], start_time: float | None = None) -> None:
+        if self._pending_gradient_log_metrics is not None and "loss" in logs:
+            logs = {**logs, **self._pending_gradient_log_metrics}
+            self._pending_gradient_log_metrics = None
+        return super().log(logs, start_time)
 
     @override
     def training_step(self, model, inputs, num_items_in_batch=None):
@@ -432,8 +458,13 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             raise ValueError("MultiTaskMacroSeq2SeqTrainer expected a grouped macro batch.")
         macro_started = time.perf_counter()
         next_macro_step = self.state.global_step + 1
+        if self.gradient_controller is not None:
+            self.gradient_controller.begin_macro_step(next_macro_step)
         logging_steps = max(1, int(self.args.logging_steps))
-        collect_metrics = self.monitoring_enabled and next_macro_step % logging_steps == 0
+        write_monitor_record = (
+            self.monitoring_enabled or self.gradient_controller is not None
+        ) and next_macro_step % logging_steps == 0
+        collect_metrics = write_monitor_record or self.gradient_controller is not None
         task_statistics = torch.zeros((len(TASK_IDS), 5), device=self.args.device) if collect_metrics else None
         total_loss = torch.zeros((), device=self.args.device)
         for task_name, microbatches in inputs.items():
@@ -446,10 +477,25 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             total_loss = total_loss + task_loss
             if task_statistics is not None and task_metrics is not None:
                 task_statistics[TASK_IDS[task_name]] = task_metrics
+        gradient_metrics = None
+        if self.gradient_controller is not None:
+            local_loss_sums = {
+                task: float(task_statistics[TASK_IDS[task], 0].item()) for task in self.gradient_controller.tasks
+            }
+            local_counts = {
+                task: int(task_statistics[TASK_IDS[task], 1].item()) for task in self.gradient_controller.tasks
+            }
+            gradient_metrics = self.gradient_controller.finish_macro_step(local_loss_sums, local_counts)
         if self.global_microbatch_ddp:
             self.accelerator.wait_for_everyone()
-        if task_statistics is not None:
-            self._write_monitor_record(task_statistics, time.perf_counter() - macro_started)
+        if write_monitor_record and task_statistics is not None:
+            if gradient_metrics is not None:
+                self._pending_gradient_log_metrics = dict(gradient_metrics)
+            self._write_monitor_record(
+                task_statistics,
+                time.perf_counter() - macro_started,
+                gradient_metrics=gradient_metrics,
+            )
         current_global_allocation = self.macro_loader.current_global_allocation
         self._microbatch_step = getattr(self, "_microbatch_step", 0) + sum(current_global_allocation.values())
         logger.info_rank0(
@@ -470,6 +516,8 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             state_name = "multitask_macro_state.json"
         with open(os.path.join(checkpoint_dir, state_name), "w", encoding="utf-8") as file:
             json.dump(self.macro_loader.state_dict(), file, ensure_ascii=False)
+        if self.gradient_controller is not None:
+            self.gradient_controller.save_checkpoint(checkpoint_dir, self.is_world_process_zero())
         self.accelerator.wait_for_everyone()
 
     @override
@@ -485,4 +533,6 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             with open(state_path, encoding="utf-8") as file:
                 self.macro_loader.load_state_dict(json.load(file))
             logger.info_rank0("Restored multitask macro sampler state; resuming from the next complete macro-step.")
+        if self.gradient_controller is not None and self.gradient_controller.load_checkpoint(resume_from_checkpoint):
+            logger.info_rank0("Restored multitask gradient controller state on every rank.")
         return result

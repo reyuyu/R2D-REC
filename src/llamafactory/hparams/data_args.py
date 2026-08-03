@@ -187,6 +187,58 @@ class DataArguments:
         default=None,
         metadata={"help": "Optional upper bound on segments in one multitask pack."},
     )
+    multitask_gradient_control_enabled: bool = field(
+        default=False,
+        metadata={"help": "Enable the optional multitask gradient controller."},
+    )
+    multitask_gradient_monitor_enabled: bool = field(
+        default=False,
+        metadata={"help": "Capture reference gradients and report task norms/cosines."},
+    )
+    multitask_gradnorm_enabled: bool = field(
+        default=False,
+        metadata={"help": "Apply lagged GradNorm-lite task loss weights."},
+    )
+    multitask_gradnorm_tasks: list[str] = field(
+        default_factory=lambda: ["material", "user", "recommendation"],
+        metadata={"help": "Ordered tasks participating in GradNorm-lite."},
+    )
+    multitask_world_loss_weight: float = field(
+        default=1.0,
+        metadata={"help": "Fixed world-task loss weight; world never participates in GradNorm-lite."},
+    )
+    multitask_gradnorm_warmup_steps: int = field(default=200)
+    multitask_gradnorm_update_interval: int = field(default=10)
+    multitask_gradnorm_alpha: float = field(default=0.5)
+    multitask_gradnorm_update_rate: float = field(default=0.10)
+    multitask_gradnorm_loss_ema_beta: float = field(default=0.90)
+    multitask_gradnorm_grad_ema_beta: float = field(default=0.90)
+    multitask_gradnorm_weight_min: float = field(default=0.5)
+    multitask_gradnorm_weight_max: float = field(default=2.0)
+    multitask_gradnorm_step_ratio_min: float = field(default=0.9)
+    multitask_gradnorm_step_ratio_max: float = field(default=1.1)
+    multitask_grad_reference_last_n_layers: int = field(default=4)
+    multitask_grad_reference_modules: list[str] = field(
+        default_factory=lambda: ["q_proj", "v_proj", "o_proj", "down_proj"]
+    )
+    multitask_grad_reference_lora_matrix: str = field(default="B")
+    multitask_ortho_enabled: bool = field(
+        default=False,
+        metadata={"help": "Enable local PCGrad-style projection on the selected LoRA reference gradients."},
+    )
+    multitask_ortho_monitor_only: bool = field(
+        default=False,
+        metadata={"help": "Compute Ortho projection metrics without writing projected gradients back."},
+    )
+    multitask_ortho_start_step: int = field(default=600)
+    multitask_ortho_interval: int = field(default=2)
+    multitask_ortho_current_cosine_threshold: float = field(default=-0.05)
+    multitask_ortho_ema_cosine_threshold: float = field(default=0.0)
+    multitask_ortho_cosine_ema_beta: float = field(default=0.90)
+    multitask_ortho_use_ema_gate: bool = field(default=True)
+    multitask_ortho_norm_ratio_min: float = field(default=0.7)
+    multitask_ortho_norm_ratio_max: float = field(default=1.3)
+    multitask_ortho_rotate_order: bool = field(default=True)
 
     def __post_init__(self):
         def split_arg(arg):
@@ -196,6 +248,8 @@ class DataArguments:
 
         self.dataset = split_arg(self.dataset)
         self.eval_dataset = split_arg(self.eval_dataset)
+        self.multitask_gradnorm_tasks = split_arg(self.multitask_gradnorm_tasks)
+        self.multitask_grad_reference_modules = split_arg(self.multitask_grad_reference_modules)
 
         if self.media_dir is None:
             self.media_dir = self.dataset_dir
@@ -247,6 +301,55 @@ class DataArguments:
                 raise ValueError("multitask_supercycle_mode must be either `fixed` or `balanced_40`.")
             if self.multitask_supercycle_mode == "balanced_40" and not self.multitask_global_microbatch_ddp:
                 raise ValueError("balanced_40 super-cycle requires multitask_global_microbatch_ddp=true.")
+
+        if self.multitask_gradient_control_enabled and not self.multitask_macro_training:
+            raise ValueError("multitask_gradient_control_enabled requires multitask_macro_training=true.")
+        if self.multitask_gradient_monitor_enabled and not self.multitask_gradient_control_enabled:
+            raise ValueError("multitask_gradient_monitor_enabled requires multitask_gradient_control_enabled=true.")
+        if self.multitask_gradnorm_enabled and not self.multitask_gradient_monitor_enabled:
+            raise ValueError("multitask_gradnorm_enabled requires multitask_gradient_monitor_enabled=true.")
+        if set(self.multitask_gradnorm_tasks) != {"material", "user", "recommendation"}:
+            raise ValueError("multitask_gradnorm_tasks must contain material, user and recommendation exactly once.")
+        if len(self.multitask_gradnorm_tasks) != 3:
+            raise ValueError("multitask_gradnorm_tasks cannot contain duplicates.")
+        if self.multitask_world_loss_weight <= 0:
+            raise ValueError("multitask_world_loss_weight must be positive.")
+        if self.multitask_gradnorm_warmup_steps < 0:
+            raise ValueError("multitask_gradnorm_warmup_steps cannot be negative.")
+        if self.multitask_gradnorm_update_interval <= 0:
+            raise ValueError("multitask_gradnorm_update_interval must be positive.")
+        if self.multitask_gradnorm_alpha < 0 or self.multitask_gradnorm_update_rate < 0:
+            raise ValueError("GradNorm alpha and update rate cannot be negative.")
+        if not 0 <= self.multitask_gradnorm_loss_ema_beta < 1:
+            raise ValueError("multitask_gradnorm_loss_ema_beta must be in [0, 1).")
+        if not 0 <= self.multitask_gradnorm_grad_ema_beta < 1:
+            raise ValueError("multitask_gradnorm_grad_ema_beta must be in [0, 1).")
+        if not 0 < self.multitask_gradnorm_weight_min <= 1 <= self.multitask_gradnorm_weight_max:
+            raise ValueError("GradNorm weight bounds must be positive and include 1.0.")
+        if not 0 < self.multitask_gradnorm_step_ratio_min <= 1 <= self.multitask_gradnorm_step_ratio_max:
+            raise ValueError("GradNorm step-ratio bounds must be positive and include 1.0.")
+        if self.multitask_grad_reference_last_n_layers <= 0:
+            raise ValueError("multitask_grad_reference_last_n_layers must be positive.")
+        if not self.multitask_grad_reference_modules:
+            raise ValueError("multitask_grad_reference_modules cannot be empty.")
+        if self.multitask_grad_reference_lora_matrix.upper() not in {"A", "B"}:
+            raise ValueError("multitask_grad_reference_lora_matrix must be A or B.")
+        if self.multitask_ortho_enabled and not self.multitask_gradient_control_enabled:
+            raise ValueError("multitask_ortho_enabled requires multitask_gradient_control_enabled=true.")
+        if self.multitask_ortho_monitor_only and not self.multitask_ortho_enabled:
+            raise ValueError("multitask_ortho_monitor_only requires multitask_ortho_enabled=true.")
+        if self.multitask_ortho_start_step < 0:
+            raise ValueError("multitask_ortho_start_step cannot be negative.")
+        if self.multitask_ortho_interval <= 0:
+            raise ValueError("multitask_ortho_interval must be positive.")
+        if not -1 <= self.multitask_ortho_current_cosine_threshold <= 0:
+            raise ValueError("multitask_ortho_current_cosine_threshold must be in [-1, 0].")
+        if not -1 <= self.multitask_ortho_ema_cosine_threshold <= 1:
+            raise ValueError("multitask_ortho_ema_cosine_threshold must be in [-1, 1].")
+        if not 0 <= self.multitask_ortho_cosine_ema_beta < 1:
+            raise ValueError("multitask_ortho_cosine_ema_beta must be in [0, 1).")
+        if not 0 < self.multitask_ortho_norm_ratio_min <= 1 <= self.multitask_ortho_norm_ratio_max:
+            raise ValueError("Ortho norm-ratio bounds must be positive and include 1.0.")
 
         if self.packing:
             self.cutoff_len -= 1  # avoid pad_to_multiple_of, needs improve
