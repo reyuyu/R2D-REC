@@ -19,6 +19,7 @@ import torch
 from torch.utils.data import Dataset
 
 from ..extras.constants import IGNORE_INDEX
+from .action_select import ActionSelectMetadataParser, offset_action_metadata
 from .loader import get_dataset
 
 if TYPE_CHECKING:
@@ -52,12 +53,21 @@ LENGTH_BUCKETS = (512, 1024, 2048, 4096, 8192, 16384, 32768)
 class TokenizedSubDataset(Dataset):
     """A tokenized dataset plus stable task/subtask provenance."""
 
-    def __init__(self, dataset: Dataset, task_name: str, subtask_name: str, subtask_id: int):
+    def __init__(
+        self,
+        dataset: Dataset,
+        task_name: str,
+        subtask_name: str,
+        subtask_id: int,
+        metadata_parser: ActionSelectMetadataParser | None = None,
+    ):
         self.dataset = dataset
         self.task_name = task_name
         self.task_id = TASK_IDS[task_name]
         self.subtask_name = subtask_name
         self.subtask_id = subtask_id
+        self.metadata_parser = metadata_parser
+        self._metadata_cache: dict[int, dict[str, Any]] = {}
 
     def __len__(self) -> int:
         return len(self.dataset)
@@ -65,6 +75,12 @@ class TokenizedSubDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, Any]:
         item = dict(self.dataset[index])
         labels = item["labels"]
+        if self.metadata_parser is None:
+            sample_metadata = {}
+        else:
+            if index not in self._metadata_cache:
+                self._metadata_cache[index] = self.metadata_parser.parse(item["input_ids"], labels)
+            sample_metadata = self._metadata_cache[index]
         item.update(
             task_name=self.task_name,
             task_id=self.task_id,
@@ -73,7 +89,7 @@ class TokenizedSubDataset(Dataset):
             sample_id=index,
             seq_len=len(item["input_ids"]),
             supervised_token_count=sum(token != IGNORE_INDEX for token in labels),
-            sample_metadata={},
+            sample_metadata=sample_metadata,
         )
         return item
 
@@ -220,6 +236,7 @@ class TaskPackCollator:
         position_ids: list[int] = []
         attention_ids: list[int] = []
         offsets, cu_seqlens = [], [0]
+        action_aux_metadata: list[dict[str, Any]] = []
         supervised = 0
         for segment_id, sample in enumerate(samples, start=1):
             start = len(input_ids)
@@ -232,6 +249,11 @@ class TaskPackCollator:
             offsets.append((start, end))
             cu_seqlens.append(end)
             supervised += sample["supervised_token_count"]
+            metadata = sample["sample_metadata"]
+            if metadata.get("action_select"):
+                packed_metadata = offset_action_metadata(metadata, start)
+                packed_metadata.update(segment_index=segment_id - 1, sample_id=sample["sample_id"])
+                action_aux_metadata.append(packed_metadata)
         assert supervised == sum(token != IGNORE_INDEX for token in labels)
         raw_features = {
             "input_ids": input_ids,
@@ -258,6 +280,7 @@ class TaskPackCollator:
             "supervised_token_count": supervised,
             "num_segments": len(samples),
             "sample_metadata": [sample["sample_metadata"] for sample in samples],
+            "action_aux_metadata": action_aux_metadata,
         })
         return model_features
 
@@ -436,6 +459,9 @@ def build_multitask_datasets(template, model_args, data_args, training_args, tok
     if missing:
         raise ValueError(f"multitask_macro_training requires all eight registered datasets; missing: {sorted(missing)}")
     groups: dict[str, dict[str, TokenizedSubDataset]] = {}
+    action_metadata_parser = None
+    if data_args.user_action_aux_enabled:
+        action_metadata_parser = ActionSelectMetadataParser(tokenizer)
     subtask_id = 0
     for task_name, subtasks in TASK_DATASETS.items():
         groups[task_name] = {}
@@ -445,6 +471,11 @@ def build_multitask_datasets(template, model_args, data_args, training_args, tok
             task_args.dataset, task_args.eval_dataset, task_args.val_size = [dataset_name], None, 0.0
             task_args.packing, task_args.neat_packing, task_args.tokenized_path = False, False, None
             module = get_dataset(template, model_args, task_args, training_args, "sft", tokenizer, processor)
-            groups[task_name][subtask_name] = TokenizedSubDataset(module["train_dataset"], task_name, subtask_name, subtask_id)
+            metadata_parser = (
+                action_metadata_parser if task_name == "user" and subtask_name == "action_nocot" else None
+            )
+            groups[task_name][subtask_name] = TokenizedSubDataset(
+                module["train_dataset"], task_name, subtask_name, subtask_id, metadata_parser
+            )
             subtask_id += 1
     return groups

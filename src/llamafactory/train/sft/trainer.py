@@ -42,6 +42,11 @@ from ..callbacks import SaveProcessorCallback
 from ..fp8_utils import configure_fp8_environment, patch_accelerator_for_fp8, verify_fp8_status
 from ..trainer_utils import create_custom_optimizer, create_custom_scheduler
 from .multitask_gradient_controller import MultiTaskGradientController
+from .user_action_auxiliary import (
+    ACTION_STAT_SIZE,
+    UserActionAuxiliaryController,
+    action_statistics_to_metrics,
+)
 
 
 if TYPE_CHECKING:
@@ -161,6 +166,7 @@ class CustomSeq2SeqTrainer(Seq2SeqTrainer):
     @override
     def compute_loss(self, model, inputs, *args, **kwargs):
         if self.finetuning_args.use_asft_loss:
+            return_outputs = kwargs.pop("return_outputs", False)
             with torch.no_grad():
                 ref_outputs = self.ref_model(
                     input_ids=inputs["input_ids"],
@@ -168,7 +174,8 @@ class CustomSeq2SeqTrainer(Seq2SeqTrainer):
                 )
                 ref_logits = ref_outputs.logits
             outputs = model(**inputs)
-            return self.compute_loss_func(outputs, inputs["labels"], ref_logits)
+            loss = self.compute_loss_func(outputs, inputs["labels"], ref_logits)
+            return (loss, outputs) if return_outputs else loss
         else:
             return super().compute_loss(model, inputs, *args, **kwargs)
 
@@ -330,9 +337,17 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 data_args,
                 loss_divisor=self._loss_scale_denominator,
             )
+        self.user_action_auxiliary = None
+        if data_args.user_action_aux_enabled:
+            self.user_action_auxiliary = UserActionAuxiliaryController(self.processing_class, data_args)
+        self._task_stat_size = 5 + (ACTION_STAT_SIZE if self.user_action_auxiliary is not None else 0)
         self.monitoring_enabled = bool(data_args.multitask_monitoring)
         self.monitoring_path = os.path.join(training_args.output_dir, "monitor", "metrics.jsonl")
-        if (self.monitoring_enabled or self.gradient_controller is not None) and self.is_world_process_zero():
+        if (
+            self.monitoring_enabled
+            or self.gradient_controller is not None
+            or self.user_action_auxiliary is not None
+        ) and self.is_world_process_zero():
             os.makedirs(os.path.dirname(self.monitoring_path), exist_ok=True)
         # Loader state, not Trainer's default data-skip, is the source of truth on resume.
         self.args.ignore_data_skip = True
@@ -381,13 +396,30 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         """Backprop one task group without changing the macro-step optimizer boundary."""
         total_loss = torch.zeros((), device=self.args.device)
         total_microbatches = self._loss_scale_denominator
-        statistics = torch.zeros(5, device=self.args.device) if collect_metrics else None
+        statistics = torch.zeros(getattr(self, "_task_stat_size", 5), device=self.args.device) if collect_metrics else None
         task_weight = self.gradient_controller.task_weight(task_name) if self.gradient_controller is not None else 1.0
         for microbatch in microbatches:
-            prepared = self._prepare_inputs(microbatch)
-            model_inputs = {key: value for key, value in prepared.items() if key in self._MODEL_INPUT_KEYS}
+            model_inputs = self._prepare_inputs(
+                {key: value for key, value in microbatch.items() if key in self._MODEL_INPUT_KEYS}
+            )
+            action_active = (
+                getattr(self, "user_action_auxiliary", None) is not None
+                and task_name == "user"
+                and microbatch["subtask_name"] == "action_nocot"
+            )
             with self.compute_loss_context_manager():
-                loss = self.compute_loss(model, model_inputs)
+                if action_active:
+                    base_loss, outputs = self.compute_loss(model, model_inputs, return_outputs=True)
+                    action_result = self.user_action_auxiliary.compute(
+                        outputs.logits,
+                        model_inputs["labels"],
+                        microbatch.get("action_aux_metadata", []),
+                        base_loss,
+                        self.state.global_step,
+                    )
+                    loss = base_loss + action_result.loss
+                else:
+                    loss = self.compute_loss(model, model_inputs)
             if self.args.n_gpu > 1:
                 loss = loss.mean()
             if statistics is not None:
@@ -396,6 +428,8 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 statistics[2] += model_inputs["input_ids"].numel()
                 statistics[3] += int(microbatch["supervised_token_count"])
                 statistics[4] += int(microbatch["num_segments"])
+                if action_active:
+                    statistics[5:] += action_result.statistics
             weighted_loss = loss * task_weight if self.gradient_controller is not None else loss
             scaled_loss = weighted_loss / total_microbatches
             if self.gradient_controller is not None:
@@ -431,13 +465,17 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             "learning_rate": self.optimizer.param_groups[0]["lr"] if self.optimizer is not None else None,
         }
         for task_name, task_id in TASK_IDS.items():
-            loss_sum, count, packed_tokens, supervised_tokens, segments = task_statistics[task_id].tolist()
+            loss_sum, count, packed_tokens, supervised_tokens, segments = task_statistics[task_id, :5].tolist()
             if count:
                 record[f"{task_name}_loss"] = loss_sum / count
                 record[f"{task_name}_avg_packed_tokens"] = packed_tokens / count
                 record[f"{task_name}_avg_supervised_tokens"] = supervised_tokens / count
                 record[f"{task_name}_avg_segments"] = segments / count
                 record[f"{task_name}_microbatches"] = int(count)
+        if self.user_action_auxiliary is not None:
+            action_metrics = action_statistics_to_metrics(task_statistics[TASK_IDS["user"], 5:])
+            record.update(action_metrics)
+            self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **action_metrics}
         if gradient_metrics is not None:
             record.update(gradient_metrics)
         with open(self.monitoring_path, "a", encoding="utf-8") as file:
@@ -462,10 +500,12 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             self.gradient_controller.begin_macro_step(next_macro_step)
         logging_steps = max(1, int(self.args.logging_steps))
         write_monitor_record = (
-            self.monitoring_enabled or self.gradient_controller is not None
+            self.monitoring_enabled or self.gradient_controller is not None or self.user_action_auxiliary is not None
         ) and next_macro_step % logging_steps == 0
         collect_metrics = write_monitor_record or self.gradient_controller is not None
-        task_statistics = torch.zeros((len(TASK_IDS), 5), device=self.args.device) if collect_metrics else None
+        task_statistics = (
+            torch.zeros((len(TASK_IDS), self._task_stat_size), device=self.args.device) if collect_metrics else None
+        )
         total_loss = torch.zeros((), device=self.args.device)
         for task_name, microbatches in inputs.items():
             if len(microbatches) != expected_allocation[task_name]:
@@ -490,7 +530,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             self.accelerator.wait_for_everyone()
         if write_monitor_record and task_statistics is not None:
             if gradient_metrics is not None:
-                self._pending_gradient_log_metrics = dict(gradient_metrics)
+                self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **gradient_metrics}
             self._write_monitor_record(
                 task_statistics,
                 time.perf_counter() - macro_started,

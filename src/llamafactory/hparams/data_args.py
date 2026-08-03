@@ -239,6 +239,21 @@ class DataArguments:
     multitask_ortho_norm_ratio_min: float = field(default=0.7)
     multitask_ortho_norm_ratio_max: float = field(default=1.3)
     multitask_ortho_rotate_order: bool = field(default=True)
+    user_action_aux_enabled: bool = field(
+        default=False,
+        metadata={"help": "Enable the Action Select history and length auxiliary objective."},
+    )
+    user_action_history_trie_enabled: bool = field(default=True)
+    user_action_history_trie_weight: float = field(default=0.06)
+    user_action_length_guard_enabled: bool = field(default=True)
+    user_action_continue_domain_extra: float = field(default=0.75)
+    user_action_continue_separator_extra: float = field(default=0.20)
+    user_action_no_early_stop_weight: float = field(default=0.02)
+    user_action_stop_domain_weight: float = field(default=0.05)
+    user_action_stop_tail_extra: float = field(default=1.0)
+    user_action_max_stop_tail_positions: int = field(default=4)
+    user_action_aux_cap_ratio: float = field(default=0.08)
+    user_action_aux_warmup_steps: int = field(default=100)
 
     def __post_init__(self):
         def split_arg(arg):
@@ -350,6 +365,24 @@ class DataArguments:
             raise ValueError("multitask_ortho_cosine_ema_beta must be in [0, 1).")
         if not 0 < self.multitask_ortho_norm_ratio_min <= 1 <= self.multitask_ortho_norm_ratio_max:
             raise ValueError("Ortho norm-ratio bounds must be positive and include 1.0.")
+        if self.user_action_aux_enabled and not self.multitask_macro_training:
+            raise ValueError("user_action_aux_enabled requires multitask_macro_training=true.")
+        action_aux_strengths = (
+            self.user_action_history_trie_weight,
+            self.user_action_continue_domain_extra,
+            self.user_action_continue_separator_extra,
+            self.user_action_no_early_stop_weight,
+            self.user_action_stop_domain_weight,
+            self.user_action_stop_tail_extra,
+        )
+        if any(value < 0 for value in action_aux_strengths):
+            raise ValueError("Action Select auxiliary loss weights cannot be negative.")
+        if not 0 <= self.user_action_aux_cap_ratio <= 1:
+            raise ValueError("user_action_aux_cap_ratio must be in [0, 1].")
+        if self.user_action_aux_warmup_steps < 0:
+            raise ValueError("user_action_aux_warmup_steps cannot be negative.")
+        if self.user_action_max_stop_tail_positions <= 0:
+            raise ValueError("user_action_max_stop_tail_positions must be positive.")
 
         if self.packing:
             self.cutoff_len -= 1  # avoid pad_to_multiple_of, needs improve
