@@ -356,6 +356,27 @@ def test_non_measurement_step_hook_is_immediate_noop():
     controller.finish_macro_step({"material": 1.0}, {"material": 1})
 
 
+def test_metrics_keep_weights_norms_loss_ratios_and_conflict_cosines_only():
+    controller = MultiTaskGradientController(ToyLoraModel(), make_args(), loss_divisor=1)
+    controller.baseline_initialized = True
+    controller.loss_ema = dict.fromkeys(TASKS, 2.0)
+    controller.initial_loss_baseline = dict.fromkeys(TASKS, 1.0)
+    controller.last_raw_norms = dict.fromkeys(TASKS, 3.0)
+    controller.last_effective_norms = dict.fromkeys(TASKS, 3.0)
+    controller.last_cosines = {
+        "material_user": -0.2,
+        "material_recommendation": 0.1,
+        "user_recommendation": -0.3,
+    }
+    metrics = controller.metrics()
+    assert all(f"a_gn_w_{task}" in metrics for task in TASKS)
+    assert all(f"b_gn_loss_ratio_{task}" in metrics for task in TASKS)
+    assert all(f"c_gn_raw_norm_{task}" in metrics for task in TASKS)
+    assert all(f"c_gn_effective_norm_{task}" in metrics for task in TASKS)
+    assert all(f"d_gn_cos_{pair}" in metrics for pair in controller.last_cosines)
+    assert not any("loss_ema" in name or name.startswith("f_gn_") for name in metrics)
+
+
 def test_tiny_random_qwen3_uses_real_peft_lora_b_gradient_path():
     torch.manual_seed(7)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

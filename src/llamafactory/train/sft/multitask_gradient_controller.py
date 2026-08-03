@@ -602,8 +602,6 @@ class MultiTaskGradientController:
         metrics: dict[str, float] = {}
         for task in self.tasks:
             metrics[f"a_gn_w_{task}"] = self.task_weights[task]
-            if task in self.loss_ema:
-                metrics[f"b_gn_loss_ema_{task}"] = self.loss_ema[task]
             if self.baseline_initialized and task in self.loss_ema:
                 metrics[f"b_gn_loss_ratio_{task}"] = self.loss_ema[task] / max(
                     self.initial_loss_baseline[task], self.eps
@@ -619,9 +617,6 @@ class MultiTaskGradientController:
                 "e_gn_measure_active": float(self.measure_active),
                 "e_gn_weight_update_active": float(self.weight_update_active),
                 "e_gn_max_weight_delta": self.max_weight_delta,
-                "f_gn_capture_ms": self.capture_ms,
-                "f_gn_sync_ms": self.sync_ms,
-                "f_gn_update_ms": self.update_ms,
             }
         )
         if self.ortho_enabled:

@@ -362,6 +362,27 @@ def test_all_logged_metrics_are_finite_scalars():
     _, _, result = compute_result(sample, metadata)
     metrics = action_statistics_to_metrics(result.statistics)
     assert metrics and all(isinstance(value, float) and math.isfinite(value) for value in metrics.values())
+    assert set(metrics) == {
+        "a_act_segments",
+        "a_act_parse_ok_rate",
+        "a_act_gold_in_history_rate",
+        "a_act_gold_duplicate_rate",
+        "b_act_allowed_domain_mass",
+        "b_act_allowed_a_mass",
+        "b_act_allowed_b_mass",
+        "b_act_allowed_c_mass",
+        "c_act_seen_sid_removed_avg",
+        "c_act_no_early_stop_mass",
+        "c_act_stop_domain_mass",
+        "d_act_trie_loss",
+        "d_act_continue_loss",
+        "d_act_stop_loss",
+        "d_act_aux_loss",
+        "d_act_action_ce",
+        "d_act_aux_to_ce_ratio",
+        "d_act_cap_active",
+        "d_act_warmup_factor",
+    }
 
 
 class TinyCausalModel(nn.Module):

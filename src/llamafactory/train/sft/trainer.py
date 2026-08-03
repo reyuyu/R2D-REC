@@ -465,12 +465,9 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             "learning_rate": self.optimizer.param_groups[0]["lr"] if self.optimizer is not None else None,
         }
         for task_name, task_id in TASK_IDS.items():
-            loss_sum, count, packed_tokens, supervised_tokens, segments = task_statistics[task_id, :5].tolist()
+            loss_sum, count, *_ = task_statistics[task_id, :5].tolist()
             if count:
                 record[f"{task_name}_loss"] = loss_sum / count
-                record[f"{task_name}_avg_packed_tokens"] = packed_tokens / count
-                record[f"{task_name}_avg_supervised_tokens"] = supervised_tokens / count
-                record[f"{task_name}_avg_segments"] = segments / count
                 record[f"{task_name}_microbatches"] = int(count)
         if self.user_action_auxiliary is not None:
             action_metrics = action_statistics_to_metrics(task_statistics[TASK_IDS["user"], 5:])

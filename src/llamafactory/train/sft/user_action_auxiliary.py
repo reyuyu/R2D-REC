@@ -334,8 +334,6 @@ def action_statistics_to_metrics(statistics: torch.Tensor) -> dict[str, float]:
     return {
         "a_act_segments": values["segments"],
         "a_act_parse_ok_rate": ratio("parse_ok", "segments"),
-        "a_act_history_sid_avg": values["history_sid_sum"] / valid if valid else 0.0,
-        "a_act_gold_sid_avg": values["gold_sid_sum"] / valid if valid else 0.0,
         "a_act_gold_in_history_rate": ratio("gold_in_history", "gold_total"),
         "a_act_gold_duplicate_rate": values["duplicate_segments"] / valid if valid else 0.0,
         "b_act_allowed_domain_mass": ratio("allowed_domain_sum", "allowed_domain_count"),
@@ -343,7 +341,6 @@ def action_statistics_to_metrics(statistics: torch.Tensor) -> dict[str, float]:
         "b_act_allowed_b_mass": ratio("allowed_b_sum", "allowed_b_count"),
         "b_act_allowed_c_mass": ratio("allowed_c_sum", "allowed_c_count"),
         "c_act_seen_sid_removed_avg": values["removed_sid_sum"] / valid if valid else 0.0,
-        "c_act_continue_boundary_avg": values["continue_boundary_sum"] / valid if valid else 0.0,
         "c_act_no_early_stop_mass": ratio("no_early_stop_mass_sum", "no_early_stop_mass_count"),
         "c_act_stop_domain_mass": ratio("stop_domain_mass_sum", "stop_domain_mass_count"),
         "d_act_trie_loss": values["trie_loss_sum"] / microbatches if microbatches else 0.0,
@@ -354,7 +351,4 @@ def action_statistics_to_metrics(statistics: torch.Tensor) -> dict[str, float]:
         "d_act_aux_to_ce_ratio": values["aux_to_ce_sum"] / microbatches if microbatches else 0.0,
         "d_act_cap_active": values["cap_active_sum"] / microbatches if microbatches else 0.0,
         "d_act_warmup_factor": values["warmup_sum"] / microbatches if microbatches else 0.0,
-        "e_act_user_base_loss": values["user_base_sum"] / microbatches if microbatches else 0.0,
-        "e_act_user_aux_loss": values["user_aux_sum"] / microbatches if microbatches else 0.0,
-        "e_act_user_total_loss": values["user_total_sum"] / microbatches if microbatches else 0.0,
     }
