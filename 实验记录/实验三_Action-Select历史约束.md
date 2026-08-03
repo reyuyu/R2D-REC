@@ -101,13 +101,22 @@ Action microbatch 调用一次 `compute_loss(..., return_outputs=True)`，直接
 
 ## 指标
 
-- `a_act_*`：segment 数、解析成功率、历史/gold SID 数、gold 在历史率、gold 重复率。
-- `b_act_allowed_*_mass`：各 Trie 层级在同语义类型中的合法概率质量。
-- `c_act_*`：完整 SID 移除数、继续边界数、提前停止概率与最终重新开始 domain 概率。
-- `d_act_*`：Trie/Continue/Stop、最终 aux、Action CE、cap 与 warmup。
-- `e_act_user_*`：Action microbatch 的 user base/aux/total raw loss 拆分。
+日志只保留可用于判断训练状态和横向比较的指标：
+
+- 基础：四任务 raw loss、microbatch 数、macro-step 时间与 learning rate。
+- GradNorm：三个任务权重、相对 baseline loss ratio、raw/effective norm、三对梯度 cosine、测量/更新状态与最大权重变化。
+- Action 数据：segment 数、解析成功率、gold 在历史率、gold 重复率。
+- Action Trie：domain/a/b/c 四层 allowed probability mass。
+- Action 行为：完整 SID 移除数、提前停止概率、最终 tail 重新生成 domain 的概率。
+- Action loss：Trie/Continue/Stop loss、最终 aux、Action CE、aux/CE ratio、cap 与 warmup。
+
+历史/gold SID 平均数、continue boundary 数、重复的 user base/aux/total 拆分，以及 GradNorm timing/原始 loss EMA 不再写入训练日志；控制器内部仍保留这些状态，训练和 checkpoint 语义不变。
 
 这些统计附加在现有 `task_statistics` flat tensor 中，复用原有一次 all-reduce。评测脚本另外输出完整四元组的历史合法率、幻觉率、重复率、unique rate、数量误差和 set precision/recall/F1，并区分历史外、重复、合法但选错、漏选、多选、格式错误与显式 length 截断。
+
+## 验证集状态
+
+当前 macro-step Trainer 不执行在线验证。虽然 `dataset_info.json` 已注册八个 `*_dev2` 数据集，但 `workflow.py` 在 `multitask_macro_training=true` 时会拒绝 `eval_dataset` 和 `val_size>0`；本配置也未设置 `do_eval` 或 `eval_strategy`。因此训练日志只包含训练中间指标，不会自动出现 `eval_loss` 或竞赛指标。验证需要使用 checkpoint 运行独立评测脚本；若后续需要训练中在线验证，必须单独实现 task-aware eval loader，不能只在 YAML 中加入 `eval_dataset`。
 
 ## 启动与测试
 
