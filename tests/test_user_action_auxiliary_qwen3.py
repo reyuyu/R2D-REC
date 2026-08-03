@@ -44,7 +44,9 @@ def test_tiny_random_qwen3_lora_uses_one_forward_and_auxiliary_backward():
 
     handle = model.register_forward_hook(count_forward)
     outputs = model(input_ids=input_ids, labels=labels)
-    controller = UserActionAuxiliaryController(FakeTokenizer(), make_args())
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+    )
     result = controller.compute(outputs.logits, labels, [metadata], outputs.loss, 100)
     (outputs.loss + result.loss).backward()
     handle.remove()
@@ -60,4 +62,4 @@ def test_tiny_random_qwen3_lora_uses_one_forward_and_auxiliary_backward():
 
 if __name__ == "__main__":
     test_tiny_random_qwen3_lora_uses_one_forward_and_auxiliary_backward()
-    print("PASS: tiny random Qwen3+LoRA Action auxiliary smoke")
+    print("PASS: tiny random Qwen3+LoRA vectorized Action auxiliary smoke")

@@ -254,6 +254,14 @@ class DataArguments:
     user_action_max_stop_tail_positions: int = field(default=4)
     user_action_aux_cap_ratio: float = field(default=0.08)
     user_action_aux_warmup_steps: int = field(default=100)
+    user_action_aux_vectorized_enabled: bool = field(
+        default=False,
+        metadata={"help": "Use the mathematically equivalent batched Action Select loss backend."},
+    )
+    user_action_aux_full_vocab_chunk_size: int = field(
+        default=64,
+        metadata={"help": "Maximum Action target rows per full-vocabulary reduction chunk."},
+    )
 
     def __post_init__(self):
         def split_arg(arg):
@@ -383,6 +391,8 @@ class DataArguments:
             raise ValueError("user_action_aux_warmup_steps cannot be negative.")
         if self.user_action_max_stop_tail_positions <= 0:
             raise ValueError("user_action_max_stop_tail_positions must be positive.")
+        if self.user_action_aux_full_vocab_chunk_size <= 0:
+            raise ValueError("user_action_aux_full_vocab_chunk_size must be positive.")
 
         if self.packing:
             self.cutoff_len -= 1  # avoid pad_to_multiple_of, needs improve

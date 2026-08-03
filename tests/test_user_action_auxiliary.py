@@ -5,8 +5,10 @@ from types import SimpleNamespace
 
 import torch
 import torch.nn.functional as F
+from peft import LoraConfig, get_peft_model
 from torch import nn
 from torch.utils.data import Dataset
+from transformers import Qwen3Config, Qwen3ForCausalLM
 
 from llamafactory.data.action_select import ActionSelectMetadataParser, build_action_semantic_token_ids
 from llamafactory.data.multitask import TaskPackCollator, TokenizedSubDataset
@@ -52,6 +54,8 @@ def make_args(**overrides):
         "user_action_max_stop_tail_positions": 4,
         "user_action_aux_cap_ratio": 0.08,
         "user_action_aux_warmup_steps": 100,
+        "user_action_aux_vectorized_enabled": False,
+        "user_action_aux_full_vocab_chunk_size": 64,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -523,6 +527,201 @@ def test_loss_divisor_is_not_changed_by_auxiliary_path():
     total_b, stats_b = TrainerHarness(auxiliary, divisor=8).compute_task_microbatches(model_b, "user", [make_microbatch()], True)
     assert torch.allclose(stats_a[0], stats_b[0])
     assert torch.allclose(total_a, total_b * 2)
+
+
+def _compute_backend_pair(samples, **overrides):
+    batch = packed_action_batch(samples)
+    generator = torch.Generator().manual_seed(20260803)
+    base_logits = torch.randn(1, batch["input_ids"].shape[1], 64, generator=generator)
+    legacy_logits = base_logits.clone().requires_grad_(True)
+    vectorized_logits = base_logits.clone().requires_grad_(True)
+    common = {
+        "user_action_aux_cap_ratio": 1.0,
+        "user_action_aux_warmup_steps": 0,
+        **overrides,
+    }
+    legacy = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(**common, user_action_aux_vectorized_enabled=False)
+    )
+    vectorized = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(**common, user_action_aux_vectorized_enabled=True)
+    )
+    action_ce = torch.tensor(100.0)
+    legacy_result = legacy.compute(
+        legacy_logits, batch["labels"], batch["action_aux_metadata"], action_ce, 100
+    )
+    vectorized_result = vectorized.compute(
+        vectorized_logits, batch["labels"], batch["action_aux_metadata"], action_ce, 100
+    )
+    return legacy_logits, vectorized_logits, legacy_result, vectorized_result
+
+
+def _assert_backend_equivalent(samples, **overrides):
+    legacy_logits, vectorized_logits, legacy_result, vectorized_result = _compute_backend_pair(
+        samples, **overrides
+    )
+    torch.testing.assert_close(vectorized_result.loss, legacy_result.loss, rtol=2e-6, atol=2e-6)
+    torch.testing.assert_close(
+        vectorized_result.statistics, legacy_result.statistics, rtol=2e-6, atol=2e-6
+    )
+    legacy_result.loss.backward()
+    vectorized_result.loss.backward()
+    torch.testing.assert_close(vectorized_logits.grad, legacy_logits.grad, rtol=3e-6, atol=3e-7)
+
+
+def test_vectorized_backend_matches_legacy_across_action_shapes():
+    cases = (
+        [make_sample(answer=(SID_1,))],
+        [make_sample(answer=(SID_1, SID_2))],
+        [make_sample(answer=(SID_1, SID_2, SID_3), tail=(7, 8, 9, 12, 13))],
+        [make_sample(history=(SID_1,), answer=(SID_3,))],
+        [make_sample(history=(SID_1,), answer=(SID_1, SID_1))],
+        [
+            make_sample(history=(SID_1, SID_2), answer=(SID_1, SID_2)),
+            make_sample(history=(SID_3,), answer=(SID_3,), tail=(7,)),
+        ],
+    )
+    for samples in cases:
+        _assert_backend_equivalent(samples)
+
+
+def test_vectorized_backend_matches_legacy_for_each_ablation():
+    sample = [make_sample()]
+    _assert_backend_equivalent(sample, user_action_length_guard_enabled=False)
+    _assert_backend_equivalent(sample, user_action_history_trie_enabled=False)
+    _assert_backend_equivalent(
+        sample,
+        user_action_history_trie_enabled=False,
+        user_action_length_guard_enabled=False,
+    )
+
+
+def test_vectorized_backend_chunk_size_does_not_change_math_or_gradients():
+    samples = [
+        make_sample(answer=(SID_1, SID_2, SID_3), tail=(7, 8, 9, 12)),
+        make_sample(history=(SID_1, SID_2), answer=(SID_2, SID_1)),
+    ]
+    for chunk_size in (1, 2, 32):
+        _assert_backend_equivalent(samples, user_action_aux_full_vocab_chunk_size=chunk_size)
+
+
+def test_vectorized_backend_preserves_cap_and_partial_warmup():
+    samples = [make_sample(answer=(SID_1, SID_2, SID_3))]
+    batch = packed_action_batch(samples)
+    logits = make_logits(batch["input_ids"].shape[1])
+    labels = batch["labels"]
+    metadata = batch["action_aux_metadata"]
+    results = []
+    for enabled in (False, True):
+        controller = UserActionAuxiliaryController(
+            FakeTokenizer(),
+            make_args(
+                user_action_aux_vectorized_enabled=enabled,
+                user_action_aux_cap_ratio=0.01,
+                user_action_aux_warmup_steps=100,
+            ),
+        )
+        results.append(controller.compute(logits, labels, metadata, torch.tensor(2.0), 50))
+    torch.testing.assert_close(results[1].loss, results[0].loss, rtol=2e-6, atol=2e-6)
+    torch.testing.assert_close(results[1].statistics, results[0].statistics, rtol=2e-6, atol=2e-6)
+    assert results[1].statistics[ACTION_STAT_INDEX["cap_active_sum"]] == 1
+    assert results[1].statistics[ACTION_STAT_INDEX["warmup_sum"]] == 0.5
+
+
+def test_vectorized_backend_handles_parse_failure_and_empty_metadata():
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+    )
+    logits = make_logits(4)
+    labels = torch.full((1, 4), IGNORE_INDEX)
+    empty = controller.compute(logits, labels, [], torch.tensor(0.0), 100)
+    failed = controller.compute(
+        logits,
+        labels,
+        [{"parse_valid": False, "parse_ms": 0.25}],
+        torch.tensor(0.0),
+        100,
+    )
+    assert empty.loss == 0 and failed.loss == 0
+    assert torch.isfinite(empty.statistics).all() and torch.isfinite(failed.statistics).all()
+
+
+def test_vectorized_trainer_path_still_uses_one_forward_and_backward():
+    auxiliary = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+    )
+    model = TinyCausalModel()
+    harness = TrainerHarness(auxiliary)
+    harness.compute_task_microbatches(model, "user", [make_microbatch()], True)
+    assert model.forward_count == 1
+    assert harness.accelerator.backward_count == 1
+
+
+def test_tiny_qwen3_lora_parameter_gradients_match_legacy_backend():
+    torch.manual_seed(20260803)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    config = Qwen3Config(
+        vocab_size=64,
+        hidden_size=32,
+        intermediate_size=64,
+        num_hidden_layers=2,
+        num_attention_heads=4,
+        num_key_value_heads=2,
+        head_dim=8,
+        use_cache=False,
+    )
+
+    def make_model():
+        return get_peft_model(
+            Qwen3ForCausalLM(config),
+            LoraConfig(
+                r=2,
+                lora_alpha=4,
+                lora_dropout=0.0,
+                target_modules=["q_proj", "v_proj", "o_proj", "down_proj"],
+            ),
+        ).to(device).eval()
+
+    legacy_model = make_model()
+    vectorized_model = make_model()
+    vectorized_model.load_state_dict(legacy_model.state_dict())
+    batch = packed_action_batch([make_sample(answer=(SID_1, SID_2, SID_3))])
+    input_ids = batch["input_ids"].to(device)
+    labels = batch["labels"].to(device)
+    metadata = batch["action_aux_metadata"]
+    controllers = (
+        UserActionAuxiliaryController(
+            FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=False)
+        ),
+        UserActionAuxiliaryController(
+            FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+        ),
+    )
+    models = (legacy_model, vectorized_model)
+    losses = []
+    for model, controller in zip(models, controllers):
+        outputs = model(input_ids=input_ids, labels=labels)
+        auxiliary = controller.compute(outputs.logits, labels, metadata, outputs.loss, 100)
+        total = outputs.loss + auxiliary.loss
+        total.backward()
+        losses.append(total.detach())
+    torch.testing.assert_close(losses[1], losses[0], rtol=2e-6, atol=2e-6)
+    legacy_gradients = {
+        name: parameter.grad
+        for name, parameter in legacy_model.named_parameters()
+        if parameter.requires_grad
+    }
+    vectorized_gradients = {
+        name: parameter.grad
+        for name, parameter in vectorized_model.named_parameters()
+        if parameter.requires_grad
+    }
+    assert legacy_gradients.keys() == vectorized_gradients.keys()
+    for name in legacy_gradients:
+        assert legacy_gradients[name] is not None, name
+        torch.testing.assert_close(
+            vectorized_gradients[name], legacy_gradients[name], rtol=1e-5, atol=1e-6
+        )
 
 
 if __name__ == "__main__":

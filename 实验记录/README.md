@@ -7,6 +7,7 @@
 - [实验一：Lagged GradNorm-lite](./实验一_GradNorm-lite.md)：已实现并通过单卡、双卡及真实 Qwen3/LoRA 梯度路径测试；rank16 双卡正式实验已启动。
 - [实验二：GradNorm-lite + 局部 LoRA 梯度冲突投影](./实验二_GradNorm-Ortho-LoRA.md)：已实现并通过实验 A 回归、单卡算法和双卡全链路 smoke test；正式训练因门控下长期未触发有效投影，已于 2026-08-03 主动终止。
 - [实验三：Action Select 历史约束与长度平衡](./实验三_Action-Select历史约束.md)：第一版已实现，使用完整 SID 动态 Trie、Continue/Stop 平衡、warmup 与 Action CE 比例上限；不拆分顶层任务，不增加 forward/backward。
+- [实验三 C-fast：Action Select 向量化优化](./实验三_C-fast向量化优化.md)：已完成数学与梯度等价测试、单/双卡 smoke、CUDA profiler 和真实 8B 20-step 短跑；保留 legacy 默认路径，使用独立配置与输出目录。
 
 ## 实验关系
 
@@ -15,3 +16,5 @@
 两组实验保持相同的 rank16、数据、balanced_40、seed、max_steps 和 batch 语义，并使用不同的 `output_dir`，可直接并行比较。实验 B 不增加任务专属 adapter，不修改 LoRA forward 或推理结构。
 
 实验三建立在实验 A 配置上，只修改 `user/action_nocot` 的 raw loss。Action 辅助项在当前 user GradNorm 权重之前加入，所以继续作为 user 梯度的一部分参与实验 A 的尺度平衡，不改变顶层任务调度。
+
+C-fast 仅将实验三 Action 辅助目标的逐 SID、逐位置计算改为分组向量化和 full-vocabulary denominator 复用，不改变 loss、packing、GradNorm 或 DDP 语义。实验 A、A0 和 B 未启用 Action 辅助目标，因此不会从该优化中获得直接加速。

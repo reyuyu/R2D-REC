@@ -40,7 +40,9 @@ def main():
     metadata = ActionSelectMetadataParser(FakeTokenizer()).parse(sample["input_ids"], sample["labels"])
     input_ids = torch.tensor([sample["input_ids"]], device=device)
     labels = torch.tensor([sample["labels"]], device=device)
-    controller = UserActionAuxiliaryController(FakeTokenizer(), make_args())
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+    )
     outputs = model(input_ids=input_ids, labels=labels)
     result = controller.compute(outputs.logits, labels, [metadata], outputs.loss, 100)
     ((outputs.loss + result.loss) / dist.get_world_size()).backward()
@@ -56,7 +58,7 @@ def main():
     assert all(torch.allclose(gathered[0], item, atol=1e-6, rtol=1e-6) for item in gathered[1:])
     dist.barrier()
     if local_rank == 0:
-        print("PASS: two-rank DDP Action auxiliary forward/backward/all-reduce/optimizer smoke")
+        print("PASS: two-rank DDP vectorized Action auxiliary forward/backward/all-reduce/optimizer smoke")
     dist.destroy_process_group()
 
 
