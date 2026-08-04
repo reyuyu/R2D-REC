@@ -41,7 +41,19 @@ def main():
     input_ids = torch.tensor([sample["input_ids"]], device=device)
     labels = torch.tensor([sample["labels"]], device=device)
     controller = UserActionAuxiliaryController(
-        FakeTokenizer(), make_args(user_action_aux_vectorized_enabled=True)
+        FakeTokenizer(),
+        make_args(
+            user_action_aux_vectorized_enabled=True,
+            user_action_aux_split_cap_enabled=True,
+            user_action_history_trie_weight=0.60,
+            user_action_continue_domain_extra=0.01,
+            user_action_continue_separator_extra=0.005,
+            user_action_no_early_stop_weight=0.002,
+            user_action_stop_domain_weight=0.005,
+            user_action_stop_tail_extra=0.01,
+            user_action_trie_cap_ratio=0.06,
+            user_action_length_cap_ratio=0.02,
+        ),
     )
     outputs = model(input_ids=input_ids, labels=labels)
     result = controller.compute(outputs.logits, labels, [metadata], outputs.loss, 100)

@@ -150,6 +150,10 @@ class BaseModelArguments:
         default=True,
         metadata={"help": "Whether or not to use reentrant gradient checkpointing."},
     )
+    gradient_checkpointing_layer_ratio: float = field(
+        default=1.0,
+        metadata={"help": "Fraction of decoder layers that retain gradient checkpointing."},
+    )
     upcast_layernorm: bool = field(
         default=False,
         metadata={"help": "Whether or not to upcast the layernorm weights in fp32."},
@@ -206,6 +210,9 @@ class BaseModelArguments:
     def __post_init__(self):
         if self.model_name_or_path is None:
             raise ValueError("Please provide `model_name_or_path`.")
+
+        if not 0.0 <= self.gradient_checkpointing_layer_ratio <= 1.0:
+            raise ValueError("gradient_checkpointing_layer_ratio must be in [0, 1].")
 
         if self.adapter_name_or_path is not None:  # support merging multiple lora weights
             self.adapter_name_or_path = [path.strip() for path in self.adapter_name_or_path.split(",")]

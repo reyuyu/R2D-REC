@@ -12,6 +12,7 @@ from llamafactory.data.multitask import (
     TaskDataLoader,
     TokenizedSubDataset,
     split_global_microbatch_allocation,
+    resolve_multitask_dataset_name,
 )
 
 
@@ -199,3 +200,18 @@ if __name__ == "__main__":
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
+
+
+
+def test_multitask_dataset_version_resolution_supports_one_subtask_override():
+    args = type(
+        "Args",
+        (),
+        {
+            "multitask_train_dataset_suffix": "_train98",
+            "multitask_dataset_version": "v1_thought_prompt",
+            "multitask_dataset_version_overrides": {"onereason_user_action_nocot": "raw"},
+        },
+    )()
+    assert resolve_multitask_dataset_name("onereason_material_cot", args) == "onereason_material_cot_v1_thought_prompt_train98"
+    assert resolve_multitask_dataset_name("onereason_user_action_nocot", args) == "onereason_user_action_nocot_train98"

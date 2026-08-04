@@ -41,6 +41,11 @@ ACTION_STAT_NAMES = (
     "action_ce_sum",
     "aux_to_ce_sum",
     "cap_active_sum",
+    "effective_trie_sum",
+    "effective_length_sum",
+    "trie_cap_active_sum",
+    "length_cap_active_sum",
+    "total_cap_scale_sum",
     "warmup_sum",
     "user_base_sum",
     "user_aux_sum",
@@ -56,6 +61,18 @@ ACTION_STAT_SIZE = len(ACTION_STAT_NAMES)
 class ActionAuxiliaryResult:
     loss: torch.Tensor
     statistics: torch.Tensor
+
+
+@dataclass
+class _AuxiliaryComposition:
+    loss: torch.Tensor
+    ratio: torch.Tensor
+    effective_trie: torch.Tensor
+    effective_length: torch.Tensor
+    trie_cap_scale: torch.Tensor
+    length_cap_scale: torch.Tensor
+    total_cap_scale: torch.Tensor
+    warmup: float
 
 
 @dataclass
@@ -101,6 +118,9 @@ class UserActionAuxiliaryController:
         self.stop_tail_extra = float(data_args.user_action_stop_tail_extra)
         self.max_stop_tail_positions = int(data_args.user_action_max_stop_tail_positions)
         self.cap_ratio = float(data_args.user_action_aux_cap_ratio)
+        self.split_cap_enabled = bool(getattr(data_args, "user_action_aux_split_cap_enabled", False))
+        self.trie_cap_ratio = float(getattr(data_args, "user_action_trie_cap_ratio", 0.06))
+        self.length_cap_ratio = float(getattr(data_args, "user_action_length_cap_ratio", 0.02))
         self.warmup_steps = int(data_args.user_action_aux_warmup_steps)
         self.vectorized_enabled = bool(getattr(data_args, "user_action_aux_vectorized_enabled", False))
         self.full_vocab_chunk_size = int(getattr(data_args, "user_action_aux_full_vocab_chunk_size", 64))
@@ -117,6 +137,104 @@ class UserActionAuxiliaryController:
         if warmup_steps == 0:
             return 1.0
         return min(1.0, max(0.0, float(step) / float(warmup_steps)))
+
+    def _cap_loss(
+        self,
+        value: torch.Tensor,
+        action_ce: torch.Tensor,
+        cap_ratio: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        detached = value.detach().float().clamp_min(0.0)
+        maximum = cap_ratio * action_ce.detach().float().clamp_min(0.0)
+        one = torch.ones((), dtype=torch.float32, device=value.device)
+        scale = torch.where(
+            detached > maximum,
+            maximum / (detached + self.eps),
+            one,
+        )
+        return value * scale.to(value.dtype), scale
+
+    def _compose_auxiliary(
+        self,
+        trie_loss: torch.Tensor,
+        continue_loss: torch.Tensor,
+        stop_loss: torch.Tensor,
+        action_ce: torch.Tensor,
+        macro_step: int,
+    ) -> _AuxiliaryComposition:
+        trie_raw = self.trie_weight * trie_loss
+        length_raw = continue_loss + stop_loss
+        one = torch.ones((), dtype=torch.float32, device=action_ce.device)
+        if self.split_cap_enabled:
+            effective_trie, trie_cap_scale = self._cap_loss(trie_raw, action_ce, self.trie_cap_ratio)
+            effective_length, length_cap_scale = self._cap_loss(length_raw, action_ce, self.length_cap_ratio)
+            combined = effective_trie + effective_length
+            combined, total_cap_scale = self._cap_loss(combined, action_ce, self.cap_ratio)
+            effective_trie = effective_trie * total_cap_scale.to(effective_trie.dtype)
+            effective_length = effective_length * total_cap_scale.to(effective_length.dtype)
+        else:
+            combined, total_cap_scale = self._cap_loss(trie_raw + length_raw, action_ce, self.cap_ratio)
+            effective_trie = trie_raw * total_cap_scale.to(trie_raw.dtype)
+            effective_length = length_raw * total_cap_scale.to(length_raw.dtype)
+            trie_cap_scale = one
+            length_cap_scale = one
+
+        warmup = self.warmup_factor(macro_step, self.warmup_steps)
+        effective_trie = effective_trie * warmup
+        effective_length = effective_length * warmup
+        loss = combined * warmup
+        ratio = loss.detach().float() / (action_ce.detach().float().abs() + self.eps)
+        return _AuxiliaryComposition(
+            loss=loss,
+            ratio=ratio,
+            effective_trie=effective_trie,
+            effective_length=effective_length,
+            trie_cap_scale=trie_cap_scale,
+            length_cap_scale=length_cap_scale,
+            total_cap_scale=total_cap_scale,
+            warmup=warmup,
+        )
+
+    def _finalize_result(
+        self,
+        stats: torch.Tensor,
+        trie_loss: torch.Tensor,
+        continue_loss: torch.Tensor,
+        stop_loss: torch.Tensor,
+        action_ce: torch.Tensor,
+        macro_step: int,
+    ) -> ActionAuxiliaryResult:
+        composition = self._compose_auxiliary(
+            trie_loss,
+            continue_loss,
+            stop_loss,
+            action_ce,
+            macro_step,
+        )
+        stats[ACTION_STAT_INDEX["trie_loss_sum"]] = trie_loss.detach()
+        stats[ACTION_STAT_INDEX["continue_loss_sum"]] = continue_loss.detach()
+        stats[ACTION_STAT_INDEX["stop_loss_sum"]] = stop_loss.detach()
+        stats[ACTION_STAT_INDEX["aux_loss_sum"]] = composition.loss.detach()
+        stats[ACTION_STAT_INDEX["action_ce_sum"]] = action_ce.detach().float()
+        stats[ACTION_STAT_INDEX["aux_to_ce_sum"]] = composition.ratio
+        stats[ACTION_STAT_INDEX["cap_active_sum"]] = float(
+            bool((composition.total_cap_scale.detach() < 1.0).item())
+        )
+        stats[ACTION_STAT_INDEX["effective_trie_sum"]] = composition.effective_trie.detach().float()
+        stats[ACTION_STAT_INDEX["effective_length_sum"]] = composition.effective_length.detach().float()
+        stats[ACTION_STAT_INDEX["trie_cap_active_sum"]] = float(
+            bool((composition.trie_cap_scale.detach() < 1.0).item())
+        )
+        stats[ACTION_STAT_INDEX["length_cap_active_sum"]] = float(
+            bool((composition.length_cap_scale.detach() < 1.0).item())
+        )
+        stats[ACTION_STAT_INDEX["total_cap_scale_sum"]] = composition.total_cap_scale.detach().float()
+        stats[ACTION_STAT_INDEX["warmup_sum"]] = composition.warmup
+        stats[ACTION_STAT_INDEX["user_base_sum"]] = action_ce.detach().float()
+        stats[ACTION_STAT_INDEX["user_aux_sum"]] = composition.loss.detach().float()
+        stats[ACTION_STAT_INDEX["user_total_sum"]] = (action_ce + composition.loss).detach().float()
+        stats[ACTION_STAT_INDEX["action_microbatches"]] = 1
+        return ActionAuxiliaryResult(loss=composition.loss.to(action_ce.dtype), statistics=stats)
 
     @staticmethod
     def _mean_or_zero(values: list[torch.Tensor], reference: torch.Tensor) -> torch.Tensor:
@@ -325,29 +443,7 @@ class UserActionAuxiliaryController:
         trie_loss = self._mean_or_zero(trie_losses, logits)
         continue_loss = self._mean_or_zero(continue_losses, logits)
         stop_loss = self._mean_or_zero(stop_losses, logits)
-        aux_raw = self.trie_weight * trie_loss + continue_loss + stop_loss
-        detached_raw = aux_raw.detach().clamp_min(0.0)
-        max_aux = self.cap_ratio * action_ce.detach().float().clamp_min(0.0)
-        cap_scale = torch.minimum(
-            torch.ones((), device=logits.device),
-            max_aux / (detached_raw + self.eps),
-        )
-        warmup = self.warmup_factor(macro_step, self.warmup_steps)
-        aux_loss = aux_raw * cap_scale.to(aux_raw.dtype) * warmup
-        ratio = aux_loss.detach().float() / (action_ce.detach().float().abs() + self.eps)
-        stats[ACTION_STAT_INDEX["trie_loss_sum"]] = trie_loss.detach()
-        stats[ACTION_STAT_INDEX["continue_loss_sum"]] = continue_loss.detach()
-        stats[ACTION_STAT_INDEX["stop_loss_sum"]] = stop_loss.detach()
-        stats[ACTION_STAT_INDEX["aux_loss_sum"]] = aux_loss.detach()
-        stats[ACTION_STAT_INDEX["action_ce_sum"]] = action_ce.detach().float()
-        stats[ACTION_STAT_INDEX["aux_to_ce_sum"]] = ratio
-        stats[ACTION_STAT_INDEX["cap_active_sum"]] = float(bool((cap_scale.detach() < 1.0).item()))
-        stats[ACTION_STAT_INDEX["warmup_sum"]] = warmup
-        stats[ACTION_STAT_INDEX["user_base_sum"]] = action_ce.detach().float()
-        stats[ACTION_STAT_INDEX["user_aux_sum"]] = aux_loss.detach().float()
-        stats[ACTION_STAT_INDEX["user_total_sum"]] = (action_ce + aux_loss).detach().float()
-        stats[ACTION_STAT_INDEX["action_microbatches"]] = 1
-        return ActionAuxiliaryResult(loss=aux_loss.to(action_ce.dtype), statistics=stats)
+        return self._finalize_result(stats, trie_loss, continue_loss, stop_loss, action_ce, macro_step)
 
     @staticmethod
     def _device_tensor(values, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
@@ -786,29 +882,7 @@ class UserActionAuxiliaryController:
             continue_loss, stop_loss = self._vectorized_length_guard(logits, labels, plan, stats, zero)
         else:
             continue_loss, stop_loss = zero, zero
-        aux_raw = self.trie_weight * trie_loss + continue_loss + stop_loss
-        detached_raw = aux_raw.detach().clamp_min(0.0)
-        max_aux = self.cap_ratio * action_ce.detach().float().clamp_min(0.0)
-        cap_scale = torch.minimum(
-            torch.ones((), device=logits.device),
-            max_aux / (detached_raw + self.eps),
-        )
-        warmup = self.warmup_factor(macro_step, self.warmup_steps)
-        aux_loss = aux_raw * cap_scale.to(aux_raw.dtype) * warmup
-        ratio = aux_loss.detach().float() / (action_ce.detach().float().abs() + self.eps)
-        stats[ACTION_STAT_INDEX["trie_loss_sum"]] = trie_loss.detach()
-        stats[ACTION_STAT_INDEX["continue_loss_sum"]] = continue_loss.detach()
-        stats[ACTION_STAT_INDEX["stop_loss_sum"]] = stop_loss.detach()
-        stats[ACTION_STAT_INDEX["aux_loss_sum"]] = aux_loss.detach()
-        stats[ACTION_STAT_INDEX["action_ce_sum"]] = action_ce.detach().float()
-        stats[ACTION_STAT_INDEX["aux_to_ce_sum"]] = ratio
-        stats[ACTION_STAT_INDEX["cap_active_sum"]] = float(bool((cap_scale.detach() < 1.0).item()))
-        stats[ACTION_STAT_INDEX["warmup_sum"]] = warmup
-        stats[ACTION_STAT_INDEX["user_base_sum"]] = action_ce.detach().float()
-        stats[ACTION_STAT_INDEX["user_aux_sum"]] = aux_loss.detach().float()
-        stats[ACTION_STAT_INDEX["user_total_sum"]] = (action_ce + aux_loss).detach().float()
-        stats[ACTION_STAT_INDEX["action_microbatches"]] = 1
-        return ActionAuxiliaryResult(loss=aux_loss.to(action_ce.dtype), statistics=stats)
+        return self._finalize_result(stats, trie_loss, continue_loss, stop_loss, action_ce, macro_step)
 
     def compute(
         self,
@@ -851,5 +925,10 @@ def action_statistics_to_metrics(statistics: torch.Tensor) -> dict[str, float]:
         "d_act_action_ce": values["action_ce_sum"] / microbatches if microbatches else 0.0,
         "d_act_aux_to_ce_ratio": values["aux_to_ce_sum"] / microbatches if microbatches else 0.0,
         "d_act_cap_active": values["cap_active_sum"] / microbatches if microbatches else 0.0,
+        "d_act_effective_trie_loss": values["effective_trie_sum"] / microbatches if microbatches else 0.0,
+        "d_act_effective_length_loss": values["effective_length_sum"] / microbatches if microbatches else 0.0,
+        "d_act_trie_cap_active": values["trie_cap_active_sum"] / microbatches if microbatches else 0.0,
+        "d_act_length_cap_active": values["length_cap_active_sum"] / microbatches if microbatches else 0.0,
+        "d_act_total_cap_scale": values["total_cap_scale_sum"] / microbatches if microbatches else 0.0,
         "d_act_warmup_factor": values["warmup_sum"] / microbatches if microbatches else 0.0,
     }

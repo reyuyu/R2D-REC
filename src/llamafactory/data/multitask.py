@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import math
 import random
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from fractions import Fraction
@@ -48,6 +49,22 @@ SUBTASK_RATIOS = {
     "world": {"cot": 0.10, "nocot": 0.90},
 }
 LENGTH_BUCKETS = (512, 1024, 2048, 4096, 8192, 16384, 32768)
+
+
+def resolve_multitask_dataset_name(base_dataset_name: str, data_args) -> str:
+    """Resolve a logical subdataset to a versioned registry name without changing task identity."""
+    valid_names = {name for subtasks in TASK_DATASETS.values() for name in subtasks.values()}
+    overrides = data_args.multitask_dataset_version_overrides
+    unknown_overrides = set(overrides) - valid_names
+    if unknown_overrides:
+        raise ValueError(f"Unknown multitask dataset override(s): {sorted(unknown_overrides)}")
+
+    version = overrides.get(base_dataset_name, data_args.multitask_dataset_version)
+    if version == "raw":
+        return base_dataset_name + data_args.multitask_train_dataset_suffix
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", version):
+        raise ValueError(f"Invalid multitask dataset version: {version!r}")
+    return f"{base_dataset_name}_{version}{data_args.multitask_train_dataset_suffix}"
 
 
 class TokenizedSubDataset(Dataset):
@@ -453,6 +470,9 @@ class MultiTaskMacroStepLoader:
 
 def build_multitask_datasets(template, model_args, data_args, training_args, tokenizer, processor=None):
     suffix = data_args.multitask_train_dataset_suffix
+    # dataset remains the canonical list of eight logical datasets. Version
+    # selection happens below so a one-subtask ablation does not need to rewrite
+    # the whole task/sampler declaration.
     expected = {name + suffix for subtasks in TASK_DATASETS.values() for name in subtasks.values()}
     provided = set(data_args.dataset or [])
     missing = expected - provided
@@ -466,7 +486,7 @@ def build_multitask_datasets(template, model_args, data_args, training_args, tok
     for task_name, subtasks in TASK_DATASETS.items():
         groups[task_name] = {}
         for subtask_name, base_dataset_name in subtasks.items():
-            dataset_name = base_dataset_name + suffix
+            dataset_name = resolve_multitask_dataset_name(base_dataset_name, data_args)
             task_args = copy.deepcopy(data_args)
             task_args.dataset, task_args.eval_dataset, task_args.val_size = [dataset_name], None, 0.0
             task_args.packing, task_args.neat_packing, task_args.tokenized_path = False, False, None

@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
+from types import SimpleNamespace
 
 import pytest
 import torch
+from transformers import Qwen3Config, Qwen3ForCausalLM
 
 from llamafactory.extras.misc import get_current_device
+from llamafactory.model.model_utils.checkpointing import configure_selective_gradient_checkpointing
 from llamafactory.train.test_utils import load_train_model
 
 
@@ -50,6 +54,59 @@ def test_unsloth_gradient_checkpointing():
     model = load_train_model(use_unsloth_gc=True, **TRAIN_ARGS)
     for module in filter(lambda m: hasattr(m, "gradient_checkpointing"), model.modules()):
         assert module._gradient_checkpointing_func.__self__.__name__ == "UnslothGradientCheckpointing"
+
+
+def test_selective_gradient_checkpointing_keeps_last_half_of_decoder_layers():
+    layers = torch.nn.ModuleList([torch.nn.Linear(2, 2) for _ in range(4)])
+    for layer in layers:
+        layer.gradient_checkpointing = True
+
+    model = SimpleNamespace(base_model_prefix="model", model=SimpleNamespace(layers=layers))
+    checkpointed, total = configure_selective_gradient_checkpointing(model, 0.5)
+    assert (checkpointed, total) == (2, 4)
+    assert [layer.gradient_checkpointing for layer in layers] == [False, False, True, True]
+
+
+def test_selective_gradient_checkpointing_matches_full_checkpoint_loss_and_gradients():
+    torch.manual_seed(7)
+    config = Qwen3Config(
+        vocab_size=64,
+        hidden_size=32,
+        intermediate_size=64,
+        num_hidden_layers=4,
+        num_attention_heads=4,
+        num_key_value_heads=2,
+        head_dim=8,
+        attention_dropout=0.0,
+        use_cache=False,
+    )
+    full_model = Qwen3ForCausalLM(config)
+    half_model = copy.deepcopy(full_model)
+    for model in (full_model, half_model):
+        model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": True})
+        model.enable_input_require_grads()
+        model.train()
+
+    configure_selective_gradient_checkpointing(half_model, 0.5)
+    input_ids = torch.randint(0, config.vocab_size, (1, 12))
+    labels = input_ids.clone()
+    full_loss = full_model(input_ids=input_ids, labels=labels).loss
+    half_loss = half_model(input_ids=input_ids, labels=labels).loss
+    full_loss.backward()
+    half_loss.backward()
+    torch.testing.assert_close(full_loss, half_loss, atol=1e-7, rtol=1e-7)
+    for (full_name, full_param), (half_name, half_param) in zip(
+        full_model.named_parameters(), half_model.named_parameters()
+    ):
+        assert full_name == half_name
+        if full_param.grad is not None or half_param.grad is not None:
+            torch.testing.assert_close(full_param.grad, half_param.grad, atol=2e-6, rtol=2e-5)
+
+
+@pytest.mark.parametrize("layer_ratio", [-0.01, 1.01])
+def test_gradient_checkpointing_layer_ratio_validation(layer_ratio: float):
+    with pytest.raises(ValueError, match="gradient_checkpointing_layer_ratio"):
+        load_train_model(gradient_checkpointing_layer_ratio=layer_ratio, **TRAIN_ARGS)
 
 
 def test_upcast_layernorm():

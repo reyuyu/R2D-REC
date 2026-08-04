@@ -53,6 +53,9 @@ def make_args(**overrides):
         "user_action_stop_tail_extra": 1.0,
         "user_action_max_stop_tail_positions": 4,
         "user_action_aux_cap_ratio": 0.08,
+        "user_action_aux_split_cap_enabled": False,
+        "user_action_trie_cap_ratio": 0.06,
+        "user_action_length_cap_ratio": 0.02,
         "user_action_aux_warmup_steps": 100,
         "user_action_aux_vectorized_enabled": False,
         "user_action_aux_full_vocab_chunk_size": 64,
@@ -347,6 +350,75 @@ def test_cap_scale_does_not_backpropagate_into_action_ce():
     assert action_ce.grad is None
 
 
+def test_split_caps_preserve_trie_budget_without_triggering_total_cap():
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_aux_split_cap_enabled=True,
+            user_action_history_trie_weight=0.60,
+            user_action_trie_cap_ratio=0.06,
+            user_action_length_cap_ratio=0.02,
+            user_action_aux_warmup_steps=0,
+        ),
+    )
+    trie_loss = torch.tensor(10.0, requires_grad=True)
+    continue_loss = torch.tensor(10.0, requires_grad=True)
+    stop_loss = torch.tensor(10.0, requires_grad=True)
+    action_ce = torch.tensor(2.0, requires_grad=True)
+    composition = controller._compose_auxiliary(
+        trie_loss,
+        continue_loss,
+        stop_loss,
+        action_ce,
+        100,
+    )
+    torch.testing.assert_close(composition.effective_trie, torch.tensor(0.12), atol=1e-6, rtol=0)
+    torch.testing.assert_close(composition.effective_length, torch.tensor(0.04), atol=1e-6, rtol=0)
+    torch.testing.assert_close(composition.loss, torch.tensor(0.16), atol=1e-6, rtol=0)
+    assert composition.trie_cap_scale < 1 and composition.length_cap_scale < 1
+    torch.testing.assert_close(composition.total_cap_scale, torch.tensor(1.0), atol=1e-6, rtol=0)
+    composition.loss.backward()
+    assert trie_loss.grad is not None and trie_loss.grad > 0
+    assert continue_loss.grad is not None and continue_loss.grad > 0
+    assert stop_loss.grad is not None and stop_loss.grad > 0
+    assert action_ce.grad is None
+
+
+def test_c1_calibration_makes_trie_the_primary_effective_auxiliary():
+    sample, metadata = parsed_sample(answer=(SID_1, SID_2, SID_3))
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_aux_vectorized_enabled=True,
+            user_action_aux_split_cap_enabled=True,
+            user_action_history_trie_weight=0.60,
+            user_action_continue_domain_extra=0.01,
+            user_action_continue_separator_extra=0.005,
+            user_action_no_early_stop_weight=0.002,
+            user_action_stop_domain_weight=0.005,
+            user_action_stop_tail_extra=0.01,
+            user_action_trie_cap_ratio=0.06,
+            user_action_length_cap_ratio=0.02,
+            user_action_aux_warmup_steps=0,
+        ),
+    )
+    logits = make_logits(len(sample["input_ids"]))
+    result = controller.compute(
+        logits,
+        torch.tensor([sample["labels"]]),
+        [metadata],
+        torch.tensor(2.0),
+        100,
+    )
+    effective_trie = result.statistics[ACTION_STAT_INDEX["effective_trie_sum"]]
+    effective_length = result.statistics[ACTION_STAT_INDEX["effective_length_sum"]]
+    assert effective_trie > effective_length > 0
+    assert result.statistics[ACTION_STAT_INDEX["cap_active_sum"]] == 0
+    torch.testing.assert_close(effective_trie + effective_length, result.loss.detach())
+    result.loss.backward()
+    assert logits.grad is not None and torch.linalg.vector_norm(logits.grad) > 0
+
+
 def test_empty_metadata_and_zero_valid_segments_stay_finite():
     controller = UserActionAuxiliaryController(FakeTokenizer(), make_args())
     result = controller.compute(make_logits(4), torch.full((1, 4), IGNORE_INDEX), [], torch.tensor(0.0), 100)
@@ -385,6 +457,11 @@ def test_all_logged_metrics_are_finite_scalars():
         "d_act_action_ce",
         "d_act_aux_to_ce_ratio",
         "d_act_cap_active",
+        "d_act_effective_trie_loss",
+        "d_act_effective_length_loss",
+        "d_act_trie_cap_active",
+        "d_act_length_cap_active",
+        "d_act_total_cap_scale",
         "d_act_warmup_factor",
     }
 
@@ -593,6 +670,14 @@ def test_vectorized_backend_matches_legacy_for_each_ablation():
         sample,
         user_action_history_trie_enabled=False,
         user_action_length_guard_enabled=False,
+    )
+    _assert_backend_equivalent(
+        sample,
+        user_action_aux_split_cap_enabled=True,
+        user_action_history_trie_weight=0.60,
+        user_action_trie_cap_ratio=0.06,
+        user_action_length_cap_ratio=0.02,
+        user_action_aux_cap_ratio=0.08,
     )
 
 

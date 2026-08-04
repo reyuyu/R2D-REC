@@ -175,6 +175,21 @@ class DataArguments:
             "help": "Optional suffix resolved against every registered multitask subdataset, e.g. _train98."
         },
     )
+    multitask_dataset_version: str = field(
+        default="raw",
+        metadata={
+            "help": (
+                "Version selected for all macro-training datasets. raw keeps the legacy names; other versions "
+                "resolve as <logical_dataset>_<version><multitask_train_dataset_suffix>."
+            )
+        },
+    )
+    multitask_dataset_version_overrides: dict[str, str] = field(
+        default_factory=dict,
+        metadata={
+            "help": "Optional per-logical-dataset version overrides for macro training, e.g. {onereason_user_action_nocot: v2}."
+        },
+    )
     multitask_monitoring: bool = field(
         default=False,
         metadata={"help": "Write task losses and packing statistics to output_dir/monitor/metrics.jsonl."},
@@ -253,6 +268,12 @@ class DataArguments:
     user_action_stop_tail_extra: float = field(default=1.0)
     user_action_max_stop_tail_positions: int = field(default=4)
     user_action_aux_cap_ratio: float = field(default=0.08)
+    user_action_aux_split_cap_enabled: bool = field(
+        default=False,
+        metadata={"help": "Cap Action Trie and length objectives independently before the total safety cap."},
+    )
+    user_action_trie_cap_ratio: float = field(default=0.06)
+    user_action_length_cap_ratio: float = field(default=0.02)
     user_action_aux_warmup_steps: int = field(default=100)
     user_action_aux_vectorized_enabled: bool = field(
         default=False,
@@ -273,6 +294,16 @@ class DataArguments:
         self.eval_dataset = split_arg(self.eval_dataset)
         self.multitask_gradnorm_tasks = split_arg(self.multitask_gradnorm_tasks)
         self.multitask_grad_reference_modules = split_arg(self.multitask_grad_reference_modules)
+
+        if not isinstance(self.multitask_dataset_version, str) or not self.multitask_dataset_version:
+            raise ValueError("multitask_dataset_version must be a non-empty string.")
+        if not isinstance(self.multitask_dataset_version_overrides, dict):
+            raise ValueError("multitask_dataset_version_overrides must be a mapping of dataset names to version names.")
+        if any(
+            not isinstance(key, str) or not isinstance(value, str) or not value
+            for key, value in self.multitask_dataset_version_overrides.items()
+        ):
+            raise ValueError("multitask_dataset_version_overrides must contain non-empty string dataset names and versions.")
 
         if self.media_dir is None:
             self.media_dir = self.dataset_dir
@@ -387,6 +418,16 @@ class DataArguments:
             raise ValueError("Action Select auxiliary loss weights cannot be negative.")
         if not 0 <= self.user_action_aux_cap_ratio <= 1:
             raise ValueError("user_action_aux_cap_ratio must be in [0, 1].")
+        if not 0 <= self.user_action_trie_cap_ratio <= 1:
+            raise ValueError("user_action_trie_cap_ratio must be in [0, 1].")
+        if not 0 <= self.user_action_length_cap_ratio <= 1:
+            raise ValueError("user_action_length_cap_ratio must be in [0, 1].")
+        if (
+            self.user_action_aux_split_cap_enabled
+            and self.user_action_trie_cap_ratio + self.user_action_length_cap_ratio
+            > self.user_action_aux_cap_ratio + 1e-12
+        ):
+            raise ValueError("Action Trie and length cap ratios cannot exceed the total auxiliary cap ratio.")
         if self.user_action_aux_warmup_steps < 0:
             raise ValueError("user_action_aux_warmup_steps cannot be negative.")
         if self.user_action_max_stop_tail_positions <= 0:

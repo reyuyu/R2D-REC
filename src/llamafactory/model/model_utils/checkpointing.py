@@ -140,6 +140,35 @@ def _fp32_forward_post_hook(
     return output.to(torch.float32)
 
 
+def configure_selective_gradient_checkpointing(model: "PreTrainedModel", layer_ratio: float) -> tuple[int, int]:
+    r"""Keep checkpointing on the last configured fraction of decoder layers."""
+    base_model = getattr(model, getattr(model, "base_model_prefix", ""), None)
+    layers = getattr(base_model, "layers", None)
+    if layers is None:
+        raise ValueError(
+            "Selective gradient checkpointing requires a decoder model exposing `base_model.layers`."
+        )
+
+    layers = list(layers)
+    total_layers = len(layers)
+    checkpointed_layers = int(total_layers * layer_ratio + 0.5)
+    first_checkpointed_layer = total_layers - checkpointed_layers
+    for layer_index, layer in enumerate(layers):
+        if not hasattr(layer, "gradient_checkpointing"):
+            raise ValueError(
+                f"Decoder layer {layer_index} does not support selective gradient checkpointing."
+            )
+
+        layer.gradient_checkpointing = layer_index >= first_checkpointed_layer
+
+    logger.info_rank0(
+        "Selective gradient checkpointing enabled: "
+        f"checkpointed decoder layers={checkpointed_layers}/{total_layers}, "
+        f"indices={list(range(first_checkpointed_layer, total_layers))}"
+    )
+    return checkpointed_layers, total_layers
+
+
 def prepare_model_for_training(model: "PreTrainedModel", model_args: "ModelArguments") -> None:
     r"""Prepare the model before training.
 
@@ -174,6 +203,11 @@ def prepare_model_for_training(model: "PreTrainedModel", model_args: "ModelArgum
             model.gradient_checkpointing_enable(
                 gradient_checkpointing_kwargs={"use_reentrant": model_args.use_reentrant_gc}
             )
+            if model_args.gradient_checkpointing_layer_ratio < 1.0:
+                configure_selective_gradient_checkpointing(
+                    model,
+                    model_args.gradient_checkpointing_layer_ratio,
+                )
             setattr(model.config, "use_cache", False)  # turn off when gradient checkpointing is enabled
             logger.info_rank0("Gradient checkpointing enabled.")
 
