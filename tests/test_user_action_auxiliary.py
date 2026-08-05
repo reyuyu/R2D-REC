@@ -59,6 +59,11 @@ def make_args(**overrides):
         "user_action_aux_warmup_steps": 100,
         "user_action_aux_vectorized_enabled": False,
         "user_action_aux_full_vocab_chunk_size": 64,
+        "user_action_topk_illegal_enabled": False,
+        "user_action_topk_illegal_k": 5,
+        "user_action_topk_illegal_margin": 0.0,
+        "user_action_topk_illegal_weight": 0.02,
+        "user_action_topk_illegal_cap_ratio": 0.02,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -328,6 +333,99 @@ def test_domain_in_final_tail_skips_all_stop_auxiliary_terms():
     assert result.statistics[ACTION_STAT_INDEX["stop_loss_sum"]] == 0
 
 
+def test_topk_penalizes_full_vocab_nonsemantic_competitor():
+    sample, metadata = parsed_sample(answer=(SID_1,))
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_history_trie_enabled=False,
+            user_action_length_guard_enabled=False,
+            user_action_topk_illegal_enabled=True,
+            user_action_topk_illegal_weight=1.0,
+            user_action_topk_illegal_cap_ratio=1.0,
+            user_action_aux_cap_ratio=1.0,
+            user_action_aux_split_cap_enabled=True,
+            user_action_trie_cap_ratio=0.0,
+            user_action_length_cap_ratio=0.0,
+            user_action_aux_warmup_steps=0,
+        ),
+    )
+    logits = make_logits(len(sample["input_ids"]))
+    target_position = metadata["answer_sid_units"][0]["pos_b"]
+    with torch.no_grad():
+        logits[0, target_position - 1, 55] = 12.0  # ordinary vocabulary token, not an SID token
+    result = controller.compute(logits, torch.tensor([sample["labels"]]), [metadata], torch.tensor(2.0), 100)
+    assert result.statistics[ACTION_STAT_INDEX["topk_loss_sum"]] > 0
+    assert result.statistics[ACTION_STAT_INDEX["top1_illegal_hit_sum"]] > 0
+    assert result.statistics[ACTION_STAT_INDEX["continue_loss_sum"]] == 0
+    assert result.statistics[ACTION_STAT_INDEX["stop_loss_sum"]] == 0
+    diagnostics = action_statistics_to_metrics(result.statistics)
+    assert diagnostics["a_act_legal_sid_mass"] < diagnostics["a_act_topk_illegal_mass"]
+    assert diagnostics["a_act_top1_illegal_hit_rate"] > 0
+    assert diagnostics["a_act_gold_top5_rate"] == 1.0
+    result.loss.backward()
+    # A positive logit gradient makes gradient descent lower the illegal competitor;
+    # a negative gold gradient makes it raise the legal target logit.
+    assert logits.grad[0, target_position - 1, 55] > 0
+    assert logits.grad[0, target_position - 1, SID_1[2]] < 0
+
+
+def test_topk_reuses_complete_sid_dynamic_removal():
+    sample, metadata = parsed_sample(history=(SID_1, SID_2), answer=(SID_1, SID_2))
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_history_trie_enabled=False,
+            user_action_length_guard_enabled=False,
+            user_action_topk_illegal_enabled=True,
+            user_action_aux_vectorized_enabled=True,
+        ),
+    )
+    logits = make_logits(len(sample["input_ids"]))
+    stats = torch.zeros(ACTION_STAT_SIZE, dtype=torch.float32)
+    plan = controller._build_vectorized_plan(logits, [metadata], stats)
+    c_group = plan.trie_groups["c"]
+    second_c_position = metadata["answer_sid_units"][1]["pos_c"]
+    row = c_group.positions.tolist().index(second_c_position)
+    allowed = c_group.allowed_ids[row][c_group.allowed_mask[row]].tolist()
+    assert SID_1[3] not in allowed
+    assert SID_2[3] in allowed
+    assert stats[ACTION_STAT_INDEX["removed_sid_sum"]] == 1
+
+
+def test_topk_rejects_unsupported_batched_logits_instead_of_silently_falling_back():
+    sample, metadata = parsed_sample(answer=(SID_1,))
+    controller = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_history_trie_enabled=False,
+            user_action_length_guard_enabled=False,
+            user_action_topk_illegal_enabled=True,
+        ),
+    )
+    logits = make_logits(len(sample["input_ids"])).expand(2, -1, -1).clone().requires_grad_(True)
+    try:
+        controller.compute(logits, torch.tensor([sample["labels"], sample["labels"]]), [metadata], torch.tensor(2.0), 100)
+    except ValueError as error:
+        assert "single packed-sequence" in str(error)
+    else:
+        raise AssertionError("Top-K must not silently omit its auxiliary loss for unsupported logits.")
+
+
+def test_topk_skips_gold_sid_not_present_in_history():
+    sample, metadata = parsed_sample(history=(SID_1,), answer=(SID_3,))
+    _, _, result = compute_result(
+        sample,
+        metadata,
+        user_action_history_trie_enabled=False,
+        user_action_length_guard_enabled=False,
+        user_action_topk_illegal_enabled=True,
+        user_action_aux_vectorized_enabled=True,
+    )
+    assert result.statistics[ACTION_STAT_INDEX["topk_loss_sum"]] == 0
+    assert result.loss == 0
+
+
 def test_warmup_factor_is_exact_at_zero_fifty_and_one_hundred():
     assert UserActionAuxiliaryController.warmup_factor(0, 100) == 0
     assert UserActionAuxiliaryController.warmup_factor(50, 100) == 0.5
@@ -439,30 +537,10 @@ def test_all_logged_metrics_are_finite_scalars():
     metrics = action_statistics_to_metrics(result.statistics)
     assert metrics and all(isinstance(value, float) and math.isfinite(value) for value in metrics.values())
     assert set(metrics) == {
-        "a_act_segments",
-        "a_act_parse_ok_rate",
-        "a_act_gold_in_history_rate",
-        "a_act_gold_duplicate_rate",
-        "b_act_allowed_domain_mass",
-        "b_act_allowed_a_mass",
-        "b_act_allowed_b_mass",
-        "b_act_allowed_c_mass",
-        "c_act_seen_sid_removed_avg",
-        "c_act_no_early_stop_mass",
-        "c_act_stop_domain_mass",
-        "d_act_trie_loss",
-        "d_act_continue_loss",
-        "d_act_stop_loss",
-        "d_act_aux_loss",
-        "d_act_action_ce",
-        "d_act_aux_to_ce_ratio",
-        "d_act_cap_active",
-        "d_act_effective_trie_loss",
-        "d_act_effective_length_loss",
-        "d_act_trie_cap_active",
-        "d_act_length_cap_active",
-        "d_act_total_cap_scale",
-        "d_act_warmup_factor",
+        "a_act_legal_sid_mass",
+        "a_act_topk_illegal_mass",
+        "a_act_top1_illegal_hit_rate",
+        "a_act_gold_top5_rate",
     }
 
 
@@ -738,6 +816,35 @@ def test_vectorized_trainer_path_still_uses_one_forward_and_backward():
     model = TinyCausalModel()
     harness = TrainerHarness(auxiliary)
     harness.compute_task_microbatches(model, "user", [make_microbatch()], True)
+    assert model.forward_count == 1
+    assert harness.accelerator.backward_count == 1
+
+
+def test_topk_trainer_path_uses_one_forward_one_backward_and_updates_user_raw_loss():
+    auxiliary = UserActionAuxiliaryController(
+        FakeTokenizer(),
+        make_args(
+            user_action_history_trie_enabled=False,
+            user_action_length_guard_enabled=False,
+            user_action_topk_illegal_enabled=True,
+            user_action_topk_illegal_weight=1.0,
+            user_action_topk_illegal_cap_ratio=1.0,
+            user_action_aux_cap_ratio=1.0,
+            user_action_aux_split_cap_enabled=True,
+            user_action_trie_cap_ratio=0.0,
+            user_action_length_cap_ratio=0.0,
+            user_action_aux_warmup_steps=0,
+        ),
+    )
+    model = TinyCausalModel()
+    harness = TrainerHarness(auxiliary)
+    _, stats = harness.compute_task_microbatches(model, "user", [make_microbatch()], True)
+    offset = 5
+    topk = stats[offset + ACTION_STAT_INDEX["topk_loss_sum"]]
+    base = stats[offset + ACTION_STAT_INDEX["user_base_sum"]]
+    aux = stats[offset + ACTION_STAT_INDEX["user_aux_sum"]]
+    total = stats[offset + ACTION_STAT_INDEX["user_total_sum"]]
+    assert topk > 0 and aux > 0 and torch.allclose(total, base + aux)
     assert model.forward_count == 1
     assert harness.accelerator.backward_count == 1
 

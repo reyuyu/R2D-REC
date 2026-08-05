@@ -37,12 +37,22 @@ ACTION_STAT_NAMES = (
     "trie_loss_sum",
     "continue_loss_sum",
     "stop_loss_sum",
+    "topk_loss_sum",
+    "legal_sid_mass_sum",
+    "legal_sid_mass_count",
+    "topk_illegal_mass_sum",
+    "topk_illegal_mass_count",
+    "top1_illegal_hit_sum",
+    "top1_illegal_hit_count",
+    "gold_top5_hit_sum",
+    "gold_top5_count",
     "aux_loss_sum",
     "action_ce_sum",
     "aux_to_ce_sum",
     "cap_active_sum",
     "effective_trie_sum",
     "effective_length_sum",
+    "effective_topk_sum",
     "trie_cap_active_sum",
     "length_cap_active_sum",
     "total_cap_scale_sum",
@@ -69,6 +79,7 @@ class _AuxiliaryComposition:
     ratio: torch.Tensor
     effective_trie: torch.Tensor
     effective_length: torch.Tensor
+    effective_topk: torch.Tensor
     trie_cap_scale: torch.Tensor
     length_cap_scale: torch.Tensor
     total_cap_scale: torch.Tensor
@@ -124,6 +135,13 @@ class UserActionAuxiliaryController:
         self.warmup_steps = int(data_args.user_action_aux_warmup_steps)
         self.vectorized_enabled = bool(getattr(data_args, "user_action_aux_vectorized_enabled", False))
         self.full_vocab_chunk_size = int(getattr(data_args, "user_action_aux_full_vocab_chunk_size", 64))
+        self.topk_illegal_enabled = bool(getattr(data_args, "user_action_topk_illegal_enabled", False))
+        self.topk_illegal_k = int(getattr(data_args, "user_action_topk_illegal_k", 5))
+        self.topk_illegal_margin = float(getattr(data_args, "user_action_topk_illegal_margin", 0.0))
+        self.topk_illegal_weight = float(getattr(data_args, "user_action_topk_illegal_weight", 0.02))
+        self.topk_illegal_cap_ratio = float(
+            getattr(data_args, "user_action_topk_illegal_cap_ratio", self.trie_cap_ratio)
+        )
         self.eps = 1e-8
 
     def _type_ids(self, name: str, device: torch.device) -> torch.Tensor:
@@ -161,27 +179,38 @@ class UserActionAuxiliaryController:
         stop_loss: torch.Tensor,
         action_ce: torch.Tensor,
         macro_step: int,
+        topk_loss: torch.Tensor | None = None,
     ) -> _AuxiliaryComposition:
-        trie_raw = self.trie_weight * trie_loss
+        zero = action_ce.reshape(-1)[0].float() * 0.0
+        if self.topk_illegal_enabled:
+            topk_loss = zero if topk_loss is None else topk_loss
+            primary_raw = self.topk_illegal_weight * topk_loss
+            primary_cap_ratio = self.topk_illegal_cap_ratio
+        else:
+            primary_raw = self.trie_weight * trie_loss
+            primary_cap_ratio = self.trie_cap_ratio
         length_raw = continue_loss + stop_loss
         one = torch.ones((), dtype=torch.float32, device=action_ce.device)
         if self.split_cap_enabled:
-            effective_trie, trie_cap_scale = self._cap_loss(trie_raw, action_ce, self.trie_cap_ratio)
+            effective_primary, trie_cap_scale = self._cap_loss(primary_raw, action_ce, primary_cap_ratio)
             effective_length, length_cap_scale = self._cap_loss(length_raw, action_ce, self.length_cap_ratio)
-            combined = effective_trie + effective_length
+            combined = effective_primary + effective_length
             combined, total_cap_scale = self._cap_loss(combined, action_ce, self.cap_ratio)
-            effective_trie = effective_trie * total_cap_scale.to(effective_trie.dtype)
+            effective_primary = effective_primary * total_cap_scale.to(effective_primary.dtype)
             effective_length = effective_length * total_cap_scale.to(effective_length.dtype)
         else:
-            combined, total_cap_scale = self._cap_loss(trie_raw + length_raw, action_ce, self.cap_ratio)
-            effective_trie = trie_raw * total_cap_scale.to(trie_raw.dtype)
+            combined, total_cap_scale = self._cap_loss(primary_raw + length_raw, action_ce, self.cap_ratio)
+            effective_primary = primary_raw * total_cap_scale.to(primary_raw.dtype)
             effective_length = length_raw * total_cap_scale.to(length_raw.dtype)
             trie_cap_scale = one
             length_cap_scale = one
 
+        effective_trie = zero if self.topk_illegal_enabled else effective_primary
+        effective_topk = effective_primary if self.topk_illegal_enabled else zero
         warmup = self.warmup_factor(macro_step, self.warmup_steps)
         effective_trie = effective_trie * warmup
         effective_length = effective_length * warmup
+        effective_topk = effective_topk * warmup
         loss = combined * warmup
         ratio = loss.detach().float() / (action_ce.detach().float().abs() + self.eps)
         return _AuxiliaryComposition(
@@ -189,6 +218,7 @@ class UserActionAuxiliaryController:
             ratio=ratio,
             effective_trie=effective_trie,
             effective_length=effective_length,
+            effective_topk=effective_topk,
             trie_cap_scale=trie_cap_scale,
             length_cap_scale=length_cap_scale,
             total_cap_scale=total_cap_scale,
@@ -203,6 +233,7 @@ class UserActionAuxiliaryController:
         stop_loss: torch.Tensor,
         action_ce: torch.Tensor,
         macro_step: int,
+        topk_loss: torch.Tensor | None = None,
     ) -> ActionAuxiliaryResult:
         composition = self._compose_auxiliary(
             trie_loss,
@@ -210,10 +241,13 @@ class UserActionAuxiliaryController:
             stop_loss,
             action_ce,
             macro_step,
+            topk_loss,
         )
+        zero = action_ce.detach().float() * 0.0
         stats[ACTION_STAT_INDEX["trie_loss_sum"]] = trie_loss.detach()
         stats[ACTION_STAT_INDEX["continue_loss_sum"]] = continue_loss.detach()
         stats[ACTION_STAT_INDEX["stop_loss_sum"]] = stop_loss.detach()
+        stats[ACTION_STAT_INDEX["topk_loss_sum"]] = topk_loss.detach() if topk_loss is not None else zero
         stats[ACTION_STAT_INDEX["aux_loss_sum"]] = composition.loss.detach()
         stats[ACTION_STAT_INDEX["action_ce_sum"]] = action_ce.detach().float()
         stats[ACTION_STAT_INDEX["aux_to_ce_sum"]] = composition.ratio
@@ -222,6 +256,7 @@ class UserActionAuxiliaryController:
         )
         stats[ACTION_STAT_INDEX["effective_trie_sum"]] = composition.effective_trie.detach().float()
         stats[ACTION_STAT_INDEX["effective_length_sum"]] = composition.effective_length.detach().float()
+        stats[ACTION_STAT_INDEX["effective_topk_sum"]] = composition.effective_topk.detach().float()
         stats[ACTION_STAT_INDEX["trie_cap_active_sum"]] = float(
             bool((composition.trie_cap_scale.detach() < 1.0).item())
         )
@@ -486,7 +521,7 @@ class UserActionAuxiliaryController:
             stats[ACTION_STAT_INDEX["gold_sid_sum"]] += len(units)
             stats[ACTION_STAT_INDEX["duplicate_segments"]] += float(duplicate)
 
-            if self.trie_enabled:
+            if self.trie_enabled or self.topk_illegal_enabled:
                 used: set[tuple[int, int, int, int]] = set()
                 for unit in units:
                     gold = tuple(int(value) for value in unit["value"])
@@ -684,6 +719,95 @@ class UserActionAuxiliaryController:
         )
         return segment_means.mean() if segment_means.numel() else zero
 
+    def _vectorized_topk_illegal(
+        self,
+        logits: torch.Tensor,
+        labels: torch.Tensor,
+        plan: ActionAuxBatchPlan,
+        stats: torch.Tensor,
+        zero: torch.Tensor,
+    ) -> torch.Tensor:
+        """Rank the highest full-vocabulary tokens outside each dynamic SID slot set."""
+        sid_count = int(plan.trie_sid_segment_ids.numel())
+        sid_sums = torch.zeros(sid_count, dtype=torch.float32, device=logits.device) + zero
+        sid_counts = torch.zeros(sid_count, dtype=torch.float32, device=logits.device)
+        sequence_logits = logits[0] if logits.ndim == 3 else logits
+        label_row = labels[0] if labels.ndim == 2 else labels
+        vocab_size = sequence_logits.shape[-1]
+        k = min(self.topk_illegal_k, vocab_size)
+        for group in plan.trie_groups.values():
+            losses: list[torch.Tensor] = []
+            valid_rows: list[torch.Tensor] = []
+            for start in range(0, group.positions.numel(), self.full_vocab_chunk_size):
+                end = start + self.full_vocab_chunk_size
+                positions = group.positions[start:end]
+                if positions.numel() == 0:
+                    continue
+                rows = sequence_logits.index_select(0, positions - 1).float()
+                targets = label_row.index_select(0, positions)
+                target_valid = (targets >= 0) & (targets < vocab_size)
+                safe_targets = targets.clamp(0, vocab_size - 1)
+                gold_logits = rows.gather(1, safe_targets.unsqueeze(1)).squeeze(1)
+
+                allowed_ids = group.allowed_ids[start:end]
+                allowed_mask = group.allowed_mask[start:end]
+                illegal_logits = rows.clone()
+                row_indices = torch.arange(rows.shape[0], device=rows.device).unsqueeze(1).expand_as(allowed_ids)
+                illegal_logits[row_indices[allowed_mask], allowed_ids[allowed_mask]] = -torch.inf
+                topk_illegal = torch.topk(illegal_logits, k=k, dim=1).values
+                row_loss = F.softplus(topk_illegal - gold_logits.unsqueeze(1) + self.topk_illegal_margin).mean(dim=1)
+                finite = target_valid & torch.isfinite(row_loss.detach())
+                losses.append(row_loss)
+                valid_rows.append(finite)
+
+                # Diagnostics deliberately use the full vocabulary. This keeps the
+                # monitoring aligned with C2's failure mode: ordinary text tokens can
+                # outrank legal SID tokens even when type-conditional mass looks good.
+                log_z = torch.logsumexp(rows, dim=1)
+                allowed_logits = rows.gather(1, allowed_ids.clamp(0, vocab_size - 1))
+                allowed_logits = allowed_logits.masked_fill(~allowed_mask, -torch.inf)
+                legal_mass = torch.exp(torch.logsumexp(allowed_logits, dim=1) - log_z).clamp(0.0, 1.0)
+                illegal_topk_mass = torch.exp(topk_illegal - log_z.unsqueeze(1)).sum(dim=1).clamp(0.0, 1.0)
+                metric_k = min(5, vocab_size)
+                global_ids = torch.topk(rows, k=metric_k, dim=1).indices
+                global_allowed = (
+                    (global_ids.unsqueeze(2) == allowed_ids.unsqueeze(1))
+                    & allowed_mask.unsqueeze(1)
+                ).any(dim=2)
+                finite_metrics = finite & torch.isfinite(legal_mass.detach()) & torch.isfinite(illegal_topk_mass.detach())
+                stats[ACTION_STAT_INDEX["legal_sid_mass_sum"]] += torch.where(
+                    finite_metrics, legal_mass.detach(), torch.zeros_like(legal_mass)
+                ).sum()
+                stats[ACTION_STAT_INDEX["legal_sid_mass_count"]] += finite_metrics.sum()
+                stats[ACTION_STAT_INDEX["topk_illegal_mass_sum"]] += torch.where(
+                    finite_metrics, illegal_topk_mass.detach(), torch.zeros_like(illegal_topk_mass)
+                ).sum()
+                stats[ACTION_STAT_INDEX["topk_illegal_mass_count"]] += finite_metrics.sum()
+                stats[ACTION_STAT_INDEX["top1_illegal_hit_sum"]] += (
+                    (~global_allowed[:, 0]) & finite_metrics
+                ).sum()
+                stats[ACTION_STAT_INDEX["top1_illegal_hit_count"]] += finite_metrics.sum()
+                stats[ACTION_STAT_INDEX["gold_top5_hit_sum"]] += (
+                    (global_ids == targets.unsqueeze(1)).any(dim=1) & finite_metrics
+                ).sum()
+                stats[ACTION_STAT_INDEX["gold_top5_count"]] += finite_metrics.sum()
+            if not losses:
+                continue
+            values = torch.cat(losses)
+            finite = torch.cat(valid_rows)
+            sid_sums = sid_sums.index_add(
+                0, group.sid_ids, torch.where(finite, values, torch.zeros_like(values))
+            )
+            sid_counts = sid_counts.index_add(0, group.sid_ids, finite.float())
+        sid_valid = sid_counts > 0
+        sid_means = torch.where(
+            sid_valid, sid_sums / sid_counts.clamp_min(1.0), torch.zeros_like(sid_sums) + zero
+        )
+        segment_means, _ = self._group_mean(
+            sid_means, sid_valid, plan.trie_sid_segment_ids, plan.valid_segment_count, zero
+        )
+        return segment_means.mean() if segment_means.numel() else zero
+
     def _full_vocab_log_z(
         self,
         logits: torch.Tensor,
@@ -866,6 +990,10 @@ class UserActionAuxiliaryController:
         # Macro packing currently produces one packed sequence. Keep the legacy
         # edge behavior for unsupported shapes instead of silently changing it.
         if logits.ndim not in (2, 3) or (logits.ndim == 3 and logits.shape[0] != 1):
+            if self.topk_illegal_enabled:
+                raise ValueError(
+                    "user_action_topk_illegal_enabled requires the current single packed-sequence logits shape."
+                )
             return self._compute_legacy(logits, labels, action_metadata, action_ce, macro_step)
         stats = torch.zeros(ACTION_STAT_SIZE, dtype=torch.float32, device=logits.device)
         stats[ACTION_STAT_INDEX["segments"]] = len(action_metadata)
@@ -878,11 +1006,18 @@ class UserActionAuxiliaryController:
         zero = logits.reshape(-1)[0].float() * 0.0
         plan = self._build_vectorized_plan(logits, valid, stats)
         trie_loss = self._vectorized_trie(logits, plan, stats, zero) if self.trie_enabled else zero
+        topk_loss = (
+            self._vectorized_topk_illegal(logits, labels, plan, stats, zero)
+            if self.topk_illegal_enabled
+            else zero
+        )
         if self.length_guard_enabled:
             continue_loss, stop_loss = self._vectorized_length_guard(logits, labels, plan, stats, zero)
         else:
             continue_loss, stop_loss = zero, zero
-        return self._finalize_result(stats, trie_loss, continue_loss, stop_loss, action_ce, macro_step)
+        return self._finalize_result(
+            stats, trie_loss, continue_loss, stop_loss, action_ce, macro_step, topk_loss
+        )
 
     def compute(
         self,
@@ -892,43 +1027,21 @@ class UserActionAuxiliaryController:
         action_ce: torch.Tensor,
         macro_step: int,
     ) -> ActionAuxiliaryResult:
-        if self.vectorized_enabled:
+        if self.vectorized_enabled or self.topk_illegal_enabled:
             return self._compute_vectorized(logits, labels, action_metadata, action_ce, macro_step)
         return self._compute_legacy(logits, labels, action_metadata, action_ce, macro_step)
 
 
 def action_statistics_to_metrics(statistics: torch.Tensor) -> dict[str, float]:
-    """Convert one globally reduced statistics vector into stable scalar metrics."""
+    """Expose only the four Action diagnostics needed to judge C2 behavior."""
     values = {name: float(statistics[index].item()) for index, name in enumerate(ACTION_STAT_NAMES)}
 
     def ratio(numerator: str, denominator: str) -> float:
         return values[numerator] / values[denominator] if values[denominator] else 0.0
 
-    valid = values["valid_segments"]
-    microbatches = values["action_microbatches"]
     return {
-        "a_act_segments": values["segments"],
-        "a_act_parse_ok_rate": ratio("parse_ok", "segments"),
-        "a_act_gold_in_history_rate": ratio("gold_in_history", "gold_total"),
-        "a_act_gold_duplicate_rate": values["duplicate_segments"] / valid if valid else 0.0,
-        "b_act_allowed_domain_mass": ratio("allowed_domain_sum", "allowed_domain_count"),
-        "b_act_allowed_a_mass": ratio("allowed_a_sum", "allowed_a_count"),
-        "b_act_allowed_b_mass": ratio("allowed_b_sum", "allowed_b_count"),
-        "b_act_allowed_c_mass": ratio("allowed_c_sum", "allowed_c_count"),
-        "c_act_seen_sid_removed_avg": values["removed_sid_sum"] / valid if valid else 0.0,
-        "c_act_no_early_stop_mass": ratio("no_early_stop_mass_sum", "no_early_stop_mass_count"),
-        "c_act_stop_domain_mass": ratio("stop_domain_mass_sum", "stop_domain_mass_count"),
-        "d_act_trie_loss": values["trie_loss_sum"] / microbatches if microbatches else 0.0,
-        "d_act_continue_loss": values["continue_loss_sum"] / microbatches if microbatches else 0.0,
-        "d_act_stop_loss": values["stop_loss_sum"] / microbatches if microbatches else 0.0,
-        "d_act_aux_loss": values["aux_loss_sum"] / microbatches if microbatches else 0.0,
-        "d_act_action_ce": values["action_ce_sum"] / microbatches if microbatches else 0.0,
-        "d_act_aux_to_ce_ratio": values["aux_to_ce_sum"] / microbatches if microbatches else 0.0,
-        "d_act_cap_active": values["cap_active_sum"] / microbatches if microbatches else 0.0,
-        "d_act_effective_trie_loss": values["effective_trie_sum"] / microbatches if microbatches else 0.0,
-        "d_act_effective_length_loss": values["effective_length_sum"] / microbatches if microbatches else 0.0,
-        "d_act_trie_cap_active": values["trie_cap_active_sum"] / microbatches if microbatches else 0.0,
-        "d_act_length_cap_active": values["length_cap_active_sum"] / microbatches if microbatches else 0.0,
-        "d_act_total_cap_scale": values["total_cap_scale_sum"] / microbatches if microbatches else 0.0,
-        "d_act_warmup_factor": values["warmup_sum"] / microbatches if microbatches else 0.0,
+        "a_act_legal_sid_mass": ratio("legal_sid_mass_sum", "legal_sid_mass_count"),
+        "a_act_topk_illegal_mass": ratio("topk_illegal_mass_sum", "topk_illegal_mass_count"),
+        "a_act_top1_illegal_hit_rate": ratio("top1_illegal_hit_sum", "top1_illegal_hit_count"),
+        "a_act_gold_top5_rate": ratio("gold_top5_hit_sum", "gold_top5_count"),
     }

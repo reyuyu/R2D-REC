@@ -283,6 +283,14 @@ class DataArguments:
         default=64,
         metadata={"help": "Maximum Action target rows per full-vocabulary reduction chunk."},
     )
+    user_action_topk_illegal_enabled: bool = field(
+        default=False,
+        metadata={"help": "Penalize the highest-scoring full-vocabulary illegal tokens at Action SID slots."},
+    )
+    user_action_topk_illegal_k: int = field(default=5)
+    user_action_topk_illegal_margin: float = field(default=0.0)
+    user_action_topk_illegal_weight: float = field(default=0.02)
+    user_action_topk_illegal_cap_ratio: float = field(default=0.02)
 
     def __post_init__(self):
         def split_arg(arg):
@@ -413,6 +421,7 @@ class DataArguments:
             self.user_action_no_early_stop_weight,
             self.user_action_stop_domain_weight,
             self.user_action_stop_tail_extra,
+            self.user_action_topk_illegal_weight,
         )
         if any(value < 0 for value in action_aux_strengths):
             raise ValueError("Action Select auxiliary loss weights cannot be negative.")
@@ -422,6 +431,12 @@ class DataArguments:
             raise ValueError("user_action_trie_cap_ratio must be in [0, 1].")
         if not 0 <= self.user_action_length_cap_ratio <= 1:
             raise ValueError("user_action_length_cap_ratio must be in [0, 1].")
+        if not 0 <= self.user_action_topk_illegal_cap_ratio <= 1:
+            raise ValueError("user_action_topk_illegal_cap_ratio must be in [0, 1].")
+        if self.user_action_topk_illegal_k <= 0:
+            raise ValueError("user_action_topk_illegal_k must be positive.")
+        if self.user_action_topk_illegal_margin < 0:
+            raise ValueError("user_action_topk_illegal_margin cannot be negative.")
         if (
             self.user_action_aux_split_cap_enabled
             and self.user_action_trie_cap_ratio + self.user_action_length_cap_ratio
