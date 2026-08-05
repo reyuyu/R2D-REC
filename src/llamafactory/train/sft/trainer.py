@@ -442,6 +442,31 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             total_loss = total_loss + scaled_loss.detach()
         return total_loss, statistics
 
+    def _loss_monitoring_fields(self, task_statistics: torch.Tensor) -> dict[str, float]:
+        """Return raw task means and the exact DDP-equivalent weighted macro loss."""
+        fields: dict[str, float] = {}
+        weighted_sum = 0.0
+        global_microbatch_count = 0.0
+        for task_name, task_id in TASK_IDS.items():
+            loss_sum, count = task_statistics[task_id, :2].tolist()
+            if not count:
+                continue
+            raw_mean = float(loss_sum) / float(count)
+            fields[f"loss_raw_{task_name}"] = raw_mean
+            task_weight = (
+                self.gradient_controller.task_weight(task_name)
+                if self.gradient_controller is not None
+                else 1.0
+            )
+            weighted_sum += float(task_weight) * float(loss_sum)
+            global_microbatch_count += float(count)
+        if global_microbatch_count:
+            # With global DDP microbatch scheduling this is exactly
+            # sum(weight * raw_microbatch_loss) / global_microbatch_count,
+            # the scalar whose gradient reaches the optimizer after DDP averaging.
+            fields["loss_gradnorm_total"] = weighted_sum / global_microbatch_count
+        return fields
+
     def _write_monitor_record(
         self,
         task_statistics: torch.Tensor,
@@ -464,11 +489,11 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             "macro_seconds": macro_seconds,
             "learning_rate": self.optimizer.param_groups[0]["lr"] if self.optimizer is not None else None,
         }
+        record.update(self._loss_monitoring_fields(task_statistics))
         for task_name, task_id in TASK_IDS.items():
-            loss_sum, count, *_ = task_statistics[task_id, :5].tolist()
+            count = int(task_statistics[task_id, 1].item())
             if count:
-                record[f"{task_name}_loss"] = loss_sum / count
-                record[f"{task_name}_microbatches"] = int(count)
+                record[f"{task_name}_microbatches"] = count
         if self.user_action_auxiliary is not None:
             action_metrics = action_statistics_to_metrics(task_statistics[TASK_IDS["user"], 5:])
             record.update(action_metrics)

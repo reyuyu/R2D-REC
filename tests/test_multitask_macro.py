@@ -1,5 +1,7 @@
 import copy
+from types import SimpleNamespace
 
+import torch
 from torch.utils.data import Dataset
 
 from llamafactory.data.multitask import (
@@ -14,6 +16,7 @@ from llamafactory.data.multitask import (
     split_global_microbatch_allocation,
     resolve_multitask_dataset_name,
 )
+from llamafactory.train.sft.trainer import MultiTaskMacroSeq2SeqTrainer
 
 
 class TinyDataset(Dataset):
@@ -201,6 +204,29 @@ if __name__ == "__main__":
         test()
         print(f"PASS {test.__name__}")
 
+
+
+def test_loss_monitoring_fields_keep_raw_means_and_match_gradnorm_scaled_global_loss():
+    class FixedWeights:
+        def task_weight(self, task_name):
+            return {"material": 1.5, "user": 0.5, "recommendation": 2.0, "world": 1.0}[task_name]
+
+    trainer = object.__new__(MultiTaskMacroSeq2SeqTrainer)
+    trainer.gradient_controller = FixedWeights()
+    statistics = torch.zeros((len(TASK_IDS), 5))
+    # (loss_sum, global microbatch_count): raw means are 3, 1, 5, and 2.
+    statistics[TASK_IDS["material"], :2] = torch.tensor([6.0, 2.0])
+    statistics[TASK_IDS["user"], :2] = torch.tensor([4.0, 4.0])
+    statistics[TASK_IDS["recommendation"], :2] = torch.tensor([10.0, 2.0])
+    statistics[TASK_IDS["world"], :2] = torch.tensor([2.0, 1.0])
+
+    fields = trainer._loss_monitoring_fields(statistics)
+    assert fields["loss_raw_material"] == 3.0
+    assert fields["loss_raw_user"] == 1.0
+    assert fields["loss_raw_recommendation"] == 5.0
+    assert fields["loss_raw_world"] == 2.0
+    # (1.5*6 + 0.5*4 + 2*10 + 1*2) / (2+4+2+1) = 11 / 3.
+    assert fields["loss_gradnorm_total"] == 11.0 / 3.0
 
 
 def test_multitask_dataset_version_resolution_supports_one_subtask_override():
