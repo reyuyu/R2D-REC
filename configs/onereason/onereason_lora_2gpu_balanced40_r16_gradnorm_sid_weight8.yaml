@@ -1,0 +1,95 @@
+### model
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+
+### dataset
+dataset: onereason_material_cot_train98,onereason_material_nocot_train98,onereason_user_action_nocot_train98,onereason_user_chain_cot_train98,onereason_user_chain_nocot_train98,onereason_recommendation_cot_train98,onereason_world_cot_train98,onereason_world_nocot_train98
+template: qwen3_nothink
+cutoff_len: 8192
+packing: false
+neat_packing: false
+preprocessing_num_workers: 16
+overwrite_cache: false
+multitask_macro_training: true
+multitask_train_dataset_suffix: _train98
+multitask_monitoring: true
+multitask_global_microbatch_ddp: true
+multitask_supercycle_mode: balanced_40
+# Required by the generic macro-mode validator; balanced_40 supplies the actual per-step allocation.
+multitask_microbatch_allocation:
+  material: 2
+  user: 2
+  recommendation: 3
+  world: 1
+
+### experiment A: lagged GradNorm-lite and gradient conflict monitoring
+multitask_gradient_control_enabled: true
+multitask_gradient_monitor_enabled: true
+multitask_gradnorm_enabled: true
+multitask_gradnorm_tasks:
+  - material
+  - user
+  - recommendation
+multitask_world_loss_weight: 1.0
+multitask_gradnorm_warmup_steps: 200
+multitask_gradnorm_update_interval: 10
+multitask_gradnorm_alpha: 0.5
+multitask_gradnorm_update_rate: 0.10
+multitask_gradnorm_loss_ema_beta: 0.90
+multitask_gradnorm_grad_ema_beta: 0.90
+multitask_gradnorm_weight_min: 0.5
+multitask_gradnorm_weight_max: 2.0
+multitask_gradnorm_step_ratio_min: 0.9
+multitask_gradnorm_step_ratio_max: 1.1
+multitask_grad_reference_last_n_layers: 4
+multitask_grad_reference_modules:
+  - q_proj
+  - v_proj
+  - o_proj
+  - down_proj
+multitask_grad_reference_lora_matrix: B
+
+### experiment D: normalized SID token weighted SFT CE
+sid_token_weighting_enabled: true
+sid_token_weight: 8.0
+sid_text_weight: 1.0
+
+# Action Select diagnostics only: compute the existing a_act_* legal/Top-K
+# measures, but keep every Action auxiliary-loss contribution exactly zero.
+user_action_aux_enabled: true
+user_action_history_trie_enabled: false
+user_action_length_guard_enabled: false
+user_action_topk_illegal_enabled: true
+user_action_topk_illegal_k: 5
+user_action_topk_illegal_weight: 0.0
+user_action_topk_illegal_cap_ratio: 0.0
+user_action_aux_cap_ratio: 0.0
+user_action_aux_warmup_steps: 0
+
+### output
+output_dir: /data/outputs/onereason_lora_2gpu_balanced40_r16_gradnorm_sid_weight8_lr2e4_len8k
+logging_steps: 10
+save_steps: 500
+save_total_limit: 4
+overwrite_output_dir: false
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 2.0e-4
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+max_steps: 5200
+bf16: true
+seed: 42

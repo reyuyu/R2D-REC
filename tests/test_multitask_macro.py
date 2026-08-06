@@ -8,11 +8,18 @@ from llamafactory.data.multitask import (
     SUBTASK_RATIOS,
     TASK_DATASETS,
     TASK_IDS,
+    TASK_LAYOUT_LEGACY,
+    TASK_LAYOUT_USER_SPLIT_NO_WORLD,
     Balanced40SuperCycle,
     MultiTaskMacroStepLoader,
     LengthBucketPackSampler,
     TaskDataLoader,
     TokenizedSubDataset,
+    get_action_task_name,
+    get_subtask_ratios,
+    get_task_datasets,
+    get_task_ids,
+    resolve_task_layout,
     split_global_microbatch_allocation,
     resolve_multitask_dataset_name,
 )
@@ -43,6 +50,36 @@ def make_task_loaders(rank=0, world_size=1):
             task_name,
             wrapped,
             SUBTASK_RATIOS[task_name],
+            max_pack_length=32,
+            max_segments=4,
+            seed=7,
+            rank=rank,
+            world_size=world_size,
+        )
+    return task_loaders
+
+
+def make_user_split_task_loaders(rank=0, world_size=1):
+    task_loaders = {}
+    subtask_id = 0
+    task_datasets = get_task_datasets(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    ratios = get_subtask_ratios(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    task_ids = get_task_ids(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    for task_name, subtasks in task_datasets.items():
+        wrapped = {}
+        for subtask_name in subtasks:
+            wrapped[subtask_name] = TokenizedSubDataset(
+                TinyDataset(subtask_id),
+                task_name,
+                subtask_name,
+                subtask_id,
+                task_ids=task_ids,
+            )
+            subtask_id += 1
+        task_loaders[task_name] = TaskDataLoader(
+            task_name,
+            wrapped,
+            ratios[task_name],
             max_pack_length=32,
             max_segments=4,
             seed=7,
@@ -188,6 +225,130 @@ def test_balanced_40_loader_resume_keeps_next_rank_local_microbatches():
         assert [item["sample_ids"] for item in actual[task]] == [item["sample_ids"] for item in expected[task]]
 
 
+
+
+def test_user_split_layout_maps_and_legacy_defaults_unchanged():
+    legacy_ids = get_task_ids(TASK_LAYOUT_LEGACY)
+    split_ids = get_task_ids(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    assert legacy_ids == TASK_IDS
+    assert split_ids == {"material": 0, "user_action": 1, "user_chain": 2, "recommendation": 3}
+    assert "world" not in split_ids
+    split_datasets = get_task_datasets(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    assert set(split_datasets) == {"material", "user_action", "user_chain", "recommendation"}
+    assert split_datasets["user_action"] == {"action_nocot": "onereason_user_action_nocot"}
+    assert set(split_datasets["user_chain"]) == {"cot", "nocot"}
+    ratios = get_subtask_ratios(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    assert ratios["user_action"] == {"action_nocot": 1.00}
+    assert get_action_task_name(TASK_LAYOUT_LEGACY) == "user"
+    assert get_action_task_name(TASK_LAYOUT_USER_SPLIT_NO_WORLD) == "user_action"
+
+
+def test_user_split_balanced_40_schedule_is_2222_per_step():
+    planner = Balanced40SuperCycle(seed=42, layout=TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    total = {task: 0 for task in get_task_ids(TASK_LAYOUT_USER_SPLIT_NO_WORLD)}
+    for macro_step in range(40):
+        allocation = planner.allocation_at(macro_step)
+        assert allocation == {"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 2}
+        for task, count in allocation.items():
+            total[task] += count
+    assert total == {"material": 80, "user_action": 80, "user_chain": 80, "recommendation": 80}
+
+
+def test_user_split_two_rank_loader_keeps_four_local_and_eight_global_microbatches():
+    task_ids = get_task_ids(TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+    allocation = {"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 2}
+    rank0 = MultiTaskMacroStepLoader(
+        make_user_split_task_loaders(rank=0, world_size=1),
+        allocation,
+        max_steps=4,
+        supercycle=Balanced40SuperCycle(seed=42, layout=TASK_LAYOUT_USER_SPLIT_NO_WORLD),
+        rank=0,
+        world_size=2,
+        synchronized_global_consumption=True,
+        task_ids=task_ids,
+    )
+    rank1 = MultiTaskMacroStepLoader(
+        make_user_split_task_loaders(rank=0, world_size=1),
+        allocation,
+        max_steps=4,
+        supercycle=Balanced40SuperCycle(seed=42, layout=TASK_LAYOUT_USER_SPLIT_NO_WORLD),
+        rank=1,
+        world_size=2,
+        synchronized_global_consumption=True,
+        task_ids=task_ids,
+    )
+    total = {task: 0 for task in task_ids}
+    for _ in range(4):
+        first, second = next(rank0), next(rank1)
+        assert sum(map(len, first.values())) == sum(map(len, second.values())) == 4
+        for task in task_ids:
+            total[task] += len(first.get(task, [])) + len(second.get(task, []))
+    # Four macro-steps x two global packs per task => eight packs per task overall.
+    assert total == {"material": 8, "user_action": 8, "user_chain": 8, "recommendation": 8}
+
+
+def test_data_args_validates_layout_specific_allocation_and_gradnorm_tasks():
+    from llamafactory.hparams.data_args import DataArguments
+
+    base = dict(
+        multitask_macro_training=True,
+        multitask_global_microbatch_ddp=True,
+        multitask_supercycle_mode="balanced_40",
+        multitask_max_pack_length=1024,
+    )
+    args = DataArguments(
+        **base,
+        multitask_task_layout=TASK_LAYOUT_USER_SPLIT_NO_WORLD,
+        multitask_microbatch_allocation={"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 2},
+        multitask_gradient_control_enabled=True,
+        multitask_gradient_monitor_enabled=True,
+        multitask_gradnorm_enabled=True,
+        multitask_gradnorm_tasks=["material", "user_action", "user_chain", "recommendation"],
+    )
+    assert args.multitask_task_layout == TASK_LAYOUT_USER_SPLIT_NO_WORLD
+
+    # Legacy layout must reject four-task allocation and four-task GradNorm.
+    try:
+        DataArguments(
+            **base,
+            multitask_task_layout=TASK_LAYOUT_LEGACY,
+            multitask_microbatch_allocation={"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 2},
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("legacy layout accepted user_split allocation")
+
+    try:
+        DataArguments(
+            **base,
+            multitask_task_layout=TASK_LAYOUT_LEGACY,
+            multitask_microbatch_allocation={"material": 2, "user": 2, "recommendation": 2, "world": 2},
+            multitask_gradient_control_enabled=True,
+            multitask_gradient_monitor_enabled=True,
+            multitask_gradnorm_enabled=True,
+            multitask_gradnorm_tasks=["material", "user_action", "user_chain", "recommendation"],
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("legacy layout accepted four-task GradNorm tasks")
+
+
+def test_user_split_layout_rejects_world_in_allocation():
+    from llamafactory.hparams.data_args import DataArguments
+
+    try:
+        DataArguments(
+            multitask_macro_training=True,
+            multitask_task_layout=TASK_LAYOUT_USER_SPLIT_NO_WORLD,
+            multitask_microbatch_allocation={"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 1, "world": 1},
+            multitask_max_pack_length=1024,
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("user_split layout accepted world task")
 if __name__ == "__main__":
     tests = [
         test_task_and_subtask_do_not_mix_in_v1_pack,
@@ -201,6 +362,16 @@ if __name__ == "__main__":
         test_balanced_40_loader_resume_keeps_next_rank_local_microbatches,
     ]
     for test in tests:
+        test()
+        print(f"PASS {test.__name__}")
+
+    for test in [
+        test_user_split_layout_maps_and_legacy_defaults_unchanged,
+        test_user_split_balanced_40_schedule_is_2222_per_step,
+        test_user_split_two_rank_loader_keeps_four_local_and_eight_global_microbatches,
+        test_data_args_validates_layout_specific_allocation_and_gradnorm_tasks,
+        test_user_split_layout_rejects_world_in_allocation,
+    ]:
         test()
         print(f"PASS {test.__name__}")
 

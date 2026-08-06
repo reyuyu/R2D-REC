@@ -2,7 +2,7 @@
 
 ## 状态
 
-已实现，尚未启动正式训练。C2 是在实验 C/C-fast/C1 的已有 Action Select 元数据、task-wise packing、macro-step Trainer 与 GradNorm 接线上的独立消融，不改变数据调度、LoRA 前向、模型前向次数、backward 次数或 DDP collective。
+已完成 rank16 双卡正式训练与 checkpoint 评测。C2 是在实验 C/C-fast/C1 的已有 Action Select 元数据、task-wise packing、macro-step Trainer 与 GradNorm 接线上的独立消融，不改变数据调度、LoRA 前向、模型前向次数、backward 次数或 DDP collective。
 
 ## 动机
 
@@ -92,3 +92,14 @@ user_action_aux_warmup_steps: 100
 ## 边界
 
 C2 不是约束解码，不保证推理时绝不出现非法 SID 或自然语言；它只用当前一次 teacher-forcing forward 的 logits 调整训练排序。Illegal Top-K unlikelihood、beam/search 训练和解码期约束仍未实现。
+
+## 正式 checkpoint 评测
+
+以下按物料四域、用户两项、推荐四域、world 的固定顺序记录。
+
+| Checkpoint | 总分 | 物料 4 域 | 用户 2 项 | 推荐 4 域 | World |
+| ---: | ---: | --- | --- | --- | ---: |
+| 1000 | 1.1963 | 0.0425, 0.0383, 0.0402, 0.0430 | 0.1341, 0.0843 | 0.0961, 0.1734, 0.1708, 0.1458 | 0.2279 |
+| 5200 | 1.2044 | 0.0459, 0.0376, 0.0456, 0.0418 | 0.1528, 0.0997 | 0.0821, 0.1598, 0.1694, 0.1359 | 0.2338 |
+
+C2 在既定协议下完成。其训练目标仍只约束 teacher-forcing 下的全词表非法竞争项，不能单独证明自由生成的 SID 幻觉率已经改善。

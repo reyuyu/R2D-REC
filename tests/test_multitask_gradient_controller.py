@@ -14,6 +14,7 @@ from llamafactory.train.sft.trainer import MultiTaskMacroSeq2SeqTrainer
 
 
 TASKS = ("material", "user", "recommendation")
+FOUR_TASKS = ("material", "user_action", "user_chain", "recommendation")
 
 
 class WeightHolder(nn.Module):
@@ -421,6 +422,55 @@ def test_tiny_random_qwen3_uses_real_peft_lora_b_gradient_path():
         atol=1.0e-6,
         rtol=1.0e-6,
     )
+
+
+
+
+def test_four_task_gradnorm_normalizes_to_four_and_updates_all_weights():
+    model = ToyLoraModel()
+    args = make_args(multitask_gradnorm_tasks=list(FOUR_TASKS))
+    controller = MultiTaskGradientController(model, args, loss_divisor=1)
+    counts = dict.fromkeys(FOUR_TASKS, 1)
+
+    controller.begin_macro_step(1)
+    seed_raw_norms(controller, dict.fromkeys(FOUR_TASKS, 1.0))
+    controller.finish_macro_step(dict.fromkeys(FOUR_TASKS, 2.0), counts)
+    assert not controller.baseline_initialized
+    assert controller.task_weights == dict.fromkeys(FOUR_TASKS, 1.0)
+
+    controller.begin_macro_step(2)
+    seed_raw_norms(controller, dict.fromkeys(FOUR_TASKS, 1.0))
+    controller.finish_macro_step(dict.fromkeys(FOUR_TASKS, 4.0), counts)
+    assert controller.initial_loss_baseline == dict.fromkeys(FOUR_TASKS, 3.0)
+
+    controller.begin_macro_step(3)
+    seed_raw_norms(controller, {"material": 10.0, "user_action": 1.0, "user_chain": 0.5, "recommendation": 0.1})
+    controller.finish_macro_step(
+        {"material": 12.0, "user_action": 3.0, "user_chain": 1.5, "recommendation": 0.75}, counts
+    )
+    assert controller.pending_weights is not None
+    assert set(controller.pending_weights) == set(FOUR_TASKS)
+    assert math.isclose(sum(controller.pending_weights.values()), 4.0, abs_tol=1.0e-10)
+    assert all(0.9 <= value <= 1.1 for value in controller.pending_weights.values())
+
+
+def test_four_task_ortho_order_rotates_all_tasks_deterministically():
+    model = ToyLoraModel()
+    controller = MultiTaskGradientController(
+        model,
+        make_args(
+            multitask_gradnorm_tasks=list(FOUR_TASKS),
+            multitask_ortho_enabled=True,
+            multitask_ortho_monitor_only=True,
+        ),
+        loss_divisor=1,
+    )
+    controller.current_macro_step = 0
+    assert controller._ortho_order() == FOUR_TASKS
+    controller.current_macro_step = 1
+    assert controller._ortho_order() == ("user_action", "user_chain", "recommendation", "material")
+    controller.current_macro_step = 2
+    assert controller._ortho_order() == ("user_chain", "recommendation", "material", "user_action")
 
 
 if __name__ == "__main__":

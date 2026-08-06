@@ -28,12 +28,14 @@ from transformers import Seq2SeqTrainer
 from typing_extensions import override
 
 from ...data.multitask import (
-    SUBTASK_RATIOS,
-    TASK_IDS,
     Balanced40SuperCycle,
     MultiTaskMacroStepLoader,
     TaskDataLoader,
     TaskPackCollator,
+    get_action_task_name,
+    get_subtask_ratios,
+    get_task_ids,
+    resolve_task_layout,
     split_global_microbatch_allocation,
 )
 from ...extras import logging
@@ -42,6 +44,11 @@ from ..callbacks import SaveProcessorCallback
 from ..fp8_utils import configure_fp8_environment, patch_accelerator_for_fp8, verify_fp8_status
 from ..trainer_utils import create_custom_optimizer, create_custom_scheduler
 from .multitask_gradient_controller import MultiTaskGradientController
+from .sid_token_weighting import (
+    SID_WEIGHT_STAT_SIZE,
+    SidTokenWeightingController,
+    sid_weight_statistics_to_metrics,
+)
 from .user_action_auxiliary import (
     ACTION_STAT_SIZE,
     UserActionAuxiliaryController,
@@ -272,8 +279,12 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         super().__init__(**kwargs)
         self.multitask_datasets = multitask_datasets
         self.multitask_data_args = data_args
+        self.multitask_task_layout = resolve_task_layout(getattr(data_args, "multitask_task_layout", "legacy"))
+        self.multitask_task_ids = get_task_ids(self.multitask_task_layout)
+        self.action_task_name = get_action_task_name(self.multitask_task_layout)
         self.multitask_allocation = {
-            task_name: int(data_args.multitask_microbatch_allocation[task_name]) for task_name in TASK_IDS
+            task_name: int(data_args.multitask_microbatch_allocation[task_name])
+            for task_name in self.multitask_task_ids
         }
         self.multitask_world_size = int(getattr(training_args, "world_size", 1))
         self.multitask_rank = int(getattr(training_args, "process_index", 0))
@@ -288,7 +299,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             # All ranks advance an identical global source.  Rank-local slot
             # selection happens in MultiTaskMacroStepLoader, preserving unique
             # global packs and four backward calls per rank.
-            task_active_ranks = {task_name: [0] for task_name in TASK_IDS}
+            task_active_ranks = {task_name: [0] for task_name in self.multitask_task_ids}
             rank_allocations = None
             self.local_multitask_allocation = {}
         elif self.global_microbatch_ddp:
@@ -297,15 +308,19 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             )
             self.local_multitask_allocation = rank_allocations[self.multitask_rank]
         else:
-            task_active_ranks = {task_name: list(range(self.multitask_world_size)) for task_name in TASK_IDS}
+            task_active_ranks = {
+                task_name: list(range(self.multitask_world_size)) for task_name in self.multitask_task_ids
+            }
             self.local_multitask_allocation = dict(self.multitask_allocation)
 
-        loader_task_names = TASK_IDS if self.multitask_supercycle_mode == "balanced_40" else self.local_multitask_allocation
+        loader_task_names = (
+            self.multitask_task_ids if self.multitask_supercycle_mode == "balanced_40" else self.local_multitask_allocation
+        )
         task_loaders = {
             task_name: TaskDataLoader(
                 task_name,
                 multitask_datasets[task_name],
-                SUBTASK_RATIOS[task_name],
+                get_subtask_ratios(self.multitask_task_layout)[task_name],
                 collator=TaskPackCollator(kwargs["data_collator"]),
                 max_pack_length=int(data_args.multitask_max_pack_length),
                 max_segments=data_args.multitask_max_segments_per_pack,
@@ -315,7 +330,11 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             )
             for task_name in loader_task_names
         }
-        supercycle = Balanced40SuperCycle(int(training_args.seed)) if self.multitask_supercycle_mode == "balanced_40" else None
+        supercycle = (
+            Balanced40SuperCycle(int(training_args.seed), layout=self.multitask_task_layout)
+            if self.multitask_supercycle_mode == "balanced_40"
+            else None
+        )
         self.macro_loader = MultiTaskMacroStepLoader(
             task_loaders,
             self.local_multitask_allocation,
@@ -325,6 +344,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             rank=self.multitask_rank,
             world_size=self.multitask_world_size,
             synchronized_global_consumption=self.multitask_supercycle_mode == "balanced_40",
+            task_ids=self.multitask_task_ids,
         )
         # DDP averages rank-local gradients. With a global 8-microbatch macro
         # spread over two ranks, divide each local loss by 4 so that its DDP
@@ -340,13 +360,23 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         self.user_action_auxiliary = None
         if data_args.user_action_aux_enabled:
             self.user_action_auxiliary = UserActionAuxiliaryController(self.processing_class, data_args)
-        self._task_stat_size = 5 + (ACTION_STAT_SIZE if self.user_action_auxiliary is not None else 0)
+        self.sid_token_weighting = None
+        if data_args.sid_token_weighting_enabled:
+            self.sid_token_weighting = SidTokenWeightingController(self.processing_class, data_args)
+        self._action_statistics_offset = 5
+        self._sid_weight_statistics_offset = self._action_statistics_offset + (
+            ACTION_STAT_SIZE if self.user_action_auxiliary is not None else 0
+        )
+        self._task_stat_size = self._sid_weight_statistics_offset + (
+            SID_WEIGHT_STAT_SIZE if self.sid_token_weighting is not None else 0
+        )
         self.monitoring_enabled = bool(data_args.multitask_monitoring)
         self.monitoring_path = os.path.join(training_args.output_dir, "monitor", "metrics.jsonl")
         if (
             self.monitoring_enabled
             or self.gradient_controller is not None
             or self.user_action_auxiliary is not None
+            or self.sid_token_weighting is not None
         ) and self.is_world_process_zero():
             os.makedirs(os.path.dirname(self.monitoring_path), exist_ok=True)
         # Loader state, not Trainer's default data-skip, is the source of truth on resume.
@@ -369,7 +399,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             if self.multitask_supercycle_mode == "balanced_40":
                 logger.info_rank0(
                     "Global microbatch DDP: enabled\n"
-                    "Super-cycle: balanced_40 (35 base, 3 user-boost, 1 recommendation-boost, 1 world macro)\n"
+                    f"Super-cycle: balanced_40 (task layout={self.multitask_task_layout})\n"
                     "Global microbatches per macro-step: 8\n"
                     "Per-rank microbatches: 4 (interleaved global slots, all task loaders synchronized)"
                 )
@@ -404,20 +434,30 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             )
             action_active = (
                 getattr(self, "user_action_auxiliary", None) is not None
-                and task_name == "user"
+                and task_name == getattr(self, "action_task_name", "user")
                 and microbatch["subtask_name"] == "action_nocot"
             )
+            sid_weighting = getattr(self, "sid_token_weighting", None)
+            sid_result = None
             with self.compute_loss_context_manager():
-                if action_active:
+                # Both optional objectives consume the logits from this same
+                # standard SFT forward; neither introduces another forward.
+                if action_active or sid_weighting is not None:
                     base_loss, outputs = self.compute_loss(model, model_inputs, return_outputs=True)
-                    action_result = self.user_action_auxiliary.compute(
-                        outputs.logits,
-                        model_inputs["labels"],
-                        microbatch.get("action_aux_metadata", []),
-                        base_loss,
-                        self.state.global_step,
-                    )
-                    loss = base_loss + action_result.loss
+                    if sid_weighting is not None:
+                        sid_result = sid_weighting.compute(outputs.logits, model_inputs["labels"])
+                        base_loss = sid_result.loss
+                    if action_active:
+                        action_result = self.user_action_auxiliary.compute(
+                            outputs.logits,
+                            model_inputs["labels"],
+                            microbatch.get("action_aux_metadata", []),
+                            base_loss,
+                            self.state.global_step,
+                        )
+                        loss = base_loss + action_result.loss
+                    else:
+                        loss = base_loss
                 else:
                     loss = self.compute_loss(model, model_inputs)
             if self.args.n_gpu > 1:
@@ -429,7 +469,11 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 statistics[3] += int(microbatch["supervised_token_count"])
                 statistics[4] += int(microbatch["num_segments"])
                 if action_active:
-                    statistics[5:] += action_result.statistics
+                    action_offset = getattr(self, "_action_statistics_offset", 5)
+                    statistics[action_offset : action_offset + ACTION_STAT_SIZE] += action_result.statistics
+                if sid_result is not None:
+                    sid_offset = getattr(self, "_sid_weight_statistics_offset", 5)
+                    statistics[sid_offset : sid_offset + SID_WEIGHT_STAT_SIZE] += sid_result.statistics
             weighted_loss = loss * task_weight if self.gradient_controller is not None else loss
             scaled_loss = weighted_loss / total_microbatches
             if self.gradient_controller is not None:
@@ -447,7 +491,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         fields: dict[str, float] = {}
         weighted_sum = 0.0
         global_microbatch_count = 0.0
-        for task_name, task_id in TASK_IDS.items():
+        for task_name, task_id in self.multitask_task_ids.items():
             loss_sum, count = task_statistics[task_id, :2].tolist()
             if not count:
                 continue
@@ -490,14 +534,24 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             "learning_rate": self.optimizer.param_groups[0]["lr"] if self.optimizer is not None else None,
         }
         record.update(self._loss_monitoring_fields(task_statistics))
-        for task_name, task_id in TASK_IDS.items():
+        for task_name, task_id in self.multitask_task_ids.items():
             count = int(task_statistics[task_id, 1].item())
             if count:
                 record[f"{task_name}_microbatches"] = count
         if self.user_action_auxiliary is not None:
-            action_metrics = action_statistics_to_metrics(task_statistics[TASK_IDS["user"], 5:])
+            action_offset = getattr(self, "_action_statistics_offset", 5)
+            action_metrics = action_statistics_to_metrics(
+                task_statistics[self.multitask_task_ids[self.action_task_name], action_offset : action_offset + ACTION_STAT_SIZE]
+            )
             record.update(action_metrics)
             self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **action_metrics}
+        if self.sid_token_weighting is not None:
+            sid_offset = getattr(self, "_sid_weight_statistics_offset", 5)
+            sid_metrics = sid_weight_statistics_to_metrics(
+                task_statistics[:, sid_offset : sid_offset + SID_WEIGHT_STAT_SIZE].sum(dim=0)
+            )
+            record.update(sid_metrics)
+            self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **sid_metrics}
         if gradient_metrics is not None:
             record.update(gradient_metrics)
         with open(self.monitoring_path, "a", encoding="utf-8") as file:
@@ -522,30 +576,35 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             self.gradient_controller.begin_macro_step(next_macro_step)
         logging_steps = max(1, int(self.args.logging_steps))
         write_monitor_record = (
-            self.monitoring_enabled or self.gradient_controller is not None or self.user_action_auxiliary is not None
+            self.monitoring_enabled
+            or self.gradient_controller is not None
+            or self.user_action_auxiliary is not None
+            or self.sid_token_weighting is not None
         ) and next_macro_step % logging_steps == 0
         collect_metrics = write_monitor_record or self.gradient_controller is not None
         task_statistics = (
-            torch.zeros((len(TASK_IDS), self._task_stat_size), device=self.args.device) if collect_metrics else None
+            torch.zeros((len(self.multitask_task_ids), self._task_stat_size), device=self.args.device)
+            if collect_metrics
+            else None
         )
         total_loss = torch.zeros((), device=self.args.device)
         for task_name, microbatches in inputs.items():
             if len(microbatches) != expected_allocation[task_name]:
                 raise RuntimeError(f"Unexpected microbatch count for task {task_name}.")
             for microbatch in microbatches:
-                if microbatch["task_name"] != task_name or microbatch["task_id"] != TASK_IDS[task_name]:
+                if microbatch["task_name"] != task_name or microbatch["task_id"] != self.multitask_task_ids[task_name]:
                     raise RuntimeError("Task boundary violation in multitask macro batch.")
             task_loss, task_metrics = self.compute_task_microbatches(model, task_name, microbatches, collect_metrics)
             total_loss = total_loss + task_loss
             if task_statistics is not None and task_metrics is not None:
-                task_statistics[TASK_IDS[task_name]] = task_metrics
+                task_statistics[self.multitask_task_ids[task_name]] = task_metrics
         gradient_metrics = None
         if self.gradient_controller is not None:
             local_loss_sums = {
-                task: float(task_statistics[TASK_IDS[task], 0].item()) for task in self.gradient_controller.tasks
+                task: float(task_statistics[self.multitask_task_ids[task], 0].item()) for task in self.gradient_controller.tasks
             }
             local_counts = {
-                task: int(task_statistics[TASK_IDS[task], 1].item()) for task in self.gradient_controller.tasks
+                task: int(task_statistics[self.multitask_task_ids[task], 1].item()) for task in self.gradient_controller.tasks
             }
             gradient_metrics = self.gradient_controller.finish_macro_step(local_loss_sums, local_counts)
         if self.global_microbatch_ddp:

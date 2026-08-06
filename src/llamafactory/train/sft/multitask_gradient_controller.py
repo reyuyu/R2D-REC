@@ -409,7 +409,11 @@ class MultiTaskGradientController:
         return f"{left}_{right}" if left_index < right_index else f"{right}_{left}"
 
     def _ortho_order(self) -> tuple[str, ...]:
-        base_order = tuple(task for task in ("material", "user", "recommendation") if task in self.tasks)
+        # Generic deterministic rotation over the configured GradNorm tasks.
+        # For the legacy three-task layout this keeps material -> user ->
+        # recommendation; for the Experiment E four-task layout it rotates over
+        # all four tasks so no task is permanently favored.
+        base_order = tuple(self.tasks)
         if not self.ortho_rotate_order:
             return base_order
         shift = self.current_macro_step % len(base_order)

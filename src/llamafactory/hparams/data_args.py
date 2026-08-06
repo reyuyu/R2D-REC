@@ -147,6 +147,16 @@ class DataArguments:
         default=False,
         metadata={"help": "Enable the optional four-task macro-step SFT data pipeline."},
     )
+    multitask_task_layout: str = field(
+        default="legacy",
+        metadata={
+            "help": (
+                "Multitask task layout. legacy keeps material/user/recommendation/world with user "
+                "as one task; user_split_no_world uses material/user_action/user_chain/recommendation "
+                "and drops world (Experiment E)."
+            )
+        },
+    )
     multitask_microbatch_allocation: dict[str, int] = field(
         default_factory=lambda: {"material": 2, "user": 2, "recommendation": 3, "world": 1},
         metadata={"help": "Task microbatches per macro-step when multitask macro training is enabled."},
@@ -254,6 +264,12 @@ class DataArguments:
     multitask_ortho_norm_ratio_min: float = field(default=0.7)
     multitask_ortho_norm_ratio_max: float = field(default=1.3)
     multitask_ortho_rotate_order: bool = field(default=True)
+    sid_token_weighting_enabled: bool = field(
+        default=False,
+        metadata={"help": "Use normalized weighted SFT CE for supervised <s_a_*>, <s_b_*>, and <s_c_*> tokens."},
+    )
+    sid_token_weight: float = field(default=8.0)
+    sid_text_weight: float = field(default=1.0)
     user_action_aux_enabled: bool = field(
         default=False,
         metadata={"help": "Enable the Action Select history and length auxiliary objective."},
@@ -346,9 +362,16 @@ class DataArguments:
             self.packing = True
 
         if self.multitask_macro_training:
-            required_tasks = {"material", "user", "recommendation", "world"}
+            if self.multitask_task_layout not in {"legacy", "user_split_no_world"}:
+                raise ValueError("multitask_task_layout must be either 'legacy' or 'user_split_no_world'.")
+            if self.multitask_task_layout == "user_split_no_world":
+                required_tasks = {"material", "user_action", "user_chain", "recommendation"}
+            else:
+                required_tasks = {"material", "user", "recommendation", "world"}
             if set(self.multitask_microbatch_allocation) != required_tasks:
-                raise ValueError("multitask_microbatch_allocation must contain material, user, recommendation and world.")
+                raise ValueError(
+                    f"multitask_microbatch_allocation must contain {sorted(required_tasks)} for layout {self.multitask_task_layout!r}."
+                )
             if any(value <= 0 for value in self.multitask_microbatch_allocation.values()):
                 raise ValueError("multitask_microbatch_allocation values must be positive.")
             if sum(self.multitask_microbatch_allocation.values()) != 8:
@@ -370,9 +393,15 @@ class DataArguments:
             raise ValueError("multitask_gradient_monitor_enabled requires multitask_gradient_control_enabled=true.")
         if self.multitask_gradnorm_enabled and not self.multitask_gradient_monitor_enabled:
             raise ValueError("multitask_gradnorm_enabled requires multitask_gradient_monitor_enabled=true.")
-        if set(self.multitask_gradnorm_tasks) != {"material", "user", "recommendation"}:
-            raise ValueError("multitask_gradnorm_tasks must contain material, user and recommendation exactly once.")
-        if len(self.multitask_gradnorm_tasks) != 3:
+        if self.multitask_task_layout == "user_split_no_world":
+            expected_gradnorm_tasks = {"material", "user_action", "user_chain", "recommendation"}
+        else:
+            expected_gradnorm_tasks = {"material", "user", "recommendation"}
+        if set(self.multitask_gradnorm_tasks) != expected_gradnorm_tasks:
+            raise ValueError(
+                f"multitask_gradnorm_tasks must contain {sorted(expected_gradnorm_tasks)} exactly once for layout {self.multitask_task_layout!r}."
+            )
+        if len(self.multitask_gradnorm_tasks) != len(expected_gradnorm_tasks):
             raise ValueError("multitask_gradnorm_tasks cannot contain duplicates.")
         if self.multitask_world_loss_weight <= 0:
             raise ValueError("multitask_world_loss_weight must be positive.")
@@ -412,6 +441,10 @@ class DataArguments:
             raise ValueError("multitask_ortho_cosine_ema_beta must be in [0, 1).")
         if not 0 < self.multitask_ortho_norm_ratio_min <= 1 <= self.multitask_ortho_norm_ratio_max:
             raise ValueError("Ortho norm-ratio bounds must be positive and include 1.0.")
+        if self.sid_token_weighting_enabled and not self.multitask_macro_training:
+            raise ValueError("sid_token_weighting_enabled requires multitask_macro_training=true.")
+        if self.sid_token_weight <= 0 or self.sid_text_weight <= 0:
+            raise ValueError("sid_token_weight and sid_text_weight must be positive.")
         if self.user_action_aux_enabled and not self.multitask_macro_training:
             raise ValueError("user_action_aux_enabled requires multitask_macro_training=true.")
         action_aux_strengths = (

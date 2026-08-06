@@ -50,10 +50,66 @@ SUBTASK_RATIOS = {
 }
 LENGTH_BUCKETS = (512, 1024, 2048, 4096, 8192, 16384, 32768)
 
+TASK_LAYOUT_LEGACY = "legacy"
+TASK_LAYOUT_USER_SPLIT_NO_WORLD = "user_split_no_world"
+TASK_LAYOUTS = (TASK_LAYOUT_LEGACY, TASK_LAYOUT_USER_SPLIT_NO_WORLD)
+
+# Experiment E ablation layout: split user into user_action / user_chain and
+# drop the world task entirely. The legacy maps above remain the module-level
+# defaults so every existing caller and test keeps its current semantics when
+# the new option is not enabled.
+TASK_DATASETS_BY_LAYOUT: dict[str, dict[str, dict[str, str]]] = {
+    TASK_LAYOUT_LEGACY: TASK_DATASETS,
+    TASK_LAYOUT_USER_SPLIT_NO_WORLD: {
+        "material": {"cot": "onereason_material_cot", "nocot": "onereason_material_nocot"},
+        "user_action": {"action_nocot": "onereason_user_action_nocot"},
+        "user_chain": {"cot": "onereason_user_chain_cot", "nocot": "onereason_user_chain_nocot"},
+        "recommendation": {"cot": "onereason_recommendation_cot"},
+    },
+}
+TASK_IDS_BY_LAYOUT: dict[str, dict[str, int]] = {
+    TASK_LAYOUT_LEGACY: TASK_IDS,
+    TASK_LAYOUT_USER_SPLIT_NO_WORLD: {"material": 0, "user_action": 1, "user_chain": 2, "recommendation": 3},
+}
+SUBTASK_RATIOS_BY_LAYOUT: dict[str, dict[str, dict[str, float]]] = {
+    TASK_LAYOUT_LEGACY: SUBTASK_RATIOS,
+    TASK_LAYOUT_USER_SPLIT_NO_WORLD: {
+        "material": {"cot": 0.50, "nocot": 0.50},
+        "user_action": {"action_nocot": 1.00},
+        "user_chain": {"cot": 0.50, "nocot": 0.50},
+        "recommendation": {"cot": 1.00},
+    },
+}
+
+
+def resolve_task_layout(layout: str) -> str:
+    if layout not in TASK_LAYOUTS:
+        raise ValueError(f"Unknown multitask_task_layout {layout!r}; expected one of {TASK_LAYOUTS}.")
+    return layout
+
+
+def get_task_ids(layout: str = TASK_LAYOUT_LEGACY) -> dict[str, int]:
+    return dict(TASK_IDS_BY_LAYOUT[resolve_task_layout(layout)])
+
+
+def get_task_datasets(layout: str = TASK_LAYOUT_LEGACY) -> dict[str, dict[str, str]]:
+    return TASK_DATASETS_BY_LAYOUT[resolve_task_layout(layout)]
+
+
+def get_subtask_ratios(layout: str = TASK_LAYOUT_LEGACY) -> dict[str, dict[str, float]]:
+    return SUBTASK_RATIOS_BY_LAYOUT[resolve_task_layout(layout)]
+
+
+def get_action_task_name(layout: str = TASK_LAYOUT_LEGACY) -> str:
+    # Return the task that owns the Action Select subtask for a layout.
+    task_ids = get_task_ids(layout)
+    return "user_action" if "user_action" in task_ids else "user"
+
 
 def resolve_multitask_dataset_name(base_dataset_name: str, data_args) -> str:
     """Resolve a logical subdataset to a versioned registry name without changing task identity."""
-    valid_names = {name for subtasks in TASK_DATASETS.values() for name in subtasks.values()}
+    layout = getattr(data_args, "multitask_task_layout", TASK_LAYOUT_LEGACY)
+    valid_names = {name for subtasks in get_task_datasets(layout).values() for name in subtasks.values()}
     overrides = data_args.multitask_dataset_version_overrides
     unknown_overrides = set(overrides) - valid_names
     if unknown_overrides:
@@ -77,10 +133,11 @@ class TokenizedSubDataset(Dataset):
         subtask_name: str,
         subtask_id: int,
         metadata_parser: ActionSelectMetadataParser | None = None,
+        task_ids: Mapping[str, int] | None = None,
     ):
         self.dataset = dataset
         self.task_name = task_name
-        self.task_id = TASK_IDS[task_name]
+        self.task_id = (task_ids or TASK_IDS)[task_name]
         self.subtask_name = subtask_name
         self.subtask_id = subtask_id
         self.metadata_parser = metadata_parser
@@ -375,10 +432,16 @@ class Balanced40SuperCycle:
         (1, {"material": 2, "user": 3, "recommendation": 2, "world": 1}),
     )
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, layout: str = TASK_LAYOUT_LEGACY):
         self.seed = seed
+        self.layout = resolve_task_layout(layout)
 
     def allocation_at(self, macro_step: int) -> dict[str, int]:
+        if self.layout == TASK_LAYOUT_USER_SPLIT_NO_WORLD:
+            # Experiment E plan A: every macro-step carries exactly two packs
+            # per top-level task, so a 40-step cycle totals 80/80/80/80 and
+            # GradNorm always sees all four tasks in the same macro-step.
+            return {"material": 2, "user_action": 2, "user_chain": 2, "recommendation": 2}
         cycle, position = divmod(macro_step, self.CYCLE_LENGTH)
         entries = [dict(allocation) for repeats, allocation in self._PATTERN for _ in range(repeats)]
         random.Random(self.seed + cycle).shuffle(entries)
@@ -404,18 +467,20 @@ class MultiTaskMacroStepLoader:
         rank: int = 0,
         world_size: int = 1,
         synchronized_global_consumption: bool = False,
+        task_ids: Mapping[str, int] | None = None,
     ):
         self.task_loaders, self.allocation, self.max_steps = dict(task_loaders), dict(allocation), max_steps
         self.global_allocation = dict(global_allocation or allocation)
         self.supercycle, self.rank, self.world_size = supercycle, rank, world_size
         self.synchronized_global_consumption = synchronized_global_consumption
+        self.task_ids = dict(task_ids) if task_ids is not None else dict(TASK_IDS)
         self.macro_step = 0
         if sum(self.global_allocation.values()) != 8:
             raise ValueError("multitask_microbatch_allocation must sum to 8.")
         if self.synchronized_global_consumption:
             if self.world_size <= 0 or 8 % self.world_size:
                 raise ValueError("Global macro slots must divide evenly over DDP ranks.")
-            if set(self.task_loaders) != set(TASK_IDS):
+            if set(self.task_loaders) != set(self.task_ids):
                 raise ValueError("Synchronized global consumption requires loaders for all four tasks.")
         self.current_global_allocation = dict(self.global_allocation)
         self.current_local_allocation = dict(self.allocation)
@@ -436,7 +501,7 @@ class MultiTaskMacroStepLoader:
         else:
             self.current_global_allocation = self.supercycle.allocation_at(self.macro_step)
             task_slots = [
-                task for task in TASK_IDS for _ in range(self.current_global_allocation[task])
+                task for task in self.task_ids for _ in range(self.current_global_allocation[task])
             ]
             # Every rank advances the same global task/pack queue.  It only
             # forwards its interleaved slots, so two ranks consume all eight
@@ -470,20 +535,25 @@ class MultiTaskMacroStepLoader:
 
 def build_multitask_datasets(template, model_args, data_args, training_args, tokenizer, processor=None):
     suffix = data_args.multitask_train_dataset_suffix
-    # dataset remains the canonical list of eight logical datasets. Version
+    layout = resolve_task_layout(getattr(data_args, "multitask_task_layout", TASK_LAYOUT_LEGACY))
+    task_datasets = get_task_datasets(layout)
+    task_ids = get_task_ids(layout)
+    # dataset remains the canonical list of registered logical datasets. Version
     # selection happens below so a one-subtask ablation does not need to rewrite
     # the whole task/sampler declaration.
-    expected = {name + suffix for subtasks in TASK_DATASETS.values() for name in subtasks.values()}
+    expected = {name + suffix for subtasks in task_datasets.values() for name in subtasks.values()}
     provided = set(data_args.dataset or [])
     missing = expected - provided
     if missing:
-        raise ValueError(f"multitask_macro_training requires all eight registered datasets; missing: {sorted(missing)}")
+        raise ValueError(
+            f"multitask_macro_training requires all registered datasets for layout {layout!r}; missing: {sorted(missing)}"
+        )
     groups: dict[str, dict[str, TokenizedSubDataset]] = {}
     action_metadata_parser = None
     if data_args.user_action_aux_enabled:
         action_metadata_parser = ActionSelectMetadataParser(tokenizer)
     subtask_id = 0
-    for task_name, subtasks in TASK_DATASETS.items():
+    for task_name, subtasks in task_datasets.items():
         groups[task_name] = {}
         for subtask_name, base_dataset_name in subtasks.items():
             dataset_name = resolve_multitask_dataset_name(base_dataset_name, data_args)
@@ -491,11 +561,14 @@ def build_multitask_datasets(template, model_args, data_args, training_args, tok
             task_args.dataset, task_args.eval_dataset, task_args.val_size = [dataset_name], None, 0.0
             task_args.packing, task_args.neat_packing, task_args.tokenized_path = False, False, None
             module = get_dataset(template, model_args, task_args, training_args, "sft", tokenizer, processor)
-            metadata_parser = (
-                action_metadata_parser if task_name == "user" and subtask_name == "action_nocot" else None
-            )
+            metadata_parser = action_metadata_parser if subtask_name == "action_nocot" else None
             groups[task_name][subtask_name] = TokenizedSubDataset(
-                module["train_dataset"], task_name, subtask_name, subtask_id, metadata_parser
+                module["train_dataset"],
+                task_name,
+                subtask_name,
+                subtask_id,
+                metadata_parser,
+                task_ids=task_ids,
             )
             subtask_id += 1
     return groups
