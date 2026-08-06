@@ -1,95 +1,70 @@
-# OneReason 多任务 SFT
+# OneReason 多任务 SFT 工程
 
-用于微调 `OpenOneRec/OneReason-8B-pretrain-competition` 的多任务 SFT 工作区，基于 [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) 扩展。
+本仓库用于微调 `OpenOneRec/OneReason-8B-pretrain-competition`，基于 LLaMA-Factory 扩展多任务 SFT、GradNorm、梯度冲突监控、Action Select 辅助目标和可复现的数据版本管理。
 
-仓库保留训练代码、配置、测试、实验说明和评分记录；不包含模型权重、原始数据、预测、日志、checkpoint 或任何凭据。
-
-> 代码基线：LLaMA-Factory commit `01398eb`。
+仓库只保存代码、配置、测试、实验记录和数据版本元信息，不保存模型权重、JSONL 数据、日志、预测结果、检查点或任何凭据。
 
 ## 项目导航
 
 - [多任务设计说明](./ONEREASON_MULTITASK.md)
-- [数据版本管理](./ONEREASON_DATASET_VERSIONS.md)
+- [数据版本管理说明](./ONEREASON_DATASET_VERSIONS.md)
 - [实验记录与评分](./实验记录/README.md)
+- [竞赛评测说明](./README_ONEREASON_COMPETITION.md)
 - [数据集注册表](./data/dataset_info.json)
+- [数据版本清单](./data/onereason_dataset_versions.json)
 
-## 训练设计
+## 训练任务
 
-| 顶层任务 | 子任务 | 训练内容 |
+| 顶层任务 | 子任务 | 内容 |
 | --- | --- | --- |
-| `material` | CoT、non-CoT | 广告、商品、直播、视频的 SID/描述理解 |
-| `user` | action non-CoT、chain CoT/non-CoT | 用户行为选择与多跳逻辑链 |
-| `recommendation` | CoT | 推荐用户画像与内容理解 |
-| `world` | CoT、non-CoT | 通用世界知识 SFT |
+| `material` | `cot`、`nocot` | 广告、商品、直播、视频的 SID 与描述理解 |
+| `user` | `action_nocot`、`chain_cot`、`chain_nocot` | 用户行为选择与多跳逻辑链 |
+| `recommendation` | `cot` | 用户画像与内容推荐理解 |
+| `world` | `cot`、`nocot` | 通用世界知识 SFT |
 
-训练使用自定义多任务 macro-step：全局每个优化器更新对应 8 个逻辑 microbatch，双卡 DDP 时每个 rank 处理其中 4 个。任务调度使用 `balanced_40`，每个 macro-step 只执行一次 optimizer/scheduler step。
+默认多任务训练每个 macro-step 使用 8 个全局 microbatch；双卡 DDP 时每个 rank 处理其中 4 个。task-wise packing 只在同一子任务内进行，segment 之间使用独立的位置和注意力边界。
 
-task-wise packing 仅发生在同一子任务内；每个 segment 重置 `position_ids`，并通过 FlashAttention-2 的变长序列边界实现 block-diagonal attention 隔离。配置中的 `packing: false` 只表示关闭上游原生 packing，本项目的自定义 packing 仍然启用。
+实验 E 提供可回退的四任务布局：`material`、`user_action`、`user_chain`、`recommendation`，不训练 `world`，配置见 `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_expE_user_split_no_world.yaml`。
 
-## 实验
+## 实验索引
 
-| 实验 | 内容 | 说明 |
+| 实验 | 主要改动 | 记录 |
 | --- | --- | --- |
-| [A](./实验记录/实验A_GradNorm-lite.md) | Lagged GradNorm-lite | 三个主任务动态权重、梯度 norm/cosine 监控，world 固定权重 |
-| [A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md) | GradNorm 对照 | 学习率、LoRA dropout、数据版本与选择性 gradient checkpointing 消融 |
-| [A1](./实验记录/实验A1_think_prompt-GradNorm.md) | think/no_think 提示 | 思考提示数据版本对照 |
-| [B](./实验记录/实验B_GradNorm-Ortho-LoRA.md) | 局部 Ortho-LoRA | 基于同步任务梯度的 LoRA-B PCGrad 风格投影 |
-| [C](./实验记录/实验C_Action-Select历史约束.md) | Action Select 辅助损失 | 历史 SID Trie、完整 SID 去重、Continue/Stop 平衡 |
-| [C-fast](./实验记录/实验C-fast_Action-Select向量化优化.md) | 向量化 Action auxiliary | C 的等价加速实现 |
-| [C1](./实验记录/实验C1_Trie优先消融.md) | Trie 优先 | 负向消融：1000 到 2500 checkpoint 总分由 1.1824 降至 1.1346，不作为后续基线 |
-| [C2](./实验记录/实验C2_全词表TopK非法SID惩罚.md) | 全词表 Top-K 非法 SID | 动态完整 SID 合法集上的全词表非法竞争惩罚，当前双卡训练中 |
+| A | Lagged GradNorm-lite 与梯度监控 | [实验 A](./实验记录/实验A_GradNorm-lite.md) |
+| A0 | 学习率、LoRA dropout 与数据版本消融 | [实验 A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md) |
+| A1 | `think`/`no_think` 提示补充 | [实验 A1](./实验记录/实验A1_think_prompt-GradNorm.md) |
+| B | 局部 LoRA 梯度冲突投影 | [实验 B](./实验记录/实验B_GradNorm-Ortho-LoRA.md) |
+| C | Action Select 历史 Trie、完整 SID 去重、继续/终止平衡 | [实验 C](./实验记录/实验C_Action-Select历史约束.md) |
+| C-fast | Action Select 辅助损失向量化 | [实验 C-fast](./实验记录/实验C-fast_Action-Select向量化优化.md) |
+| C1 | Trie 优先消融，已判定为负向优化 | [实验 C1](./实验记录/实验C1_Trie优先消融.md) |
+| C2 | 全词表 Top-5 非法 SID 惩罚 | [实验 C2](./实验记录/实验C2_全词表TopK非法SID惩罚.md) |
+| C3 | C2 与 SID 加权 CE 融合 | [实验 C3](./实验记录/实验C3_TopK非法SID与SID加权.md) |
+| D | 监督 SID token 归一化加权 CE | [实验 D](./实验记录/实验D_SID加权SFT.md) |
+| E | 四任务 GradNorm，删除 world | [实验 E](./实验记录/实验E_四任务GradNorm无World.md) |
 
-实验 B 保留为实现和消融基线；正式实验的状态、评测结果与限制以[实验记录](./实验记录/README.md)为准。
+所有 checkpoint 分数、训练状态、已知限制和最终结论以实验记录为准。
 
-## 常用配置
+## 数据版本管理
 
-| 用途 | 配置 |
-| --- | --- |
-| rank16 基线 | `configs/onereason/onereason_lora_2gpu_balanced40_r16.yaml` |
-| 实验 A GradNorm | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm.yaml` |
-| A0-v2 重跑 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_a0_v2_think_prompt_recommendation_cot_complete_gc75_lr2e4_dropout005.yaml` |
-| 实验 C-fast | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_action_aux_v1_vectorized.yaml` |
-| 实验 C1 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_action_aux_c1_trie_priority.yaml` |
-| 实验 C2 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_action_aux_c2_topk_illegal.yaml` |
+新的训练统一使用全量训练数据，不再从训练数据中切出验证集。历史 `*_train98` 和 `dev2` 文件只用于复现实验，不参与新的全量版本。
 
-典型双卡启动：
-
-```bash
-CUDA_VISIBLE_DEVICES=0,1 FORCE_TORCHRUN=1 NCCL_SOCKET_IFNAME=lo \
-  llamafactory-cli train configs/onereason/<experiment>.yaml
-```
-
-在 `multitask_macro_training: true` 模式中，`gradient_accumulation_steps` 必须保持为 `1`。恢复训练时使用相同 YAML 与对应输出目录中的完整 checkpoint。
-
-## 监控指标
-
-后续 macro-step 监控会同时记录各任务的原始 microbatch loss：`loss_raw_material`、`loss_raw_user`、`loss_raw_recommendation`、`loss_raw_world`。
-
-并记录 `loss_gradnorm_total`：各 global microbatch 的 `task_weight × raw_loss` 之和除以 global microbatch 数。它与当前 GradNorm 加权、DDP 平均后传给优化器的 macro loss 标量一致。
-
-C2 的 Action Select 另记录全词表动态合法 SID 质量、Top-K 非法质量、Top-1 非法率和 gold Top-5 率。
-## 验证与边界
-
-多任务 macro-step、packing attention、GradNorm、Ortho 与 Action Select 辅助损失均有单卡测试；梯度控制器与 Action auxiliary 另有双卡 smoke test。修改训练语义前应先阅读对应实验文档并运行相关测试。
-
-本项目保留上游 LLaMA-Factory 的 Apache-2.0 许可证。模型与比赛数据的使用须遵守各自许可证与赛事规则。
-
-## OneReason Dataset Version Management
-
-OneReason training data is managed as eight stable logical subdatasets. The raw files stay on the training server and are not committed to GitHub. New training configurations use the full `/data/lf_data` sources; historical `*_train98` files remain only for reproducing old experiments.
-
-The managed version graph is recorded in [`data/onereason_dataset_versions.json`](data/onereason_dataset_versions.json):
+版本清单使用父版本继承：
 
 ```text
 raw_all
   -> v1_thought_prompt_all
        -> v2_recommendation_cot_complete_all
-            -> v3_material_clean  # example: material-only patch
+            -> v3_material_clean
 ```
 
-Each version stores only changed subdatasets and inherits all other files from its parent. A material-only cleaning therefore does not copy or alter recommendation, user, or world data.
+- `raw_all`：服务器 `/data/lf_data` 下的 8 个原始全量子集。
+- `v1_thought_prompt_all`：按 CoT/non-CoT 追加 `/think` 或 `/no_think`，不改变样本数量。
+- `v2_recommendation_cot_complete_all`：只替换懂推荐，保留含 `【兴趣归纳】`、`【行为模式】`、`【预测总结】` 的样本。
+- `v3_material_clean`：示例版本，只覆盖懂物料，其余子集从父版本继承。
 
-Create and audit the server-side versions with:
+实际 JSONL 只保存在服务器，不上传 GitHub。代码、注册别名、样本数和 SHA-256 摘要保存在 [数据版本清单](./data/onereason_dataset_versions.json) 中。
+
+### 初始化与审计
 
 ```bash
 cd /app/LLaMA-Factory
@@ -101,18 +76,22 @@ python scripts/manage_onereason_datasets.py create-recommendation-cot-complete \
 python scripts/manage_onereason_datasets.py audit --verify-hashes
 ```
 
-To register only a cleaned material pair:
+### 只替换一个子数据集
+
+先在 `/data/clean/` 生成并检查清洗结果，再注册 patch。下面的命令只会复制两个懂物料文件：
 
 ```bash
 python scripts/manage_onereason_datasets.py register-version \
   --version v3_material_clean \
   --parent v2_recommendation_cot_complete_all \
-  --description "material-only cleaning" \
+  --description "懂物料清洗" \
   --patch onereason_material_cot=/data/clean/onereason_material_cot.jsonl \
   --patch onereason_material_nocot=/data/clean/onereason_material_nocot.jsonl
 ```
 
-Use the version in a training YAML while keeping the eight logical names unsuffixed:
+### 在训练配置中选择版本
+
+训练 YAML 保持 8 个逻辑数据集名称不变，不使用 `_train98` 后缀：
 
 ```yaml
 dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_world_cot,onereason_world_nocot
@@ -122,4 +101,52 @@ multitask_dataset_version_overrides: {}
 multitask_dataset_version_manifest: data/onereason_dataset_versions.json
 ```
 
-The resolver follows the parent chain before loading datasets, so changing one logical name does not require rewriting the other seven registrations. See [`ONEREASON_DATASET_VERSIONS.md`](ONEREASON_DATASET_VERSIONS.md) for the full policy.
+只想替换懂物料时，将 `multitask_dataset_version` 改为 `v3_material_clean` 即可，其他 6 个子集自动从父版本解析。
+
+## 常用配置与启动
+
+| 用途 | 配置 |
+| --- | --- |
+| rank16 基线 | `configs/onereason/onereason_lora_2gpu_balanced40_r16.yaml` |
+| 实验 A | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm.yaml` |
+| 全量数据 V2 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_alltrain_v2.yaml` |
+| 实验 C2 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_action_aux_c2_topk_illegal.yaml` |
+| 实验 E | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_expE_user_split_no_world.yaml` |
+
+双卡启动示例：
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1 FORCE_TORCHRUN=1 NCCL_SOCKET_IFNAME=lo \
+  llamafactory-cli train configs/onereason/<实验配置>.yaml
+```
+
+多任务 macro 模式下 `gradient_accumulation_steps` 保持为 `1`。从检查点恢复时，继续使用原配置和对应输出目录中的完整检查点。
+
+## 监控指标
+
+训练日志保留各任务原始损失、GradNorm 加权总损失、任务权重、梯度范数、梯度余弦冲突和 DDP 一致性信息。Action Select 重点监控动态合法 SID 质量、Top-K 非法质量、Top-1 非法命中率和 gold Top-5 命中率。
+
+SID 加权实验额外记录 SID token 数量、监督 token 比例、SID token CE、普通文本 CE 和 SID 加权质量占比。
+
+## 测试
+
+```bash
+cd /app/LLaMA-Factory
+PYTHONPATH=src python3 tests/test_multitask_macro.py
+PYTHONPATH=src python3 tests/test_multitask_gradient_controller.py
+PYTHONPATH=src python3 tests/test_sid_token_weighting.py
+PYTHONPATH=src python3 tests/test_onereason_dataset_versions.py
+```
+
+四任务布局另有双进程 CPU/Gloo smoke test；完整 5200 步训练不会作为测试的一部分自动启动。
+
+## 工程边界
+
+- 不上传原始数据、模型权重、checkpoint、日志和密钥。
+- 不改变既有 LoRA 结构、模型 forward、optimizer、scheduler 或任务采样语义。
+- Action 辅助损失和 SID 加权 CE 都保持可关闭，并继续参与原有任务 raw loss 与 GradNorm 链路。
+- 修改数据版本后先执行 `audit --verify-hashes`，再启动训练。
+
+## 许可证
+
+代码沿用 LLaMA-Factory 的 Apache-2.0 许可证；模型和竞赛数据须遵守各自许可证及赛事规则。
