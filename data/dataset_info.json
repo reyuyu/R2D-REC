@@ -1075,5 +1075,95 @@
       "response": "output",
       "history": "history"
     }
+  },
+  "onereason_material_cot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_material_cot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_material_nocot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_material_nocot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_user_action_nocot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_action_nocot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_user_chain_cot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_cot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_user_chain_nocot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_nocot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_recommendation_cot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_recommendation_cot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_world_cot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_world_cot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_world_nocot_v1_thought_prompt_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_world_nocot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_recommendation_cot_v2_recommendation_cot_complete_all": {
+    "file_name": "/data/lf_data_versions/alltrain/v2_recommendation_cot_complete_all/onereason_recommendation_cot.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
   }
 }

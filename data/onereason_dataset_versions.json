@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "logical_datasets": [
+    "onereason_material_cot",
+    "onereason_material_nocot",
+    "onereason_user_action_nocot",
+    "onereason_user_chain_cot",
+    "onereason_user_chain_nocot",
+    "onereason_recommendation_cot",
+    "onereason_world_cot",
+    "onereason_world_nocot"
+  ],
+  "versions": {
+    "raw_all": {
+      "parent": null,
+      "created_at_utc": "2026-08-06T17:21:34Z",
+      "description": "Immutable full source datasets; no validation split.",
+      "overrides": {
+        "onereason_material_cot": {
+          "registry_name": "onereason_material_cot",
+          "file_name": "/data/lf_data/onereason_material_cot.jsonl",
+          "records": 355830,
+          "sha256": "eeb0ccf5f15ac0773fb7e2cb21ef9002eee30446ddd51093163cef4f756b41b3"
+        },
+        "onereason_material_nocot": {
+          "registry_name": "onereason_material_nocot",
+          "file_name": "/data/lf_data/onereason_material_nocot.jsonl",
+          "records": 355850,
+          "sha256": "71d3352a919d7fa11d267c125511bdb6b39ce0ed3d66a2ddc72c21495f952893"
+        },
+        "onereason_user_action_nocot": {
+          "registry_name": "onereason_user_action_nocot",
+          "file_name": "/data/lf_data/onereason_user_action_nocot.jsonl",
+          "records": 16657,
+          "sha256": "855b1e62abe34bbfda8d992d07ad691fe6d51402d02c90d6c9d11b5a912c4f72"
+        },
+        "onereason_user_chain_cot": {
+          "registry_name": "onereason_user_chain_cot",
+          "file_name": "/data/lf_data/onereason_user_chain_cot.jsonl",
+          "records": 8339,
+          "sha256": "5ff9ef6cb0dce1051fea2b9bc3d579eadbe6898044f03118b936c0d3ad692faf"
+        },
+        "onereason_user_chain_nocot": {
+          "registry_name": "onereason_user_chain_nocot",
+          "file_name": "/data/lf_data/onereason_user_chain_nocot.jsonl",
+          "records": 7852,
+          "sha256": "e69305900dd47af21a13baa22af3268c205622093c4cde5c114b844d11488d97"
+        },
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot",
+          "file_name": "/data/lf_data/onereason_recommendation_cot.jsonl",
+          "records": 48269,
+          "sha256": "d6f67249a5d55960e5dae5da58ca9235026aa150b867db38b704f364473bfd72"
+        },
+        "onereason_world_cot": {
+          "registry_name": "onereason_world_cot",
+          "file_name": "/data/lf_data/onereason_world_cot.jsonl",
+          "records": 220,
+          "sha256": "15b8aa345cfabe2227049efe574297a7632e7d04ad1c65f6057ef09e8d118c37"
+        },
+        "onereason_world_nocot": {
+          "registry_name": "onereason_world_nocot",
+          "file_name": "/data/lf_data/onereason_world_nocot.jsonl",
+          "records": 1984,
+          "sha256": "d4677efb327dda53213670dfb955d2490fab111e58ef767b82c6103b93c7dc69"
+        }
+      }
+    },
+    "v1_thought_prompt_all": {
+      "parent": "raw_all",
+      "created_at_utc": "2026-08-06T17:22:00Z",
+      "description": "Full-training V1: append think or no_think prompt marker without validation split.",
+      "overrides": {
+        "onereason_material_cot": {
+          "registry_name": "onereason_material_cot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_material_cot.jsonl",
+          "records": 355830,
+          "sha256": "303bf9c1a22f0f7303ab09af8d86d78fd38e22c18f374a8c3321c917ff632a65",
+          "appended": 355830,
+          "already_present": 0
+        },
+        "onereason_material_nocot": {
+          "registry_name": "onereason_material_nocot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_material_nocot.jsonl",
+          "records": 355850,
+          "sha256": "fb7f465a580af86843e726d27a019bdf7180127e70e65f08a61468ab03798c7d",
+          "appended": 355850,
+          "already_present": 0
+        },
+        "onereason_user_action_nocot": {
+          "registry_name": "onereason_user_action_nocot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_action_nocot.jsonl",
+          "records": 16657,
+          "sha256": "e709a42f4f5431da9c7471aa3bfb633fc1ddce971768ae170f7d5b8af03bf475",
+          "appended": 16657,
+          "already_present": 0
+        },
+        "onereason_user_chain_cot": {
+          "registry_name": "onereason_user_chain_cot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_cot.jsonl",
+          "records": 8339,
+          "sha256": "306ab1c29ab48f03b85b1be265f66d5b40b8d81a79686733a4db710c26708b57",
+          "appended": 8339,
+          "already_present": 0
+        },
+        "onereason_user_chain_nocot": {
+          "registry_name": "onereason_user_chain_nocot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_nocot.jsonl",
+          "records": 7852,
+          "sha256": "f83c0285da21e1484529a9bf328bc3a8572da9611ca21e8db0b4ec12454e248c",
+          "appended": 7852,
+          "already_present": 0
+        },
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_recommendation_cot.jsonl",
+          "records": 48269,
+          "sha256": "909f061ded202e7f22b0293e2c213e05851b2d50fc3d9b203e19740b6cce442a",
+          "appended": 48269,
+          "already_present": 0
+        },
+        "onereason_world_cot": {
+          "registry_name": "onereason_world_cot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_world_cot.jsonl",
+          "records": 220,
+          "sha256": "b96508c1675cc74da3644e335ac17aeb5ab40668a2951480ee4f00c55c696df0",
+          "appended": 0,
+          "already_present": 220
+        },
+        "onereason_world_nocot": {
+          "registry_name": "onereason_world_nocot_v1_thought_prompt_all",
+          "file_name": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_world_nocot.jsonl",
+          "records": 1984,
+          "sha256": "da85b5e43e95121e6216bf46a3b8585ea1ee210f38b1b94df2634a9aace60c6a",
+          "appended": 0,
+          "already_present": 1984
+        }
+      }
+    },
+    "v2_recommendation_cot_complete_all": {
+      "parent": "v1_thought_prompt_all",
+      "created_at_utc": "2026-08-06T17:28:16Z",
+      "description": "Full-training V2: retain only recommendation CoT answers containing all three required sections.",
+      "overrides": {
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot_v2_recommendation_cot_complete_all",
+          "file_name": "/data/lf_data_versions/alltrain/v2_recommendation_cot_complete_all/onereason_recommendation_cot.jsonl",
+          "records": 41661,
+          "sha256": "ebf724cc9db4ff8ca43fd30ca868a8f553fbfa02b487e1497bb26ad0d1dcc501",
+          "rejected_missing_required_sections": 6608
+        }
+      }
+    }
+  }
+}

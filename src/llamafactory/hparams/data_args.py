@@ -200,6 +200,12 @@ class DataArguments:
             "help": "Optional per-logical-dataset version overrides for macro training, e.g. {onereason_user_action_nocot: v2}."
         },
     )
+    multitask_dataset_version_manifest: str = field(
+        default="data/onereason_dataset_versions.json",
+        metadata={
+            "help": "Managed all-train dataset version manifest. Unknown versions retain legacy alias resolution."
+        },
+    )
     multitask_monitoring: bool = field(
         default=False,
         metadata={"help": "Write task losses and packing statistics to output_dir/monitor/metrics.jsonl."},
@@ -323,6 +329,8 @@ class DataArguments:
             raise ValueError("multitask_dataset_version must be a non-empty string.")
         if not isinstance(self.multitask_dataset_version_overrides, dict):
             raise ValueError("multitask_dataset_version_overrides must be a mapping of dataset names to version names.")
+        if not isinstance(self.multitask_dataset_version_manifest, str) or not self.multitask_dataset_version_manifest:
+            raise ValueError("multitask_dataset_version_manifest must be a non-empty path string.")
         if any(
             not isinstance(key, str) or not isinstance(value, str) or not value
             for key, value in self.multitask_dataset_version_overrides.items()

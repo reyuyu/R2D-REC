@@ -22,6 +22,7 @@ from torch.utils.data import Dataset
 from ..extras.constants import IGNORE_INDEX
 from .action_select import ActionSelectMetadataParser, offset_action_metadata
 from .loader import get_dataset
+from .onereason_dataset_versions import resolve_managed_dataset_registry_name
 
 if TYPE_CHECKING:
     from transformers import PreTrainedTokenizer, ProcessorMixin
@@ -120,6 +121,15 @@ def resolve_multitask_dataset_name(base_dataset_name: str, data_args) -> str:
         return base_dataset_name + data_args.multitask_train_dataset_suffix
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", version):
         raise ValueError(f"Invalid multitask dataset version: {version!r}")
+    managed_name = resolve_managed_dataset_registry_name(
+        base_dataset_name,
+        version,
+        getattr(data_args, "multitask_dataset_version_manifest", "data/onereason_dataset_versions.json"),
+    )
+    if managed_name is not None:
+        return managed_name
+    # Legacy versions predate the inheritance manifest and retain their old
+    # alias convention so historical train98 experiments stay reproducible.
     return f"{base_dataset_name}_{version}{data_args.multitask_train_dataset_suffix}"
 
 

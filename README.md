@@ -73,3 +73,53 @@ C2 的 Action Select 另记录全词表动态合法 SID 质量、Top-K 非法质
 多任务 macro-step、packing attention、GradNorm、Ortho 与 Action Select 辅助损失均有单卡测试；梯度控制器与 Action auxiliary 另有双卡 smoke test。修改训练语义前应先阅读对应实验文档并运行相关测试。
 
 本项目保留上游 LLaMA-Factory 的 Apache-2.0 许可证。模型与比赛数据的使用须遵守各自许可证与赛事规则。
+
+## OneReason Dataset Version Management
+
+OneReason training data is managed as eight stable logical subdatasets. The raw files stay on the training server and are not committed to GitHub. New training configurations use the full `/data/lf_data` sources; historical `*_train98` files remain only for reproducing old experiments.
+
+The managed version graph is recorded in [`data/onereason_dataset_versions.json`](data/onereason_dataset_versions.json):
+
+```text
+raw_all
+  -> v1_thought_prompt_all
+       -> v2_recommendation_cot_complete_all
+            -> v3_material_clean  # example: material-only patch
+```
+
+Each version stores only changed subdatasets and inherits all other files from its parent. A material-only cleaning therefore does not copy or alter recommendation, user, or world data.
+
+Create and audit the server-side versions with:
+
+```bash
+cd /app/LLaMA-Factory
+python scripts/manage_onereason_datasets.py init-raw-all
+python scripts/manage_onereason_datasets.py create-thought-prompts \
+  --version v1_thought_prompt_all --parent raw_all
+python scripts/manage_onereason_datasets.py create-recommendation-cot-complete \
+  --version v2_recommendation_cot_complete_all --parent v1_thought_prompt_all
+python scripts/manage_onereason_datasets.py audit --verify-hashes
+```
+
+To register only a cleaned material pair:
+
+```bash
+python scripts/manage_onereason_datasets.py register-version \
+  --version v3_material_clean \
+  --parent v2_recommendation_cot_complete_all \
+  --description "material-only cleaning" \
+  --patch onereason_material_cot=/data/clean/onereason_material_cot.jsonl \
+  --patch onereason_material_nocot=/data/clean/onereason_material_nocot.jsonl
+```
+
+Use the version in a training YAML while keeping the eight logical names unsuffixed:
+
+```yaml
+dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_world_cot,onereason_world_nocot
+multitask_train_dataset_suffix: ""
+multitask_dataset_version: v2_recommendation_cot_complete_all
+multitask_dataset_version_overrides: {}
+multitask_dataset_version_manifest: data/onereason_dataset_versions.json
+```
+
+The resolver follows the parent chain before loading datasets, so changing one logical name does not require rewriting the other seven registrations. See [`ONEREASON_DATASET_VERSIONS.md`](ONEREASON_DATASET_VERSIONS.md) for the full policy.

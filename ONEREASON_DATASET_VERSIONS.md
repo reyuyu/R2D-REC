@@ -1,35 +1,66 @@
 # OneReason Dataset Versions
 
-## Layout
+## Policy
 
-- Raw sources remain immutable in /data/lf_data_splits/onereason_*_train98.jsonl.
-- Each managed version lives in /data/lf_data_versions/<version>/.
-- Every version must contain MANIFEST.json with input/output digests, counts and its transformation.
-- Dataset registry names follow onereason_<subtask>_<version>_train98. The legacy raw name remains onereason_<subtask>_train98.
+- `/data/lf_data/onereason_*.jsonl` is the immutable, full-training raw source. It is the canonical **all-train** source; no validation split is consumed by new experiments.
+- Historical `/data/lf_data_splits/*_train98.jsonl` and the old versions derived from them are retained only so past experiments remain reproducible. They are not inputs to new dataset versions.
+- Managed versions live under `/data/lf_data_versions/alltrain/<version>/`. A version stores only the subdatasets it changes and declares a parent version for all untouched subdatasets.
+- The machine-readable version graph is `data/onereason_dataset_versions.json`; it records file path, count, SHA-256 and the registered dataset alias for each override.
+- Dataset files are immutable after registration. A correction creates a new version; it never overwrites V1/V2 or the raw source.
 
-## v1_thought_prompt
+## Version Graph
 
-v1_thought_prompt preserves every field except input. It appends a newline plus /think to all cot prompts and a newline plus /no_think to all nocot prompts when that exact suffix is absent. The world datasets already carried the matching marker, so their records are semantically unchanged.
+```text
+raw_all
+  -> v1_thought_prompt_all
+       -> v2_recommendation_cot_complete_all
+            -> v3_material_clean        # example: only material cot/nocot overrides
+```
 
-Creation is reproducible with:
+`v3_material_clean` therefore resolves material from V3, recommendation from V2, and user/world from V1. This is the key property that prevents copying all eight JSONL files for a one-subdataset cleaning run.
 
-    cd /app/LLaMA-Factory
-    python scripts/create_onereason_v1_thought_prompt.py
+## Create the Initial Full-Training Versions
 
-The command intentionally refuses to overwrite an existing version or registry entry.
+```bash
+cd /app/LLaMA-Factory
 
-## Macro Training Selection
+python scripts/manage_onereason_datasets.py init-raw-all
+python scripts/manage_onereason_datasets.py create-thought-prompts \
+  --version v1_thought_prompt_all --parent raw_all
+python scripts/manage_onereason_datasets.py create-recommendation-cot-complete \
+  --version v2_recommendation_cot_complete_all --parent v1_thought_prompt_all
+python scripts/manage_onereason_datasets.py audit
+```
 
-Keep the normal eight raw logical names in dataset. Select a full version with:
+The thought-prompt build appends `/think` to CoT prompts and `/no_think` to no-CoT prompts only when absent. The recommendation build retains samples whose `output` contains all of `【兴趣归纳】`, `【行为模式】`, and `【预测总结】`.
 
-    multitask_train_dataset_suffix: _train98
-    multitask_dataset_version: v1_thought_prompt
-    multitask_dataset_version_overrides: {}
+## Clean Only One Subdataset
 
-For a single-subtask ablation, choose a base version then override only one logical dataset:
+Write the cleaned JSONL outside the managed tree first, inspect it, then register it as a patch:
 
-    multitask_dataset_version: v1_thought_prompt
-    multitask_dataset_version_overrides:
-      onereason_user_action_nocot: raw
+```bash
+python scripts/manage_onereason_datasets.py register-version \
+  --version v3_material_clean \
+  --parent v2_recommendation_cot_complete_all \
+  --description "Remove material records failing the V3 audit." \
+  --patch onereason_material_cot=/data/clean/onereason_material_cot.jsonl \
+  --patch onereason_material_nocot=/data/clean/onereason_material_nocot.jsonl
+```
 
-This resolves that subtask to its raw registry name and resolves the other seven to their v1 registry names. Task IDs, subtask ratios, balanced_40 and sampler order remain unchanged.
+The command validates JSONL, copies only those patch files into the immutable managed directory, records counts/digests, and registers only the changed aliases in `dataset_info.json`.
+
+## Training Selection
+
+New all-training configurations use the eight unsuffixed logical names and no split suffix:
+
+```yaml
+dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_world_cot,onereason_world_nocot
+multitask_train_dataset_suffix: ""
+multitask_dataset_version: v2_recommendation_cot_complete_all
+multitask_dataset_version_overrides: {}
+multitask_dataset_version_manifest: data/onereason_dataset_versions.json
+```
+
+The Trainer resolves each logical dataset through the parent chain before loading it. For an ablation that deliberately mixes versions, `multitask_dataset_version_overrides` still has precedence for the named logical dataset.
+
+Legacy configs that use `_train98` plus `raw`, `v1_thought_prompt`, or `v2_recommendation_cot_complete` retain their existing string-based resolution and are not silently redirected.
