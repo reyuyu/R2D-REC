@@ -87,3 +87,7 @@ recommendation: 1
 3. 当前主要风险是 8192 长序列下 rank 1 的显存峰值，以及显存碎片；`user_chain=3 + recommendation=1` 的 rank 分配可能更容易触发峰值。
 4. `recB` 两次都在 `save_steps=500` 之前退出，没有生成可恢复 checkpoint。
 5. 若继续运行 `recB`，应优先测试完整梯度检查点、较短 `cutoff_len` 或显存分配器配置，并先用短 smoke 验证，而不是继续重复完整启动。
+
+## 后续 REC 阶段
+
+recC、recD、recE 和 REC_F 的 BFD、coverage/deficit、cost-aware、自适应长度与最终 8K 配置，集中记录在 [REC 自适应 Packing 实验记录](./实验recC_recD_recE_REC_F_自适应Packing.md)。

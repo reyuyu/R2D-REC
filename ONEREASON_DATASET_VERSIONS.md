@@ -34,6 +34,10 @@ python scripts/manage_onereason_datasets.py audit
 
 The thought-prompt build appends `/think` to CoT prompts and `/no_think` to no-CoT prompts only when absent. The recommendation build retains samples whose `output` contains all of `【兴趣归纳】`, `【行为模式】`, and `【预测总结】`.
 
+## Recommendation V2 CoT / No-think Dual Route
+
+The V2 recommendation dual-route build is documented in `docs/zh/recommendation_v2_dual.md`. It groups by full prompt plus target domain, removes duplicate full SIDs within each group, and emits each deduplicated gold exactly once across the CoT and No-think datasets.
+
 ## Clean Only One Subdataset
 
 Write the cleaned JSONL outside the managed tree first, inspect it, then register it as a patch:

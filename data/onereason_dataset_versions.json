@@ -150,6 +150,27 @@
           "rejected_missing_required_sections": 6608
         }
       }
+    },
+    "v2_recommendation_dual": {
+      "parent": "v2_recommendation_cot_complete_all",
+      "created_at_utc": "2026-08-06T18:57:57Z",
+      "description": "Recommendation CoT/No-think dual-route deduplication.",
+      "overrides": {
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot_v2_dual",
+          "file_name": "/data/lf_data_versions/alltrain/v2_recommendation_dual/onereason_recommendation_cot_v2_dual.jsonl",
+          "records": 20664,
+          "sha256": "fd3a5f0b8f6a5d33747f7145c9b96dd6565535347becc86f4928ad5051446ad7"
+        }
+      },
+      "extra_registry_entries": {
+        "onereason_recommendation_nocot": {
+          "registry_name": "onereason_recommendation_nocot_v2_dual",
+          "file_name": "/data/lf_data_versions/alltrain/v2_recommendation_dual/onereason_recommendation_nocot_v2_dual.jsonl",
+          "records": 20666,
+          "sha256": "2242002d169756c9f3bd706510331e5ec318db2412bb6df9572e8d81fb0c9317"
+        }
+      }
     }
   }
 }

@@ -42,6 +42,11 @@ def _resolve_override(
     if not isinstance(overrides, Mapping):
         raise DatasetVersionManifestError(f"Version {version!r}.overrides must be a mapping.")
     override = overrides.get(logical_dataset)
+    if override is None:
+        extra_entries = entry.get("extra_registry_entries", {})
+        if not isinstance(extra_entries, Mapping):
+            raise DatasetVersionManifestError(f"Version {version!r}.extra_registry_entries must be a mapping.")
+        override = extra_entries.get(logical_dataset)
     if override is not None:
         if not isinstance(override, Mapping) or not isinstance(override.get("registry_name"), str):
             raise DatasetVersionManifestError(

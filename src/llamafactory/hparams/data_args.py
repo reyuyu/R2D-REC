@@ -170,7 +170,7 @@ class DataArguments:
             )
         },
     )
-    multitask_supercycle_mode: Literal["fixed", "balanced_40"] = field(
+    multitask_supercycle_mode: Literal["fixed", "balanced_40", "coverage_deficit"] = field(
         default="fixed",
         metadata={
             "help": (
@@ -178,6 +178,19 @@ class DataArguments:
                 "40-macro-step task mix and requires global two-rank microbatch DDP."
             )
         },
+    )
+    multitask_packing_mode: Literal["length_bucket_greedy", "same_subtask_bfd"] = field(
+        default="length_bucket_greedy",
+        metadata={"help": "Multitask packer: legacy buckets or deterministic same-subtask BFD."},
+    )
+    multitask_bfd_window_size: int = field(default=4096, metadata={"help": "Window size for deterministic BFD."})
+    multitask_cost_aware_partition_enabled: bool = field(
+        default=False,
+        metadata={"help": "Enumerate deterministic 4+4 cost-aware rank partitions for eight global packs."},
+    )
+    multitask_attention_cost_weight: float = field(
+        default=1.0,
+        metadata={"help": "Weight of the segment-length-squared attention cost proxy."},
     )
     multitask_train_dataset_suffix: str = field(
         default="",
@@ -212,7 +225,11 @@ class DataArguments:
     )
     multitask_max_pack_length: int | None = field(
         default=None,
-        metadata={"help": "Task-wise pack length. Defaults to cutoff_len."},
+        metadata={"help": "Default task-wise pack length. Defaults to cutoff_len."},
+    )
+    multitask_pack_length_by_subtask: dict[str, int] = field(
+        default_factory=dict,
+        metadata={"help": "Optional per-subtask pack lengths keyed as task/subtask."},
     )
     multitask_max_segments_per_pack: int | None = field(
         default=None,
@@ -370,9 +387,9 @@ class DataArguments:
             self.packing = True
 
         if self.multitask_macro_training:
-            if self.multitask_task_layout not in {"legacy", "user_split_no_world"}:
-                raise ValueError("multitask_task_layout must be either 'legacy' or 'user_split_no_world'.")
-            if self.multitask_task_layout == "user_split_no_world":
+            if self.multitask_task_layout not in {"legacy", "user_split_no_world", "user_split_no_world_rec_dual"}:
+                raise ValueError("multitask_task_layout must be one of 'legacy', 'user_split_no_world', or 'user_split_no_world_rec_dual'.")
+            if self.multitask_task_layout in {"user_split_no_world", "user_split_no_world_rec_dual"}:
                 required_tasks = {"material", "user_action", "user_chain", "recommendation"}
             else:
                 required_tasks = {"material", "user", "recommendation", "world"}
@@ -390,10 +407,18 @@ class DataArguments:
                 self.multitask_max_pack_length = self.cutoff_len
             if self.multitask_max_pack_length <= 0:
                 raise ValueError("multitask_max_pack_length must be positive.")
-            if self.multitask_supercycle_mode not in {"fixed", "balanced_40"}:
-                raise ValueError("multitask_supercycle_mode must be either `fixed` or `balanced_40`.")
-            if self.multitask_supercycle_mode == "balanced_40" and not self.multitask_global_microbatch_ddp:
-                raise ValueError("balanced_40 super-cycle requires multitask_global_microbatch_ddp=true.")
+            if any(int(value) <= 0 for value in self.multitask_pack_length_by_subtask.values()):
+                raise ValueError("multitask_pack_length_by_subtask values must be positive.")
+            if self.multitask_supercycle_mode not in {"fixed", "balanced_40", "coverage_deficit"}:
+                raise ValueError("multitask_supercycle_mode must be fixed, balanced_40, or coverage_deficit.")
+            if self.multitask_packing_mode not in {"length_bucket_greedy", "same_subtask_bfd"}:
+                raise ValueError("Unknown multitask_packing_mode.")
+            if self.multitask_bfd_window_size <= 0:
+                raise ValueError("multitask_bfd_window_size must be positive.")
+            if self.multitask_attention_cost_weight < 0:
+                raise ValueError("multitask_attention_cost_weight must be non-negative.")
+            if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"} and not self.multitask_global_microbatch_ddp:
+                raise ValueError("The synchronized super-cycle requires multitask_global_microbatch_ddp=true.")
 
         if self.multitask_gradient_control_enabled and not self.multitask_macro_training:
             raise ValueError("multitask_gradient_control_enabled requires multitask_macro_training=true.")
@@ -401,7 +426,7 @@ class DataArguments:
             raise ValueError("multitask_gradient_monitor_enabled requires multitask_gradient_control_enabled=true.")
         if self.multitask_gradnorm_enabled and not self.multitask_gradient_monitor_enabled:
             raise ValueError("multitask_gradnorm_enabled requires multitask_gradient_monitor_enabled=true.")
-        if self.multitask_task_layout == "user_split_no_world":
+        if self.multitask_task_layout in {"user_split_no_world", "user_split_no_world_rec_dual"}:
             expected_gradnorm_tasks = {"material", "user_action", "user_chain", "recommendation"}
         else:
             expected_gradnorm_tasks = {"material", "user", "recommendation"}

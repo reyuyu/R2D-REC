@@ -66,6 +66,17 @@ https://github.com/user-attachments/assets/43b700c6-a178-41db-b1f8-8190a5d3fcfc
 > [!NOTE]
 > 除上述链接以外的其他网站均为未经许可的第三方网站，请小心甄别。
 
+## REC 系列实验
+
+REC 系列使用 `material / user_action / user_chain / recommendation` 四个任务，保留四任务 GradNorm 与 SID 加权 CE，并验证 8K BFD、coverage/deficit 调度、cost-aware 分区和按子任务自适应 pack 长度。
+
+- [REC 阶段实验记录](实验记录/实验recC_recD_recE_REC_F_自适应Packing.md)
+- [rec_A / recB 调度对照](实验记录/实验recA_recB_四任务调度.md)
+- [REC_F 正式配置](configs/onereason/onereason_lora_2gpu_recF_r16_gradnorm_sid_weight8_v2_dual_8k_gc075.yaml)
+- [数据版本管理](ONEREASON_DATASET_VERSIONS.md)
+
+REC_F 的 8K BFD pack epoch 共 45,744 个 pack，每个 macro-step 使用 8 个 global pack，正好需要 5,718 个 macro-step。训练输出、checkpoint、日志和原始数据不提交到仓库。
+
 ## 目录
 
 - [项目特色](#项目特色)

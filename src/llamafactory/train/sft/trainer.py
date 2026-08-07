@@ -29,12 +29,14 @@ from typing_extensions import override
 
 from ...data.multitask import (
     Balanced40SuperCycle,
+    CoverageDeficitScheduler,
     MultiTaskMacroStepLoader,
     TaskDataLoader,
     TaskPackCollator,
     get_action_task_name,
     get_subtask_ratios,
     get_task_ids,
+    normalize_subtask_pack_lengths,
     resolve_task_layout,
     split_global_microbatch_allocation,
 )
@@ -293,9 +295,9 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         if self.global_microbatch_ddp and self.multitask_world_size != 2:
             raise ValueError("multitask_global_microbatch_ddp currently requires exactly two DDP ranks.")
 
-        if self.multitask_supercycle_mode == "balanced_40":
+        if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"}:
             if not self.global_microbatch_ddp:
-                raise ValueError("balanced_40 super-cycle requires global two-rank DDP.")
+                raise ValueError("Synchronized coverage super-cycle requires global two-rank DDP.")
             # All ranks advance an identical global source.  Rank-local slot
             # selection happens in MultiTaskMacroStepLoader, preserving unique
             # global packs and four backward calls per rank.
@@ -314,7 +316,12 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             self.local_multitask_allocation = dict(self.multitask_allocation)
 
         loader_task_names = (
-            self.multitask_task_ids if self.multitask_supercycle_mode == "balanced_40" else self.local_multitask_allocation
+            self.multitask_task_ids if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"} else self.local_multitask_allocation
+        )
+        self.multitask_pack_length_by_subtask = normalize_subtask_pack_lengths(
+            getattr(data_args, "multitask_pack_length_by_subtask", {}),
+            self.multitask_task_layout,
+            int(data_args.multitask_max_pack_length),
         )
         task_loaders = {
             task_name: TaskDataLoader(
@@ -323,18 +330,30 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 get_subtask_ratios(self.multitask_task_layout)[task_name],
                 collator=TaskPackCollator(kwargs["data_collator"]),
                 max_pack_length=int(data_args.multitask_max_pack_length),
+                max_pack_length_by_subtask={
+                    subtask: self.multitask_pack_length_by_subtask[f"{task_name}/{subtask}"]
+                    for subtask in multitask_datasets[task_name]
+                },
                 max_segments=data_args.multitask_max_segments_per_pack,
                 seed=int(training_args.seed),
-                rank=(0 if self.multitask_supercycle_mode == "balanced_40" else task_active_ranks[task_name].index(self.multitask_rank)),
-                world_size=(1 if self.multitask_supercycle_mode == "balanced_40" else len(task_active_ranks[task_name])),
+                rank=(0 if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"} else task_active_ranks[task_name].index(self.multitask_rank)),
+                world_size=(1 if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"} else len(task_active_ranks[task_name])),
+                packing_mode=data_args.multitask_packing_mode,
+                bfd_window_size=int(data_args.multitask_bfd_window_size),
+                coverage_mode=self.multitask_supercycle_mode == "coverage_deficit",
             )
             for task_name in loader_task_names
         }
-        supercycle = (
-            Balanced40SuperCycle(int(training_args.seed), layout=self.multitask_task_layout)
-            if self.multitask_supercycle_mode == "balanced_40"
-            else None
-        )
+        if self.multitask_supercycle_mode == "balanced_40":
+            supercycle = Balanced40SuperCycle(int(training_args.seed), layout=self.multitask_task_layout)
+        elif self.multitask_supercycle_mode == "coverage_deficit":
+            supercycle = CoverageDeficitScheduler(
+                {task: loader.total_pack_count for task, loader in task_loaders.items()},
+                int(training_args.seed),
+                global_slots=8,
+            )
+        else:
+            supercycle = None
         self.macro_loader = MultiTaskMacroStepLoader(
             task_loaders,
             self.local_multitask_allocation,
@@ -343,8 +362,10 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             supercycle=supercycle,
             rank=self.multitask_rank,
             world_size=self.multitask_world_size,
-            synchronized_global_consumption=self.multitask_supercycle_mode == "balanced_40",
+            synchronized_global_consumption=self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"},
             task_ids=self.multitask_task_ids,
+            cost_aware_partition=bool(getattr(data_args, "multitask_cost_aware_partition_enabled", False)),
+            attention_cost_weight=float(getattr(data_args, "multitask_attention_cost_weight", 1.0)),
         )
         # DDP averages rank-local gradients. With a global 8-microbatch macro
         # spread over two ranks, divide each local loss by 4 so that its DDP
@@ -396,10 +417,10 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             "Logging/eval/save units: macro-steps"
         )
         if self.global_microbatch_ddp:
-            if self.multitask_supercycle_mode == "balanced_40":
+            if self.multitask_supercycle_mode in {"balanced_40", "coverage_deficit"}:
                 logger.info_rank0(
                     "Global microbatch DDP: enabled\n"
-                    f"Super-cycle: balanced_40 (task layout={self.multitask_task_layout})\n"
+                    f"Super-cycle: {self.multitask_supercycle_mode} (task layout={self.multitask_task_layout})\n"
                     "Global microbatches per macro-step: 8\n"
                     "Per-rank microbatches: 4 (interleaved global slots, all task loaders synchronized)"
                 )
@@ -554,6 +575,32 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **sid_metrics}
         if gradient_metrics is not None:
             record.update(gradient_metrics)
+        if self.multitask_supercycle_mode == "coverage_deficit":
+            coverage = self.macro_loader.coverage_metrics()
+            record.update({
+                "task_pack_count_total": sum(coverage["task_pack_count_total"].values()),
+                "task_pack_consumed": sum(coverage["task_pack_consumed"].values()),
+                "task_coverage_ratio": min(coverage["task_coverage_ratio"].values()),
+                "subtask_pack_count_total": sum(coverage["subtask_pack_count_total"].values()),
+                "subtask_pack_consumed": sum(coverage["subtask_pack_consumed"].values()),
+                "subtask_coverage_ratio": min(coverage["subtask_coverage_ratio"].values()),
+                "pack_tokens_mean": coverage["pack_tokens_mean"],
+                "pack_utilization_mean": coverage["pack_utilization_mean"],
+                "pack_utilization_p10": coverage["pack_utilization_p10"],
+                "pack_segments_mean": coverage["pack_segments_mean"],
+                "global_tokens_per_macro": coverage.get("global_tokens_per_macro"),
+                "supervised_tokens_per_macro": coverage.get("supervised_tokens_per_macro"),
+                "task_pack_tokens_mean": coverage.get("task_pack_tokens_mean"),
+                "task_samples_per_pack": coverage.get("task_samples_per_pack"),
+                "current_macro_allocation": coverage["current_macro_allocation"],
+                "rank0_pack_cost": coverage.get("rank0_pack_cost"),
+                "rank1_pack_cost": coverage.get("rank1_pack_cost"),
+                "rank_cost_gap_ratio": coverage.get("rank_cost_gap_ratio"),
+                "rank0_pack_tokens": coverage.get("rank0_pack_tokens"),
+                "rank1_pack_tokens": coverage.get("rank1_pack_tokens"),
+                "rank_token_gap_ratio": coverage.get("rank_token_gap_ratio"),
+                "partition_changed": coverage.get("partition_changed"),
+            })
         with open(self.monitoring_path, "a", encoding="utf-8") as file:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
 
