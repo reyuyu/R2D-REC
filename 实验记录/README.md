@@ -33,3 +33,4 @@ C-fast 不改变实验三的目标，只把重复的 full-vocabulary denominator
 - 配置：[onereason_lora_2gpu_balanced40_r16_gradnorm_sid_weight8.yaml](../configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_sid_weight8.yaml)
 - 记录：[实验D_SID加权SFT.md](实验D_SID加权SFT.md)
 - 内容：对全部监督的 `<s_a_*>`、`<s_b_*>`、`<s_c_*>` token 使用归一化 CE 权重 8；不改变 GradNorm、Ortho、packing 或 Action 辅助损失的接入顺序。
+- [rec_A 与 recB：四任务调度对照](./实验recA_recB_四任务调度.md)：记录 `rec_A` 的当前训练进度，以及 `recB` 的 `1:3:3:1` 调度、两次 step 22 显存异常和配置对照结果。

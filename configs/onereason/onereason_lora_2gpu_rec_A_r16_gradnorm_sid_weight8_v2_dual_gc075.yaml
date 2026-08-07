@@ -1,0 +1,97 @@
+### Experiment E: four-task GradNorm, no world, plan-A {2,2,2,2} schedule
+### model
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+# rec_A safe profile: checkpoint three quarters of decoder layers after 0.5GC OOM test.
+disable_gradient_checkpointing: false
+use_reentrant_gc: true
+gradient_checkpointing_layer_ratio: 0.75
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+
+### dataset: world datasets removed; user split into action/chain
+dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_recommendation_nocot
+template: qwen3_nothink
+cutoff_len: 8192
+packing: false
+neat_packing: false
+preprocessing_num_workers: 16
+overwrite_cache: false
+multitask_macro_training: true
+multitask_train_dataset_suffix: ""
+multitask_dataset_version: v2_recommendation_dual
+multitask_dataset_version_manifest: data/onereason_dataset_versions.json
+multitask_monitoring: true
+multitask_global_microbatch_ddp: true
+multitask_supercycle_mode: balanced_40
+# rec_A layout: split user, drop world, and use recommendation CoT/No-think dual data.
+multitask_task_layout: user_split_no_world_rec_dual
+# rec_A Plan: four material, one action, one chain, two recommendation packs.
+multitask_microbatch_allocation:
+  material: 4
+  user_action: 1
+  user_chain: 1
+  recommendation: 2
+
+### Experiment E: four-task lagged GradNorm-lite and gradient conflict monitoring
+multitask_gradient_control_enabled: true
+multitask_gradient_monitor_enabled: true
+multitask_gradnorm_enabled: true
+multitask_gradnorm_tasks:
+  - material
+  - user_action
+  - user_chain
+  - recommendation
+multitask_world_loss_weight: 1.0
+multitask_gradnorm_warmup_steps: 200
+multitask_gradnorm_update_interval: 10
+multitask_gradnorm_alpha: 0.5
+multitask_gradnorm_update_rate: 0.10
+multitask_gradnorm_loss_ema_beta: 0.90
+multitask_gradnorm_grad_ema_beta: 0.90
+multitask_gradnorm_weight_min: 0.5
+multitask_gradnorm_weight_max: 2.0
+multitask_gradnorm_step_ratio_min: 0.9
+multitask_gradnorm_step_ratio_max: 1.1
+multitask_grad_reference_last_n_layers: 4
+multitask_grad_reference_modules:
+  - q_proj
+  - v_proj
+  - o_proj
+  - down_proj
+multitask_grad_reference_lora_matrix: B
+
+### Experiment E: Action Select diagnostics (zero-weight, no loss change)
+# rec_A keeps only loss, GradNorm and conflict monitoring; Action diagnostics are off.
+user_action_aux_enabled: false
+
+# Experiment D: normalized SID-token-weighted SFT CE.
+sid_token_weighting_enabled: true
+sid_token_weight: 8.0
+sid_text_weight: 1.0
+
+### output
+output_dir: /data/outputs/onereason_lora_2gpu_rec_A_r16_gradnorm_sid_weight8_v2_dual_lr2e4_gc075_len8k
+logging_steps: 10
+save_steps: 500
+save_total_limit: 4
+overwrite_output_dir: false
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 2.0e-4
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+max_steps: 5200
+bf16: true
+seed: 42
