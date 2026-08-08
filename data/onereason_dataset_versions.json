@@ -171,6 +171,25 @@
           "sha256": "2242002d169756c9f3bd706510331e5ec318db2412bb6df9572e8d81fb0c9317"
         }
       }
+    },
+    "v3_recommendation_multi_positive": {
+      "parent": "v2_recommendation_dual",
+      "created_at_utc": "2026-08-07T18:55:27Z",
+      "description": "Recommendation V3 metadata-only multi-positive grouping derived from V2 dual data.",
+      "overrides": {
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot_v3_multi_positive",
+          "file_name": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_cot_v3_multi_positive.jsonl",
+          "records": 20664,
+          "sha256": "a9fcc61db0d0c30e97034f1b920910602d5c1b27ba940b83e283b2d27d99b738"
+        },
+        "onereason_recommendation_nocot": {
+          "registry_name": "onereason_recommendation_nocot_v3_multi_positive",
+          "file_name": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_nocot_v3_multi_positive.jsonl",
+          "records": 20666,
+          "sha256": "84043f25199ad428317a0f527f6a17dd39802562c47393aa77ca3a2fa2012dd8"
+        }
+      }
     }
   }
 }

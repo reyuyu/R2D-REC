@@ -47,9 +47,15 @@ from ..fp8_utils import configure_fp8_environment, patch_accelerator_for_fp8, ve
 from ..trainer_utils import create_custom_optimizer, create_custom_scheduler
 from .multitask_gradient_controller import MultiTaskGradientController
 from .sid_token_weighting import (
+    SID_WEIGHT_STAT_INDEX,
     SID_WEIGHT_STAT_SIZE,
     SidTokenWeightingController,
     sid_weight_statistics_to_metrics,
+)
+from .recommendation_multi_positive import (
+    REC_MP_STAT_SIZE,
+    RecommendationMultiPositiveTrieController,
+    recommendation_multi_positive_statistics_to_metrics,
 )
 from .user_action_auxiliary import (
     ACTION_STAT_SIZE,
@@ -384,12 +390,22 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
         self.sid_token_weighting = None
         if data_args.sid_token_weighting_enabled:
             self.sid_token_weighting = SidTokenWeightingController(self.processing_class, data_args)
+        self.recommendation_multi_positive_trie = None
+        if data_args.recommendation_multi_positive_trie_enabled:
+            if self.sid_token_weighting is None:
+                raise ValueError("REC_G2 requires the REC_G1 SID weighting controller.")
+            self.recommendation_multi_positive_trie = RecommendationMultiPositiveTrieController(
+                self.processing_class, data_args
+            )
         self._action_statistics_offset = 5
         self._sid_weight_statistics_offset = self._action_statistics_offset + (
             ACTION_STAT_SIZE if self.user_action_auxiliary is not None else 0
         )
-        self._task_stat_size = self._sid_weight_statistics_offset + (
+        self._rec_mp_statistics_offset = self._sid_weight_statistics_offset + (
             SID_WEIGHT_STAT_SIZE if self.sid_token_weighting is not None else 0
+        )
+        self._task_stat_size = self._rec_mp_statistics_offset + (
+            REC_MP_STAT_SIZE if self.recommendation_multi_positive_trie is not None else 0
         )
         self.monitoring_enabled = bool(data_args.multitask_monitoring)
         self.monitoring_path = os.path.join(training_args.output_dir, "monitor", "metrics.jsonl")
@@ -398,6 +414,7 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             or self.gradient_controller is not None
             or self.user_action_auxiliary is not None
             or self.sid_token_weighting is not None
+            or self.recommendation_multi_positive_trie is not None
         ) and self.is_world_process_zero():
             os.makedirs(os.path.dirname(self.monitoring_path), exist_ok=True)
         # Loader state, not Trainer's default data-skip, is the source of truth on resume.
@@ -460,14 +477,33 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             )
             sid_weighting = getattr(self, "sid_token_weighting", None)
             sid_result = None
+            rec_mp_result = None
             with self.compute_loss_context_manager():
                 # Both optional objectives consume the logits from this same
                 # standard SFT forward; neither introduces another forward.
                 if action_active or sid_weighting is not None:
                     base_loss, outputs = self.compute_loss(model, model_inputs, return_outputs=True)
                     if sid_weighting is not None:
-                        sid_result = sid_weighting.compute(outputs.logits, model_inputs["labels"])
+                        sid_result = sid_weighting.compute(
+                            outputs.logits,
+                            model_inputs["labels"],
+                            task_name=task_name,
+                            subtask_name=microbatch.get("subtask_name"),
+                        )
                         base_loss = sid_result.loss
+                    rec_mp_controller = getattr(self, "recommendation_multi_positive_trie", None)
+                    if rec_mp_controller is not None:
+                        denominator = sid_result.statistics[SID_WEIGHT_STAT_INDEX["total_weighted_mass"]]
+                        rec_mp_result = rec_mp_controller.compute(
+                            outputs.logits,
+                            model_inputs["labels"],
+                            microbatch.get("sample_metadata", []),
+                            microbatch.get("segment_offsets"),
+                            task_name=task_name,
+                            subtask_name=microbatch.get("subtask_name"),
+                            denominator=denominator,
+                        )
+                        base_loss = base_loss + rec_mp_result.loss_delta
                     if action_active:
                         action_result = self.user_action_auxiliary.compute(
                             outputs.logits,
@@ -495,6 +531,9 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
                 if sid_result is not None:
                     sid_offset = getattr(self, "_sid_weight_statistics_offset", 5)
                     statistics[sid_offset : sid_offset + SID_WEIGHT_STAT_SIZE] += sid_result.statistics
+                if rec_mp_result is not None:
+                    rec_offset = getattr(self, "_rec_mp_statistics_offset", 5)
+                    statistics[rec_offset : rec_offset + REC_MP_STAT_SIZE] += rec_mp_result.statistics
             weighted_loss = loss * task_weight if self.gradient_controller is not None else loss
             scaled_loss = weighted_loss / total_microbatches
             if self.gradient_controller is not None:
@@ -573,6 +612,13 @@ class MultiTaskMacroSeq2SeqTrainer(CustomSeq2SeqTrainer):
             )
             record.update(sid_metrics)
             self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **sid_metrics}
+        if getattr(self, "recommendation_multi_positive_trie", None) is not None:
+            rec_offset = getattr(self, "_rec_mp_statistics_offset", 5)
+            rec_metrics = recommendation_multi_positive_statistics_to_metrics(
+                task_statistics[:, rec_offset : rec_offset + REC_MP_STAT_SIZE].sum(dim=0)
+            )
+            record.update(rec_metrics)
+            self._pending_gradient_log_metrics = {**(self._pending_gradient_log_metrics or {}), **rec_metrics}
         if gradient_metrics is not None:
             record.update(gradient_metrics)
         if self.multitask_supercycle_mode == "coverage_deficit":

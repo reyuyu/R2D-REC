@@ -1,0 +1,95 @@
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+disable_gradient_checkpointing: false
+use_reentrant_gc: true
+gradient_checkpointing_layer_ratio: 0.75
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_target: all
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_recommendation_nocot
+template: qwen3_nothink
+cutoff_len: 8192
+multitask_max_pack_length: 8192
+multitask_packing_mode: same_subtask_bfd
+multitask_bfd_window_size: 4096
+packing: false
+neat_packing: false
+preprocessing_num_workers: 16
+overwrite_cache: false
+multitask_macro_training: true
+multitask_train_dataset_suffix: ''
+multitask_dataset_version: v3_recommendation_multi_positive
+multitask_dataset_version_manifest: data/onereason_dataset_versions.json
+multitask_monitoring: true
+multitask_global_microbatch_ddp: true
+multitask_supercycle_mode: coverage_deficit
+multitask_task_layout: user_split_no_world_rec_dual
+multitask_microbatch_allocation:
+  material: 2
+  user_action: 2
+  user_chain: 2
+  recommendation: 2
+multitask_gradient_control_enabled: true
+multitask_gradient_monitor_enabled: true
+multitask_gradnorm_enabled: true
+multitask_gradnorm_tasks:
+- material
+- user_action
+- user_chain
+- recommendation
+multitask_world_loss_weight: 1.0
+multitask_gradnorm_warmup_steps: 200
+multitask_gradnorm_update_interval: 10
+multitask_gradnorm_alpha: 0.5
+multitask_gradnorm_update_rate: 0.1
+multitask_gradnorm_loss_ema_beta: 0.9
+multitask_gradnorm_grad_ema_beta: 0.9
+multitask_gradnorm_weight_min: 0.5
+multitask_gradnorm_weight_max: 2.0
+multitask_gradnorm_step_ratio_min: 0.9
+multitask_gradnorm_step_ratio_max: 1.1
+multitask_grad_reference_last_n_layers: 4
+multitask_grad_reference_modules:
+- q_proj
+- v_proj
+- o_proj
+- down_proj
+multitask_grad_reference_lora_matrix: B
+user_action_aux_enabled: false
+sid_token_weighting_enabled: true
+sid_token_weight: 8.0
+sid_text_weight: 1.0
+recommendation_role_aware_sid_weighting_enabled: true
+recommendation_think_sid_weight: 1.0
+recommendation_final_sid_weight: 8.0
+recommendation_multi_positive_trie_enabled: true
+output_dir: /data/outputs/onereason_lora_2gpu_recG2_multi_positive_trie_smoke_rerun
+logging_steps: 1
+save_steps: 25
+save_total_limit: 2
+overwrite_output_dir: false
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 0.0002
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+max_grad_norm: 1.0
+max_steps: 50
+bf16: true
+seed: 42
+optim: adamw_torch
+multitask_cost_aware_partition_enabled: false
+multitask_attention_cost_weight: 1.0
+multitask_pack_length_by_subtask:
+  material/cot: 8192
+  material/nocot: 8192
+  user_action/action_nocot: 8192
+  user_chain/cot: 8192
+  user_chain/nocot: 8192
+  recommendation/cot: 8192
+  recommendation/nocot: 8192

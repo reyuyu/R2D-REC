@@ -161,3 +161,4 @@ PYTHONPATH=src python3 tests/test_onereason_dataset_versions.py
 ## 许可证
 
 代码沿用 LLaMA-Factory 的 Apache-2.0 许可证；模型和竞赛数据须遵守各自许可证及赛事规则。
+- REC_G2：[Recommendation No-think Multi-Positive Prefix-Trie](实验记录/实验REC_G2_Recommendation-No-think-Multi-Positive-Trie.md)

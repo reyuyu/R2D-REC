@@ -35,6 +35,25 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 
+_RECOMMENDATION_METADATA_FIELDS = (
+    "recommendation_group_id",
+    "recommendation_group_size",
+    "recommendation_all_gold_sids",
+    "recommendation_current_gold_sid",
+)
+
+
+def _attach_recommendation_metadata(output: dict[str, Any], example: dict[str, Any]) -> dict[str, Any]:
+    """Carry V3 provenance through the format-alignment map without model fields."""
+    metadata = {key: example[key] for key in _RECOMMENDATION_METADATA_FIELDS if key in example}
+    if metadata:
+        # Keep the V3 provenance as an auxiliary dict. It is removed from
+        # model inputs by the supervised processor and reattached to the
+        # multitask segment metadata outside model.forward.
+        output["_recommendation_metadata"] = metadata
+    return output
+
+
 @dataclass
 class DatasetConverter:
     dataset_attr: "DatasetAttr"
@@ -128,7 +147,7 @@ class AlpacaDatasetConverter(DatasetConverter):
             "_videos": self._find_medias(example[self.dataset_attr.videos]) if self.dataset_attr.videos else None,
             "_audios": self._find_medias(example[self.dataset_attr.audios]) if self.dataset_attr.audios else None,
         }
-        return output
+        return _attach_recommendation_metadata(output, example)
 
 
 @dataclass
@@ -224,7 +243,7 @@ class SharegptDatasetConverter(DatasetConverter):
             "_videos": self._find_medias(example[self.dataset_attr.videos]) if self.dataset_attr.videos else None,
             "_audios": self._find_medias(example[self.dataset_attr.audios]) if self.dataset_attr.audios else None,
         }
-        return output
+        return _attach_recommendation_metadata(output, example)
 
 
 @dataclass
@@ -364,7 +383,7 @@ class OpenAIDatasetConverter(DatasetConverter):
             "_videos": self._find_medias(example[self.dataset_attr.videos]) if self.dataset_attr.videos else None,
             "_audios": self._find_medias(example[self.dataset_attr.audios]) if self.dataset_attr.audios else None,
         }
-        return output
+        return _attach_recommendation_metadata(output, example)
 
 
 DATASET_CONVERTERS = {

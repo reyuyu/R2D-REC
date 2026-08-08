@@ -293,6 +293,16 @@ class DataArguments:
     )
     sid_token_weight: float = field(default=8.0)
     sid_text_weight: float = field(default=1.0)
+    recommendation_role_aware_sid_weighting_enabled: bool = field(
+        default=False,
+        metadata={"help": "Use separate SID weights for recommendation CoT think and final-answer roles."},
+    )
+    recommendation_think_sid_weight: float = field(default=1.0)
+    recommendation_final_sid_weight: float = field(default=8.0)
+    recommendation_multi_positive_trie_enabled: bool = field(
+        default=False,
+        metadata={"help": "Replace recommendation/no-think SID component CE with V3 prefix-trie set NLL."},
+    )
     user_action_aux_enabled: bool = field(
         default=False,
         metadata={"help": "Enable the Action Select history and length auxiliary objective."},
@@ -476,8 +486,12 @@ class DataArguments:
             raise ValueError("Ortho norm-ratio bounds must be positive and include 1.0.")
         if self.sid_token_weighting_enabled and not self.multitask_macro_training:
             raise ValueError("sid_token_weighting_enabled requires multitask_macro_training=true.")
+        if self.recommendation_multi_positive_trie_enabled and not self.sid_token_weighting_enabled:
+            raise ValueError("recommendation_multi_positive_trie_enabled requires sid_token_weighting_enabled=true.")
         if self.sid_token_weight <= 0 or self.sid_text_weight <= 0:
             raise ValueError("sid_token_weight and sid_text_weight must be positive.")
+        if self.recommendation_think_sid_weight <= 0 or self.recommendation_final_sid_weight <= 0:
+            raise ValueError("Recommendation role-aware SID weights must be positive.")
         if self.user_action_aux_enabled and not self.multitask_macro_training:
             raise ValueError("user_action_aux_enabled requires multitask_macro_training=true.")
         action_aux_strengths = (

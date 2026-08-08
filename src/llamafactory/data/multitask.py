@@ -8,6 +8,7 @@ future GradNorm/PCGrad work without introducing either algorithm here.
 from __future__ import annotations
 
 import copy
+import json
 import math
 import random
 import re
@@ -209,12 +210,39 @@ class TokenizedSubDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, Any]:
         item = dict(self.dataset[index])
         labels = item["labels"]
-        if self.metadata_parser is None:
-            sample_metadata = {}
-        else:
+        recommendation_metadata = item.pop("recommendation_metadata", None)
+        if isinstance(recommendation_metadata, str):
+            try:
+                recommendation_metadata = json.loads(recommendation_metadata) if recommendation_metadata else None
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Invalid recommendation metadata JSON at index {index}.") from exc
+        elif isinstance(recommendation_metadata, list):
+            # Packed processor caches may expose one JSON value per segment.
+            # The multitask loader disables native packing, but accepting a
+            # singleton list keeps old caches backward compatible.
+            if len(recommendation_metadata) == 1:
+                recommendation_metadata = recommendation_metadata[0]
+                if isinstance(recommendation_metadata, str):
+                    try:
+                        recommendation_metadata = json.loads(recommendation_metadata) if recommendation_metadata else None
+                    except json.JSONDecodeError as exc:
+                        raise ValueError(f"Invalid recommendation metadata JSON at index {index}.") from exc
+        sample_metadata = dict(item.pop("sample_metadata", {}) or {})
+        # Some pre-V3 tokenized caches kept the four fields in a flat metadata
+        # struct. Prefer a valid direct record over a null-valued legacy struct.
+        if not isinstance(recommendation_metadata, dict):
+            flat = {key: sample_metadata.get(key) for key in (
+                "recommendation_group_id", "recommendation_group_size",
+                "recommendation_all_gold_sids", "recommendation_current_gold_sid",
+            )}
+            if flat["recommendation_group_id"] is not None and flat["recommendation_all_gold_sids"] is not None:
+                recommendation_metadata = flat
+        if self.metadata_parser is not None:
             if index not in self._metadata_cache:
                 self._metadata_cache[index] = self.metadata_parser.parse(item["input_ids"], labels)
-            sample_metadata = self._metadata_cache[index]
+            sample_metadata.update(self._metadata_cache[index])
+        if isinstance(recommendation_metadata, dict):
+            sample_metadata["recommendation_multi_positive"] = recommendation_metadata
         item.update(
             task_name=self.task_name,
             task_id=self.task_id,

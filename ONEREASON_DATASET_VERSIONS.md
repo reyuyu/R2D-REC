@@ -38,6 +38,18 @@ The thought-prompt build appends `/think` to CoT prompts and `/no_think` to no-C
 
 The V2 recommendation dual-route build is documented in `docs/zh/recommendation_v2_dual.md`. It groups by full prompt plus target domain, removes duplicate full SIDs within each group, and emits each deduplicated gold exactly once across the CoT and No-think datasets.
 
+## Recommendation V3 Multi-Positive
+
+`v3_recommendation_multi_positive` 的父版本是 `v2_recommendation_dual`，只新增 recommendation 组级元数据，不覆盖 V2 文件：
+
+```bash
+cd /app/LLaMA-Factory
+python scripts/create_recommendation_v3_multi_positive.py
+python scripts/audit_recommendation_v3_multi_positive.py
+```
+
+详细分组键、字段、统计和训练接入见 [`docs/zh/recommendation_v3_multi_positive.md`](docs/zh/recommendation_v3_multi_positive.md)。训练配置通过 `multitask_dataset_version: v3_recommendation_multi_positive` 选择该版本。
+
 ## Clean Only One Subdataset
 
 Write the cleaned JSONL outside the managed tree first, inspect it, then register it as a patch:

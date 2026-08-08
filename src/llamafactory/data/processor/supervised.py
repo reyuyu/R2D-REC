@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from collections import defaultdict
+import json
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -28,6 +29,19 @@ if TYPE_CHECKING:
 logger = logging.get_logger(__name__)
 
 MAX_SU_SEQ_IDX = 2**32  # maximum sub-sequence index
+
+
+def _recommendation_metadata_at(examples: dict[str, list[Any]], index: int) -> dict[str, Any] | None:
+    values = examples.get("_recommendation_metadata")
+    if values is None or index >= len(values):
+        return None
+    value = values[index]
+    if isinstance(value, str):
+        try:
+            value = json.loads(value) if value else None
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid recommendation metadata JSON at row {index}.") from exc
+    return value if isinstance(value, dict) else None
 
 
 @dataclass
@@ -109,6 +123,7 @@ class SupervisedDatasetProcessor(DatasetProcessor):
         # build inputs with format `<bos> X Y <eos>` and labels with format `<ignore> ... <ignore> Y <eos>`
         # for multiturn examples, we only mask the prompt part in each prompt-response pair.
         model_inputs = defaultdict(list)
+        has_recommendation_metadata = "_recommendation_metadata" in examples
         for i in range(len(examples["_prompt"])):
             if len(examples["_prompt"][i]) % 2 != 1 or len(examples["_response"][i]) != 1:
                 logger.warning_rank0(
@@ -131,6 +146,9 @@ class SupervisedDatasetProcessor(DatasetProcessor):
             model_inputs["images"].append(examples["_images"][i])
             model_inputs["videos"].append(examples["_videos"][i])
             model_inputs["audios"].append(examples["_audios"][i])
+            if has_recommendation_metadata:
+                metadata = _recommendation_metadata_at(examples, i)
+                model_inputs["recommendation_metadata"].append(metadata)
 
         return model_inputs
 
@@ -150,6 +168,8 @@ class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
         # and labels with format `<ignore> ... <ignore> Y1 <eos> <ignore> ... <ignore> Y2 <eos>`
         valid_num = 0
         batch_input_ids, batch_labels, batch_images, batch_videos, batch_audios = [], [], [], [], []
+        batch_recommendation_metadata = []
+        has_recommendation_metadata = "_recommendation_metadata" in examples
         lengths = []
         length2indexes = defaultdict(list)
         for i in range(len(examples["_prompt"])):
@@ -179,6 +199,9 @@ class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
                 batch_images.append(examples["_images"][i] or [])
                 batch_videos.append(examples["_videos"][i] or [])
                 batch_audios.append(examples["_audios"][i] or [])
+                if has_recommendation_metadata:
+                    metadata = _recommendation_metadata_at(examples, i)
+                    batch_recommendation_metadata.append(metadata)
                 valid_num += 1
 
         model_inputs = defaultdict(list)
@@ -187,6 +210,7 @@ class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
         for knapsack in knapsacks:
             packed_input_ids, packed_attention_masks, packed_position_ids, packed_labels = [], [], [], []
             packed_images, packed_videos, packed_audios = [], [], []
+            packed_recommendation_metadata = []
             if requires_packing_params:
                 sequence_boundaries = [0]
                 image_subseq_ids: list[int] = []
@@ -201,6 +225,8 @@ class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
                 packed_images += batch_images[index]
                 packed_videos += batch_videos[index]
                 packed_audios += batch_audios[index]
+                if has_recommendation_metadata:
+                    packed_recommendation_metadata.append(batch_recommendation_metadata[index])
                 if requires_packing_params:
                     n_img = len(batch_images[index])
                     n_vid = len(batch_videos[index])
@@ -248,5 +274,7 @@ class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
             model_inputs["images"].append(packed_images or None)
             model_inputs["videos"].append(packed_videos or None)
             model_inputs["audios"].append(packed_audios or None)
+            if has_recommendation_metadata:
+                model_inputs["recommendation_metadata"].append(packed_recommendation_metadata)
 
         return model_inputs

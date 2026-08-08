@@ -1185,5 +1185,25 @@
       "response": "output",
       "history": "history"
     }
+  },
+  "onereason_recommendation_cot_v3_multi_positive": {
+    "file_name": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_cot_v3_multi_positive.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  },
+  "onereason_recommendation_nocot_v3_multi_positive": {
+    "file_name": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_nocot_v3_multi_positive.jsonl",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
   }
 }
