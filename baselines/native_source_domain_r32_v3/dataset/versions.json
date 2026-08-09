@@ -1,0 +1,29 @@
+{
+  "active": "native_source_domain_r32_v3",
+  "versions": {
+    "native_source_domain_r32_v3": {
+      "status": "active",
+      "path": "/data/baselines/native_source_domain_r32_v3/dataset",
+      "records": 219370,
+      "schema": "uniform-jsonl-v2-with-aux-metadata",
+      "world_included": false,
+      "parent_versions": [
+        "rec_material_bucket_reverse_v1",
+        "v1_thought_prompt_all",
+        "v3_recommendation_multi_positive"
+      ],
+      "manifest": "manifest.json",
+      "purpose": "Native Source-Domain R32 V3 reproduction baseline"
+    },
+    "schema_v1_no_aux_20260810": {
+      "status": "archived",
+      "path": "/data/baselines/native_source_domain_r32_v3/dataset_schema_v1_no_aux_20260810",
+      "purpose": "pre-metadata compatibility snapshot; do not use for new recommendation losses"
+    },
+    "pre_schema_20260810": {
+      "status": "archived",
+      "path": "/data/baselines/native_source_domain_r32_v3/dataset_pre_schema_20260810",
+      "purpose": "pre-uniform-schema snapshot; retained only for provenance"
+    }
+  }
+}

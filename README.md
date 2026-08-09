@@ -13,6 +13,17 @@
 - [数据集注册表](./data/dataset_info.json)
 - [数据版本清单](./data/onereason_dataset_versions.json)
 
+## 原生参考基线阶段
+
+当前进入独立的 **Native Source-Domain R32 V3** 基线阶段：基于同学提供的 material-domain 路线，在隔离的 LLaMA-Factory `01398eb` 环境中复刻原生 SFT。该路线不使用当前 macro trainer、GradNorm、Action/推荐辅助损失或 coverage packing，目的是真实比较原生训练配方，而不是叠加多任务算法。
+
+- 正式训练：四张 A800、8K neat packing、LoRA r32、全局 batch 64、SID 权重 8、两 epoch、0.4GC（14/36 层）。
+- 数据：`native_source_domain_r32_v3`，219,370 条，保留物料、用户 Action、用户 Chain、推荐 V3 多正例元数据，不包含 world。
+- 监控：原始 `loss`、`grad_norm`、学习率，以及只观测不反传的 `material / recommendation / user_action / user_chain` 四项任务 loss。
+- 复现脚本、配置和数据版本接口见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)；正式实验记录见 [Native Source-Domain R32 V3](./实验记录/实验Baseline_NSD-R32-V3.md)。
+
+训练产物、数据 JSONL、模型权重、checkpoint、日志和密钥均不提交仓库。
+
 ## REC 系列实验
 
 REC 系列使用 `material / user_action / user_chain / recommendation` 四任务，保留四任务 GradNorm 和 SID 加权 CE，并逐步验证 8K BFD、coverage/deficit 调度、cost-aware 分区和按子任务自适应 pack 长度。

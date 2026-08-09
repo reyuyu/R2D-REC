@@ -36,3 +36,8 @@ C-fast 不改变实验三的目标，只把重复的 full-vocabulary denominator
 - [rec_A 与 recB：四任务调度对照](./实验recA_recB_四任务调度.md)：记录 `rec_A` 的当前训练进度，以及 `recB` 的 `1:3:3:1` 调度、两次 step 22 显存异常和配置对照结果。
 - [REC 系列：自适应 Packing 与四任务训练](./实验recC_recD_recE_REC_F_自适应Packing.md)：汇总 recC 的 8K BFD、recD 的 cost-aware smoke、recE 的自适应 pack 长度验证，以及 REC_F 的 8K 正式配置。
 - [实验 REC_G2：Recommendation No-think Multi-Positive Prefix-Trie Loss](./实验REC_G2_Recommendation-No-think-Multi-Positive-Trie.md)：基于 REC_G1，只替换 recommendation/nocot 的 s_a/s_b/s_c single-gold CE；CPU 回归与 50-step 全量 V3 双卡 smoke 已通过，正式训练已启动。
+
+
+## 原生参考基线阶段
+
+- [实验 Baseline：NSD-R32-V3-2E-GC04-4GPU](./实验Baseline_NSD-R32-V3.md)：隔离复刻 material-domain 原生 SFT 路线；四卡 8K neat packing、LoRA r32、SID 权重 8、两 epoch、0.4GC。该路线保留物料、用户 Action、用户 Chain、推荐四类数据，但不使用 macro trainer、GradNorm 或推荐辅助损失；四项任务 loss 仅作训练观测。
