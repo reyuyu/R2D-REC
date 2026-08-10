@@ -1,0 +1,51 @@
+### REC-PU formal run: immutable BETA material-aligned three-route SID8 objective.
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target: all
+enable_liger_kernel: true
+disable_gradient_checkpointing: false
+
+dataset: onereason_beta_material_aligned
+dataset_dir: /data/lf_data_versions/alltrain/BETA_material_aligned_v1
+template: qwen3_nothink
+cutoff_len: 8192
+packing: true
+neat_packing: true
+overwrite_cache: true
+preprocessing_num_workers: 16
+dataloader_num_workers: 8
+remove_unused_columns: false
+
+output_dir: /data/outputs/baselines/native_source_domain_r32_v3/REC-PU-BETA-MATERIAL-ALIGNED-R32-B005-2E
+logging_steps: 5
+save_strategy: epoch
+save_total_limit: 3
+save_only_model: false
+plot_loss: true
+overwrite_output_dir: false
+report_to: none
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+num_train_epochs: 2
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+bf16: true
+pure_bf16: true
+gradient_checkpointing: true
+use_reentrant_gc: false
+ddp_timeout: 180000000
+seed: 20260806
+resume_from_checkpoint: null
+
+rec_pu_enabled: true
+rec_pu_unlabeled_sid_grad_scale: 0.05
