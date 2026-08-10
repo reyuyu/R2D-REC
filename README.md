@@ -13,16 +13,33 @@
 - [数据集注册表](./data/dataset_info.json)
 - [数据版本清单](./data/onereason_dataset_versions.json)
 
-## 原生参考基线阶段
+## 新 Baseline 系列
 
-当前进入独立的 **Native Source-Domain R32 V3** 基线阶段：基于同学提供的 material-domain 路线，在隔离的 LLaMA-Factory `01398eb` 环境中复刻原生 SFT。该路线不使用当前 macro trainer、GradNorm、Action/推荐辅助损失或 coverage packing，目的是真实比较原生训练配方，而不是叠加多任务算法。
+当前主线进入独立的 **Native Source-Domain R32 V3** baseline 系列。它在隔离的 LLaMA-Factory `01398eb` 环境中复刻 source/domain-aware 原生 SFT，和仓库原有 macro trainer、GradNorm、Action 辅助目标、REC packing 系列严格分开。目的不是继续叠加旧多任务算法，而是在固定训练配方与物料合同下，建立可验证的推荐损失消融基线。
 
-- 正式训练：四张 A800、8K neat packing、LoRA r32、全局 batch 64、SID 权重 8、两 epoch、0.4GC（14/36 层）。
-- 数据：`native_source_domain_r32_v3`，219,370 条，保留物料、用户 Action、用户 Chain、推荐 V3 多正例元数据，不包含 world。
-- 监控：原始 `loss`、`grad_norm`、学习率，以及只观测不反传的 `material / recommendation / user_action / user_chain` 四项任务 loss。
-- 复现脚本、配置和数据版本接口见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)；正式实验记录见 [Native Source-Domain R32 V3](./实验记录/实验Baseline_NSD-R32-V3.md)。
+### 系列结构
 
-训练产物、数据 JSONL、模型权重、checkpoint、日志和密钥均不提交仓库。
+1. **NSD-R32-V3**：四张 A800、8K neat packing、LoRA r32/alpha64/dropout0.05、全局 batch 64、两 epoch、cosine LR `2e-4`、0.4GC（14/36 decoder block）、FA2、Liger 与 BF16。
+2. **BETA-MATERIAL-ALIGNED-SID8**：锁定 `BETA_material_aligned_v1`，将懂物料严格对齐压缩包路线；训练数据不含 world。
+3. **REC-PU**：在上述正式物料合同上，仅替换 recommendation 最终 SID 的 one-hot CE，为后续推荐多正例消融提供正式对照。
+
+该系列的完整代码、配置、测试和运行说明见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)。数据 JSONL、模型、日志和 checkpoint 不提交仓库。
+
+### 当前正式实验：REC-PU
+
+当前 run 为 `REC-PU-BETA-MATERIAL-ALIGNED-R32-B005-2E`，母版为 `BETA-MATERIAL-ALIGNED-SID8-R32-2E-GC04-4GPU`。
+
+- 数据集：`onereason_beta_material_aligned`，目录为 `/data/lf_data_versions/alltrain/BETA_material_aligned_v1`；正式启动前必须通过 manifest、投影摘要、三路数量、四域数量/权重和实际 loss route 的 preflight。
+- 物料合同：`material_sample=100000` 使用普通 token 1、SID/domain token 8 与四域权重；`sid_bucket_canonical_no_think=11298` 使用所有 response token 4、无域权重；`sid_bucket_reverse=29586` 使用普通 1、SID/domain 8、无域权重。
+- REC-PU：仅替换 recommendation **final SID a/b/c** 的 one-hot CE。已观测正例为 `P`，同层未观测 SID 为 `U`，其他层 SID 与普通 token 为 `O`；使用 mean-positive objective，`U` 的分母梯度缩放为 `beta=0.05`，`O` 保持 1.0。它是 replacement，不是 auxiliary；SID/domain weight 仍为 8，原 SID8 分母不变。
+- 正式 YAML：[REC-PU BETA material-aligned R32](./baselines/native_source_domain_r32_v3/config/train_rec_pu_beta_material_aligned_r32_b005_2epoch.yaml)。启动脚本会显式设置 `GLOBAL_ITEM_WEIGHT=8`、`MATERIAL_DOMAIN_MANIFEST` 与 `NATIVE_GC_FRACTION=0.4`。
+- 训练规模：33,616 packed samples，526 optimizer steps/epoch，2 epoch 共 1,052 steps；每个 epoch 保存一次 checkpoint。
+- 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
+- 验证：Phase 1-3 数学/metadata/训练接入测试通过；Phase 4.5 的优化 reference 回归通过，`U` 梯度比例为 0.05，`O` 为 1.0，早期 vectorized 四卡 smoke 的吞吐回退为 0.84%。正式记录见 [实验 REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md)。
+
+### 与旧 REC 系列的关系
+
+旧 REC 系列仍是 macro training + 四任务 GradNorm 的独立路线，覆盖 BFD、coverage/deficit 调度与 cost-aware packing。它的结果用于历史比较，不与 Native baseline 的 loss、batch 语义或 checkpoint step 直接横比。
 
 ## REC 系列实验
 
@@ -63,6 +80,8 @@ REC_F 的 8K BFD pack epoch 共 45,744 个 pack，每个 macro-step 使用 8 个
 | C3 | C2 与 SID 加权 CE 融合 | [实验 C3](./实验记录/实验C3_TopK非法SID与SID加权.md) |
 | D | 监督 SID token 归一化加权 CE | [实验 D](./实验记录/实验D_SID加权SFT.md) |
 | E | 四任务 GradNorm，删除 world | [实验 E](./实验记录/实验E_四任务GradNorm无World.md) |
+| NSD-R32-V3 | 新 Native Source-Domain R32 baseline 系列 | [baseline 目录](./baselines/native_source_domain_r32_v3/README.md) |
+| REC-PU | BETA material-aligned 上的 recommendation positive-unlabeled replacement | [实验 REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md) |
 
 所有 checkpoint 分数、训练状态、已知限制和最终结论以实验记录为准。
 
@@ -146,7 +165,9 @@ CUDA_VISIBLE_DEVICES=0,1 FORCE_TORCHRUN=1 NCCL_SOCKET_IFNAME=lo \
 
 ## 监控指标
 
-训练日志保留各任务原始损失、GradNorm 加权总损失、任务权重、梯度范数、梯度余弦冲突和 DDP 一致性信息。Action Select 重点监控动态合法 SID 质量、Top-K 非法质量、Top-1 非法命中率和 gold Top-5 命中率。
+macro/GradNorm 路线的日志保留各任务原始损失、GradNorm 加权总损失、任务权重、梯度范数、梯度余弦冲突和 DDP 一致性信息。Action Select 重点监控动态合法 SID 质量、Top-K 非法质量、Top-1 非法命中率和 gold Top-5 命中率。
+
+Native baseline 路线使用 segment-level source/domain-weighted SFT loss；`task_loss_*` 只能在同一任务的时间序列内比较，不能因 SID 权重、序列长度和数据路线差异而与其他任务作绝对横比。REC-PU 指标证明 replacement 是否触发，不等价于生成质量；历史 SID 复制率和多正例召回需要在 checkpoint 生成式评测中判断。
 
 SID 加权实验额外记录 SID token 数量、监督 token 比例、SID token CE、普通文本 CE 和 SID 加权质量占比。
 
