@@ -20,6 +20,7 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from transformers import TrainerCallback
 
 BASELINE_ROOT = Path(__file__).resolve().parents[1]
 if str(BASELINE_ROOT) not in sys.path:
@@ -27,6 +28,7 @@ if str(BASELINE_ROOT) not in sys.path:
 
 from rec_pu.recommendation_pu_phase2 import PackedSegment, locate_packed_rec_pu_targets
 from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss
+from rec_pu.core_recommendation_metrics import candidate_window_active, pack_effective_share_sum_count
 from rec_pu.sid8_rec_pu_integration import (
     RecPUConfig,
     build_sid_component_vocab,
@@ -35,6 +37,7 @@ from rec_pu.sid8_rec_pu_integration import (
     probe_rec_pu_position,
     serialise_packed_target,
 )
+from pack_ratio_sampler import PackRatioConfig, PackRatioSampler, derive_pack_task_id, parse_target_ratios
 
 from llamafactory.data.collator import SFTDataCollatorWith4DAttentionMask
 from llamafactory.data.converter import AlpacaDatasetConverter
@@ -105,7 +108,56 @@ def _load_rec_pu_config() -> RecPUConfig:
     return RecPUConfig(rec_pu_enabled=bool(enabled), rec_pu_unlabeled_sid_grad_scale=float(scale))
 
 
+def _load_pack_ratio_config() -> PackRatioConfig:
+    """Read strict PackRatio settings without affecting the default sampler path."""
+
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        config_path = Path(sys.argv[1])
+        if config_path.suffix in {".yaml", ".yml"} and config_path.is_file():
+            import yaml
+
+            loaded = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+            if not isinstance(loaded, dict):
+                raise ValueError("PackRatio launch config must be a YAML mapping.")
+            raw = loaded
+
+    enabled = raw.get("multitask_pack_ratio_enabled", False)
+    targets = raw.get(
+        "multitask_pack_ratio_targets",
+        "material=0.25,recommendation=0.25,user_action=0.25,user_chain=0.25",
+    )
+    if not isinstance(enabled, bool):
+        raise ValueError("`multitask_pack_ratio_enabled` must be boolean.")
+    if not isinstance(targets, str):
+        raise ValueError("`multitask_pack_ratio_targets` must be a string.")
+    # OFF must be exact native behavior. In particular, an ignored targets value
+    # must not prevent the original RandomSampler path from starting.
+    if not enabled:
+        return PackRatioConfig(enabled=False, target_ratios=(0.25, 0.25, 0.25, 0.25))
+    return PackRatioConfig(enabled=True, target_ratios=parse_target_ratios(targets))
+
+
+def _load_rec_candidate_metric_config() -> tuple[bool, int]:
+    """Read official low-frequency TF candidate-monitoring fields."""
+
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        config_path = Path(sys.argv[1])
+        if config_path.suffix in {".yaml", ".yml"} and config_path.is_file():
+            import yaml
+
+            raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    enabled = raw.get("rec_candidate_metrics_enabled", False)
+    interval = raw.get("rec_candidate_metrics_interval", 50)
+    if not isinstance(enabled, bool) or not isinstance(interval, int) or interval < 1:
+        raise ValueError("rec_candidate_metrics_enabled must be bool and interval must be >= 1.")
+    return enabled, interval
+
+
 REC_PU_CONFIG = _load_rec_pu_config()
+PACK_RATIO_CONFIG = _load_pack_ratio_config()
+REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL = _load_rec_candidate_metric_config()
 REC_PU_DEBUG_PROBE = os.getenv("REC_PU_DEBUG_PROBE", "0").strip().lower() in {"1", "true", "yes", "on"}
 # Diagnostic-only: values use the same logits produced by the training
 # forward. Set-PU is a direct scalar objective, so its logged final-SID value
@@ -115,6 +167,7 @@ REC_PU_DIAGNOSTICS_RANK0_ONLY = os.getenv("REC_PU_DIAGNOSTICS_RANK0_ONLY", "1").
 REC_PU_GRAD_DIAGNOSTICS = os.getenv("REC_PU_GRAD_DIAGNOSTICS", "0").strip().lower() in {"1", "true", "yes", "on"}
 REC_PU_GRAD_DIAG_STEPS = frozenset({10, 20, 25, 30, 35, 40})
 _original_alpaca_convert = AlpacaDatasetConverter.__call__
+_original_get_train_sampler = CustomSeq2SeqTrainer._get_train_sampler
 
 
 def _convert_with_source(self, example):
@@ -314,6 +367,10 @@ def _preprocess_packed_with_weights(self, examples):
         if len(packed_input_ids) != self.data_args.cutoff_len + 1:
             raise ValueError("Packed example length does not equal cutoff_len + 1.")
 
+        # Scalar CPU metadata for a post-packing sampler. It follows the exact
+        # causal shift and valid-token semantics of the native loss.
+        pack_task_id = derive_pack_task_id(packed_labels, packed_sample_task_ids, IGNORE_INDEX)
+
         model_inputs["input_ids"].append(packed_input_ids)
         model_inputs["attention_mask"].append(packed_attention_masks)
         model_inputs["position_ids"].append(packed_position_ids)
@@ -322,6 +379,7 @@ def _preprocess_packed_with_weights(self, examples):
         model_inputs["sample_ids"].append(packed_sample_ids)
         model_inputs["sample_task_ids"].append(packed_sample_task_ids)
         model_inputs["sample_domain_weights"].append(packed_sample_domain_weights)
+        model_inputs["pack_task_id"].append(pack_task_id)
         if REC_PU_CONFIG.enabled:
             targets = locate_packed_rec_pu_targets(
                 packed_labels, packed_rec_pu_segments, self.tokenizer, final_occurrence=True
@@ -358,10 +416,40 @@ def _collate_with_rec_pu_metadata(self, features):
     """Keep REC-PU targets trainer-side; never let the base collator tensorize them."""
 
     targets_json_by_row = [feature.pop("rec_pu_targets_json", "[]") for feature in features]
+    for feature in features:
+        feature.pop("pack_task_id", None)
     batch = _original_collator_call(self, features)
     if REC_PU_CONFIG.enabled:
         batch["rec_pu_targets"] = [json.loads(value) for value in targets_json_by_row]
     return batch
+
+
+def _get_train_sampler_with_pack_ratio(self, train_dataset=None):
+    """Use the original sampler byte-for-byte in OFF mode."""
+
+    if not PACK_RATIO_CONFIG.enabled:
+        return _original_get_train_sampler(self, train_dataset)
+
+    dataset = self.train_dataset if train_dataset is None else train_dataset
+    if dataset is None or not hasattr(dataset, "column_names") or "pack_task_id" not in dataset.column_names:
+        raise ValueError("PackRatio is enabled but packed dataset has no `pack_task_id` column.")
+
+    sampler = PackRatioSampler(
+        dataset["pack_task_id"],
+        PACK_RATIO_CONFIG.target_ratios,
+        seed=int(self.args.seed),
+    )
+    if int(os.getenv("RANK", "0")) == 0:
+        ratios = ", ".join(
+            f"{name}={ratio:.6f}" for name, ratio in zip(TASK_NAMES, PACK_RATIO_CONFIG.target_ratios)
+        )
+        print(
+            "PackRatio enabled: "
+            f"ratios=[{ratios}] pools={[len(pool) for pool in sampler.pools]} "
+            f"fingerprint={sampler.fingerprint()}",
+            flush=True,
+        )
+    return sampler
 
 
 def _maybe_run_rec_pu_debug_probe(
@@ -454,6 +542,9 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
             tokenizer = getattr(self, "processing_class", None) or getattr(self, "tokenizer", None)
             sid_component_vocab = build_sid_component_vocab(tokenizer)
             self._rec_pu_component_vocab = sid_component_vocab
+    collect_candidate_metrics = candidate_window_active(
+        self.state.global_step, REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL
+    )
     loss, details = compute_native_sid8_loss(
         logits=outputs.logits,
         labels=labels,
@@ -464,6 +555,7 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         rec_pu_targets=rec_pu_targets,
         rec_pu_config=REC_PU_CONFIG,
         sid_component_vocab=sid_component_vocab,
+        collect_candidate_metrics=collect_candidate_metrics,
     )
     _maybe_run_rec_pu_debug_probe(
         self,
@@ -479,6 +571,8 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         self, sample_losses.detach() * details.sample_domain_weights.detach(), details.sample_task_ids
     )
     _accumulate_rec_pu_metrics(self, details)
+    _accumulate_core_recommendation_metrics(self, details)
+    _accumulate_rec_candidate_metrics(self, details)
     _accumulate_rec_pu_diagnostics(
         self,
         logits=outputs.logits,
@@ -535,6 +629,63 @@ def _accumulate_rec_pu_metrics(trainer, details) -> None:
         stats = torch.zeros_like(values)
         trainer._rec_pu_stats = stats
     stats.add_(values)
+
+
+_CORE_RECOMMENDATION_METRIC_NAMES = (
+    "a_rec_setpu_a", "a_rec_setpu_b", "a_rec_setpu_c",
+    "b_rec_posmass_a", "b_rec_posmass_b", "b_rec_posmass_c",
+    "c_rec_goldprob_a", "c_rec_goldprob_b", "c_rec_goldprob_c",
+    "d_rec_posentropy_a",
+    "e_share_material", "e_share_recommendation", "e_share_user_action", "e_share_user_chain",
+)
+
+_REC_CANDIDATE_METRIC_NAMES = (
+    "f_rec_tf_a_hit8", "f_rec_tf_a_hit32",
+    "g_rec_tf_a_cov8", "g_rec_tf_a_cov32",
+    "h_rec_tf_b_hit8", "h_rec_tf_c_hit8",
+    "i_rec_tf_chain_32_8_8",
+)
+
+
+def _core_recommendation_metric_stats(trainer, device):
+    stats = getattr(trainer, "_core_recommendation_metric_stats", None)
+    if stats is None or stats.device != device:
+        stats = torch.zeros((len(_CORE_RECOMMENDATION_METRIC_NAMES), 2), device=device, dtype=torch.float64)
+        trainer._core_recommendation_metric_stats = stats
+    return stats
+
+
+def _accumulate_core_recommendation_metrics(trainer, details) -> None:
+    """Accumulate detached Set-PU quality and pack-mean exposure metrics.
+
+    This is intentionally independent of REC_PU_DIAGNOSTICS.  All scalar
+    objective values are produced by the loss itself; the only extra tensor
+    work is a positive-set gather for a-level entropy and O(segments) task
+    bincounts.  DDP communication happens only from ``Trainer.log``.
+    """
+
+    stats = _core_recommendation_metric_stats(trainer, details.contributions.device)
+    stats[0:3].add_(details.rec_setpu_sum_count)
+    stats[3:6].add_(details.rec_posmass_sum_count)
+    stats[6:9].add_(details.rec_goldprob_sum_count)
+    stats[9].add_(details.rec_posentropy_a_sum_count)
+    stats[10:14].add_(
+        pack_effective_share_sum_count(
+            details.sample_task_ids, details.sample_row_ids, details.batch_size, len(TASK_NAMES)
+        )
+    )
+
+
+def _accumulate_rec_candidate_metrics(trainer, details) -> None:
+    """Store only detached sum/counts for the current sampled GA window."""
+
+    if not REC_CANDIDATE_METRICS_ENABLED:
+        return
+    stats = getattr(trainer, "_candidate_metric_stats", None)
+    if stats is None or stats.device != details.contributions.device:
+        stats = torch.zeros((len(_REC_CANDIDATE_METRIC_NAMES), 2), device=details.contributions.device, dtype=torch.float64)
+        trainer._candidate_metric_stats = stats
+    stats.add_(details.rec_candidate_sum_count)
 
 
 _REC_DIAG_NAMES = (
@@ -834,6 +985,29 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
             if sample_count.item() > 0:
                 logs[f"task_loss_{task_name}"] = (global_stats[task_index, 0] / sample_count).item()
         stats.zero_()
+    core_stats = getattr(self, "_core_recommendation_metric_stats", None)
+    if core_stats is not None:
+        global_core_stats = core_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            # One compact [14, 2] reduction covers every new always-on metric.
+            torch.distributed.all_reduce(global_core_stats, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(_CORE_RECOMMENDATION_METRIC_NAMES):
+            count = global_core_stats[metric_index, 1]
+            if count.item() > 0:
+                logs[metric_name] = (global_core_stats[metric_index, 0] / count).item()
+        core_stats.zero_()
+    candidate_stats = getattr(self, "_candidate_metric_stats", None)
+    if candidate_stats is not None:
+        global_candidate_stats = candidate_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.all_reduce(global_candidate_stats, op=torch.distributed.ReduceOp.SUM)
+        # Do not replay old values on non-sampling logging steps.
+        if global_candidate_stats[:, 1].sum().item() > 0:
+            for metric_index, metric_name in enumerate(_REC_CANDIDATE_METRIC_NAMES):
+                count = global_candidate_stats[metric_index, 1]
+                if count.item() > 0:
+                    logs[metric_name] = (global_candidate_stats[metric_index, 0] / count).item()
+        candidate_stats.zero_()
     rec_stats = getattr(self, "_rec_pu_stats", None)
     if rec_stats is not None:
         global_rec_stats = rec_stats.detach().clone()
@@ -946,17 +1120,65 @@ def _install_fractional_gradient_checkpointing() -> None:
     )
 
 
-def main() -> None:
+def install_native_patches() -> None:
+    """Install the native route once for training or integration-only audits."""
+
     _install_fractional_gradient_checkpointing()
     AlpacaDatasetConverter.__call__ = _convert_with_source
     PackedSupervisedDatasetProcessor.preprocess_dataset = _preprocess_packed_with_weights
     SFTDataCollatorWith4DAttentionMask._unpad_packed_features = staticmethod(_unpad_packed_features_with_weights)
     SFTDataCollatorWith4DAttentionMask.__call__ = _collate_with_rec_pu_metadata
     CustomSeq2SeqTrainer.compute_loss = _compute_source_weighted_loss
+    CustomSeq2SeqTrainer._get_train_sampler = _get_train_sampler_with_pack_ratio
     CustomSeq2SeqTrainer.log = _log_with_task_losses
     if os.getenv("SOURCE_WEIGHT_SKIP_FINAL_SAVE") == "1":
         CustomSeq2SeqTrainer.save_model = lambda self, *args, **kwargs: None
-    run_exp()
+
+
+class _StopAfterOptimizerStepsCallback(TrainerCallback):
+    """Smoke-only stop hook that leaves the configured scheduler horizon intact."""
+
+    def __init__(self, stop_after_steps: int) -> None:
+        self.stop_after_steps = int(stop_after_steps)
+        self._started_at: float | None = None
+        self._durations: list[float] = []
+
+    def on_step_begin(self, args, state, control, **kwargs):
+        import time
+
+        self._started_at = time.perf_counter()
+        return control
+
+    def on_step_end(self, args, state, control, **kwargs):
+        import time
+
+        if self._started_at is not None:
+            self._durations.append(time.perf_counter() - self._started_at)
+        if state.global_step >= self.stop_after_steps:
+            control.should_training_stop = True
+        return control
+
+    def on_train_end(self, args, state, control, **kwargs):
+        payload = {
+            "rank": int(os.getenv("RANK", "0")),
+            "stop_after_steps": self.stop_after_steps,
+            "completed_steps": int(state.global_step),
+            "step_durations_sec": self._durations,
+            "peak_cuda_gib": (
+                round(torch.cuda.max_memory_allocated() / (1024**3), 3) if torch.cuda.is_available() else 0.0
+            ),
+        }
+        print("PACK_RATIO_SMOKE_TIMING=" + json.dumps(payload, sort_keys=True), flush=True)
+        return control
+
+
+def main() -> None:
+    install_native_patches()
+    stop_after_steps = int(os.getenv("PACK_RATIO_STOP_AFTER_STEPS", "0"))
+    if stop_after_steps < 0:
+        raise ValueError("PACK_RATIO_STOP_AFTER_STEPS must be >= 0.")
+    callbacks = [_StopAfterOptimizerStepsCallback(stop_after_steps)] if stop_after_steps else None
+    run_exp(callbacks=callbacks)
 
 
 if __name__ == "__main__":

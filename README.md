@@ -25,17 +25,18 @@
 
 该系列的完整代码、配置、测试和运行说明见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)。数据 JSONL、模型、日志和 checkpoint 不提交仓库。
 
-### 当前正式实验：REC-PU
+### 当前正式实验：BETA-fenpei
 
-当前 run 为 `REC-PU-BETA-MATERIAL-ALIGNED-R32-B005-2E`，母版为 `BETA-MATERIAL-ALIGNED-SID8-R32-2E-GC04-4GPU`。
+当前 run 为 `BETA-fenpei`，母版为 `BETA-MATERIAL-ALIGNED-SID8-R32-2E-GC04-4GPU`。
 
 - 数据集：`onereason_beta_material_aligned`，目录为 `/data/lf_data_versions/alltrain/BETA_material_aligned_v1`；正式启动前必须通过 manifest、投影摘要、三路数量、四域数量/权重和实际 loss route 的 preflight。
 - 物料合同：`material_sample=100000` 使用普通 token 1、SID/domain token 8 与四域权重；`sid_bucket_canonical_no_think=11298` 使用所有 response token 4、无域权重；`sid_bucket_reverse=29586` 使用普通 1、SID/domain 8、无域权重。
 - BETA-SETloss：仅替换 recommendation **final SID a/b/c** 的 one-hot CE。已观测正例为 `P`，同层未观测 SID 为 `U`，其他层 SID 与普通 token 为 `O`；使用真实标量 Set-PU：`log(sum_P exp(z) + 0.05*sum_U exp(z) + sum_O exp(z)) - logsumexp(z[P])`。它直接使用 PyTorch autograd，不是旧的 custom-backward surrogate；仍是 replacement，SID/domain weight 仍为 8，原 SID8 分母不变。
-- 正式 YAML：[REC-PU BETA material-aligned R32](./baselines/native_source_domain_r32_v3/config/train_rec_pu_beta_material_aligned_r32_b005_2epoch.yaml)。启动脚本会显式设置 `GLOBAL_ITEM_WEIGHT=8`、`MATERIAL_DOMAIN_MANIFEST` 与 `NATIVE_GC_FRACTION=0.4`。
+- PackRatio：顶层任务按 `material/recommendation/user_action/user_chain = 20/45/20/15` 目标比例调度；运行时以 `e_share_*` 记录实际 pack 消费占比。
+- 正式 YAML：[BETA-fenpei 4 GPU 2 epoch](./baselines/native_source_domain_r32_v3/config/train_rec_pu_beta_material_aligned_r32_b005_2epoch_packratio_20452015_candidate_metrics.yaml)。启动脚本会显式设置 `GLOBAL_ITEM_WEIGHT=8`、`MATERIAL_DOMAIN_MANIFEST` 与 `NATIVE_GC_FRACTION=0.4`。
 - 训练规模：33,616 packed samples，526 optimizer steps/epoch，2 epoch 共 1,052 steps；每个 epoch 保存一次 checkpoint。
-- 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
-- 验证：P/U/O、prefix metadata、replacement/denominator、SID8 单次加权回归通过；Set-PU 在真实 BETA batch 上与同一 scalar reference 的 LoRA gradient cosine/norm ratio 均为 `1.0000`；40-step 四卡 smoke 中 recommendation loss 未复现旧 surrogate 的 step20 后持续反弹。正式记录见 [实验 BETA-SETloss](./baselines/native_source_domain_r32_v3/docs/实验BETA-SETloss.md)。
+- 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。每 50 step 额外记录 teacher-forcing 候选 hit/coverage/chain 指标，复用已有 logits，不增加模型 forward。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
+- 验证：P/U/O、prefix metadata、replacement/denominator、SID8 单次加权回归通过；Set-PU 在真实 BETA batch 上与同一 scalar reference 的 LoRA gradient cosine/norm ratio 均为 `1.0000`；40-step 四卡 smoke 中 recommendation loss 未复现旧 surrogate 的 step20 后持续反弹。正式记录见 [实验 BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)。
 
 ### 与旧 REC 系列的关系
 
@@ -82,6 +83,7 @@ REC_F 的 8K BFD pack epoch 共 45,744 个 pack，每个 macro-step 使用 8 个
 | E | 四任务 GradNorm，删除 world | [实验 E](./实验记录/实验E_四任务GradNorm无World.md) |
 | NSD-R32-V3 | 新 Native Source-Domain R32 baseline 系列 | [baseline 目录](./baselines/native_source_domain_r32_v3/README.md) |
 | REC-PU | BETA material-aligned 上的 recommendation positive-unlabeled replacement | [实验 REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md) |
+| BETA-fenpei | Set-PU + `20/45/20/15` PackRatio + 低频候选质量指标 | [实验 BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md) |
 
 所有 checkpoint 分数、训练状态、已知限制和最终结论以实验记录为准。
 

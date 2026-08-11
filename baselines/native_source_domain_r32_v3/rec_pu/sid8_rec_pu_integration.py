@@ -16,6 +16,9 @@ from typing import Any, Iterable, Mapping, Sequence
 import torch
 import torch.nn.functional as F
 
+from rec_pu.core_recommendation_metrics import (
+    candidate_chain_sum_count, candidate_rank_outcome, finite_sum_count, positive_entropy_sum_count,
+)
 from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss, rec_pu_position_loss
 from rec_pu.recommendation_pu_phase2 import RecPUPackedTarget, TokenPrefixPositiveSets
 
@@ -70,6 +73,13 @@ class RecPULossDetails:
     sample_numerators: torch.Tensor
     sample_domain_weights: torch.Tensor
     sample_task_ids: torch.Tensor
+    sample_row_ids: torch.Tensor
+    batch_size: int
+    rec_setpu_sum_count: torch.Tensor
+    rec_posmass_sum_count: torch.Tensor
+    rec_goldprob_sum_count: torch.Tensor
+    rec_posentropy_a_sum_count: torch.Tensor
+    rec_candidate_sum_count: torch.Tensor
     rec_pu_segments: int
     rec_pu_positions: int
     rec_pu_singleton_segments: int
@@ -189,6 +199,7 @@ def compute_native_sid8_loss(
     rec_pu_targets: Sequence[Sequence[RecPUPackedTarget | Mapping[str, Any]]] | None = None,
     rec_pu_config: RecPUConfig | None = None,
     sid_component_vocab: SIDComponentVocab | None = None,
+    collect_candidate_metrics: bool = False,
 ) -> tuple[torch.Tensor, RecPULossDetails]:
     """Compute the exact NSD-R32-V3 SID8 loss with optional REC-PU replacement.
 
@@ -216,6 +227,20 @@ def compute_native_sid8_loss(
     valid = (shift_labels != IGNORE_INDEX) & (shift_sample_ids >= 0)
 
     normalised_targets = _normalise_targets(rec_pu_targets, logits.size(0))
+    # Baseline CE remains the sole CE computation.  Core metrics later reuse
+    # these values and the actual Set-PU per-position outputs after detach.
+    base_per_token_ce = F.cross_entropy(
+        shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),
+        ignore_index=IGNORE_INDEX, reduction="none",
+    ).view_as(shift_labels)
+    per_token_ce = base_per_token_ce
+    metric_device = logits.device
+    rec_setpu_sum_count = torch.zeros((3, 2), device=metric_device, dtype=torch.float64)
+    rec_posmass_sum_count = torch.zeros_like(rec_setpu_sum_count)
+    rec_goldprob_sum_count = torch.zeros_like(rec_setpu_sum_count)
+    rec_posentropy_a_sum_count = torch.zeros(2, device=metric_device, dtype=torch.float64)
+    # a hit8/hit32, a coverage8/coverage32, b hit8, c hit8, chain 32/8/8.
+    rec_candidate_sum_count = torch.zeros((7, 2), device=metric_device, dtype=torch.float64)
     rec_segments = 0
     rec_positions = 0
     singleton_segments = 0
@@ -241,6 +266,7 @@ def compute_native_sid8_loss(
         # At most three full-vocabulary computations (a/b/c) replace the old
         # one-per-final-SID-position loop. Runtime validation is likewise
         # batched, avoiding a device-to-host scalar sync for every position.
+        candidate_outcomes = {}
         for level, entries in grouped_positions.items():
             if not entries:
                 continue
@@ -273,30 +299,49 @@ def compute_native_sid8_loss(
             changed.extend((int(row), int(position)) for row, position, _ in entries)
 
         # Set-PU is a true scalar objective: no detached logits and no custom
-        # backward.  Build baseline CE once, then replace exactly the selected
-        # final a/b/c values with direct-autograd Set-PU values.
-        base_per_token_ce = F.cross_entropy(
-            shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),
-            ignore_index=IGNORE_INDEX, reduction="none",
-        ).view_as(shift_labels)
-        per_token_ce = base_per_token_ce
+        # backward. The metrics below only reuse its detached values.
         for level, entries in grouped_positions.items():
             if not entries:
                 continue
             rows = torch.tensor([entry[0] for entry in entries], dtype=torch.long, device=logits.device)
             positions = torch.tensor([entry[1] for entry in entries], dtype=torch.long, device=logits.device)
+            selected_final_logits = shift_logits[rows, positions]
             set_pu = rec_pu_batched_position_loss(
-                shift_logits[rows, positions],
+                selected_final_logits,
                 [entry[2] for entry in entries],
                 sid_component_vocab.for_level(level),
                 beta=config.unlabeled_sid_grad_scale,
             )
             per_token_ce = per_token_ce.index_put((rows, positions), set_pu)
-    else:
-        base_per_token_ce = per_token_ce = F.cross_entropy(
-            shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),
-            ignore_index=IGNORE_INDEX, reduction="none",
-        ).view_as(shift_labels)
+            level_index = {"a": 0, "b": 1, "c": 2}[level]
+            rec_setpu_sum_count[level_index].add_(finite_sum_count(set_pu))
+            rec_posmass_sum_count[level_index].add_(finite_sum_count(torch.exp(-set_pu.detach())))
+            rec_goldprob_sum_count[level_index].add_(
+                finite_sum_count(torch.exp(-base_per_token_ce[rows, positions].detach()))
+            )
+            if level == "a":
+                rec_posentropy_a_sum_count.add_(
+                    positive_entropy_sum_count(selected_final_logits, [entry[2] for entry in entries])
+                )
+            if collect_candidate_metrics:
+                candidate_outcomes[level] = candidate_rank_outcome(
+                    selected_final_logits, [entry[2] for entry in entries], sid_component_vocab.for_level(level),
+                    max_k=32 if level == "a" else 8,
+                )
+        if collect_candidate_metrics and len(candidate_outcomes) == 3:
+            a_outcome, b_outcome, c_outcome = (
+                candidate_outcomes["a"], candidate_outcomes["b"], candidate_outcomes["c"]
+            )
+            rec_candidate_sum_count[0].add_(finite_sum_count(a_outcome.hit8))
+            rec_candidate_sum_count[1].add_(finite_sum_count(a_outcome.hit32))
+            rec_candidate_sum_count[2].add_(finite_sum_count(a_outcome.coverage8))
+            rec_candidate_sum_count[3].add_(finite_sum_count(a_outcome.coverage32))
+            rec_candidate_sum_count[4].add_(finite_sum_count(b_outcome.hit8))
+            rec_candidate_sum_count[5].add_(finite_sum_count(c_outcome.hit8))
+            # Entries are appended in the same RecPUPackedTarget order for
+            # all three levels, so this is target/segment aligned rather than
+            # inferred from position order.
+            rec_candidate_sum_count[6].add_(candidate_chain_sum_count(a_outcome, b_outcome, c_outcome))
 
     base_contributions = base_per_token_ce.float() * shift_weights
     contributions = per_token_ce.float() * shift_weights
@@ -314,13 +359,19 @@ def compute_native_sid8_loss(
             base_contributions=base_contributions, contributions=contributions, valid_mask=valid,
             sample_token_counts=empty, sample_weight_mass=empty, base_sample_numerators=empty,
             sample_numerators=empty, sample_domain_weights=empty,
-            sample_task_ids=torch.zeros(0, dtype=torch.long, device=zero.device), rec_pu_segments=0,
+            sample_task_ids=torch.zeros(0, dtype=torch.long, device=zero.device),
+            sample_row_ids=torch.zeros(0, dtype=torch.long, device=zero.device), batch_size=batch_size,
+            rec_setpu_sum_count=rec_setpu_sum_count, rec_posmass_sum_count=rec_posmass_sum_count,
+            rec_goldprob_sum_count=rec_goldprob_sum_count,
+            rec_posentropy_a_sum_count=rec_posentropy_a_sum_count,
+            rec_candidate_sum_count=rec_candidate_sum_count, rec_pu_segments=0,
             rec_pu_positions=0, rec_pu_singleton_segments=0, positive_count_a_sum=0,
             positive_count_b_sum=0, positive_count_c_sum=0, changed_positions=(),
         )
 
     unique_ids, inverse = torch.unique(flat_sample_ids, sorted=False, return_inverse=True)
     count = unique_ids.numel()
+    sample_rows = torch.div(unique_ids, sample_stride, rounding_mode="floor").to(dtype=torch.long)
     dtype = contributions.dtype
     flat_base = base_contributions.reshape(-1)[flat_valid]
     flat_new = contributions.reshape(-1)[flat_valid]
@@ -348,6 +399,11 @@ def compute_native_sid8_loss(
         sample_token_counts=token_counts, sample_weight_mass=weight_mass,
         base_sample_numerators=base_numerators, sample_numerators=numerators,
         sample_domain_weights=sample_domains, sample_task_ids=sample_tasks,
+        sample_row_ids=sample_rows, batch_size=batch_size,
+        rec_setpu_sum_count=rec_setpu_sum_count, rec_posmass_sum_count=rec_posmass_sum_count,
+        rec_goldprob_sum_count=rec_goldprob_sum_count,
+        rec_posentropy_a_sum_count=rec_posentropy_a_sum_count,
+        rec_candidate_sum_count=rec_candidate_sum_count,
         rec_pu_segments=rec_segments, rec_pu_positions=rec_positions,
         rec_pu_singleton_segments=singleton_segments,
         positive_count_a_sum=positive_sums["a"], positive_count_b_sum=positive_sums["b"],
