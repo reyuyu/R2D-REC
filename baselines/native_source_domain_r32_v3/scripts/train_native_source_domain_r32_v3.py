@@ -26,9 +26,11 @@ if str(BASELINE_ROOT) not in sys.path:
     sys.path.insert(0, str(BASELINE_ROOT))
 
 from rec_pu.recommendation_pu_phase2 import PackedSegment, locate_packed_rec_pu_targets
+from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss
 from rec_pu.sid8_rec_pu_integration import (
     RecPUConfig,
     build_sid_component_vocab,
+    coerce_packed_target,
     compute_native_sid8_loss,
     probe_rec_pu_position,
     serialise_packed_target,
@@ -105,6 +107,13 @@ def _load_rec_pu_config() -> RecPUConfig:
 
 REC_PU_CONFIG = _load_rec_pu_config()
 REC_PU_DEBUG_PROBE = os.getenv("REC_PU_DEBUG_PROBE", "0").strip().lower() in {"1", "true", "yes", "on"}
+# Diagnostic-only: values use the same logits produced by the training
+# forward. Set-PU is a direct scalar objective, so its logged final-SID value
+# has the same forward/backward geometry as the actual replacement loss.
+REC_PU_DIAGNOSTICS = os.getenv("REC_PU_DIAGNOSTICS", "0").strip().lower() in {"1", "true", "yes", "on"}
+REC_PU_DIAGNOSTICS_RANK0_ONLY = os.getenv("REC_PU_DIAGNOSTICS_RANK0_ONLY", "1").strip().lower() in {"1", "true", "yes", "on"}
+REC_PU_GRAD_DIAGNOSTICS = os.getenv("REC_PU_GRAD_DIAGNOSTICS", "0").strip().lower() in {"1", "true", "yes", "on"}
+REC_PU_GRAD_DIAG_STEPS = frozenset({10, 20, 25, 30, 35, 40})
 _original_alpaca_convert = AlpacaDatasetConverter.__call__
 
 
@@ -470,6 +479,25 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         self, sample_losses.detach() * details.sample_domain_weights.detach(), details.sample_task_ids
     )
     _accumulate_rec_pu_metrics(self, details)
+    _accumulate_rec_pu_diagnostics(
+        self,
+        logits=outputs.logits,
+        labels=labels,
+        loss_weights=weights,
+        sample_task_ids=sample_task_ids,
+        rec_pu_targets=rec_pu_targets,
+        sid_component_vocab=sid_component_vocab,
+        details=details,
+    )
+    _maybe_accumulate_gradient_diagnostics(
+        self,
+        model=model,
+        logits=outputs.logits,
+        labels=labels,
+        rec_pu_targets=rec_pu_targets,
+        sid_component_vocab=sid_component_vocab,
+        details=details,
+    )
     return (loss, outputs) if return_outputs else loss
 
 
@@ -509,6 +537,289 @@ def _accumulate_rec_pu_metrics(trainer, details) -> None:
     stats.add_(values)
 
 
+_REC_DIAG_NAMES = (
+    "rec_text_ce", "rec_think_sid_ce", "rec_final_onehot_ce", "rec_final_setpu_loss",
+    "rec_pos_mass", "rec_u_mass", "rec_pos_min_prob", "rec_pos_mean_prob", "rec_pos_max_prob",
+    "rec_gold_top1_acc", "rec_positive_top1_acc", "rec_pos_vs_u_margin",
+)
+_REC_DIAG_LEVEL_NAMES = tuple(
+    f"{name}_{level}"
+    for name in ("rec_pos_mass", "rec_u_mass", "rec_positive_top1_acc", "rec_pos_vs_u_margin")
+    for level in ("a", "b", "c")
+)
+
+
+def _add_metric(stats, index, name, values) -> None:
+    """Accumulate a detached finite mean as (sum, count)."""
+    if values.numel() == 0:
+        return
+    values = values.detach().to(device=stats.device, dtype=stats.dtype).reshape(-1)
+    values = values[torch.isfinite(values)]
+    if values.numel():
+        stats[index[name], 0] += values.sum()
+        stats[index[name], 1] += values.numel()
+
+
+def _rec_diag_stats(trainer, device):
+    names = _REC_DIAG_NAMES + _REC_DIAG_LEVEL_NAMES
+    stats = getattr(trainer, "_rec_pu_diag_stats", None)
+    if stats is None or stats.device != device:
+        stats = torch.zeros((len(names), 2), device=device, dtype=torch.float64)
+        trainer._rec_pu_diag_stats = stats
+    return stats, {name: i for i, name in enumerate(names)}
+
+
+def _native_item_ids(trainer, device):
+    value = getattr(trainer, "_native_item_ids_for_diagnostics", None)
+    if value is None or value.device != device:
+        tokenizer = getattr(trainer, "processing_class", None) or getattr(trainer, "tokenizer", None)
+        value = torch.tensor(sorted(_item_token_ids(tokenizer)), dtype=torch.long, device=device)
+        trainer._native_item_ids_for_diagnostics = value
+    return value
+
+
+def _accumulate_rec_pu_diagnostics(
+    trainer, *, logits, labels, loss_weights, sample_task_ids, rec_pu_targets, sid_component_vocab, details
+) -> None:
+    """Collect detached, selected-position diagnostics; no second model forward.
+
+    The routine avoids a full ``softmax([batch, seq, vocab])``. It evaluates
+    logsumexp and indexed gathers only for real final a/b/c positions.
+    """
+    if not (REC_PU_DIAGNOSTICS and REC_PU_CONFIG.enabled):
+        return
+    with torch.no_grad():
+        stats, index = _rec_diag_stats(trainer, logits.device)
+        # The requested metrics are sampled at the existing logging cadence.
+        # Rank 0's 16 real GA microbatches form the reporting sample; other
+        # ranks allocate zero-shaped-compatible stats only, so DDP all-reduce
+        # remains safe without paying four copies of selected-logit logsumexp.
+        target_step = int(trainer.state.global_step) + 1
+        if target_step % int(trainer.args.logging_steps) != 0:
+            return
+        if REC_PU_DIAGNOSTICS_RANK0_ONLY and int(os.getenv("RANK", "0")) != 0:
+            return
+        shift_labels = labels[..., 1:]
+        shift_weights = loss_weights[..., 1:].float()
+        shift_tasks = sample_task_ids[..., 1:]
+        valid = (shift_labels != IGNORE_INDEX) & (shift_tasks >= 0)
+        rec_mask = valid & (shift_tasks == TASK_ID_BY_NAME["recommendation"])
+        final_mask = torch.zeros_like(rec_mask)
+        entries = {"a": [], "b": [], "c": []}
+        for row, row_targets in enumerate(rec_pu_targets or []):
+            for raw_target in row_targets:
+                target = coerce_packed_target(raw_target)
+                for level, position, positives in (
+                    ("a", target.a_logit_position, target.positives.a),
+                    ("b", target.b_logit_position, target.positives.b),
+                    ("c", target.c_logit_position, target.positives.c),
+                ):
+                    if position < 0 or position >= logits.size(1) - 1:
+                        raise ValueError("REC-PU diagnostic target lies outside shifted logits.")
+                    final_mask[row, position] = True
+                    entries[level].append((row, position, tuple(int(value) for value in positives)))
+
+        # CE decomposition uses baseline one-hot values; final replacement is
+        # reported on the same positions separately.
+        base_ce = details.base_contributions / shift_weights.clamp_min(1.0)
+        actual_ce = details.contributions / shift_weights.clamp_min(1.0)
+        item_ids = _native_item_ids(trainer, logits.device)
+        sid_mask = torch.isin(shift_labels, item_ids) if item_ids.numel() else torch.zeros_like(rec_mask)
+        _add_metric(stats, index, "rec_text_ce", base_ce[rec_mask & ~sid_mask])
+        _add_metric(stats, index, "rec_think_sid_ce", base_ce[rec_mask & sid_mask & ~final_mask])
+        _add_metric(stats, index, "rec_final_onehot_ce", base_ce[final_mask])
+        _add_metric(stats, index, "rec_final_setpu_loss", actual_ce[final_mask])
+
+        # Actual native numerator split: membership is lexical SID/domain
+        # identity, not loss weight, so canonical response-4 text remains text.
+        sid_stats = getattr(trainer, "_native_sid_share_stats", None)
+        if sid_stats is None or sid_stats.device != logits.device:
+            sid_stats = torch.zeros((len(TASK_NAMES), 2), device=logits.device, dtype=torch.float64)
+            trainer._native_sid_share_stats = sid_stats
+        for task_id in range(len(TASK_NAMES)):
+            task_mask = valid & (shift_tasks == task_id)
+            sid_stats[task_id, 0] += details.contributions[task_mask & sid_mask].sum().detach().to(torch.float64)
+            sid_stats[task_id, 1] += details.contributions[task_mask & ~sid_mask].sum().detach().to(torch.float64)
+
+        # P/U/O mass and teacher-forced top-1 metrics use original detached
+        # logits. Critically, index final positions *before* converting to
+        # fp32: making ``logits[..., :-1, :].float()`` would clone the whole
+        # 8K x vocabulary tensor at a logging step and defeats the low-cost
+        # diagnostic contract.
+        for level, level_entries in entries.items():
+            if not level_entries:
+                continue
+            level_ids = torch.tensor(sid_component_vocab.for_level(level), dtype=torch.long, device=logits.device)
+            rows = torch.tensor([row for row, _, _ in level_entries], dtype=torch.long, device=logits.device)
+            positions = torch.tensor([position for _, position, _ in level_entries], dtype=torch.long, device=logits.device)
+            selected_vectors = logits[rows, positions].detach().float()
+            # The expensive vocabulary-wide reductions are batched by level.
+            # A GA16 logging step can contain many final SID positions; doing
+            # one tiny CUDA reduction per position made the monitor (not the
+            # loss) dominate wall-clock time. These two tensors have shape
+            # [selected positions], not [packed sequence positions].
+            denominators = torch.logsumexp(selected_vectors, dim=1)
+            top1_ids = selected_vectors.argmax(dim=1)
+            level_logits_all = selected_vectors.index_select(1, level_ids)
+            level_masses = torch.exp(torch.logsumexp(level_logits_all, dim=1) - denominators)
+            measures = defaultdict(list)
+            for entry_index, (row, position, positives) in enumerate(level_entries):
+                vector = selected_vectors[entry_index]
+                positive_ids = torch.tensor(positives, dtype=torch.long, device=logits.device)
+                denominator = denominators[entry_index]
+                positive_logits = vector.index_select(0, positive_ids)
+                level_logits = level_logits_all[entry_index]
+                pos_mass = torch.exp(torch.logsumexp(positive_logits, dim=0) - denominator)
+                pos_probs = torch.exp(positive_logits - denominator)
+                top1 = top1_ids[entry_index]
+                positive_mask = (level_ids[:, None] == positive_ids[None, :]).any(dim=1)
+                measures["rec_pos_mass"].append(pos_mass)
+                measures["rec_u_mass"].append((level_masses[entry_index] - pos_mass).clamp_min(0.0))
+                measures["rec_pos_min_prob"].append(pos_probs.min())
+                measures["rec_pos_mean_prob"].append(pos_probs.mean())
+                measures["rec_pos_max_prob"].append(pos_probs.max())
+                measures["rec_gold_top1_acc"].append((top1 == shift_labels[row, position]).float())
+                measures["rec_positive_top1_acc"].append((top1 == positive_ids).any().float())
+                if not bool(positive_mask.all().item()):
+                    u_logits = level_logits.masked_fill(positive_mask, float("-inf"))
+                    measures["rec_pos_vs_u_margin"].append(positive_logits.max() - u_logits.max())
+            for name, values in measures.items():
+                stacked = torch.stack(values)
+                _add_metric(stats, index, name, stacked)
+                if name in {"rec_pos_mass", "rec_u_mass", "rec_positive_top1_acc", "rec_pos_vs_u_margin"}:
+                    _add_metric(stats, index, f"{name}_{level}", stacked)
+
+
+_GRAD_DIAG_NAMES = (
+    "cos_material_rec", "cos_user_action_rec", "cos_user_chain_rec",
+    "grad_norm_material", "grad_norm_recommendation", "grad_norm_user_action", "grad_norm_user_chain",
+    "cos_recpu_vs_onehot", "recpu_to_onehot_grad_norm_ratio",
+)
+
+
+def _grad_diag_stats(trainer, device):
+    stats = getattr(trainer, "_rec_pu_grad_diag_stats", None)
+    if stats is None or stats.device != device:
+        stats = torch.zeros((len(_GRAD_DIAG_NAMES), 2), device=device, dtype=torch.float64)
+        trainer._rec_pu_grad_diag_stats = stats
+    return stats, {name: i for i, name in enumerate(_GRAD_DIAG_NAMES)}
+
+
+def _reference_lora_params(trainer, model):
+    cached = getattr(trainer, "_rec_pu_reference_lora_params", None)
+    if cached is not None:
+        return cached
+    selected = []
+    wanted_layers = {32, 33, 34, 35}
+    wanted_modules = ("q_proj", "v_proj", "o_proj", "down_proj")
+    for name, parameter in model.named_parameters():
+        match = re.search(r"layers\.(\d+)\.", name)
+        if (
+            parameter.requires_grad
+            and "lora_B" in name
+            and match is not None
+            and int(match.group(1)) in wanted_layers
+            and any(module in name for module in wanted_modules)
+        ):
+            selected.append((name, parameter))
+    if not selected:
+        # Fail closed to a deterministic small LoRA-B subset if a PEFT naming
+        # change removes the Qwen layer pattern. This is diagnostic-only.
+        selected = [(name, parameter) for name, parameter in model.named_parameters() if parameter.requires_grad and "lora_B" in name][-16:]
+    if not selected:
+        raise ValueError("REC-PU gradient diagnostic found no trainable LoRA-B reference parameters.")
+    trainer._rec_pu_reference_lora_params = selected
+    if int(os.getenv("RANK", "0")) == 0:
+        print("REC_PU_GRAD_REFERENCE=" + json.dumps([name for name, _ in selected]), flush=True)
+    return selected
+
+
+def _vjp_vector(loss, parameters):
+    gradients = torch.autograd.grad(loss, [parameter for _, parameter in parameters], retain_graph=True, allow_unused=True)
+    return torch.cat([
+        torch.zeros_like(parameter, dtype=torch.float32).reshape(-1)
+        if gradient is None else gradient.detach().float().reshape(-1)
+        for (_, parameter), gradient in zip(parameters, gradients)
+    ])
+
+
+def _add_grad_metric(stats, index, name, value):
+    if torch.isfinite(value):
+        stats[index[name], 0] += value.detach().to(dtype=stats.dtype)
+        stats[index[name], 1] += 1
+
+
+def _maybe_accumulate_gradient_diagnostics(
+    trainer, *, model, logits, labels, rec_pu_targets, sid_component_vocab, details
+) -> None:
+    """Rare diagnostic VJPs on a small LoRA-B subset, never training grads.
+
+    Triggered at most once at each requested optimizer step on rank 0. It
+    reuses the live forward graph and calls ``autograd.grad`` only for the
+    reference subset; the normal Trainer backward and optimizer update remain
+    unchanged. If the selected packed microbatch lacks one of the four tasks,
+    the probe is skipped rather than fabricating a cross-task direction.
+    """
+    if not (REC_PU_GRAD_DIAGNOSTICS and REC_PU_CONFIG.enabled):
+        return
+    stats, index = _grad_diag_stats(trainer, logits.device)  # allocate on every rank for DDP all-reduce safety
+    target_step = int(trainer.state.global_step) + 1
+    if int(os.getenv("RANK", "0")) != 0 or target_step not in REC_PU_GRAD_DIAG_STEPS:
+        return
+    completed = getattr(trainer, "_rec_pu_grad_diag_completed_steps", set())
+    if target_step in completed:
+        return
+    if not rec_pu_targets or not any(rec_pu_targets):
+        return
+
+    sample_tasks = details.sample_task_ids
+    present = {int(task.item()) for task in sample_tasks if int(task.item()) >= 0}
+    if set(range(len(TASK_NAMES))) - present:
+        return
+    parameters = _reference_lora_params(trainer, model)
+    sample_losses = details.sample_numerators / details.sample_token_counts.clamp_min(1.0)
+    task_vectors = {}
+    for task_id, task_name in enumerate(TASK_NAMES):
+        task_loss = (sample_losses[sample_tasks == task_id] * details.sample_domain_weights[sample_tasks == task_id]).mean()
+        task_vectors[task_name] = _vjp_vector(task_loss, parameters)
+        _add_grad_metric(stats, index, f"grad_norm_{task_name}", task_vectors[task_name].norm())
+    rec_vector = task_vectors["recommendation"]
+    for task_name in ("material", "user_action", "user_chain"):
+        _add_grad_metric(stats, index, f"cos_{task_name}_rec", F.cosine_similarity(task_vectors[task_name], rec_vector, dim=0))
+
+    # Compare only the same final recommendation positions. This is a pure
+    # diagnostic objective, not a second training loss or extra model forward.
+    shift_logits = logits[..., :-1, :]
+    shift_labels = labels[..., 1:]
+    pu_terms, onehot_terms = [], []
+    by_level = {"a": [], "b": [], "c": []}
+    for row, row_targets in enumerate(rec_pu_targets):
+        for raw_target in row_targets:
+            target = coerce_packed_target(raw_target)
+            by_level["a"].append((row, target.a_logit_position, target.positives.a))
+            by_level["b"].append((row, target.b_logit_position, target.positives.b))
+            by_level["c"].append((row, target.c_logit_position, target.positives.c))
+    for level, entries in by_level.items():
+        if not entries:
+            continue
+        rows = torch.tensor([row for row, _, _ in entries], device=logits.device, dtype=torch.long)
+        positions = torch.tensor([position for _, position, _ in entries], device=logits.device, dtype=torch.long)
+        selected_logits = shift_logits[rows, positions]
+        pu_terms.append(rec_pu_batched_position_loss(
+            selected_logits, [positives for _, _, positives in entries], sid_component_vocab.for_level(level),
+            beta=REC_PU_CONFIG.unlabeled_sid_grad_scale,
+        ).mean())
+        onehot_terms.append(F.cross_entropy(selected_logits.float(), shift_labels[rows, positions]))
+    if pu_terms and onehot_terms:
+        pu_vector = _vjp_vector(torch.stack(pu_terms).mean(), parameters)
+        onehot_vector = _vjp_vector(torch.stack(onehot_terms).mean(), parameters)
+        _add_grad_metric(stats, index, "cos_recpu_vs_onehot", F.cosine_similarity(pu_vector, onehot_vector, dim=0))
+        _add_grad_metric(stats, index, "recpu_to_onehot_grad_norm_ratio", pu_vector.norm() / onehot_vector.norm().clamp_min(1e-30))
+    completed = set(completed)
+    completed.add(target_step)
+    trainer._rec_pu_grad_diag_completed_steps = completed
+
+
 _original_trainer_log = CustomSeq2SeqTrainer.log
 
 
@@ -543,6 +854,41 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
             logs["rec_pu_positive_count_b_mean"] = (global_rec_stats[5] / global_rec_stats[0]).item()
             logs["rec_pu_positive_count_c_mean"] = (global_rec_stats[6] / global_rec_stats[0]).item()
         rec_stats.zero_()
+    diag_stats = getattr(self, "_rec_pu_diag_stats", None)
+    if diag_stats is not None:
+        global_diag = diag_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.all_reduce(global_diag, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(_REC_DIAG_NAMES + _REC_DIAG_LEVEL_NAMES):
+            count = global_diag[metric_index, 1]
+            if count.item() > 0:
+                logs[metric_name] = (global_diag[metric_index, 0] / count).item()
+        diag_stats.zero_()
+    sid_stats = getattr(self, "_native_sid_share_stats", None)
+    if sid_stats is not None:
+        global_sid = sid_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.all_reduce(global_sid, op=torch.distributed.ReduceOp.SUM)
+        total_sid = global_sid[:, 0].sum()
+        total_text = global_sid[:, 1].sum()
+        if (total_sid + total_text).item() > 0:
+            logs["sid_weighted_numerator_share"] = (total_sid / (total_sid + total_text)).item()
+            logs["text_numerator_share"] = (total_text / (total_sid + total_text)).item()
+        for task_index, task_name in enumerate(TASK_NAMES):
+            sid_value, text_value = global_sid[task_index]
+            if (sid_value + text_value).item() > 0:
+                logs[f"{task_name}_sid_numerator_share"] = (sid_value / (sid_value + text_value)).item()
+        sid_stats.zero_()
+    grad_diag = getattr(self, "_rec_pu_grad_diag_stats", None)
+    if grad_diag is not None:
+        global_grad_diag = grad_diag.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.all_reduce(global_grad_diag, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(_GRAD_DIAG_NAMES):
+            count = global_grad_diag[metric_index, 1]
+            if count.item() > 0:
+                logs[metric_name] = (global_grad_diag[metric_index, 0] / count).item()
+        grad_diag.zero_()
     return _original_trainer_log(self, logs, *args, **kwargs)
 
 

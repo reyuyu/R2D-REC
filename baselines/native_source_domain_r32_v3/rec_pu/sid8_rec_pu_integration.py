@@ -16,7 +16,7 @@ from typing import Any, Iterable, Mapping, Sequence
 import torch
 import torch.nn.functional as F
 
-from rec_pu.recommendation_pu_loss import rec_pu_position_loss
+from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss, rec_pu_position_loss
 from rec_pu.recommendation_pu_phase2 import RecPUPackedTarget, TokenPrefixPositiveSets
 
 
@@ -26,7 +26,7 @@ _SID_ID_CACHE: dict[tuple[str, tuple[int, ...]], torch.Tensor] = {}
 
 @dataclass(frozen=True)
 class RecPUConfig:
-    """Configuration for a future REC-PU run; Phase 3 does not alter a run YAML."""
+    """Set-PU configuration; the old field name remains launcher-compatible."""
 
     rec_pu_enabled: bool = True
     rec_pu_unlabeled_sid_grad_scale: float = 0.05
@@ -41,6 +41,7 @@ class RecPUConfig:
 
     @property
     def unlabeled_sid_grad_scale(self) -> float:
+        """Compatibility name: this is now the Set-PU U weight (alpha)."""
         return self.rec_pu_unlabeled_sid_grad_scale
 
 
@@ -177,109 +178,6 @@ def _cached_sid_ids(token_ids: tuple[int, ...], device: torch.device) -> torch.T
     return value
 
 
-class _NativeRecPUPerTokenLoss(torch.autograd.Function):
-    """One full-logits backward for baseline CE and REC-PU replacement.
-
-    The ordinary implementation computes CE over every causal position then
-    adds an indexed REC-PU graph.  The latter's index backward allocates a
-    second full ``[sequence, vocab]`` gradient.  This fused function returns
-    the same base CE values plus replacement values, but overwrites selected
-    gradients while producing only one full logits gradient in backward.
-    """
-
-    @staticmethod
-    def forward(
-        ctx: torch.autograd.function.FunctionCtx,
-        logits: torch.Tensor,
-        labels: torch.Tensor,
-        selected_rows: torch.Tensor,
-        selected_positions: torch.Tensor,
-        selected_levels: torch.Tensor,
-        positive_position_rows: torch.Tensor,
-        positive_ids: torch.Tensor,
-        positive_counts: torch.Tensor,
-        a_ids: torch.Tensor,
-        b_ids: torch.Tensor,
-        c_ids: torch.Tensor,
-        beta: float,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        base = F.cross_entropy(
-            logits.reshape(-1, logits.size(-1)), labels.reshape(-1), ignore_index=IGNORE_INDEX, reduction="none"
-        ).view_as(labels)
-        replacement = base.clone()
-        if selected_rows.numel():
-            component_ids = (a_ids, b_ids, c_ids)
-            for level, level_ids in enumerate(component_ids):
-                group = torch.nonzero(selected_levels == level, as_tuple=False).flatten()
-                if not group.numel():
-                    continue
-                rows = selected_rows[group]
-                positions = selected_positions[group]
-                group_logits = logits[rows, positions]
-                global_to_local = torch.full((selected_rows.numel(),), -1, dtype=torch.long, device=logits.device)
-                global_to_local[group] = torch.arange(group.numel(), dtype=torch.long, device=logits.device)
-                positive_mask = selected_levels[positive_position_rows] == level
-                positive_rows = global_to_local[positive_position_rows[positive_mask]]
-                group_positive_ids = positive_ids[positive_mask]
-                positive_sum = torch.zeros(group.numel(), dtype=logits.dtype, device=logits.device)
-                positive_sum.index_add_(0, positive_rows, group_logits[positive_rows, group_positive_ids])
-                replacement[rows, positions] = torch.logsumexp(group_logits, dim=-1) - positive_sum / positive_counts[
-                    group
-                ].to(dtype=logits.dtype)
-
-        ctx.save_for_backward(
-            logits, labels, selected_rows, selected_positions, selected_levels,
-            positive_position_rows, positive_ids, positive_counts,
-        )
-        ctx.component_ids = (a_ids, b_ids, c_ids)
-        ctx.beta = beta
-        # Details need the original CE, but it must not create a second path.
-        ctx.mark_non_differentiable(base)
-        return base, replacement
-
-    @staticmethod
-    def backward(ctx: torch.autograd.function.FunctionCtx, grad_base: torch.Tensor | None, grad_replacement: torch.Tensor):
-        (
-            logits, labels, selected_rows, selected_positions, selected_levels,
-            positive_position_rows, positive_ids, positive_counts,
-        ) = ctx.saved_tensors
-        probabilities = torch.softmax(logits, dim=-1)
-        # Keep only sparse P probabilities before the in-place baseline CE
-        # adjustment below. A full clone would recreate the memory spike this
-        # fused path is intended to remove.
-        positive_probabilities = probabilities[
-            selected_rows[positive_position_rows], selected_positions[positive_position_rows], positive_ids
-        ]
-        gradient = probabilities
-        valid = labels != IGNORE_INDEX
-        valid_rows, valid_positions = torch.nonzero(valid, as_tuple=True)
-        gradient[valid_rows, valid_positions, labels[valid_rows, valid_positions]] -= 1.0
-        gradient.masked_fill_(~valid.unsqueeze(-1), 0.0)
-        gradient *= grad_replacement.unsqueeze(-1).to(dtype=gradient.dtype)
-
-        if selected_rows.numel():
-            for level, level_ids in enumerate(ctx.component_ids):
-                group = torch.nonzero(selected_levels == level, as_tuple=False).flatten()
-                if not group.numel():
-                    continue
-                rows = selected_rows[group]
-                positions = selected_positions[group]
-                gradient[rows[:, None], positions[:, None], level_ids[None, :]] *= ctx.beta
-                positive_mask = selected_levels[positive_position_rows] == level
-                global_rows = positive_position_rows[positive_mask]
-                positive_rows = selected_rows[global_rows]
-                positive_positions = selected_positions[global_rows]
-                group_positive_ids = positive_ids[positive_mask]
-                positive_gradient = positive_probabilities[positive_mask]
-                positive_gradient = positive_gradient - positive_counts[global_rows].reciprocal().to(
-                    dtype=probabilities.dtype
-                )
-                gradient[positive_rows, positive_positions, group_positive_ids] = positive_gradient * grad_replacement[
-                    positive_rows, positive_positions
-                ].to(dtype=gradient.dtype)
-        return gradient, None, None, None, None, None, None, None, None, None, None, None
-
-
 def compute_native_sid8_loss(
     *,
     logits: torch.Tensor,
@@ -374,55 +272,26 @@ def compute_native_sid8_loss(
 
             changed.extend((int(row), int(position)) for row, position, _ in entries)
 
-        ordered_entries = [
-            (level, row, position, positives)
-            for level in ("a", "b", "c")
-            for row, position, positives in grouped_positions[level]
-        ]
-        if ordered_entries:
-            selected_rows = torch.tensor(
-                [entry[1] for entry in ordered_entries], dtype=torch.long, device=logits.device
+        # Set-PU is a true scalar objective: no detached logits and no custom
+        # backward.  Build baseline CE once, then replace exactly the selected
+        # final a/b/c values with direct-autograd Set-PU values.
+        base_per_token_ce = F.cross_entropy(
+            shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),
+            ignore_index=IGNORE_INDEX, reduction="none",
+        ).view_as(shift_labels)
+        per_token_ce = base_per_token_ce
+        for level, entries in grouped_positions.items():
+            if not entries:
+                continue
+            rows = torch.tensor([entry[0] for entry in entries], dtype=torch.long, device=logits.device)
+            positions = torch.tensor([entry[1] for entry in entries], dtype=torch.long, device=logits.device)
+            set_pu = rec_pu_batched_position_loss(
+                shift_logits[rows, positions],
+                [entry[2] for entry in entries],
+                sid_component_vocab.for_level(level),
+                beta=config.unlabeled_sid_grad_scale,
             )
-            selected_positions = torch.tensor(
-                [entry[2] for entry in ordered_entries], dtype=torch.long, device=logits.device
-            )
-            selected_levels = torch.tensor(
-                [{"a": 0, "b": 1, "c": 2}[entry[0]] for entry in ordered_entries],
-                dtype=torch.long,
-                device=logits.device,
-            )
-            positive_position_rows = torch.tensor(
-                [index for index, entry in enumerate(ordered_entries) for _ in entry[3]],
-                dtype=torch.long,
-                device=logits.device,
-            )
-            all_positive_ids = torch.tensor(
-                [token_id for _, _, _, positives in ordered_entries for token_id in positives],
-                dtype=torch.long,
-                device=logits.device,
-            )
-            positive_counts = torch.tensor(
-                [float(len(entry[3])) for entry in ordered_entries], dtype=shift_logits.dtype, device=logits.device
-            )
-            base_per_token_ce, per_token_ce = _NativeRecPUPerTokenLoss.apply(
-                shift_logits,
-                shift_labels,
-                selected_rows,
-                selected_positions,
-                selected_levels,
-                positive_position_rows,
-                all_positive_ids,
-                positive_counts,
-                _cached_sid_ids(sid_component_vocab.a, logits.device),
-                _cached_sid_ids(sid_component_vocab.b, logits.device),
-                _cached_sid_ids(sid_component_vocab.c, logits.device),
-                config.unlabeled_sid_grad_scale,
-            )
-        else:
-            base_per_token_ce = per_token_ce = F.cross_entropy(
-                shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),
-                ignore_index=IGNORE_INDEX, reduction="none",
-            ).view_as(shift_labels)
+            per_token_ce = per_token_ce.index_put((rows, positions), set_pu)
     else:
         base_per_token_ce = per_token_ce = F.cross_entropy(
             shift_logits.reshape(-1, shift_logits.size(-1)), shift_labels.reshape(-1),

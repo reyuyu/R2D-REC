@@ -1,8 +1,8 @@
-"""REC-PU Phase 1: per-SID-position positive-unlabeled loss.
+"""Set-PU loss for recommendation final SID components.
 
-This module is intentionally independent from dataset metadata, packing, and
-Trainer code. It receives a current SID layer vocabulary and an observed
-positive subset for one decoder position.
+The loss is an ordinary PyTorch scalar objective.  It deliberately contains
+no custom autograd function or detached-logit surrogate: its backward is the
+true derivative of its forward value.
 """
 
 from __future__ import annotations
@@ -41,12 +41,7 @@ def build_rec_pu_masks(
     *,
     device: torch.device | None = None,
 ) -> RecPUMasks:
-    """Build P/U/O masks for one SID component layer.
-
-    ``same_level_ids`` must contain only tokens from the component currently
-    predicted (all ``s_a`` *or* all ``s_b`` *or* all ``s_c`` ids). Therefore
-    b/c/ordinary vocabulary tokens remain O when predicting a.
-    """
+    """Build mutually exclusive P/U/O masks for one SID component layer."""
 
     if vocab_size <= 0:
         raise ValueError("vocab_size must be positive.")
@@ -64,28 +59,7 @@ def build_rec_pu_masks(
     return RecPUMasks(positive=positive, unlabeled=unlabeled, other=other)
 
 
-def attenuate_unlabeled_logits(logits: torch.Tensor, unlabeled_mask: torch.Tensor, beta: float = 0.05) -> torch.Tensor:
-    """Keep logits forward-identical while reducing only U backward gradients.
-
-    For U this is mathematically equivalent to
-    ``beta * z + (1 - beta) * z.detach()``. The rearranged expression avoids
-    floating-point roundoff, so its forward value is bit-identical to ``z``.
-    """
-
-    if not 0.0 <= beta <= 1.0:
-        raise ValueError("beta must be in [0, 1].")
-    if logits.size(-1) != unlabeled_mask.numel():
-        raise ValueError("unlabeled_mask length must match logits.size(-1).")
-    mask = unlabeled_mask.to(device=logits.device, dtype=torch.bool)
-    while mask.ndim < logits.ndim:
-        mask = mask.unsqueeze(0)
-    attenuated = logits.detach() + beta * (logits - logits.detach())
-    return torch.where(mask, attenuated, logits)
-
-
 def _cached_level_indices(token_ids: tuple[int, ...], device: torch.device) -> torch.Tensor:
-    """Return a device-local level index without retaining a vocab-sized mask."""
-
     key = (str(device), token_ids)
     indices = _LEVEL_INDEX_CACHE.get(key)
     if indices is None:
@@ -94,99 +68,46 @@ def _cached_level_indices(token_ids: tuple[int, ...], device: torch.device) -> t
     return indices
 
 
-class _RecPUPositionLoss(torch.autograd.Function):
-    """Memory-efficient autograd equivalent of the detached-logit construction.
+def _set_pu_per_position(
+    logits: torch.Tensor,
+    positive_ids_by_position: Sequence[tuple[int, ...]],
+    level_ids: tuple[int, ...],
+    alpha: float,
+) -> torch.Tensor:
+    """Return ``log D - logsumexp(z[P])`` with direct autograd.
 
-    The earlier direct implementation materialized ``z_tilde`` and a full-vocab
-    mask for every selected SID position.  This function leaves the forward
-    calculation on the original logits (which is exactly identical) and applies
-    the same U-only chain-rule factor in backward.  It keeps no per-position
-    vocab-sized transformed tensor or mask alive in the autograd graph.
+    ``D`` keeps P and O at their original logits and applies ``log(alpha)``
+    only to U.  ``non_u`` and U are reduced separately to avoid a full
+    per-position modified-vocabulary copy.
     """
 
-    @staticmethod
-    def forward(
-        ctx: torch.autograd.function.FunctionCtx,
-        logits: torch.Tensor,
-        same_level_ids: tuple[int, ...],
-        positive_ids: tuple[int, ...],
-        beta: float,
-    ) -> torch.Tensor:
-        # Saving a 1-D view here would retain the complete packed-logits
-        # storage. Save only this position's probability vector instead.
-        probabilities = torch.softmax(logits, dim=-1)
-        ctx.save_for_backward(probabilities)
-        ctx.same_level_ids = same_level_ids
-        ctx.positive_ids = positive_ids
-        ctx.beta = beta
-        positive_index = torch.tensor(positive_ids, dtype=torch.long, device=logits.device)
-        return torch.logsumexp(logits, dim=-1) - logits.index_select(-1, positive_index).mean(dim=-1)
-
-    @staticmethod
-    def backward(ctx: torch.autograd.function.FunctionCtx, grad_output: torch.Tensor):
-        (probabilities,) = ctx.saved_tensors
-        grad = probabilities
-        while grad_output.ndim < grad.ndim:
-            grad_output = grad_output.unsqueeze(-1)
-        grad = grad * grad_output
-
-        level_index = _cached_level_indices(ctx.same_level_ids, probabilities.device)
-        positive_index = torch.tensor(ctx.positive_ids, dtype=torch.long, device=probabilities.device)
-        # Same-level tokens first receive beta; observed positives are then
-        # restored to their unattenuated CE/multi-positive objective gradient.
-        grad.index_copy_(-1, level_index, grad.index_select(-1, level_index) * ctx.beta)
-        positive_grad = probabilities.index_select(-1, positive_index)
-        positive_grad = positive_grad - (1.0 / len(ctx.positive_ids))
-        grad.index_copy_(-1, positive_index, positive_grad * grad_output)
-        return grad, None, None, None
-
-
-class _RecPUBatchedPositionLoss(torch.autograd.Function):
-    """Vectorized REC-PU positions for one SID component level.
-
-    The production path supplies ``[K, vocab]`` logits from one advanced index
-    operation per level.  It retains those compact selected logits and small
-    ragged-positive index tensors only; probabilities are recomputed in
-    backward, so neither a per-position probability vector nor a full-vocab
-    P/U mask is kept alive.
-    """
-
-    @staticmethod
-    def forward(
-        ctx: torch.autograd.function.FunctionCtx,
-        logits: torch.Tensor,
-        level_ids: torch.Tensor,
-        positive_rows: torch.Tensor,
-        positive_ids: torch.Tensor,
-        positive_counts: torch.Tensor,
-        beta: float,
-    ) -> torch.Tensor:
-        ctx.save_for_backward(logits, positive_rows, positive_ids, positive_counts)
-        ctx.level_ids = level_ids
-        ctx.beta = beta
-        positive_values = logits[positive_rows, positive_ids]
-        positive_sums = torch.zeros(logits.size(0), dtype=logits.dtype, device=logits.device)
-        positive_sums.index_add_(0, positive_rows, positive_values)
-        return torch.logsumexp(logits, dim=-1) - positive_sums / positive_counts.to(dtype=logits.dtype)
-
-    @staticmethod
-    def backward(ctx: torch.autograd.function.FunctionCtx, grad_output: torch.Tensor):
-        logits, positive_rows, positive_ids, positive_counts = ctx.saved_tensors
-        probabilities = torch.softmax(logits, dim=-1)
-        gradient = probabilities * grad_output.reshape(-1, 1).to(dtype=probabilities.dtype)
-
-        # All same-level SID candidates receive beta in the denominator, then
-        # sparse positive entries are overwritten with their normal objective
-        # gradient p - 1/|P|.
-        gradient[:, ctx.level_ids] *= ctx.beta
-        positive_gradient = probabilities[positive_rows, positive_ids]
-        positive_gradient = positive_gradient - positive_counts[positive_rows].reciprocal().to(
-            dtype=probabilities.dtype
-        )
-        gradient[positive_rows, positive_ids] = positive_gradient * grad_output[positive_rows].to(
-            dtype=probabilities.dtype
-        )
-        return gradient, None, None, None, None, None
+    if alpha < 0.0 or alpha > 1.0:
+        raise ValueError("alpha must be in [0, 1].")
+    vocab_size = logits.size(-1)
+    level_index = _cached_level_indices(level_ids, logits.device)
+    # U differs per row because P is prefix-conditioned.  K is the number of
+    # final SID positions, normally small, so a compact row loop avoids a
+    # long-lived K x vocab transformed logits tensor while remaining pure
+    # PyTorch autograd.
+    terms: list[torch.Tensor] = []
+    log_alpha = None if alpha == 0.0 else logits.new_tensor(alpha).log()
+    for row, positives in enumerate(positive_ids_by_position):
+        positive_index = torch.tensor(positives, dtype=torch.long, device=logits.device)
+        is_positive_in_level = torch.isin(level_index, positive_index)
+        u_index = level_index[~is_positive_in_level]
+        # P and O form the unmodified denominator branch.  The boolean mask
+        # is local to this selected position and never uses stop-gradient.
+        non_u_mask = torch.ones(vocab_size, dtype=torch.bool, device=logits.device)
+        non_u_mask[u_index] = False
+        log_non_u = torch.logsumexp(logits[row].masked_fill(~non_u_mask, float("-inf")), dim=-1)
+        if u_index.numel() == 0 or alpha == 0.0:
+            log_den = log_non_u
+        else:
+            log_u = torch.logsumexp(logits[row].index_select(0, u_index), dim=-1)
+            log_den = torch.logaddexp(log_non_u, log_alpha + log_u)
+        log_pos = torch.logsumexp(logits[row].index_select(0, positive_index), dim=-1)
+        terms.append(log_den - log_pos)
+    return torch.stack(terms)
 
 
 def rec_pu_position_loss(
@@ -195,23 +116,23 @@ def rec_pu_position_loss(
     same_level_ids: Iterable[int],
     *,
     beta: float = 0.05,
+    alpha: float | None = None,
     reduction: Literal["mean", "none"] = "mean",
 ) -> tuple[torch.Tensor, RecPUMasks]:
-    """Compute ``logsumexp(z_tilde_all) - mean(z_tilde_P)`` at SID positions.
+    """Set-PU for independent positions; ``beta`` remains an old-name alias.
 
-    The final dimension is vocabulary. Leading dimensions are independent
-    positions/batches. This Phase 1 API deliberately has no packing or
-    metadata assumptions.
+    The forward objective is ``log(sum_P exp(z)+alpha*sum_U exp(z)+sum_O
+    exp(z)) - logsumexp(z[P])`` and ordinary autograd supplies its gradient.
     """
 
     if logits.ndim < 1:
         raise ValueError("logits must have a vocabulary dimension.")
-    masks = build_rec_pu_masks(
-        logits.size(-1), positive_ids, same_level_ids, device=logits.device
-    )
-    positive_ids = _normalise_ids(positive_ids, "positive_ids", logits.size(-1))
-    same_level_ids = _normalise_ids(same_level_ids, "same_level_ids", logits.size(-1))
-    per_position = _RecPUPositionLoss.apply(logits, same_level_ids, positive_ids, beta)
+    alpha = beta if alpha is None else alpha
+    masks = build_rec_pu_masks(logits.size(-1), positive_ids, same_level_ids, device=logits.device)
+    positives = _normalise_ids(positive_ids, "positive_ids", logits.size(-1))
+    level = _normalise_ids(same_level_ids, "same_level_ids", logits.size(-1))
+    flat = logits.reshape(-1, logits.size(-1))
+    per_position = _set_pu_per_position(flat, [positives] * flat.size(0), level, alpha).reshape(logits.shape[:-1])
     if reduction == "none":
         return per_position, masks
     if reduction == "mean":
@@ -225,39 +146,27 @@ def rec_pu_batched_position_loss(
     same_level_ids: Iterable[int],
     *,
     beta: float = 0.05,
+    alpha: float | None = None,
 ) -> torch.Tensor:
-    """Compute REC-PU for K positions of one SID level without vocab masks.
+    """Vectorized-interface Set-PU values for ``[positions, vocab]`` logits.
 
-    ``logits`` is ``[K, vocab]``. Positive sets are represented sparsely as
-    flattened token ids with their owning row indices; they may differ per
-    position because prefix-conditioned multi-positive candidate sets differ.
+    ``beta`` remains accepted for old YAML/launcher compatibility; semantically
+    it is now the scalar denominator weight ``alpha``, not a gradient scale.
     """
 
     if logits.ndim != 2:
         raise ValueError("Batched REC-PU logits must have shape [positions, vocab].")
-    if not 0.0 <= beta <= 1.0:
-        raise ValueError("beta must be in [0, 1].")
+    alpha = beta if alpha is None else alpha
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError("alpha must be in [0, 1].")
     if len(positive_ids_by_position) != logits.size(0):
         raise ValueError("positive_ids_by_position must have one set per logits row.")
     level = _normalise_ids(same_level_ids, "same_level_ids", logits.size(-1))
-    rows: list[int] = []
-    flat_positive_ids: list[int] = []
-    counts: list[float] = []
     level_set = set(level)
-    for row_index, raw_positive_ids in enumerate(positive_ids_by_position):
+    positives_by_row = []
+    for raw_positive_ids in positive_ids_by_position:
         positives = _normalise_ids(raw_positive_ids, "positive_ids", logits.size(-1))
         if not set(positives).issubset(level_set):
             raise ValueError("positive_ids must be a subset of same_level_ids.")
-        rows.extend([row_index] * len(positives))
-        flat_positive_ids.extend(positives)
-        counts.append(float(len(positives)))
-
-    device = logits.device
-    return _RecPUBatchedPositionLoss.apply(
-        logits,
-        _cached_level_indices(level, device),
-        torch.tensor(rows, dtype=torch.long, device=device),
-        torch.tensor(flat_positive_ids, dtype=torch.long, device=device),
-        torch.tensor(counts, dtype=logits.dtype, device=device),
-        beta,
-    )
+        positives_by_row.append(positives)
+    return _set_pu_per_position(logits, positives_by_row, level, alpha)

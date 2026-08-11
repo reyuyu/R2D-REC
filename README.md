@@ -21,7 +21,7 @@
 
 1. **NSD-R32-V3**：四张 A800、8K neat packing、LoRA r32/alpha64/dropout0.05、全局 batch 64、两 epoch、cosine LR `2e-4`、0.4GC（14/36 decoder block）、FA2、Liger 与 BF16。
 2. **BETA-MATERIAL-ALIGNED-SID8**：锁定 `BETA_material_aligned_v1`，将懂物料严格对齐压缩包路线；训练数据不含 world。
-3. **REC-PU**：在上述正式物料合同上，仅替换 recommendation 最终 SID 的 one-hot CE，为后续推荐多正例消融提供正式对照。
+3. **BETA-SETloss（Set-PU）**：在锁定物料合同上，仅替换 recommendation 最终 SID 的 one-hot CE；以 observed-positive set 为正例集合，并将同层未观测 SID 作为 alpha=0.05 的弱负项。
 
 该系列的完整代码、配置、测试和运行说明见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)。数据 JSONL、模型、日志和 checkpoint 不提交仓库。
 
@@ -31,11 +31,11 @@
 
 - 数据集：`onereason_beta_material_aligned`，目录为 `/data/lf_data_versions/alltrain/BETA_material_aligned_v1`；正式启动前必须通过 manifest、投影摘要、三路数量、四域数量/权重和实际 loss route 的 preflight。
 - 物料合同：`material_sample=100000` 使用普通 token 1、SID/domain token 8 与四域权重；`sid_bucket_canonical_no_think=11298` 使用所有 response token 4、无域权重；`sid_bucket_reverse=29586` 使用普通 1、SID/domain 8、无域权重。
-- REC-PU：仅替换 recommendation **final SID a/b/c** 的 one-hot CE。已观测正例为 `P`，同层未观测 SID 为 `U`，其他层 SID 与普通 token 为 `O`；使用 mean-positive objective，`U` 的分母梯度缩放为 `beta=0.05`，`O` 保持 1.0。它是 replacement，不是 auxiliary；SID/domain weight 仍为 8，原 SID8 分母不变。
+- BETA-SETloss：仅替换 recommendation **final SID a/b/c** 的 one-hot CE。已观测正例为 `P`，同层未观测 SID 为 `U`，其他层 SID 与普通 token 为 `O`；使用真实标量 Set-PU：`log(sum_P exp(z) + 0.05*sum_U exp(z) + sum_O exp(z)) - logsumexp(z[P])`。它直接使用 PyTorch autograd，不是旧的 custom-backward surrogate；仍是 replacement，SID/domain weight 仍为 8，原 SID8 分母不变。
 - 正式 YAML：[REC-PU BETA material-aligned R32](./baselines/native_source_domain_r32_v3/config/train_rec_pu_beta_material_aligned_r32_b005_2epoch.yaml)。启动脚本会显式设置 `GLOBAL_ITEM_WEIGHT=8`、`MATERIAL_DOMAIN_MANIFEST` 与 `NATIVE_GC_FRACTION=0.4`。
 - 训练规模：33,616 packed samples，526 optimizer steps/epoch，2 epoch 共 1,052 steps；每个 epoch 保存一次 checkpoint。
 - 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
-- 验证：Phase 1-3 数学/metadata/训练接入测试通过；Phase 4.5 的优化 reference 回归通过，`U` 梯度比例为 0.05，`O` 为 1.0，早期 vectorized 四卡 smoke 的吞吐回退为 0.84%。正式记录见 [实验 REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md)。
+- 验证：P/U/O、prefix metadata、replacement/denominator、SID8 单次加权回归通过；Set-PU 在真实 BETA batch 上与同一 scalar reference 的 LoRA gradient cosine/norm ratio 均为 `1.0000`；40-step 四卡 smoke 中 recommendation loss 未复现旧 surrogate 的 step20 后持续反弹。正式记录见 [实验 BETA-SETloss](./baselines/native_source_domain_r32_v3/docs/实验BETA-SETloss.md)。
 
 ### 与旧 REC 系列的关系
 

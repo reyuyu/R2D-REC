@@ -162,9 +162,9 @@ def test_only_final_and_think_sid_untouched():
             assert torch.equal(base[1].contributions[0, index], changed[1].contributions[0, index])
 
 
-def test_integrated_puo_gradient_ratios():
+def test_integrated_set_pu_gradient_matches_scalar_reference():
     # The first selected position predicts a. Later b/c components ensure this
-    # is a complete Phase-2 target while gradients are inspected locally.
+    # is a complete Phase-2 target while the replacement gradient is inspected.
     labels = torch.tensor([[-100, 2, 6, 8]], dtype=torch.long)
     weights = torch.tensor([[0.0, 8.0, 8.0, 8.0]])
     ids = tasks = torch.zeros_like(labels)
@@ -175,17 +175,15 @@ def test_integrated_puo_gradient_ratios():
         [0.0] * VOCAB,
         [0.0] * VOCAB,
     ]], dtype=torch.float64, requires_grad=True)
-    base = loss_and_grad(logits0, labels, weights, ids, tasks, domains, enabled=False)
     pu_target = target(1, TokenPrefixPositiveSets(a=(2,), b=(6,), c=(8,)))
     changed = loss_and_grad(logits0, labels, weights, ids, tasks, domains, targets=[[pu_target]], enabled=True, beta=.05)
-    # Logit at index 0 predicts the a target. a=3 is U; b=6 and normal=10 are O.
-    u_ratio = (changed[2][0, 0, 3] / base[2][0, 0, 3]).item()
-    wrong_level_ratio = (changed[2][0, 0, 6] / base[2][0, 0, 6]).item()
-    normal_ratio = (changed[2][0, 0, 10] / base[2][0, 0, 10]).item()
-    assert abs(u_ratio - .05) < 1e-12, u_ratio
-    assert abs(wrong_level_ratio - 1.0) < 1e-12, wrong_level_ratio
-    assert abs(normal_ratio - 1.0) < 1e-12, normal_ratio
-    return u_ratio, wrong_level_ratio, normal_ratio
+    ref_logits = logits0.detach().clone().requires_grad_(True)
+    reference, _ = rec_pu_position_loss(ref_logits[0, 0], (2,), COMPONENTS.a, alpha=.05)
+    # All three final components have equal weights and one valid segment; the
+    # a-position receives exactly SID8 / valid-token-count of this scalar.
+    reference_grad = torch.autograd.grad(reference * (8.0 / 3.0), ref_logits)[0]
+    torch.testing.assert_close(changed[2][0, 0], reference_grad[0, 0], rtol=0, atol=1e-6)
+    return {"u_gradient": changed[2][0, 0, 3].item(), "o_gradient": changed[2][0, 0, 6].item()}
 
 
 def test_metadata_stripped_before_forward():
@@ -207,7 +205,7 @@ def main():
         test_denominator_and_no_double_counting,
         test_candidate_count_weight_invariant,
         test_only_final_and_think_sid_untouched,
-        test_integrated_puo_gradient_ratios,
+        test_integrated_set_pu_gradient_matches_scalar_reference,
         test_metadata_stripped_before_forward,
     ]
     for fn in tests:
