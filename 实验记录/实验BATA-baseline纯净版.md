@@ -6,13 +6,13 @@
 
 ## 训练合同
 
-- Run：`BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333`
+- Run：`BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333`。
 - 数据集：`bata_baseline_v1`，共 222,001 条。
 - 数据组成：物料 100,000；SID canonical 11,298；SID reverse 29,586；懂用户 BETA 32,848；懂推荐 48,269；不含 world。
 - LoRA：r32 / alpha64 / dropout 0.05，target `all`。
 - 训练：4 x A800 80 GB，global batch 64（每卡 micro batch 1，累积 16），2 epoch，8K neat packing，FA2，Liger，bf16 / pure_bf16。
 - 优化器与日程：AdamW，LR `2e-4`，cosine，warmup 0.03，weight decay 0.01，seed 20260806。
-- 显存策略：fractional gradient checkpointing `GC=0.4`；该项是为了适配当前框架的显存实现，不改变 forward objective。
+- 显存策略：fractional gradient checkpointing `GC=0.4`；该项用于适配当前框架的显存实现，不改变 forward objective。
 - 损失：普通 one-hot SID8 CE。物料按四域样本 multiplier；SID/domain marker 权重 8；canonical 路由权重 4。`REC-PU=false`，`multitask_pack_ratio=false`。
 - 推荐多正 metadata 被保留，但只用于 detached 的 monitor-only 统计；不替换 CE、不改变梯度。测试证明开/关该监控的 loss、logits gradient 与 CE contribution bitwise 相等。
 
@@ -24,32 +24,52 @@ bash /data/baselines/native_source_domain_r32_v3/scripts/launch_bata_baseline_4g
 
 启动前 preflight 已通过：222,001 条数据的哈希与路由、BETA 替换合同、registry、锁定 YAML，以及实际 loss route 均被检查。验证摘要：`rec_pu=OFF`、`pack_ratio=OFF`、SID8=8、canonical=4、GC fraction=0.4。
 
-## Epoch 1
-
-检查点：`checkpoint-553`。由于 dataloader/epoch 的离散边界，训练 state 记录为 global step 553、epoch 1.0；运行日志在 step 555 显示 epoch 1.0036。
-
-### 评测结果
-
-```text
-aggregate: 1.3073
-
-0.0508, 0.0359, 0.0526, 0.0415
-0.1539, 0.0949
-0.1204, 0.1666, 0.1960, 0.1575
-0.2372
-```
+## 评测结果
 
 评测指标名称和顺序沿用外部评测器原输出；本记录不对未提供名称的各子指标擅自重命名。
 
-### 训练特征
+### Epoch 1
+
+```text
+aggregate: 1.3090
+
+0.0515, 0.0355, 0.0532, 0.0421
+0.1539, 0.0951
+0.1213, 0.1700, 0.1890, 0.1602
+0.2372
+```
+
+说明：本次 `1.3090` 是最新提供的 epoch 1 评测值，覆盖此前实验记录中的 `1.3073`。
+
+### Epoch 2
+
+```text
+aggregate: 1.3246
+
+0.0517, 0.0358, 0.0503, 0.0420
+0.1573, 0.0972
+0.1223, 0.1598, 0.2058, 0.1656
+0.2368
+```
+
+### Epoch 1 → Epoch 2
+
+- aggregate：`1.3090 → 1.3246`，增加 `0.0156`。
+- 第一组四项：`+0.0002, +0.0003, -0.0029, -0.0001`。
+- 第二组两项：`+0.0034, +0.0021`。
+- 第三组四项：`+0.0010, -0.0102, +0.0168, +0.0054`。
+- 最后一项：`-0.0004`。
+
+整体 aggregate 在第二个 epoch 提升；增益主要来自第二组两项和第三组的第 1/3/4 项。与此同时，第三组第 2 项下降 `0.0102`，第一组第 3 项下降 `0.0029`，因此不是所有子指标均同步提升。
+
+## Epoch 1 训练特征
 
 - 每 epoch 约 553 optimization steps；全程计划 1,106 steps。
 - epoch 1 到达耗时约 5:48:09，含 checkpoint 保存；常态约 38 秒/optimization step。
 - warmup 结束后的 epoch 1 末段，总 loss 在约 29.26 到 31.32 范围；step 555 loss 30.41，grad norm 0.606，LR `1.0469e-4`，均为 finite。
 - epoch 1 末段（step 540-550）的任务 raw loss：物料约 3.92-4.40，推荐约 2.89-3.20，user action 约 1.62-1.77，user chain 约 0.87-0.90。
 - 四任务 token exposure 在 epoch 末段保持混合：物料约 7.8%-9.1%，推荐约 26.0%-30.8%，user action 约 24.7%-25.9%，user chain 约 35.8%-41.6%。
-- 运行日志未出现 NaN、OOM、Traceback 或 DDP mismatch；四卡在正在进行的第二轮中均稳定占用约 74.7-74.9 GiB / 80 GiB。
-- 当前正在继续 epoch 2；本记录中的分数仅对应 epoch 1 checkpoint，不代表 2 epoch 最终结果。
+- 运行日志未出现 NaN、OOM、Traceback 或 DDP mismatch；四卡在第二轮中稳定占用约 74.7-74.9 GiB / 80 GiB。
 
 ## 相关实现与验证
 
@@ -61,4 +81,4 @@ aggregate: 1.3073
 
 ## 结论
 
-纯净版 BATA-baseline 已在严格的数据和训练合同下稳定完成第一个 epoch，并取得 aggregate `1.3073`。第 2 epoch 仍在运行，待其 checkpoint 评测后补充最终对照结论。
+纯净版 BATA-baseline 已完成 2 epoch。最新评测从 epoch 1 的 aggregate `1.3090` 提升到 epoch 2 的 `1.3246`；在该固定训练合同下，第二轮带来净增益，但部分子指标存在回落，后续对照应继续同时报告 aggregate 与分项而非只看总分。
