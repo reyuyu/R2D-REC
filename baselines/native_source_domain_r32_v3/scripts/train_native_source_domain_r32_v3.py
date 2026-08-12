@@ -536,7 +536,7 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
     rec_pu_targets = inputs.pop("rec_pu_targets", None)
     outputs = model(**inputs)
     sid_component_vocab = None
-    if REC_PU_CONFIG.enabled:
+    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED:
         sid_component_vocab = getattr(self, "_rec_pu_component_vocab", None)
         if sid_component_vocab is None:
             tokenizer = getattr(self, "processing_class", None) or getattr(self, "tokenizer", None)
@@ -556,6 +556,7 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         rec_pu_config=REC_PU_CONFIG,
         sid_component_vocab=sid_component_vocab,
         collect_candidate_metrics=collect_candidate_metrics,
+        collect_rec_metrics=REC_CANDIDATE_METRICS_ENABLED,
     )
     _maybe_run_rec_pu_debug_probe(
         self,
@@ -609,7 +610,7 @@ def _accumulate_task_loss_metrics(trainer, sample_losses: torch.Tensor, sample_t
 
 
 def _accumulate_rec_pu_metrics(trainer, details) -> None:
-    if not REC_PU_CONFIG.enabled:
+    if not (REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED):
         return
     values = torch.tensor(
         [

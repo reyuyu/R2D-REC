@@ -200,6 +200,7 @@ def compute_native_sid8_loss(
     rec_pu_config: RecPUConfig | None = None,
     sid_component_vocab: SIDComponentVocab | None = None,
     collect_candidate_metrics: bool = False,
+    collect_rec_metrics: bool = False,
 ) -> tuple[torch.Tensor, RecPULossDetails]:
     """Compute the exact NSD-R32-V3 SID8 loss with optional REC-PU replacement.
 
@@ -246,9 +247,9 @@ def compute_native_sid8_loss(
     singleton_segments = 0
     positive_sums = {"a": 0, "b": 0, "c": 0}
     changed: list[tuple[int, int]] = []
-    if config.enabled:
+    if config.enabled or collect_rec_metrics:
         if sid_component_vocab is None:
-            raise ValueError("sid_component_vocab is required when REC-PU is enabled.")
+            raise ValueError("sid_component_vocab is required for REC-PU training or recommendation monitoring.")
         grouped_positions: dict[str, list[tuple[int, int, tuple[int, ...]]]] = {"a": [], "b": [], "c": []}
         for row_index, row_targets in enumerate(normalised_targets):
             rec_segments += len(row_targets)
@@ -296,7 +297,8 @@ def compute_native_sid8_loss(
             if not bool((label_match_counts > 0).all().item()):
                 raise ValueError("Teacher-forced final SID component is absent from its positive set.")
 
-            changed.extend((int(row), int(position)) for row, position, _ in entries)
+            if config.enabled:
+                changed.extend((int(row), int(position)) for row, position, _ in entries)
 
         # Set-PU is a true scalar objective: no detached logits and no custom
         # backward. The metrics below only reuse its detached values.
@@ -306,13 +308,15 @@ def compute_native_sid8_loss(
             rows = torch.tensor([entry[0] for entry in entries], dtype=torch.long, device=logits.device)
             positions = torch.tensor([entry[1] for entry in entries], dtype=torch.long, device=logits.device)
             selected_final_logits = shift_logits[rows, positions]
+            metric_logits = selected_final_logits if config.enabled else selected_final_logits.detach()
             set_pu = rec_pu_batched_position_loss(
-                selected_final_logits,
+                metric_logits,
                 [entry[2] for entry in entries],
                 sid_component_vocab.for_level(level),
                 beta=config.unlabeled_sid_grad_scale,
             )
-            per_token_ce = per_token_ce.index_put((rows, positions), set_pu)
+            if config.enabled:
+                per_token_ce = per_token_ce.index_put((rows, positions), set_pu)
             level_index = {"a": 0, "b": 1, "c": 2}[level]
             rec_setpu_sum_count[level_index].add_(finite_sum_count(set_pu))
             rec_posmass_sum_count[level_index].add_(finite_sum_count(torch.exp(-set_pu.detach())))
@@ -321,11 +325,11 @@ def compute_native_sid8_loss(
             )
             if level == "a":
                 rec_posentropy_a_sum_count.add_(
-                    positive_entropy_sum_count(selected_final_logits, [entry[2] for entry in entries])
+                    positive_entropy_sum_count(metric_logits, [entry[2] for entry in entries])
                 )
             if collect_candidate_metrics:
                 candidate_outcomes[level] = candidate_rank_outcome(
-                    selected_final_logits, [entry[2] for entry in entries], sid_component_vocab.for_level(level),
+                    metric_logits, [entry[2] for entry in entries], sid_component_vocab.for_level(level),
                     max_k=32 if level == "a" else 8,
                 )
         if collect_candidate_metrics and len(candidate_outcomes) == 3:
