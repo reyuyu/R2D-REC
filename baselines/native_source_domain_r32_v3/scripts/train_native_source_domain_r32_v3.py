@@ -29,6 +29,12 @@ if str(BASELINE_ROOT) not in sys.path:
 from rec_pu.recommendation_pu_phase2 import PackedSegment, locate_packed_rec_pu_targets
 from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss
 from rec_pu.core_recommendation_metrics import candidate_window_active, pack_effective_share_sum_count
+from rec_pu.alpha_recommendation_monitor import (
+    ALL_METRIC_NAMES as ALPHA_MONITOR_METRIC_NAMES,
+    AlphaMonitorConfig,
+    collect_alpha_recommendation_monitor,
+)
+from rec_pu.alpha_validation_monitor import AlphaValidationConfig, AlphaValidationRunner, VALIDATION_METRIC_NAMES
 from rec_pu.sid8_rec_pu_integration import (
     RecPUConfig,
     build_sid_component_vocab,
@@ -155,9 +161,59 @@ def _load_rec_candidate_metric_config() -> tuple[bool, int]:
     return enabled, interval
 
 
+def _load_alpha_monitor_config() -> AlphaMonitorConfig:
+    """Read the monitor-only ablation flags without changing legacy runs."""
+
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        config_path = Path(sys.argv[1])
+        if config_path.suffix in {".yaml", ".yml"} and config_path.is_file():
+            import yaml
+
+            raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    enabled = raw.get("alpha_monitor_enabled", False)
+    tf_enabled = raw.get("alpha_train_tf_enabled", True)
+    interval = raw.get("alpha_train_tf_interval", 50)
+    if not isinstance(enabled, bool) or not isinstance(tf_enabled, bool) or not isinstance(interval, int):
+        raise ValueError("alpha monitor fields must be bool/bool/int.")
+    return AlphaMonitorConfig(enabled=enabled, train_tf_enabled=tf_enabled, train_tf_interval=interval)
+
+
+def _load_alpha_validation_config() -> AlphaValidationConfig:
+    """Read optional sidecar validation fields; legacy launches remain fully off."""
+
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        config_path = Path(sys.argv[1])
+        if config_path.suffix in {".yaml", ".yml"} and config_path.is_file():
+            import yaml
+
+            raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    values = {
+        "enabled": raw.get("alpha_validation_enabled", False),
+        "probe_enabled": raw.get("alpha_dev_probe_enabled", False),
+        "probe_interval": raw.get("alpha_dev_probe_interval", 100),
+        "full_dev_enabled": raw.get("alpha_full_dev_enabled", False),
+        "full_dev_at_epoch_end": raw.get("alpha_full_dev_at_epoch_end", False),
+        "split_dir": raw.get("alpha_validation_split_dir", "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1"),
+        "dev_cache": raw.get("alpha_validation_dev_cache", "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k"),
+        "probe_cache": raw.get("alpha_validation_probe_cache", "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k"),
+        "metrics_path": raw.get("alpha_validation_metrics_path", "/data/logs/baselines/native_source_domain_r32_v3/alpha_validation_metrics.jsonl"),
+    }
+    if not all(isinstance(values[name], bool) for name in ("enabled", "probe_enabled", "full_dev_enabled", "full_dev_at_epoch_end")):
+        raise ValueError("alpha validation enabled fields must be booleans.")
+    if not isinstance(values["probe_interval"], int) or values["probe_interval"] < 1:
+        raise ValueError("alpha_dev_probe_interval must be an integer >= 1.")
+    if not all(isinstance(values[name], str) and values[name] for name in ("split_dir", "dev_cache", "probe_cache", "metrics_path")):
+        raise ValueError("alpha validation paths must be non-empty strings.")
+    return AlphaValidationConfig(**values)
+
+
 REC_PU_CONFIG = _load_rec_pu_config()
 PACK_RATIO_CONFIG = _load_pack_ratio_config()
 REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL = _load_rec_candidate_metric_config()
+ALPHA_MONITOR_CONFIG = _load_alpha_monitor_config()
+ALPHA_VALIDATION_CONFIG = _load_alpha_validation_config()
 REC_PU_DEBUG_PROBE = os.getenv("REC_PU_DEBUG_PROBE", "0").strip().lower() in {"1", "true", "yes", "on"}
 # Diagnostic-only: values use the same logits produced by the training
 # forward. Set-PU is a direct scalar objective, so its logged final-SID value
@@ -168,6 +224,7 @@ REC_PU_GRAD_DIAGNOSTICS = os.getenv("REC_PU_GRAD_DIAGNOSTICS", "0").strip().lowe
 REC_PU_GRAD_DIAG_STEPS = frozenset({10, 20, 25, 30, 35, 40})
 _original_alpaca_convert = AlpacaDatasetConverter.__call__
 _original_get_train_sampler = CustomSeq2SeqTrainer._get_train_sampler
+_original_trainer_init = CustomSeq2SeqTrainer.__init__
 
 
 def _convert_with_source(self, example):
@@ -323,6 +380,7 @@ def _preprocess_packed_with_weights(self, examples):
         for subseq_idx, length in enumerate(knapsack):
             index = length2indexes[length].pop()
             sample_ids = batch_input_ids[index]
+            segment_source = examples["_source_segment"][index]
             segment_start = len(packed_input_ids)
             packed_input_ids += sample_ids
             packed_position_ids += list(range(len(sample_ids)))
@@ -332,13 +390,21 @@ def _preprocess_packed_with_weights(self, examples):
             packed_sample_task_ids += [batch_sample_task_ids[index]] * len(sample_ids)
             packed_sample_domain_weights += [batch_sample_domain_weights[index]] * len(sample_ids)
             raw_rec_pu = batch_rec_pu_metadata[index]
-            if REC_PU_CONFIG.enabled and raw_rec_pu:
+            if ALPHA_MONITOR_CONFIG.enabled and raw_rec_pu and segment_source not in {
+                "recommendation_cot", "recommendation_nocot"
+            }:
+                raise ValueError(
+                    "alpha monitor requires recommendation_cot or recommendation_nocot source_segment; "
+                    f"got {segment_source!r}."
+                )
+            if (REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled) and raw_rec_pu:
                 packed_rec_pu_segments.append(
                     PackedSegment(
                         start=segment_start,
                         end=segment_start + len(sample_ids),
                         task_name="recommendation",
                         metadata=json.loads(raw_rec_pu),
+                        source_segment=segment_source,
                     )
                 )
             packed_images += batch_images[index]
@@ -380,7 +446,7 @@ def _preprocess_packed_with_weights(self, examples):
         model_inputs["sample_task_ids"].append(packed_sample_task_ids)
         model_inputs["sample_domain_weights"].append(packed_sample_domain_weights)
         model_inputs["pack_task_id"].append(pack_task_id)
-        if REC_PU_CONFIG.enabled:
+        if REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled:
             targets = locate_packed_rec_pu_targets(
                 packed_labels, packed_rec_pu_segments, self.tokenizer, final_occurrence=True
             )
@@ -419,7 +485,7 @@ def _collate_with_rec_pu_metadata(self, features):
     for feature in features:
         feature.pop("pack_task_id", None)
     batch = _original_collator_call(self, features)
-    if REC_PU_CONFIG.enabled:
+    if REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled:
         batch["rec_pu_targets"] = [json.loads(value) for value in targets_json_by_row]
     return batch
 
@@ -450,6 +516,67 @@ def _get_train_sampler_with_pack_ratio(self, train_dataset=None):
             flush=True,
         )
     return sampler
+
+
+class _AlphaValidationCallback(TrainerCallback):
+    """Run probe/full-dev strictly as a sidecar after optimiser steps."""
+
+    def __init__(self, trainer, config: AlphaValidationConfig) -> None:
+        self.trainer = trainer
+        self.config = config
+        self.runner = AlphaValidationRunner(config)
+        self._full_steps: set[int] = set()
+
+    def _run(self, state, kwargs, kind: str) -> None:
+        model = kwargs.get("model") or self.trainer.model
+        result = self.runner.run(
+            self.trainer,
+            model,
+            kind=kind,
+            global_step=int(state.global_step),
+            epoch=None if state.epoch is None else float(state.epoch),
+        )
+        if kind == "probe":
+            gaps = self.runner.record_probe_gap(self.trainer, result)
+            result["gaps"] = gaps
+        self.runner.append_record(result)
+        # Main training logs get only va~vo, ga~ge, and the conservative flag;
+        # all secondary/domain values stay in alpha_validation_metrics.jsonl.
+        pending = {
+            key: value for key, value in result["metrics"].items()
+            if key in VALIDATION_METRIC_NAMES and value is not None
+        }
+        pending.update({key: value for key, value in result.get("gaps", {}).items() if value is not None})
+        self.trainer._alpha_validation_pending_logs = pending
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if self.config.probe_enabled and state.global_step and state.global_step % self.config.probe_interval == 0:
+            self._run(state, kwargs, "probe")
+        return control
+
+    def on_epoch_end(self, args, state, control, **kwargs):
+        if self.config.full_dev_enabled and self.config.full_dev_at_epoch_end and int(state.global_step) not in self._full_steps:
+            self._run(state, kwargs, "full")
+            self._full_steps.add(int(state.global_step))
+        return control
+
+    def on_train_end(self, args, state, control, **kwargs):
+        # Smoke-only opt-in: a short interrupted train can still exercise one
+        # complete dev pass without changing the formal epoch-end cadence.
+        if (
+            os.getenv("ALPHA_VALIDATION_RUN_FULL_ON_TRAIN_END", "0") == "1"
+            and self.config.full_dev_enabled
+            and int(state.global_step) not in self._full_steps
+        ):
+            self._run(state, kwargs, "full")
+            self._full_steps.add(int(state.global_step))
+        return control
+
+
+def _trainer_init_with_alpha_validation(self, *args, **kwargs):
+    _original_trainer_init(self, *args, **kwargs)
+    if ALPHA_VALIDATION_CONFIG.enabled:
+        self.add_callback(_AlphaValidationCallback(self, ALPHA_VALIDATION_CONFIG))
 
 
 def _maybe_run_rec_pu_debug_probe(
@@ -536,7 +663,7 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
     rec_pu_targets = inputs.pop("rec_pu_targets", None)
     outputs = model(**inputs)
     sid_component_vocab = None
-    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED:
+    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED or ALPHA_MONITOR_CONFIG.enabled:
         sid_component_vocab = getattr(self, "_rec_pu_component_vocab", None)
         if sid_component_vocab is None:
             tokenizer = getattr(self, "processing_class", None) or getattr(self, "tokenizer", None)
@@ -544,6 +671,11 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
             self._rec_pu_component_vocab = sid_component_vocab
     collect_candidate_metrics = candidate_window_active(
         self.state.global_step, REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL
+    )
+    collect_alpha_tf = candidate_window_active(
+        self.state.global_step,
+        ALPHA_MONITOR_CONFIG.enabled and ALPHA_MONITOR_CONFIG.train_tf_enabled,
+        ALPHA_MONITOR_CONFIG.train_tf_interval,
     )
     loss, details = compute_native_sid8_loss(
         logits=outputs.logits,
@@ -572,8 +704,18 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         self, sample_losses.detach() * details.sample_domain_weights.detach(), details.sample_task_ids
     )
     _accumulate_rec_pu_metrics(self, details)
-    _accumulate_core_recommendation_metrics(self, details)
+    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED:
+        _accumulate_core_recommendation_metrics(self, details)
     _accumulate_rec_candidate_metrics(self, details)
+    _accumulate_alpha_recommendation_monitor(
+        self,
+        details=details,
+        logits=outputs.logits,
+        labels=labels,
+        rec_pu_targets=rec_pu_targets,
+        sid_component_vocab=sid_component_vocab,
+        collect_tf=collect_alpha_tf,
+    )
     _accumulate_rec_pu_diagnostics(
         self,
         logits=outputs.logits,
@@ -687,6 +829,37 @@ def _accumulate_rec_candidate_metrics(trainer, details) -> None:
         stats = torch.zeros((len(_REC_CANDIDATE_METRIC_NAMES), 2), device=details.contributions.device, dtype=torch.float64)
         trainer._candidate_metric_stats = stats
     stats.add_(details.rec_candidate_sum_count)
+
+
+def _accumulate_alpha_recommendation_monitor(
+    trainer, *, details, logits, labels, rec_pu_targets, sid_component_vocab, collect_tf: bool
+) -> None:
+    """Accumulate detached alpha monitor sum/counts; never alter native SID8 loss."""
+
+    if not ALPHA_MONITOR_CONFIG.enabled:
+        return
+    stats = getattr(trainer, "_alpha_recommendation_monitor_stats", None)
+    if stats is None or stats.device != logits.device:
+        stats = torch.zeros((len(ALPHA_MONITOR_METRIC_NAMES), 2), device=logits.device, dtype=torch.float64)
+        trainer._alpha_recommendation_monitor_stats = stats
+    collected = collect_alpha_recommendation_monitor(
+            base_per_token_ce=details.base_per_token_ce.detach(),
+            logits=logits.detach(),
+            labels=labels,
+            rec_targets=rec_pu_targets,
+            sid_component_vocab=sid_component_vocab,
+            collect_tf=collect_tf,
+    )
+    stats.add_(collected)
+    # This rolling accumulator is separate from logging.  It covers every
+    # training microbatch since the prior fixed dev probe, so gaps never use a
+    # noisy one-logging-step value.
+    if ALPHA_VALIDATION_CONFIG.enabled and ALPHA_VALIDATION_CONFIG.probe_enabled:
+        gap_stats = getattr(trainer, "_alpha_train_gap_stats", None)
+        if gap_stats is None or gap_stats.device != logits.device:
+            gap_stats = torch.zeros((6, 2), device=logits.device, dtype=torch.float64)
+            trainer._alpha_train_gap_stats = gap_stats
+        gap_stats.add_(collected[:6])
 
 
 _REC_DIAG_NAMES = (
@@ -1009,6 +1182,19 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
                 if count.item() > 0:
                     logs[metric_name] = (global_candidate_stats[metric_index, 0] / count).item()
         candidate_stats.zero_()
+    alpha_stats = getattr(self, "_alpha_recommendation_monitor_stats", None)
+    if alpha_stats is not None:
+        global_alpha_stats = alpha_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            # All alpha monitor values share one compact reduction per log event.
+            torch.distributed.all_reduce(global_alpha_stats, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(ALPHA_MONITOR_METRIC_NAMES):
+            value, count = global_alpha_stats[metric_index]
+            if metric_name.startswith("rec_monitor_"):
+                logs[metric_name] = value.item()
+            elif count.item() > 0:
+                logs[metric_name] = (value / count).item()
+        alpha_stats.zero_()
     rec_stats = getattr(self, "_rec_pu_stats", None)
     if rec_stats is not None:
         global_rec_stats = rec_stats.detach().clone()
@@ -1064,6 +1250,10 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
             if count.item() > 0:
                 logs[metric_name] = (global_grad_diag[metric_index, 0] / count).item()
         grad_diag.zero_()
+    pending_validation_logs = getattr(self, "_alpha_validation_pending_logs", None)
+    if pending_validation_logs:
+        logs.update(pending_validation_logs)
+        self._alpha_validation_pending_logs = {}
     return _original_trainer_log(self, logs, *args, **kwargs)
 
 
@@ -1132,6 +1322,7 @@ def install_native_patches() -> None:
     CustomSeq2SeqTrainer.compute_loss = _compute_source_weighted_loss
     CustomSeq2SeqTrainer._get_train_sampler = _get_train_sampler_with_pack_ratio
     CustomSeq2SeqTrainer.log = _log_with_task_losses
+    CustomSeq2SeqTrainer.__init__ = _trainer_init_with_alpha_validation
     if os.getenv("SOURCE_WEIGHT_SKIP_FINAL_SAVE") == "1":
         CustomSeq2SeqTrainer.save_model = lambda self, *args, **kwargs: None
 

@@ -64,6 +64,7 @@ class SIDComponentVocab:
 class RecPULossDetails:
     """Small diagnostics used by CPU regressions and low-cost runtime logging."""
 
+    base_per_token_ce: torch.Tensor
     base_contributions: torch.Tensor
     contributions: torch.Tensor
     valid_mask: torch.Tensor
@@ -142,6 +143,7 @@ def coerce_packed_target(value: Any) -> RecPUPackedTarget:
         b_logit_position=int(value["b_logit_position"]),
         c_logit_position=int(value["c_logit_position"]),
         positives=_coerce_positives(value["positives"]),
+        source_segment=value.get("source_segment"),
     )
 
 
@@ -157,6 +159,7 @@ def serialise_packed_target(target: RecPUPackedTarget) -> dict[str, Any]:
         "b_logit_position": target.b_logit_position,
         "c_logit_position": target.c_logit_position,
         "positives": {"a": target.positives.a, "b": target.positives.b, "c": target.positives.c},
+        "source_segment": target.source_segment,
     }
 
 
@@ -360,7 +363,7 @@ def compute_native_sid8_loss(
         zero = (per_token_ce * 0.0).sum()
         empty = torch.zeros(0, dtype=zero.dtype, device=zero.device)
         return zero, RecPULossDetails(
-            base_contributions=base_contributions, contributions=contributions, valid_mask=valid,
+            base_per_token_ce=base_per_token_ce, base_contributions=base_contributions, contributions=contributions, valid_mask=valid,
             sample_token_counts=empty, sample_weight_mass=empty, base_sample_numerators=empty,
             sample_numerators=empty, sample_domain_weights=empty,
             sample_task_ids=torch.zeros(0, dtype=torch.long, device=zero.device),
@@ -399,7 +402,7 @@ def compute_native_sid8_loss(
     sample_tasks = (task_sums / token_counts.clamp_min(1.0)).round().to(dtype=torch.long)
     loss = (sample_losses * sample_domains).mean()
     details = RecPULossDetails(
-        base_contributions=base_contributions, contributions=contributions, valid_mask=valid,
+        base_per_token_ce=base_per_token_ce, base_contributions=base_contributions, contributions=contributions, valid_mask=valid,
         sample_token_counts=token_counts, sample_weight_mass=weight_mass,
         base_sample_numerators=base_numerators, sample_numerators=numerators,
         sample_domain_weights=sample_domains, sample_task_ids=sample_tasks,

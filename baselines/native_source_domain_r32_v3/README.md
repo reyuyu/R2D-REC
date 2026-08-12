@@ -8,6 +8,10 @@
 
 当前正式 run 为 `BETA-fenpei`：在 BETA-SETloss 上启用 PackRatio `material/recommendation/user_action/user_chain = 20/45/20/15`，并保留低频 teacher-forcing 候选指标（每 50 optimizer step 一次）。详见 [BETA-fenpei 实验记录](docs/experiment_BETA-fenpei.md)。
 
+## Alpha：监控与泄漏安全验证
+
+`ALPHA-JIANKONG-MONITOR` 保持普通 native SID8 CE，不启用 REC-PU 或 PackRatio。它使用 `alpha-jiankong` 的确定性 group-safe train98/dev2 切分，并增加只读的四任务训练 loss、推荐 teacher-forcing 指标、固定开发集 probe 和 epoch-end full-dev sidecar。验证不会创建额外训练 forward/backward，不改变 optimizer、scheduler、RNG 或 global step。详见 [Alpha 实验记录](docs/experiment_ALPHA_监控优化.md)。
+
 目录说明：
 
 - `config/`：正式训练 YAML，`train_rec_pu_beta_material_aligned_r32_b005_2epoch_packratio_20452015_candidate_metrics.yaml` 为 BETA-fenpei。

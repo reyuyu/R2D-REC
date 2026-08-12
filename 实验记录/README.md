@@ -14,6 +14,8 @@
 - [实验三 C3：Top-K 非法 SID 与 SID 加权](./实验C3_TopK非法SID与SID加权.md)：在 C2 上叠加全局归一化 SID 加权 CE；rank16 双卡训练中，已记录 1000 checkpoint 结果。
 - [实验 E：四任务 GradNorm（无 World）](./实验E_四任务GradNorm无World.md)：已通过单元测试、双卡 smoke 与配置校验，并在 GPU 0/1 正式训练；将 user 拆分为 user_action/user_chain，删除 world，每步固定 {2,2,2,2} 调度，四任务 GradNorm 权重归一化，保留 zero-weight 的 Action 四项诊断监控。
 
+- [实验 Alpha：训练监控与泄漏安全验证](../experiments/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)：基于清洗后的 `alpha-jiankong`，建立 group-safe 的 train98/dev2 切分；保留 Native SID8 训练目标，新增只读四任务 loss、推荐 teacher-forcing 指标、每 100 step 固定开发集 probe 与 epoch-end full-dev。验证使用 inference-only sidecar，不改变训练梯度或优化器状态。
+
 ## 实验关系
 
 实验 A 处理三个主任务的梯度尺度不平衡，`world` 权重固定为 1。实验 B 复用实验 A 的 Hook、任务向量、DDP 同步、动态权重和 checkpoint，只在持续负冲突时对选中的高层 LoRA-B 梯度做局部 PCGrad 投影。

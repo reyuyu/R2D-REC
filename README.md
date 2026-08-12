@@ -38,6 +38,13 @@
 - 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。每 50 step 额外记录 teacher-forcing 候选 hit/coverage/chain 指标，复用已有 logits，不增加模型 forward。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
 - 验证：P/U/O、prefix metadata、replacement/denominator、SID8 单次加权回归通过；Set-PU 在真实 BETA batch 上与同一 scalar reference 的 LoRA gradient cosine/norm ratio 均为 `1.0000`；40-step 四卡 smoke 中 recommendation loss 未复现旧 surrogate 的 step20 后持续反弹。正式记录见 [实验 BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)。
 
+### Alpha：监控与泄漏安全验证
+
+`ALPHA-JIANKONG-MONITOR` 保持 Native SID8 目标和训练配方不变，仅对清洗后的 `alpha-jiankong` 创建 group-safe 的 train98/dev2 切分，并增加训练侧四任务 loss、推荐 teacher-forcing 监控与验证 sidecar。固定开发集 probe 每 100 step 运行一次，完整 dev 仅在 epoch 末运行；二者均在 `inference_mode` 下执行、恢复 RNG/训练态，且不参与反向或优化器更新。
+
+- [Alpha 实验记录：指标、验证集与开销](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)
+- [正式 4 GPU 配置](baselines/native_source_domain_r32_v3/config/train_alpha_jiankong_monitor_validation_4gpu_gc04_2epoch.yaml)
+
 ### 与旧 REC 系列的关系
 
 旧 REC 系列仍是 macro training + 四任务 GradNorm 的独立路线，覆盖 BFD、coverage/deficit 调度与 cost-aware packing。它的结果用于历史比较，不与 Native baseline 的 loss、batch 语义或 checkpoint step 直接横比。

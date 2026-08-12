@@ -102,6 +102,7 @@ class PackedSegment:
     end: int  # exclusive
     task_name: str
     metadata: RecommendationMetadata | Mapping[str, Any] | None = None
+    source_segment: str | None = None
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,7 @@ class RecPUPackedTarget:
     b_logit_position: int
     c_logit_position: int
     positives: TokenPrefixPositiveSets
+    source_segment: str | None = None
 
 
 class TokenizerLike(Protocol):
@@ -298,6 +300,7 @@ def locate_packed_rec_pu_targets(
                 b_logit_position=b_position - 1,
                 c_logit_position=c_position - 1,
                 positives=positives,
+                source_segment=segment.source_segment,
             )
         )
     return targets
