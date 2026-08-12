@@ -41,4 +41,5 @@ C-fast 不改变实验三的目标，只把重复的 full-vocabulary denominator
 ## 原生参考基线阶段
 
 - [实验 Baseline：NSD-R32-V3-2E-GC04-4GPU](./实验Baseline_NSD-R32-V3.md)：隔离复刻 material-domain 原生 SFT 路线；四卡 8K neat packing、LoRA r32、SID 权重 8、两 epoch、0.4GC。该路线保留物料、用户 Action、用户 Chain、推荐四类数据，但不使用 macro trainer、GradNorm 或推荐辅助损失；四项任务 loss 仅作训练观测。
+- [实验 BATA-baseline 纯净版](./实验BATA-baseline纯净版.md)：复现包数据合同下仅替换 active BETA 懂用户的四卡原生 baseline；epoch 1 checkpoint aggregate 为 `1.3073`，第 2 epoch 仍在训练中。
 - [实验 BETA-fenpei：Set-PU + PackRatio](../baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)：当前四卡正式 Native baseline。使用 `BETA_material_aligned_v1`，保持三路物料 loss 合同；推荐最终 SID 使用 Set-PU scalar replacement，以 `20/45/20/15` pack ratio 调度 material/recommendation/user_action/user_chain；2 epoch 共 1052 optimizer steps，候选 teacher-forcing 指标每 50 step 记录一次。
