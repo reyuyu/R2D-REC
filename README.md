@@ -1,162 +1,138 @@
 # OneReason 多任务 SFT
 
-本仓库用于 OneReason-8B 竞赛模型的多任务监督微调、数据版本管理和实验对比。工程基于 LLaMA-Factory，覆盖懂物料、懂用户、懂推荐等任务，并提供原生 SFT、GradNorm、SID 加权、推荐多正例以及训练监控等可回退实现。
+本仓库记录 OneReason-8B 的数据版本、训练代码、可复现实验配置和评测结果。当前 README 只展示三条主线：**Alpha 系列**、**Mini 系列**，以及作为统一参考线的 **BETA-baseline 纯净版**。
 
-仓库只保存代码、配置、测试、实验记录和数据版本元信息，不保存模型权重、原始 JSONL、日志、checkpoint 或凭据。
+仓库不提交模型权重、原始 JSONL、tokenized cache、日志、checkpoint 或任何凭据；这些内容保留在开发机，仓库只保留代码、配置、测试和可审计的版本元数据。
 
-## 项目背景
+## 背景
 
-训练目标不是只降低一个总 loss，而是在固定数据合同和训练配方下，同时提升四类能力：
+模型需要同时学习三类主要能力：
 
-- 懂物料：从 SID 与文本描述中学习商品、视频、直播和广告域的语义映射；
-- 懂用户：学习 Action Select 以及用户行为链；
-- 懂推荐：根据用户历史和画像完成多域推荐；
-- 训练可解释性：记录任务损失、候选质量、梯度范数和验证集变化，区分真实效果与训练尺度变化。
+- 懂物料：理解商品、视频、直播、广告等域的 SID 与文本描述；
+- 懂用户：完成 Action Select 和用户行为链推理；
+- 懂推荐：根据用户历史和画像生成推荐 SID 或推荐解释。
 
-当前所有消融实验都以 **BATA-baseline 纯净版** 为主要参考基线。基线的最新完整结果为：
+实验的核心原则是：每次只改变一个明确记录的变量，并把数据版本、loss route、packing、训练步数和评测结果一起记录。训练 loss 主要用于观察优化过程，最终效果以固定评测器输出的总分和分项分数为准。
 
-| 基线 | 训练进度 | 总分 |
-| --- | ---: | ---: |
-| BATA-baseline 纯净版 | Epoch 1 | 1.3090 |
-| BATA-baseline 纯净版 | Epoch 2 | **1.3246，约 1.33 分参考线** |
+## 统一参考线：BETA-baseline
 
-1.33 不是新的硬性验收阈值，而是当前数据、模型和评测器组合下的横向比较基准。任何新实验都应同时报告总分和分项分数，不能只看单一指标或 raw task loss。
+当前所有 Alpha 和 Mini 实验都以 **BATA-baseline 纯净版** 为参考。这里的 BATA-baseline 也称 BETA-baseline 纯净版，名称沿用已有实验记录。
 
-详细基线合同和结果见 [BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md) 与 [实验记录](./实验记录/实验BATA-baseline纯净版.md)。
+| 项目 | 固定设置 |
+| --- | --- |
+| 数据 | `bata_baseline_v1`，共 222,001 条；不含 world |
+| 模型 | Native Source-Domain R32，LoRA r32 / alpha64 / dropout 0.05 |
+| 训练 | 4 GPU、8K neat packing、global batch 64、2 epoch |
+| 优化 | AdamW、学习率 `2e-4`、cosine、warmup `0.03`、GC `0.4` |
+| 损失 | 原生 one-hot SID8 CE；普通 token=1、非 canonical SID/domain=8、canonical response=4 |
+| Epoch 1 | 总分 `1.3090` |
+| Epoch 2 | **总分 `1.3246`，约 1.33 分参考线** |
 
-## 实验系列
+1.33 是当前横向比较的参考分数，不是额外的硬性验收阈值。新实验必须同时报告总分和分项分数，不能仅凭 raw task loss 判断优劣。
 
-所有系列均从 BATA-baseline 的模型、数据合同或训练入口出发，每次只改变明确记录的消融变量。Alpha 和 Beta 是当前两大实验板块。
+详细合同：[BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)；历史结果：[实验记录](./实验记录/实验BATA-baseline纯净版.md)。
 
-### Alpha 系列：数据、提示和训练监控
+## Alpha 系列
 
-Alpha 系列关注数据清洗、think/no-think 提示、Action Select 约束以及训练过程监控。它们沿用 baseline 的主体训练配方，变化集中在数据版本或可关闭的辅助目标。
+Alpha 系列基于 baseline，重点研究数据提示、数据清洗、Action Select 约束和训练监控。除记录中明确说明的变量外，模型、LoRA、优化器和评测方式保持一致。
 
-| 实验 | 核心变量 | 已记录结果或状态 |
+| 实验 | 主要改动 | 关注点 |
 | --- | --- | --- |
-| Alpha / 实验 A | GradNorm-lite 与梯度监控 | 历史多任务 GradNorm 对照 |
-| Alpha-A0 | 学习率、dropout 和数据版本消融 | `lr=1e-4`、`dropout=0.01` 对照 |
-| Alpha-A1 | think/no-think 提示补充 | 使用 V1/V2 提示版本对照 |
-| Alpha-监控优化 | 98/2 leak-safe dev、固定 probe、训练中验证指标 | 重点观察四任务 loss 与 dev/probe 指标 |
-| Alpha-C | Action Select 历史 Trie、完整 SID 去重、Continue/Stop | 辅助损失版本，已发现部分消融存在负优化风险 |
-| Alpha-CoT | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` 权重 | 正式 2 epoch 实验，raw CE 与加权 task loss 分开解读 |
+| 实验 A | Lagged GradNorm-lite 与梯度监控 | 多任务 raw loss、任务权重、梯度范数和冲突 |
+| 实验 A0 | 学习率 `1e-4`、dropout `0.01` 联合消融 | 低学习率/低 dropout 对训练曲线和最终分数的影响 |
+| 实验 A1 | `think` / `no_think` 提示补充 | 新提示数据对用户和推荐能力的影响 |
+| Alpha-监控优化 | 98/2 leak-safe dev、固定 probe、训练阶段验证 | 训练损失和验证指标是否同步，避免数据泄漏 |
+| 实验 C / C-fast | Action Select 历史 SID、去重、Continue/Stop 及向量化 | 历史外 SID、完整 SID 复读和停止位置 |
+| Alpha-CoT | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` | 降低重复 CoT 对训练 numerator 的主导，同时保持 Gold SID=8 |
 
-相关记录：
+Alpha 记录入口：
 
 - [实验 A：GradNorm-lite](./实验记录/实验A_GradNorm-lite.md)
 - [实验 A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md)
 - [实验 A1](./实验记录/实验A1_think_prompt-GradNorm.md)
-- Alpha 监控优化：98/2 leak-safe dev、固定 probe 和训练中验证指标；具体运行文档以服务器当前版本为准。
 - [实验 C：Action Select 约束](./实验记录/实验C_Action-Select历史约束.md)
-- Alpha-CoT：Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` 权重；代码和运行记录随 Alpha-CoT 分支维护。
+- [实验 C-fast：向量化优化](./实验记录/实验C-fast_Action-Select向量化优化.md)
 
-### Beta 系列：稳定基线与推荐目标消融
+Alpha-CoT 的正式运行配置和代码位于服务器的 Native baseline 工作目录；其核心对比必须使用 raw CoT body CE、CoT Gold SID CE、No-think Gold SID CE 和验证集指标，不能直接比较改变权重后的 recommendation task loss。
 
-Beta 系列以 BATA-baseline 的物料对齐合同为锚点，逐步验证 SID8、推荐 Set-PU、PackRatio 和候选质量监控。Beta 实验之间必须明确区分数据版本、loss route 和 packing 调度，不能直接用 task loss 的绝对值横比。
+## Mini 系列
 
-| 实验 | 核心变量 | 结果或用途 |
+Mini 系列是 Alpha 正式实验的轻量复现和排查版本，用于在不启动完整 2 epoch 的前提下验证数据、loss route、梯度和监控。它服务于“先证明代码和指标正确，再启动正式训练”的流程。
+
+| Mini 阶段 | 用途 | 典型验证 |
 | --- | --- | --- |
-| BATA-baseline 纯净版 | 原生 source/domain SFT；SID/domain=8；canonical=4；不启用 REC-PU | Epoch 2 总分 **1.3246，约 1.33** |
-| BETA-MATERIAL-ALIGNED-SID8 | 锁定 `BETA_material_aligned_v1` 的三路物料合同 | 为后续 Beta 消融提供统一母版 |
-| BETA-SETloss | Recommendation final SID 使用 Set-PU scalar objective，`alpha=0.05` | 真实 autograd；替代旧 surrogate backward |
-| BETA-fenpei | Set-PU + `20/45/20/15` PackRatio + 候选质量指标 | 独立 4 GPU、2 epoch 训练路线 |
-| REC-PU | Recommendation positive-unlabeled 研究阶段 | Phase 1-4 数学和 smoke 验证记录 |
+| Mini-CPU | 不加载大模型的数学和数据回归 | loss_weights、SID8、CoT `0.5/N`、字段和 manifest |
+| Mini-单步/短程 | 从 base model 运行 1-30 optimizer steps | forward/backward、raw CE parity、无 NaN/OOM |
+| Mini-监控 | 使用固定 probe 和少量 dev 样本 | 四任务 loss、teacher-forcing 命中、验证指标 |
+| Mini-复现包 | 打包代码、配置、数据 manifest 和复现说明 | 本地恢复数据并重建 tokenized cache |
 
-相关记录：
-
-- [BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)
-- [BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)
-- [BETA-SETloss](./baselines/native_source_domain_r32_v3/docs/实验BETA-SETloss.md)
-- [REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md)
-- [Native Source-Domain R32 V3 baseline 说明](./baselines/native_source_domain_r32_v3/README.md)
-
-旧的 REC-C/REC-F、GradNorm-Ortho 和 SID-weight8 记录仍保留，作为历史消融索引，不作为当前 1.33 baseline 的直接替代品：[实验记录目录](./实验记录/README.md)。
+Mini 版本不作为最终排行榜结果，不覆盖 Alpha 正式 output，也不改变正式训练的 scheduler horizon。当前 mini 复现包不包含模型权重，原始数据仍需根据 manifest 从服务器或本地数据源恢复。
 
 ## 数据版本
 
-数据文件只保存在服务器，GitHub 保存注册信息、manifest、样本数和 SHA-256 摘要。版本采用父版本继承，因此可以只替换一个子任务，而不复制其他任务数据。
+GitHub 只保存数据版本注册信息、manifest、数量和 SHA-256 摘要；实际 JSONL 和 tokenized cache 保存在服务器。
 
-当前主要版本：
+| 版本 | 作用 |
+| --- | --- |
+| `raw_all` | 八个原始全量子数据集 |
+| `v1_thought_prompt_all` | 为样本补充 `think` / `no_think` 标志 |
+| `v2_recommendation_cot_complete_all` | 过滤懂推荐不完整 CoT |
+| `v3_material_clean` | 只替换懂物料，其他子集从父版本继承 |
+| `alpha-jiankong` | Alpha 监控的 train98、dev2 和固定 probe |
+| `bata_baseline_v1` | BATA-baseline 纯净版全量训练数据 |
 
-| 版本 | 用途 | 内容 |
-| --- | --- | --- |
-| `raw_all` | 原始母版 | 服务器上的全量原始子数据集 |
-| `v1_thought_prompt_all` | 提示补充 | 为样本补充 `think` / `no_think` 标记 |
-| `v2_recommendation_cot_complete_all` | 推荐清洗 | 保留完整的兴趣归纳、行为模式、预测总结样本 |
-| `v3_material_clean` | 物料消融示例 | 只替换懂物料，其余任务从父版本继承 |
-| `BETA_material_aligned_v1` | Beta 主线 | 三路物料合同：`material_sample`、`canonical`、`reverse` |
-| `alpha-jiankong` | Alpha 监控 | 训练 98% + leak-safe dev/probe |
-| `BETA_material_aligned_v1` / `bata_baseline_v1` | 当前 baseline | 不含 world，使用 BATA-baseline 纯净版合同 |
-
-数据版本注册表：
+相关文件：
 
 - [数据版本说明](./ONEREASON_DATASET_VERSIONS.md)
 - [数据版本清单](./data/onereason_dataset_versions.json)
 - [数据集注册表](./data/dataset_info.json)
 
-常用服务器路径示例：
+服务器常用目录：
 
 ```text
-/data/lf_data_versions/alltrain/BETA_material_aligned_v1
+/data/lf_data_versions/alltrain
 /data/lf_data_versions/task_pools
 /data/lf_data_versions/task_pools_abnormal
 ```
 
-更新数据版本前，先执行 manifest、字段、数量守恒和 SHA-256 审计；不要覆盖已注册版本，也不要把服务器原始数据直接提交到 GitHub。
+数据版本采用父版本继承，清洗单个任务时只替换对应子数据集，不复制或覆盖其他任务。启动训练前必须检查 manifest、字段、数量守恒、哈希和实际 loss route。
 
-## 指标与结果解读
+## 指标说明
 
-### 评测分数
+### 最终评测
 
-评测器输出的总分和分项分数是最终效果判断依据。当前首先看总分是否接近或超过 **BATA-baseline 的 1.3246（约 1.33）**，再看懂物料、懂用户、懂推荐和懂世界的分项变化。历史记录中的懂物料分数曾存在不可参考阶段，必须以具体实验记录中的说明为准。
+首先看总分是否接近 BETA-baseline 的 `1.3246`，再看懂物料、懂用户和懂推荐的分项变化。不同版本若更改数据、SID 权重或输出格式，必须结合实验记录解释，不能只比较一个 checkpoint 的总分。
 
-### 训练损失
+### 训练过程
 
-- `total_loss`：训练实际反向的总 loss；不同实验若改变 SID 权重、CoT 权重、任务配额或 loss route，绝对值不可直接横比。
-- `task_loss_material`、`task_loss_recommendation`、`task_loss_user_action`、`task_loss_user_chain`：各任务 raw loss 或路由后的任务 loss，应在同一实验内看时间趋势。
-- `grad_norm`：当前更新前的梯度范数；若长期高于裁剪阈值，实际更新会受到 clipping 影响。
-- `learning_rate`：学习率调度位置；cosine 后期降低不代表模型一定已经收敛。
+- `total_loss`：当前训练实际反向的总损失；改变 token 权重或 CoT 权重后，绝对值会改变。
+- `task_loss_material`、`task_loss_recommendation`、`task_loss_user_action`、`task_loss_user_chain`：各任务 loss，用于观察同一实验中的趋势。
+- `grad_norm`：更新前梯度范数；长期高于 clipping 阈值时，实际更新会受到裁剪。
+- `learning_rate`：当前 scheduler 学习率；cosine 后期下降不代表模型已经完全收敛。
 
-### GradNorm 与冲突监控
+### 推荐和 Action
 
-旧多任务路线还记录任务权重、梯度范数、任务间梯度余弦、residual 和 DDP 一致性。权重触底只能说明控制器在当前 raw loss/梯度尺度下持续压低该任务，不等价于任务已经学好；应结合任务质量和梯度趋势判断。
-
-### Recommendation / Action 指标
-
-- `a/b/c_rec_*`：推荐 SID 各层级的原始 CE；用于比较 CoT、No-think 及 a/b/c 学习难度。
-- `gold_sid_ce`：正确 SID token 的原始 CE；不是加权 task loss。
+- `CoT body CE`、`CoT Gold SID CE`、`No-think Gold SID CE`：Alpha-CoT 的核心 raw CE，未乘 CoT 重复降权，用于跨版本比较。
 - `candidate_hit`、`coverage`、`chain`：teacher-forcing 下的候选命中、集合覆盖和链路完整性。
-- `positive_mass`、`U_mass`、`P-vs-U margin`：Set-PU 或多正例实验中的正例集合质量。
-- `topk_illegal_rate`、`top1_illegal_hit_rate`、`gold_top5_rate`：Action Select 非法 SID 与 gold 命中情况。
-- `rec_cot_body_numerator_share`、`rec_cot_final_answer_numerator_share`、`rec_nocot_numerator_share`：Alpha-CoT 加权 CE numerator 的组成，只用于解释 loss 尺度，不直接代表生成质量。
+- `gold_top5_rate`、`top1_illegal_hit_rate`、`topk_illegal_rate`：Action Select 合法性和 gold 命中情况。
+- `cot_body_numerator_share`、`cot_final_answer_numerator_share`、`nocot_numerator_share`：加权训练 numerator 的组成，只解释 loss 尺度，不等价于生成质量。
 
-### 验证集与固定 probe
+### 验证集
 
-Alpha 监控路线使用 98/2 leak-safe dev 和固定 probe；验证只复用已有 logits 或单独的 teacher-forcing 流程，不改变训练梯度。`tf_chain` 表示 teacher-forcing 下的行为链评估，`pathnull` 表示候选路径为空或未形成有效路径的统计，不等价于训练失败。
+Alpha 监控使用 leak-safe dev 和固定 probe。验证指标用于判断训练损失是否真正转化为泛化能力，不参与训练 backward；若验证集指标反弹而训练 loss 继续下降，优先考虑过拟合、数据路线差异或评测格式问题。
 
-## 常用配置与测试
+## 常用入口
 
-核心 Native 配置位于 [`baselines/native_source_domain_r32_v3/config`](./baselines/native_source_domain_r32_v3/config)。旧 rank16 配置仍位于 [`configs/onereason`](./configs/onereason)。
+- Native baseline 代码和配置：[baselines/native_source_domain_r32_v3](./baselines/native_source_domain_r32_v3)
+- 多任务设计：[ONEREASON_MULTITASK.md](./ONEREASON_MULTITASK.md)
+- 实验记录：[实验记录/README.md](./实验记录/README.md)
 
-运行 CPU 回归：
-
-```bash
-cd /app/LLaMA-Factory
-PYTHONPATH=src python3 tests/test_multitask_macro.py
-PYTHONPATH=src python3 tests/test_multitask_gradient_controller.py
-PYTHONPATH=src python3 tests/test_sid_token_weighting.py
-PYTHONPATH=src python3 tests/test_onereason_dataset_versions.py
-```
-
-启动训练前必须确认：数据版本 manifest、实际 loss route、SID/domain 权重、输出目录和 GPU 资源均与实验记录一致。正式训练命令以对应 YAML 或启动脚本为准，不要直接复制其他实验的 output_dir。
+启动正式训练前，应确认 GPU、数据 manifest、实际 loss route、输出目录和实验记录一致。Mini smoke 通过后再启动完整 epoch。
 
 ## 工程边界
 
 - 不上传原始数据、模型权重、checkpoint、日志和密钥。
-- 不在未记录的情况下改变 LoRA、模型 forward、optimizer、scheduler、packing 或任务采样比例。
-- 新 loss 必须有独立开关、数学回归和最小 smoke；关闭开关时应恢复 baseline 行为。
-- 数据清洗、数据版本和实验配置分离管理，保证任何单个子任务都可以独立替换和回退。
-
-## 许可证
+- 新 loss 必须有独立开关、数学回归和最小 smoke；关闭开关时恢复 baseline 行为。
+- 数据清洗、数据版本、训练配置和实验记录分离管理，保证单个子任务可以独立替换和回退。
 
 代码沿用 LLaMA-Factory 的 Apache-2.0 许可证；模型和竞赛数据须遵守各自许可证及赛事规则。
