@@ -14,7 +14,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from functools import wraps
 from pathlib import Path
 
@@ -69,6 +69,10 @@ ITEM_TOKEN_PATTERN = re.compile(r"(?:<s_[abc]_\d+>|<\|(?:ad|video|prod|living|se
 MATERIAL_DOMAIN_PATTERN = re.compile(r"<\|(video|prod|ad|living)_begin\|>")
 TASK_NAMES = ("material", "recommendation", "user_action", "user_chain")
 TASK_ID_BY_NAME = {name: index for index, name in enumerate(TASK_NAMES)}
+ALPHA_COT_REPEAT_WEIGHTING_KEY = "alpha_cot_repeat_weighting"
+ALPHA_COT_REPEAT_MANIFEST_KEY = "alpha_cot_repeat_manifest"
+THINK_OPEN_TOKEN = "<think>"
+THINK_CLOSE_TOKEN = "</think>"
 _REFERENCE_DOMAIN_WEIGHTS = {
     # alpha / p_d, normalized to keep the mean material-sample scale near 1.0
     # for train_bucket_grouped_item8: video=30092, prod=29180, ad=22768, living=17960.
@@ -209,11 +213,76 @@ def _load_alpha_validation_config() -> AlphaValidationConfig:
     return AlphaValidationConfig(**values)
 
 
+@dataclass(frozen=True)
+class AlphaCotRepeatConfig:
+    """Opt-in duplicate-normalized weight rule for recommendation CoT bodies.
+
+    The mapping is deliberately external and immutable per cache build.  This
+    makes the training cache fail closed when the train98 grouping changes,
+    rather than silently substituting ``recommendation_group_size`` or 1.
+    """
+
+    enabled: bool = False
+    manifest_path: str = ""
+
+
+def _load_alpha_cot_repeat_config() -> AlphaCotRepeatConfig:
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        config_path = Path(sys.argv[1])
+        if config_path.suffix in {".yaml", ".yml"} and config_path.is_file():
+            import yaml
+
+            raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    enabled = raw.get(ALPHA_COT_REPEAT_WEIGHTING_KEY, False)
+    manifest_path = raw.get(ALPHA_COT_REPEAT_MANIFEST_KEY, "")
+    if not isinstance(enabled, bool):
+        raise ValueError(f"{ALPHA_COT_REPEAT_WEIGHTING_KEY} must be boolean.")
+    if not isinstance(manifest_path, str):
+        raise ValueError(f"{ALPHA_COT_REPEAT_MANIFEST_KEY} must be a string.")
+    if enabled and not manifest_path:
+        raise ValueError(f"{ALPHA_COT_REPEAT_MANIFEST_KEY} is required when CoT repeat weighting is enabled.")
+    return AlphaCotRepeatConfig(enabled=enabled, manifest_path=manifest_path)
+
+
+def _load_alpha_cot_repeat_counts(config: AlphaCotRepeatConfig) -> dict[str, int]:
+    """Load only a validated ``recommendation_group_id -> N_cot`` mapping."""
+
+    if not config.enabled:
+        return {}
+    path = Path(config.manifest_path)
+    if not path.is_file():
+        raise ValueError(f"Alpha CoT repeat manifest does not exist: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("kind") != "alpha_cot_repeat_count_manifest_v1":
+        raise ValueError(f"Invalid Alpha CoT repeat manifest: {path}")
+    raw_counts = payload.get("group_cot_counts")
+    if not isinstance(raw_counts, dict) or not raw_counts:
+        raise ValueError(f"Alpha CoT repeat manifest has no group_cot_counts: {path}")
+    counts: dict[str, int] = {}
+    for group_id, count in raw_counts.items():
+        if not isinstance(group_id, str) or not group_id or isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+            raise ValueError(f"Invalid CoT count in manifest for group={group_id!r}: {count!r}")
+        counts[group_id] = count
+    expected_rows = payload.get("recommendation_cot_rows")
+    if not isinstance(expected_rows, int) or sum(counts.values()) != expected_rows:
+        raise ValueError("Alpha CoT repeat manifest row conservation failed.")
+    return counts
+
+
 REC_PU_CONFIG = _load_rec_pu_config()
 PACK_RATIO_CONFIG = _load_pack_ratio_config()
 REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL = _load_rec_candidate_metric_config()
 ALPHA_MONITOR_CONFIG = _load_alpha_monitor_config()
 ALPHA_VALIDATION_CONFIG = _load_alpha_validation_config()
+ALPHA_COT_REPEAT_CONFIG = _load_alpha_cot_repeat_config()
+ALPHA_COT_REPEAT_COUNTS = _load_alpha_cot_repeat_counts(ALPHA_COT_REPEAT_CONFIG)
+# Strictly detached, smoke-only visibility into where recommendation's native
+# weighted CE numerator goes.  OFF is byte-for-byte no-op for training.
+ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS = os.getenv(
+    "ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS", "0"
+).strip().lower() in {"1", "true", "yes", "on"}
+ALPHA_COT_STEP0_PARITY = os.getenv("ALPHA_COT_STEP0_PARITY", "0").strip().lower() in {"1", "true", "yes", "on"}
 REC_PU_DEBUG_PROBE = os.getenv("REC_PU_DEBUG_PROBE", "0").strip().lower() in {"1", "true", "yes", "on"}
 # Diagnostic-only: values use the same logits produced by the training
 # forward. Set-PU is a direct scalar objective, so its logged final-SID value
@@ -249,6 +318,15 @@ def _convert_with_source(self, example):
     if raw_rec_pu and set(raw_rec_pu) != set(rec_pu_fields):
         raise ValueError("Recommendation REC-PU metadata is incomplete before tokenization.")
     output["_rec_pu_metadata_json"] = json.dumps(raw_rec_pu, ensure_ascii=False, sort_keys=True) if raw_rec_pu else ""
+    output["_alpha_cot_repeat_count"] = 0
+    if ALPHA_COT_REPEAT_CONFIG.enabled and output["_source_segment"] == "recommendation_cot":
+        if not output["_rec_pu_metadata_json"]:
+            raise ValueError("recommendation_cot has no metadata while Alpha CoT repeat weighting is enabled.")
+        group_id = str(json.loads(output["_rec_pu_metadata_json"])["recommendation_group_id"])
+        count = ALPHA_COT_REPEAT_COUNTS.get(group_id)
+        if count is None or count <= 0:
+            raise ValueError(f"Missing/invalid CoT count for recommendation_group_id={group_id!r}.")
+        output["_alpha_cot_repeat_count"] = count
     return output
 
 
@@ -277,6 +355,42 @@ def _build_loss_weights(labels: list[int], source: str, item_ids: set[int]) -> l
         0.0 if label == IGNORE_INDEX else item_weight if label in item_ids else 1.0
         for label in labels
     ]
+
+
+def _apply_alpha_cot_repeat_weights(
+    labels: list[int], weights: list[float], source_segment: str, repeat_count: int, tokenizer
+) -> list[float]:
+    """Replace exactly the audited supervised ``<think>...</think>`` span.
+
+    This is intentionally token-ID based, not string matching.  It includes the
+    two think delimiters and excludes every token after ``</think>``: the answer
+    prefix, final domain/a/b/c SID, and the template close remain baseline SID8.
+    """
+
+    if not ALPHA_COT_REPEAT_CONFIG.enabled or source_segment != "recommendation_cot":
+        return weights
+    if not isinstance(repeat_count, int) or repeat_count <= 0:
+        raise ValueError(f"Invalid CoT repeat count: {repeat_count!r}")
+    vocab = tokenizer.get_vocab()
+    try:
+        open_id, close_id = int(vocab[THINK_OPEN_TOKEN]), int(vocab[THINK_CLOSE_TOKEN])
+    except KeyError as error:
+        raise ValueError("Tokenizer has no exact <think>/</think> token IDs.") from error
+    open_positions = [index for index, label in enumerate(labels) if label == open_id]
+    close_positions = [index for index, label in enumerate(labels) if label == close_id]
+    if len(open_positions) != 1 or len(close_positions) != 1 or open_positions[0] >= close_positions[0]:
+        raise ValueError(
+            "recommendation_cot must contain exactly one supervised <think>...</think> span; "
+            f"open={open_positions}, close={close_positions}."
+        )
+    start, end = open_positions[0], close_positions[0]
+    if any(label == IGNORE_INDEX for label in labels[start : end + 1]):
+        raise ValueError("CoT body contains ignored positions; refusing ambiguous repeat weighting.")
+    body_weight = 0.5 / float(repeat_count)
+    updated = list(weights)
+    for position in range(start, end + 1):
+        updated[position] = body_weight
+    return updated
 
 
 def _material_domain_weight(source: str, prompt, response) -> float:
@@ -354,7 +468,16 @@ def _preprocess_packed_with_weights(self, examples):
         length2indexes[length].append(valid_num)
         batch_input_ids.append(input_ids)
         batch_labels.append(labels)
-        batch_loss_weights.append(_build_loss_weights(labels, source, item_ids))
+        base_loss_weights = _build_loss_weights(labels, source, item_ids)
+        batch_loss_weights.append(
+            _apply_alpha_cot_repeat_weights(
+                labels,
+                base_loss_weights,
+                source_segment,
+                examples["_alpha_cot_repeat_count"][i],
+                self.tokenizer,
+            )
+        )
         batch_sample_domain_weights.append(
             _material_domain_weight(source, examples["_prompt"][i], examples["_response"][i])
         )
@@ -707,6 +830,14 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
     if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED:
         _accumulate_core_recommendation_metrics(self, details)
     _accumulate_rec_candidate_metrics(self, details)
+    _record_alpha_cot_step0_parity(
+        self,
+        details=details,
+        logits=outputs.logits,
+        labels=labels,
+        rec_pu_targets=rec_pu_targets,
+        sid_component_vocab=sid_component_vocab,
+    )
     _accumulate_alpha_recommendation_monitor(
         self,
         details=details,
@@ -715,6 +846,13 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         rec_pu_targets=rec_pu_targets,
         sid_component_vocab=sid_component_vocab,
         collect_tf=collect_alpha_tf,
+    )
+    _accumulate_alpha_cot_numerator_shares(
+        self,
+        details=details,
+        labels=labels,
+        loss_weights=weights,
+        rec_pu_targets=rec_pu_targets,
     )
     _accumulate_rec_pu_diagnostics(
         self,
@@ -860,6 +998,133 @@ def _accumulate_alpha_recommendation_monitor(
             gap_stats = torch.zeros((6, 2), device=logits.device, dtype=torch.float64)
             trainer._alpha_train_gap_stats = gap_stats
         gap_stats.add_(collected[:6])
+
+
+def _record_alpha_cot_step0_parity(
+    trainer, *, details, logits: torch.Tensor, labels: torch.Tensor, rec_pu_targets, sid_component_vocab
+) -> None:
+    """Emit raw CE from the first real forward after static cache parity.
+
+    The cache audit already proves every model input column is exactly equal
+    between corrected SID8 and CoT05N.  Therefore this same real base-model
+    forward is also the baseline forward; raw CE has no dependence on loss
+    weights.  The routine adds one small detached all-reduce only in smoke
+    mode, before the first optimizer update.
+    """
+
+    if not ALPHA_COT_STEP0_PARITY or getattr(trainer, "_alpha_cot_step0_parity_recorded", False):
+        return
+    stats = collect_alpha_recommendation_monitor(
+        base_per_token_ce=details.base_per_token_ce.detach(),
+        logits=logits.detach(),
+        labels=labels,
+        rec_targets=rec_pu_targets,
+        sid_component_vocab=sid_component_vocab,
+        collect_tf=False,
+    )
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.all_reduce(stats, op=torch.distributed.ReduceOp.SUM)
+    if int(os.getenv("RANK", "0")) == 0:
+        payload = {"step": 0, "input_columns_static_parity": True}
+        for index, name in enumerate(ALPHA_MONITOR_METRIC_NAMES[:6]):
+            value, count = stats[index]
+            payload[name] = value.item() / count.item() if count.item() else None
+        print("ALPHA_COT_STEP0_RAW_CE_PARITY=" + json.dumps(payload, sort_keys=True), flush=True)
+    trainer._alpha_cot_step0_parity_recorded = True
+
+
+_ALPHA_COT_NUMERATOR_SHARE_NAMES = (
+    "rec_cot_body_numerator_share",
+    "rec_cot_final_answer_numerator_share",
+    "rec_cot_final_sid_numerator_share",
+    "rec_nocot_numerator_share",
+)
+
+
+def _alpha_cot_numerator_share_stats(trainer, device: torch.device) -> torch.Tensor:
+    """Return an accumulator of detached recommendation weighted-CE masses."""
+
+    stats = getattr(trainer, "_alpha_cot_numerator_share_stats", None)
+    if stats is None or stats.device != device:
+        stats = torch.zeros(len(_ALPHA_COT_NUMERATOR_SHARE_NAMES), device=device, dtype=torch.float64)
+        trainer._alpha_cot_numerator_share_stats = stats
+    return stats
+
+
+def _accumulate_alpha_cot_numerator_shares(
+    trainer, *, details, labels: torch.Tensor, loss_weights: torch.Tensor, rec_pu_targets
+) -> None:
+    """Measure actual weighted CE masses without entering loss/backward.
+
+    ``details.base_contributions`` is the native shifted one-hot CE multiplied
+    by the exact persisted loss weight.  As REC-PU is OFF for Alpha-CoT, it is
+    also the actual training contribution.  Target metadata, rather than a
+    text heuristic, identifies CoT versus NoThink packed segments.
+    """
+
+    if not ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS:
+        return
+    if rec_pu_targets is None:
+        raise ValueError("Alpha-CoT numerator diagnostics require packed recommendation metadata.")
+    stats = _alpha_cot_numerator_share_stats(trainer, details.base_contributions.device)
+    shift_labels = labels[:, 1:]
+    shift_positions = torch.arange(shift_labels.size(1), device=labels.device) + 1
+    valid = details.valid_mask
+    think_token_ids = getattr(trainer, "_alpha_cot_think_token_ids", None)
+    if think_token_ids is None:
+        tokenizer = getattr(trainer, "processing_class", None) or getattr(trainer, "tokenizer", None)
+        if tokenizer is None:
+            raise ValueError("Alpha-CoT numerator diagnostics cannot access the training tokenizer.")
+        vocab = tokenizer.get_vocab()
+        think_token_ids = (int(vocab[THINK_OPEN_TOKEN]), int(vocab[THINK_CLOSE_TOKEN]))
+        trainer._alpha_cot_think_token_ids = think_token_ids
+    open_id, close_id = think_token_ids
+    with torch.no_grad():
+        for row, raw_targets in enumerate(rec_pu_targets):
+            for raw_target in raw_targets:
+                target = coerce_packed_target(raw_target)
+                if target.source_segment not in {"recommendation_cot", "recommendation_nocot"}:
+                    raise ValueError(f"Unexpected recommendation source route: {target.source_segment!r}")
+                if not (0 <= target.segment_start < target.segment_end <= labels.size(1)):
+                    raise ValueError("Recommendation target has invalid packed segment boundaries.")
+                segment = (
+                    (shift_positions >= target.segment_start)
+                    & (shift_positions < target.segment_end)
+                    & valid[row]
+                )
+                final_label_positions = (
+                    target.a_label_position - 1,
+                    target.a_label_position,
+                    target.b_label_position,
+                    target.c_label_position,
+                )
+                if any(position < target.segment_start or position >= target.segment_end for position in final_label_positions):
+                    raise ValueError("Final Gold SID lies outside its packed recommendation segment.")
+                if any(float(loss_weights[row, position].item()) != 8.0 for position in final_label_positions):
+                    raise ValueError("Final Gold SID must remain weight 8 in Alpha-CoT diagnostics.")
+                final_indices = torch.tensor([position - 1 for position in final_label_positions], device=labels.device)
+                if not bool(valid[row, final_indices].all().item()):
+                    raise ValueError("Final Gold SID lies outside the supervised shifted response span.")
+                final_mask = torch.zeros_like(segment)
+                final_mask[final_indices] = True
+                if target.source_segment == "recommendation_nocot":
+                    stats[3] += details.base_contributions[row, segment].detach().to(torch.float64).sum()
+                    continue
+
+                segment_labels = labels[row, target.segment_start : target.segment_end]
+                open_positions = torch.nonzero(segment_labels == open_id, as_tuple=False).flatten()
+                close_positions = torch.nonzero(segment_labels == close_id, as_tuple=False).flatten()
+                if open_positions.numel() != 1 or close_positions.numel() != 1:
+                    raise ValueError("recommendation_cot must have one exact supervised <think>...</think> span.")
+                body_start = target.segment_start + int(open_positions.item())
+                body_end = target.segment_start + int(close_positions.item())
+                if body_start >= body_end:
+                    raise ValueError("Invalid recommendation_cot think span order.")
+                body = (shift_positions >= body_start) & (shift_positions <= body_end) & valid[row]
+                answer = (shift_positions > body_end) & (shift_positions < target.segment_end) & valid[row]
+                stats[0] += details.base_contributions[row, body].detach().to(torch.float64).sum()
+                stats[1] += details.base_contributions[row, answer].detach().to(torch.float64).sum()
+                stats[2] += details.base_contributions[row, final_mask].detach().to(torch.float64).sum()
 
 
 _REC_DIAG_NAMES = (
@@ -1195,6 +1460,20 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
             elif count.item() > 0:
                 logs[metric_name] = (value / count).item()
         alpha_stats.zero_()
+    cot_share_stats = getattr(self, "_alpha_cot_numerator_share_stats", None)
+    if cot_share_stats is not None:
+        global_cot_share = cot_share_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            # One four-scalar reduction per logging window; these are numerator
+            # sums only and never enter the training graph.
+            torch.distributed.all_reduce(global_cot_share, op=torch.distributed.ReduceOp.SUM)
+        total = global_cot_share[0] + global_cot_share[1] + global_cot_share[3]
+        if total.item() > 0:
+            logs["rec_cot_body_numerator_share"] = (global_cot_share[0] / total).item()
+            logs["rec_cot_final_answer_numerator_share"] = (global_cot_share[1] / total).item()
+            logs["rec_cot_final_sid_numerator_share"] = (global_cot_share[2] / total).item()
+            logs["rec_nocot_numerator_share"] = (global_cot_share[3] / total).item()
+        cot_share_stats.zero_()
     rec_stats = getattr(self, "_rec_pu_stats", None)
     if rec_stats is not None:
         global_rec_stats = rec_stats.detach().clone()

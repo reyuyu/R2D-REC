@@ -46,7 +46,16 @@
 - [Alpha SID8 cache 修复与 Epoch2 CoT/No-think 观测](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
 - [正式 4 GPU 配置](baselines/native_source_domain_r32_v3/config/train_alpha_jiankong_monitor_validation_4gpu_gc04_2epoch.yaml)
 
-### 与旧 REC 系列的关系
+### Alpha-CoT Repeat-Normalized Weighting
+
+当前正式 Alpha-CoT 实验 `ALPHA-COT-REPEAT05N-R32-2E-GC04-4GPU` 在 recommendation CoT 的 `<think>...</think>` body 使用 `0.5/N` 权重，其中 N 是同一 recommendation group 的 CoT 重复次数；No-think、最终 Gold SID、其它任务与模型 forward 保持不变。训练为 4 GPU、LoRA r32、8K neat packing、GC0.4、2 epoch。30-step smoke 已通过，正式训练日志与配置不提交数据 cache、模型权重或 checkpoint。
+
+- [Alpha-CoT 实验记录](baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)
+- [Alpha-CoT 正式配置](baselines/native_source_domain_r32_v3/config/train_alpha_cot_repeat05n_4gpu_gc04_2epoch.yaml)
+- [Alpha-CoT weighting/preflight 脚本](baselines/native_source_domain_r32_v3/scripts/preflight_alpha_cot_repeat.py)
+
+### 历史实验
+>>>>>>> ac27e6d (feat: sync Alpha-CoT repeat-normalized experiment)
 
 旧 REC 系列仍是 macro training + 四任务 GradNorm 的独立路线，覆盖 BFD、coverage/deficit 调度与 cost-aware packing。它的结果用于历史比较，不与 Native baseline 的 loss、batch 语义或 checkpoint step 直接横比。
 
