@@ -1,196 +1,144 @@
-# OneReason 多任务 SFT 工程
+# OneReason 多任务 SFT
 
-本仓库用于微调 `OpenOneRec/OneReason-8B-pretrain-competition`，基于 LLaMA-Factory 扩展多任务 SFT、GradNorm、梯度冲突监控、Action Select 辅助目标和可复现的数据版本管理。
+本仓库用于 OneReason-8B 竞赛模型的多任务监督微调、数据版本管理和实验对比。工程基于 LLaMA-Factory，覆盖懂物料、懂用户、懂推荐等任务，并提供原生 SFT、GradNorm、SID 加权、推荐多正例以及训练监控等可回退实现。
 
-仓库只保存代码、配置、测试、实验记录和数据版本元信息，不保存模型权重、JSONL 数据、日志、预测结果、检查点或任何凭据。
+仓库只保存代码、配置、测试、实验记录和数据版本元信息，不保存模型权重、原始 JSONL、日志、checkpoint 或凭据。
 
-## 项目导航
+## 项目背景
 
-- [多任务设计说明](./ONEREASON_MULTITASK.md)
-- [数据版本管理说明](./ONEREASON_DATASET_VERSIONS.md)
-- [实验记录与评分](./实验记录/README.md)
-- [竞赛评测说明](./README_ONEREASON_COMPETITION.md)
-- [数据集注册表](./data/dataset_info.json)
+训练目标不是只降低一个总 loss，而是在固定数据合同和训练配方下，同时提升四类能力：
+
+- 懂物料：从 SID 与文本描述中学习商品、视频、直播和广告域的语义映射；
+- 懂用户：学习 Action Select 以及用户行为链；
+- 懂推荐：根据用户历史和画像完成多域推荐；
+- 训练可解释性：记录任务损失、候选质量、梯度范数和验证集变化，区分真实效果与训练尺度变化。
+
+当前所有消融实验都以 **BATA-baseline 纯净版** 为主要参考基线。基线的最新完整结果为：
+
+| 基线 | 训练进度 | 总分 |
+| --- | ---: | ---: |
+| BATA-baseline 纯净版 | Epoch 1 | 1.3090 |
+| BATA-baseline 纯净版 | Epoch 2 | **1.3246，约 1.33 分参考线** |
+
+1.33 不是新的硬性验收阈值，而是当前数据、模型和评测器组合下的横向比较基准。任何新实验都应同时报告总分和分项分数，不能只看单一指标或 raw task loss。
+
+详细基线合同和结果见 [BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md) 与 [实验记录](./实验记录/实验BATA-baseline纯净版.md)。
+
+## 实验系列
+
+所有系列均从 BATA-baseline 的模型、数据合同或训练入口出发，每次只改变明确记录的消融变量。Alpha 和 Beta 是当前两大实验板块。
+
+### Alpha 系列：数据、提示和训练监控
+
+Alpha 系列关注数据清洗、think/no-think 提示、Action Select 约束以及训练过程监控。它们沿用 baseline 的主体训练配方，变化集中在数据版本或可关闭的辅助目标。
+
+| 实验 | 核心变量 | 已记录结果或状态 |
+| --- | --- | --- |
+| Alpha / 实验 A | GradNorm-lite 与梯度监控 | 历史多任务 GradNorm 对照 |
+| Alpha-A0 | 学习率、dropout 和数据版本消融 | `lr=1e-4`、`dropout=0.01` 对照 |
+| Alpha-A1 | think/no-think 提示补充 | 使用 V1/V2 提示版本对照 |
+| Alpha-监控优化 | 98/2 leak-safe dev、固定 probe、训练中验证指标 | 重点观察四任务 loss 与 dev/probe 指标 |
+| Alpha-C | Action Select 历史 Trie、完整 SID 去重、Continue/Stop | 辅助损失版本，已发现部分消融存在负优化风险 |
+| Alpha-CoT | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` 权重 | 正式 2 epoch 实验，raw CE 与加权 task loss 分开解读 |
+
+相关记录：
+
+- [实验 A：GradNorm-lite](./实验记录/实验A_GradNorm-lite.md)
+- [实验 A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md)
+- [实验 A1](./实验记录/实验A1_think_prompt-GradNorm.md)
+- Alpha 监控优化：98/2 leak-safe dev、固定 probe 和训练中验证指标；具体运行文档以服务器当前版本为准。
+- [实验 C：Action Select 约束](./实验记录/实验C_Action-Select历史约束.md)
+- Alpha-CoT：Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` 权重；代码和运行记录随 Alpha-CoT 分支维护。
+
+### Beta 系列：稳定基线与推荐目标消融
+
+Beta 系列以 BATA-baseline 的物料对齐合同为锚点，逐步验证 SID8、推荐 Set-PU、PackRatio 和候选质量监控。Beta 实验之间必须明确区分数据版本、loss route 和 packing 调度，不能直接用 task loss 的绝对值横比。
+
+| 实验 | 核心变量 | 结果或用途 |
+| --- | --- | --- |
+| BATA-baseline 纯净版 | 原生 source/domain SFT；SID/domain=8；canonical=4；不启用 REC-PU | Epoch 2 总分 **1.3246，约 1.33** |
+| BETA-MATERIAL-ALIGNED-SID8 | 锁定 `BETA_material_aligned_v1` 的三路物料合同 | 为后续 Beta 消融提供统一母版 |
+| BETA-SETloss | Recommendation final SID 使用 Set-PU scalar objective，`alpha=0.05` | 真实 autograd；替代旧 surrogate backward |
+| BETA-fenpei | Set-PU + `20/45/20/15` PackRatio + 候选质量指标 | 独立 4 GPU、2 epoch 训练路线 |
+| REC-PU | Recommendation positive-unlabeled 研究阶段 | Phase 1-4 数学和 smoke 验证记录 |
+
+相关记录：
+
+- [BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)
+- [BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)
+- [BETA-SETloss](./baselines/native_source_domain_r32_v3/docs/实验BETA-SETloss.md)
+- [REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md)
+- [Native Source-Domain R32 V3 baseline 说明](./baselines/native_source_domain_r32_v3/README.md)
+
+旧的 REC-C/REC-F、GradNorm-Ortho 和 SID-weight8 记录仍保留，作为历史消融索引，不作为当前 1.33 baseline 的直接替代品：[实验记录目录](./实验记录/README.md)。
+
+## 数据版本
+
+数据文件只保存在服务器，GitHub 保存注册信息、manifest、样本数和 SHA-256 摘要。版本采用父版本继承，因此可以只替换一个子任务，而不复制其他任务数据。
+
+当前主要版本：
+
+| 版本 | 用途 | 内容 |
+| --- | --- | --- |
+| `raw_all` | 原始母版 | 服务器上的全量原始子数据集 |
+| `v1_thought_prompt_all` | 提示补充 | 为样本补充 `think` / `no_think` 标记 |
+| `v2_recommendation_cot_complete_all` | 推荐清洗 | 保留完整的兴趣归纳、行为模式、预测总结样本 |
+| `v3_material_clean` | 物料消融示例 | 只替换懂物料，其余任务从父版本继承 |
+| `BETA_material_aligned_v1` | Beta 主线 | 三路物料合同：`material_sample`、`canonical`、`reverse` |
+| `alpha-jiankong` | Alpha 监控 | 训练 98% + leak-safe dev/probe |
+| `BETA_material_aligned_v1` / `bata_baseline_v1` | 当前 baseline | 不含 world，使用 BATA-baseline 纯净版合同 |
+
+数据版本注册表：
+
+- [数据版本说明](./ONEREASON_DATASET_VERSIONS.md)
 - [数据版本清单](./data/onereason_dataset_versions.json)
+- [数据集注册表](./data/dataset_info.json)
 
-## 新 Baseline 系列
-
-当前主线进入独立的 **Native Source-Domain R32 V3** baseline 系列。它在隔离的 LLaMA-Factory `01398eb` 环境中复刻 source/domain-aware 原生 SFT，和仓库原有 macro trainer、GradNorm、Action 辅助目标、REC packing 系列严格分开。目的不是继续叠加旧多任务算法，而是在固定训练配方与物料合同下，建立可验证的推荐损失消融基线。
-
-### 系列结构
-
-1. **NSD-R32-V3**：四张 A800、8K neat packing、LoRA r32/alpha64/dropout0.05、全局 batch 64、两 epoch、cosine LR `2e-4`、0.4GC（14/36 decoder block）、FA2、Liger 与 BF16。
-2. **BETA-MATERIAL-ALIGNED-SID8**：锁定 `BETA_material_aligned_v1`，将懂物料严格对齐压缩包路线；训练数据不含 world。
-3. **BETA-SETloss（Set-PU）**：在锁定物料合同上，仅替换 recommendation 最终 SID 的 one-hot CE；以 observed-positive set 为正例集合，并将同层未观测 SID 作为 alpha=0.05 的弱负项。
-
-该系列的完整代码、配置、测试和运行说明见 [baseline 目录](./baselines/native_source_domain_r32_v3/README.md)。数据 JSONL、模型、日志和 checkpoint 不提交仓库。
-
-### 当前正式实验：BETA-fenpei
-
-当前 run 为 `BETA-fenpei`，母版为 `BETA-MATERIAL-ALIGNED-SID8-R32-2E-GC04-4GPU`。
-
-- 数据集：`onereason_beta_material_aligned`，目录为 `/data/lf_data_versions/alltrain/BETA_material_aligned_v1`；正式启动前必须通过 manifest、投影摘要、三路数量、四域数量/权重和实际 loss route 的 preflight。
-- 物料合同：`material_sample=100000` 使用普通 token 1、SID/domain token 8 与四域权重；`sid_bucket_canonical_no_think=11298` 使用所有 response token 4、无域权重；`sid_bucket_reverse=29586` 使用普通 1、SID/domain 8、无域权重。
-- BETA-SETloss：仅替换 recommendation **final SID a/b/c** 的 one-hot CE。已观测正例为 `P`，同层未观测 SID 为 `U`，其他层 SID 与普通 token 为 `O`；使用真实标量 Set-PU：`log(sum_P exp(z) + 0.05*sum_U exp(z) + sum_O exp(z)) - logsumexp(z[P])`。它直接使用 PyTorch autograd，不是旧的 custom-backward surrogate；仍是 replacement，SID/domain weight 仍为 8，原 SID8 分母不变。
-- PackRatio：顶层任务按 `material/recommendation/user_action/user_chain = 20/45/20/15` 目标比例调度；运行时以 `e_share_*` 记录实际 pack 消费占比。
-- 正式 YAML：[BETA-fenpei 4 GPU 2 epoch](./baselines/native_source_domain_r32_v3/config/train_rec_pu_beta_material_aligned_r32_b005_2epoch_packratio_20452015_candidate_metrics.yaml)。启动脚本会显式设置 `GLOBAL_ITEM_WEIGHT=8`、`MATERIAL_DOMAIN_MANIFEST` 与 `NATIVE_GC_FRACTION=0.4`。
-- 训练规模：33,616 packed samples，526 optimizer steps/epoch，2 epoch 共 1,052 steps；每个 epoch 保存一次 checkpoint。
-- 监控：`loss`、`grad_norm`、learning rate、`material / recommendation / user_action / user_chain` 四项 task loss，以及 REC-PU 的 segments、a/b/c positions、singleton/multi-positive 数量和平均正例数。每 50 step 额外记录 teacher-forcing 候选 hit/coverage/chain 指标，复用已有 logits，不增加模型 forward。该路线不使用 GradNorm，因此不记录 GradNorm 权重或任务梯度冲突。
-- 验证：P/U/O、prefix metadata、replacement/denominator、SID8 单次加权回归通过；Set-PU 在真实 BETA batch 上与同一 scalar reference 的 LoRA gradient cosine/norm ratio 均为 `1.0000`；40-step 四卡 smoke 中 recommendation loss 未复现旧 surrogate 的 step20 后持续反弹。正式记录见 [实验 BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)。
-
-### Alpha：监控与泄漏安全验证
-
-`ALPHA-JIANKONG-MONITOR` 保持 Native SID8 目标和训练配方不变，仅对清洗后的 `alpha-jiankong` 创建 group-safe 的 train98/dev2 切分，并增加训练侧四任务 loss、推荐 teacher-forcing 监控与验证 sidecar。固定开发集 probe 每 100 step 运行一次，完整 dev 仅在 epoch 末运行；二者均在 `inference_mode` 下执行、恢复 RNG/训练态，且不参与反向或优化器更新。
-
-- [Alpha 实验记录：指标、验证集与开销](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)
-- [Alpha SID8 cache 修复与 Epoch2 CoT/No-think 观测](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
-- [正式 4 GPU 配置](baselines/native_source_domain_r32_v3/config/train_alpha_jiankong_monitor_validation_4gpu_gc04_2epoch.yaml)
-
-### Alpha-CoT Repeat-Normalized Weighting
-
-当前正式 Alpha-CoT 实验 `ALPHA-COT-REPEAT05N-R32-2E-GC04-4GPU` 在 recommendation CoT 的 `<think>...</think>` body 使用 `0.5/N` 权重，其中 N 是同一 recommendation group 的 CoT 重复次数；No-think、最终 Gold SID、其它任务与模型 forward 保持不变。训练为 4 GPU、LoRA r32、8K neat packing、GC0.4、2 epoch。30-step smoke 已通过，正式训练日志与配置不提交数据 cache、模型权重或 checkpoint。
-
-- [Alpha-CoT 实验记录](baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)
-- [Alpha-CoT 正式配置](baselines/native_source_domain_r32_v3/config/train_alpha_cot_repeat05n_4gpu_gc04_2epoch.yaml)
-- [Alpha-CoT weighting/preflight 脚本](baselines/native_source_domain_r32_v3/scripts/preflight_alpha_cot_repeat.py)
-
-### 历史实验
->>>>>>> ac27e6d (feat: sync Alpha-CoT repeat-normalized experiment)
-
-旧 REC 系列仍是 macro training + 四任务 GradNorm 的独立路线，覆盖 BFD、coverage/deficit 调度与 cost-aware packing。它的结果用于历史比较，不与 Native baseline 的 loss、batch 语义或 checkpoint step 直接横比。
-
-## REC 系列实验
-
-REC 系列使用 `material / user_action / user_chain / recommendation` 四任务，保留四任务 GradNorm 和 SID 加权 CE，并逐步验证 8K BFD、coverage/deficit 调度、cost-aware 分区和按子任务自适应 pack 长度。
-
-- [REC 阶段实验记录](实验记录/实验recC_recD_recE_REC_F_自适应Packing.md)
-- [rec_A / recB 调度对照](实验记录/实验recA_recB_四任务调度.md)
-- [REC_F 正式配置](configs/onereason/onereason_lora_2gpu_recF_r16_gradnorm_sid_weight8_v2_dual_8k_gc075.yaml)
-- [数据版本管理](ONEREASON_DATASET_VERSIONS.md)
-
-REC_F 的 8K BFD pack epoch 共 45,744 个 pack，每个 macro-step 使用 8 个 global pack，因此一个 pack epoch 为 5,718 个 macro-step。训练输出、checkpoint、日志和原始数据不提交到仓库。
-
-## 训练任务
-
-| 顶层任务 | 子任务 | 内容 |
-| --- | --- | --- |
-| `material` | `cot`、`nocot` | 广告、商品、直播、视频的 SID 与描述理解 |
-| `user` | `action_nocot`、`chain_cot`、`chain_nocot` | 用户行为选择与多跳逻辑链 |
-| `recommendation` | `cot` | 用户画像与内容推荐理解 |
-| `world` | `cot`、`nocot` | 通用世界知识 SFT |
-
-默认多任务训练每个 macro-step 使用 8 个全局 microbatch；双卡 DDP 时每个 rank 处理其中 4 个。task-wise packing 只在同一子任务内进行，segment 之间使用独立的位置和注意力边界。
-
-实验 E 提供可回退的四任务布局：`material`、`user_action`、`user_chain`、`recommendation`，不训练 `world`，配置见 `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_expE_user_split_no_world.yaml`。
-
-## 实验索引
-
-| 实验 | 主要改动 | 记录 |
-| --- | --- | --- |
-| A | Lagged GradNorm-lite 与梯度监控 | [实验 A](./实验记录/实验A_GradNorm-lite.md) |
-| A0 | 学习率、LoRA dropout 与数据版本消融 | [实验 A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md) |
-| A1 | `think`/`no_think` 提示补充 | [实验 A1](./实验记录/实验A1_think_prompt-GradNorm.md) |
-| B | 局部 LoRA 梯度冲突投影 | [实验 B](./实验记录/实验B_GradNorm-Ortho-LoRA.md) |
-| C | Action Select 历史 Trie、完整 SID 去重、继续/终止平衡 | [实验 C](./实验记录/实验C_Action-Select历史约束.md) |
-| C-fast | Action Select 辅助损失向量化 | [实验 C-fast](./实验记录/实验C-fast_Action-Select向量化优化.md) |
-| C1 | Trie 优先消融，已判定为负向优化 | [实验 C1](./实验记录/实验C1_Trie优先消融.md) |
-| C2 | 全词表 Top-5 非法 SID 惩罚 | [实验 C2](./实验记录/实验C2_全词表TopK非法SID惩罚.md) |
-| C3 | C2 与 SID 加权 CE 融合 | [实验 C3](./实验记录/实验C3_TopK非法SID与SID加权.md) |
-| D | 监督 SID token 归一化加权 CE | [实验 D](./实验记录/实验D_SID加权SFT.md) |
-| E | 四任务 GradNorm，删除 world | [实验 E](./实验记录/实验E_四任务GradNorm无World.md) |
-| NSD-R32-V3 | 新 Native Source-Domain R32 baseline 系列 | [baseline 目录](./baselines/native_source_domain_r32_v3/README.md) |
-| REC-PU | BETA material-aligned 上的 recommendation positive-unlabeled replacement | [实验 REC-PU](./baselines/native_source_domain_r32_v3/docs/实验REC-PU.md) |
-| BETA-fenpei | Set-PU + `20/45/20/15` PackRatio + 低频候选质量指标 | [实验 BETA-fenpei](./baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md) |
-
-所有 checkpoint 分数、训练状态、已知限制和最终结论以实验记录为准。
-
-## 数据版本管理
-
-新的训练统一使用全量训练数据，不再从训练数据中切出验证集。历史 `*_train98` 和 `dev2` 文件只用于复现实验，不参与新的全量版本。
-
-版本清单使用父版本继承：
+常用服务器路径示例：
 
 ```text
-raw_all
-  -> v1_thought_prompt_all
-       -> v2_recommendation_cot_complete_all
-            -> v3_material_clean
+/data/lf_data_versions/alltrain/BETA_material_aligned_v1
+/data/lf_data_versions/task_pools
+/data/lf_data_versions/task_pools_abnormal
 ```
 
-- `raw_all`：服务器 `/data/lf_data` 下的 8 个原始全量子集。
-- `v1_thought_prompt_all`：按 CoT/non-CoT 追加 `/think` 或 `/no_think`，不改变样本数量。
-- `v2_recommendation_cot_complete_all`：只替换懂推荐，保留含 `【兴趣归纳】`、`【行为模式】`、`【预测总结】` 的样本。
-- `v3_material_clean`：示例版本，只覆盖懂物料，其余子集从父版本继承。
+更新数据版本前，先执行 manifest、字段、数量守恒和 SHA-256 审计；不要覆盖已注册版本，也不要把服务器原始数据直接提交到 GitHub。
 
-实际 JSONL 只保存在服务器，不上传 GitHub。代码、注册别名、样本数和 SHA-256 摘要保存在 [数据版本清单](./data/onereason_dataset_versions.json) 中。
+## 指标与结果解读
 
-### 初始化与审计
+### 评测分数
 
-```bash
-cd /app/LLaMA-Factory
-python scripts/manage_onereason_datasets.py init-raw-all
-python scripts/manage_onereason_datasets.py create-thought-prompts \
-  --version v1_thought_prompt_all --parent raw_all
-python scripts/manage_onereason_datasets.py create-recommendation-cot-complete \
-  --version v2_recommendation_cot_complete_all --parent v1_thought_prompt_all
-python scripts/manage_onereason_datasets.py audit --verify-hashes
-```
+评测器输出的总分和分项分数是最终效果判断依据。当前首先看总分是否接近或超过 **BATA-baseline 的 1.3246（约 1.33）**，再看懂物料、懂用户、懂推荐和懂世界的分项变化。历史记录中的懂物料分数曾存在不可参考阶段，必须以具体实验记录中的说明为准。
 
-### 只替换一个子数据集
+### 训练损失
 
-先在 `/data/clean/` 生成并检查清洗结果，再注册 patch。下面的命令只会复制两个懂物料文件：
+- `total_loss`：训练实际反向的总 loss；不同实验若改变 SID 权重、CoT 权重、任务配额或 loss route，绝对值不可直接横比。
+- `task_loss_material`、`task_loss_recommendation`、`task_loss_user_action`、`task_loss_user_chain`：各任务 raw loss 或路由后的任务 loss，应在同一实验内看时间趋势。
+- `grad_norm`：当前更新前的梯度范数；若长期高于裁剪阈值，实际更新会受到 clipping 影响。
+- `learning_rate`：学习率调度位置；cosine 后期降低不代表模型一定已经收敛。
 
-```bash
-python scripts/manage_onereason_datasets.py register-version \
-  --version v3_material_clean \
-  --parent v2_recommendation_cot_complete_all \
-  --description "懂物料清洗" \
-  --patch onereason_material_cot=/data/clean/onereason_material_cot.jsonl \
-  --patch onereason_material_nocot=/data/clean/onereason_material_nocot.jsonl
-```
+### GradNorm 与冲突监控
 
-### 在训练配置中选择版本
+旧多任务路线还记录任务权重、梯度范数、任务间梯度余弦、residual 和 DDP 一致性。权重触底只能说明控制器在当前 raw loss/梯度尺度下持续压低该任务，不等价于任务已经学好；应结合任务质量和梯度趋势判断。
 
-训练 YAML 保持 8 个逻辑数据集名称不变，不使用 `_train98` 后缀：
+### Recommendation / Action 指标
 
-```yaml
-dataset: onereason_material_cot,onereason_material_nocot,onereason_user_action_nocot,onereason_user_chain_cot,onereason_user_chain_nocot,onereason_recommendation_cot,onereason_world_cot,onereason_world_nocot
-multitask_train_dataset_suffix: ""
-multitask_dataset_version: v2_recommendation_cot_complete_all
-multitask_dataset_version_overrides: {}
-multitask_dataset_version_manifest: data/onereason_dataset_versions.json
-```
+- `a/b/c_rec_*`：推荐 SID 各层级的原始 CE；用于比较 CoT、No-think 及 a/b/c 学习难度。
+- `gold_sid_ce`：正确 SID token 的原始 CE；不是加权 task loss。
+- `candidate_hit`、`coverage`、`chain`：teacher-forcing 下的候选命中、集合覆盖和链路完整性。
+- `positive_mass`、`U_mass`、`P-vs-U margin`：Set-PU 或多正例实验中的正例集合质量。
+- `topk_illegal_rate`、`top1_illegal_hit_rate`、`gold_top5_rate`：Action Select 非法 SID 与 gold 命中情况。
+- `rec_cot_body_numerator_share`、`rec_cot_final_answer_numerator_share`、`rec_nocot_numerator_share`：Alpha-CoT 加权 CE numerator 的组成，只用于解释 loss 尺度，不直接代表生成质量。
 
-只想替换懂物料时，将 `multitask_dataset_version` 改为 `v3_material_clean` 即可，其他 6 个子集自动从父版本解析。
+### 验证集与固定 probe
 
-## 常用配置与启动
+Alpha 监控路线使用 98/2 leak-safe dev 和固定 probe；验证只复用已有 logits 或单独的 teacher-forcing 流程，不改变训练梯度。`tf_chain` 表示 teacher-forcing 下的行为链评估，`pathnull` 表示候选路径为空或未形成有效路径的统计，不等价于训练失败。
 
-| 用途 | 配置 |
-| --- | --- |
-| rank16 基线 | `configs/onereason/onereason_lora_2gpu_balanced40_r16.yaml` |
-| 实验 A | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm.yaml` |
-| 全量数据 V2 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_alltrain_v2.yaml` |
-| 实验 C2 | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_action_aux_c2_topk_illegal.yaml` |
-| 实验 E | `configs/onereason/onereason_lora_2gpu_balanced40_r16_gradnorm_expE_user_split_no_world.yaml` |
+## 常用配置与测试
 
-双卡启动示例：
+核心 Native 配置位于 [`baselines/native_source_domain_r32_v3/config`](./baselines/native_source_domain_r32_v3/config)。旧 rank16 配置仍位于 [`configs/onereason`](./configs/onereason)。
 
-```bash
-CUDA_VISIBLE_DEVICES=0,1 FORCE_TORCHRUN=1 NCCL_SOCKET_IFNAME=lo \
-  llamafactory-cli train configs/onereason/<实验配置>.yaml
-```
-
-多任务 macro 模式下 `gradient_accumulation_steps` 保持为 `1`。从检查点恢复时，继续使用原配置和对应输出目录中的完整检查点。
-
-## 监控指标
-
-macro/GradNorm 路线的日志保留各任务原始损失、GradNorm 加权总损失、任务权重、梯度范数、梯度余弦冲突和 DDP 一致性信息。Action Select 重点监控动态合法 SID 质量、Top-K 非法质量、Top-1 非法命中率和 gold Top-5 命中率。
-
-Native baseline 路线使用 segment-level source/domain-weighted SFT loss；`task_loss_*` 只能在同一任务的时间序列内比较，不能因 SID 权重、序列长度和数据路线差异而与其他任务作绝对横比。REC-PU 指标证明 replacement 是否触发，不等价于生成质量；历史 SID 复制率和多正例召回需要在 checkpoint 生成式评测中判断。
-
-SID 加权实验额外记录 SID token 数量、监督 token 比例、SID token CE、普通文本 CE 和 SID 加权质量占比。
-
-## 测试
+运行 CPU 回归：
 
 ```bash
 cd /app/LLaMA-Factory
@@ -200,16 +148,15 @@ PYTHONPATH=src python3 tests/test_sid_token_weighting.py
 PYTHONPATH=src python3 tests/test_onereason_dataset_versions.py
 ```
 
-四任务布局另有双进程 CPU/Gloo smoke test；完整 5200 步训练不会作为测试的一部分自动启动。
+启动训练前必须确认：数据版本 manifest、实际 loss route、SID/domain 权重、输出目录和 GPU 资源均与实验记录一致。正式训练命令以对应 YAML 或启动脚本为准，不要直接复制其他实验的 output_dir。
 
 ## 工程边界
 
 - 不上传原始数据、模型权重、checkpoint、日志和密钥。
-- 不改变既有 LoRA 结构、模型 forward、optimizer、scheduler 或任务采样语义。
-- Action 辅助损失和 SID 加权 CE 都保持可关闭，并继续参与原有任务 raw loss 与 GradNorm 链路。
-- 修改数据版本后先执行 `audit --verify-hashes`，再启动训练。
+- 不在未记录的情况下改变 LoRA、模型 forward、optimizer、scheduler、packing 或任务采样比例。
+- 新 loss 必须有独立开关、数学回归和最小 smoke；关闭开关时应恢复 baseline 行为。
+- 数据清洗、数据版本和实验配置分离管理，保证任何单个子任务都可以独立替换和回退。
 
 ## 许可证
 
 代码沿用 LLaMA-Factory 的 Apache-2.0 许可证；模型和竞赛数据须遵守各自许可证及赛事规则。
-- REC_G2：[Recommendation No-think Multi-Positive Prefix-Trie](实验记录/实验REC_G2_Recommendation-No-think-Multi-Positive-Trie.md)
