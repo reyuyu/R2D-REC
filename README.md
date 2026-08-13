@@ -16,7 +16,7 @@
 
 ## 统一参考线：BETA-baseline
 
-当前所有 Alpha 和 Mini 实验都以 **BATA-baseline 纯净版** 为参考。这里的 BATA-baseline 也称 BETA-baseline 纯净版，名称沿用已有实验记录。
+当前所有 Alpha 和 Mini 实验都以 **BETA-baseline 纯净版** 为参考。新版 baseline 文档文件名仍沿用了历史的 `BATA_BASELINE.md` 命名。
 
 | 项目 | 固定设置 |
 | --- | --- |
@@ -30,7 +30,7 @@
 
 1.33 是当前横向比较的参考分数，不是额外的硬性验收阈值。新实验必须同时报告总分和分项分数，不能仅凭 raw task loss 判断优劣。
 
-详细合同：[BATA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)；历史结果：[实验记录](./实验记录/实验BATA-baseline纯净版.md)。
+详细合同和结果：[BETA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)。
 
 ## Alpha 系列
 
@@ -38,20 +38,16 @@ Alpha 系列基于 baseline，重点研究数据提示、数据清洗、Action S
 
 | 实验 | 主要改动 | 关注点 |
 | --- | --- | --- |
-| 实验 A | Lagged GradNorm-lite 与梯度监控 | 多任务 raw loss、任务权重、梯度范数和冲突 |
-| 实验 A0 | 学习率 `1e-4`、dropout `0.01` 联合消融 | 低学习率/低 dropout 对训练曲线和最终分数的影响 |
-| 实验 A1 | `think` / `no_think` 提示补充 | 新提示数据对用户和推荐能力的影响 |
 | Alpha-监控优化 | 98/2 leak-safe dev、固定 probe、训练阶段验证 | 训练损失和验证指标是否同步，避免数据泄漏 |
-| 实验 C / C-fast | Action Select 历史 SID、去重、Continue/Stop 及向量化 | 历史外 SID、完整 SID 复读和停止位置 |
+| Alpha-SID8 cache fix | 修复静态 tokenized cache 的 SID/domain 权重合同 | 普通 token=1、canonical=4、非 canonical SID/domain=8 |
 | Alpha-CoT | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` | 降低重复 CoT 对训练 numerator 的主导，同时保持 Gold SID=8 |
 
 Alpha 记录入口：
 
-- [实验 A：GradNorm-lite](./实验记录/实验A_GradNorm-lite.md)
-- [实验 A0](./实验记录/实验A0_GradNorm低学习率低Dropout.md)
-- [实验 A1](./实验记录/实验A1_think_prompt-GradNorm.md)
-- [实验 C：Action Select 约束](./实验记录/实验C_Action-Select历史约束.md)
-- [实验 C-fast：向量化优化](./实验记录/实验C-fast_Action-Select向量化优化.md)
+- [Alpha 监控优化](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)
+- [Alpha 监控结果分析](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化_结果分析.md)
+- [Alpha SID8 cache 修复](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
+- [Alpha-CoT 重复归一化](./baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)
 
 Alpha-CoT 的正式运行配置和代码位于服务器的 Native baseline 工作目录；其核心对比必须使用 raw CoT body CE、CoT Gold SID CE、No-think Gold SID CE 和验证集指标，不能直接比较改变权重后的 recommendation task loss。
 
@@ -68,6 +64,8 @@ Mini 系列是 Alpha 正式实验的轻量复现和排查版本，用于在不�
 
 Mini 版本不作为最终排行榜结果，不覆盖 Alpha 正式 output，也不改变正式训练的 scheduler horizon。当前 mini 复现包不包含模型权重，原始数据仍需根据 manifest 从服务器或本地数据源恢复。
 
+Mini 记录：[Alpha Mini R32 两 epoch](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)。
+
 ## 数据版本
 
 GitHub 只保存数据版本注册信息、manifest、数量和 SHA-256 摘要；实际 JSONL 和 tokenized cache 保存在服务器。
@@ -79,7 +77,7 @@ GitHub 只保存数据版本注册信息、manifest、数量和 SHA-256 摘要�
 | `v2_recommendation_cot_complete_all` | 过滤懂推荐不完整 CoT |
 | `v3_material_clean` | 只替换懂物料，其他子集从父版本继承 |
 | `alpha-jiankong` | Alpha 监控的 train98、dev2 和固定 probe |
-| `bata_baseline_v1` | BATA-baseline 纯净版全量训练数据 |
+| `bata_baseline_v1` | BETA-baseline 纯净版全量训练数据 |
 
 相关文件：
 
@@ -125,7 +123,7 @@ Alpha 监控使用 leak-safe dev 和固定 probe。验证指标用于判断训�
 
 - Native baseline 代码和配置：[baselines/native_source_domain_r32_v3](./baselines/native_source_domain_r32_v3)
 - 多任务设计：[ONEREASON_MULTITASK.md](./ONEREASON_MULTITASK.md)
-- 实验记录：[实验记录/README.md](./实验记录/README.md)
+- 新版实验记录：[Native baseline docs](./baselines/native_source_domain_r32_v3/docs)
 
 启动正式训练前，应确认 GPU、数据 manifest、实际 loss route、输出目录和实验记录一致。Mini smoke 通过后再启动完整 epoch。
 
