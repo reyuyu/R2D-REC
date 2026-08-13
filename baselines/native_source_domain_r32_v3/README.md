@@ -22,4 +22,8 @@ Alpha 正式训练额外采用 persisted SID8 cache contract：训练前直接�
 - `tests/`：Set-PU 数学、metadata、replacement 与梯度等价测试。
 - `docs/`：实验记录与训练约束。
 
+## Alpha-mini：组合任务池训练结果
+
+Alpha-mini 将懂用户、懂推荐、懂物料三个 task pool 组合为 `onereason_alpha_mini_v1`，共 `49,490` 行；详细构造、来源、配额、token 统计和本次评测结果见 [Alpha-mini 实验记录](docs/experiment_ALPHA_Mini_R32_2E.md)。本次 aggregate 为 `1.2861`，11 项原始分项按 `4/2/4/1` 顺序记录在该文档中。
+
 数据、tokenized cache、checkpoint、日志均不随代码提交。正式启动前应在服务器上设置 BETA manifest 与 `GLOBAL_ITEM_WEIGHT=8`，并运行物料预检。
