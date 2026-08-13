@@ -10,7 +10,7 @@
 
 ## Alpha：监控与泄漏安全验证
 
-`ALPHA-JIANKONG-MONITOR` 保持普通 native SID8 CE，不启用 REC-PU 或 PackRatio。它使用 `alpha-jiankong` 的确定性 group-safe train98/dev2 切分，并增加只读的四任务训练 loss、推荐 teacher-forcing 指标、固定开发集 probe 和 epoch-end full-dev sidecar。验证不会创建额外训练 forward/backward，不改变 optimizer、scheduler、RNG 或 global step。详见 [Alpha 实验记录](docs/experiment_ALPHA_监控优化.md)。
+`ALPHA-JIANKONG-MONITOR` 保持普通 native SID8 CE，不启用 REC-PU 或 PackRatio。它使用 `alpha-jiankong` 的确定性 group-safe train98/dev2 切分，并增加只读的四任务训练 loss、推荐 teacher-forcing 指标、固定开发集 probe 和 epoch-end full-dev sidecar。验证不会创建额外训练 forward/backward，不改变 optimizer、scheduler、RNG 或 global step。详见 [Alpha 实验记录](docs/experiment_ALPHA_监控优化.md)；`SID8FIX` 正式运行的 epoch 1/2 结果、验证分叉证据和告警漏报分析见 [结果分析](docs/experiment_ALPHA_监控优化_结果分析.md)，供外部复核的完整问题清单见 [GPT 诊断提示词](docs/prompt_GPT_Alpha监控指标矛盾.md)。
 
 Alpha 正式训练额外采用 persisted SID8 cache contract：训练前直接扫描实际 Arrow cache，拒绝仍含 fallback weight 2/3 的缓存；canonical supervised response 必须为 4，非 canonical SID/domain token 必须为 8。缓存修复和 Epoch2 CoT/No-think 观测见 [Alpha SID8 cache 修复记录](docs/experiment_ALPHA_SID8_cache_fix.md)。
 
