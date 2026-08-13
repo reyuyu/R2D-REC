@@ -43,6 +43,7 @@
 `ALPHA-JIANKONG-MONITOR` 保持 Native SID8 目标和训练配方不变，仅对清洗后的 `alpha-jiankong` 创建 group-safe 的 train98/dev2 切分，并增加训练侧四任务 loss、推荐 teacher-forcing 监控与验证 sidecar。固定开发集 probe 每 100 step 运行一次，完整 dev 仅在 epoch 末运行；二者均在 `inference_mode` 下执行、恢复 RNG/训练态，且不参与反向或优化器更新。
 
 - [Alpha 实验记录：指标、验证集与开销](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)
+- [Alpha SID8 cache 修复与 Epoch2 CoT/No-think 观测](baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
 - [正式 4 GPU 配置](baselines/native_source_domain_r32_v3/config/train_alpha_jiankong_monitor_validation_4gpu_gc04_2epoch.yaml)
 
 ### 与旧 REC 系列的关系

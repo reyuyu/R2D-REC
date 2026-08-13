@@ -22,14 +22,16 @@ from typing import Any
 import yaml
 from datasets import load_from_disk
 
+from alpha_sid8_cache_contract import AlphaSID8CacheContractError, scan_alpha_sid8_cache
+
 
 EXPECTED = {
     "dataset": "onereason_alpha_jiankong_train98",
     "alpha_validation_dev_dataset": "onereason_alpha_jiankong_dev2",
     "dataset_dir": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1",
-    "tokenized_path": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_train98_8k",
-    "alpha_validation_dev_cache": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k",
-    "alpha_validation_probe_cache": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k",
+    "tokenized_path": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_train98_8k_sid8w8",
+    "alpha_validation_dev_cache": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k_sid8w8",
+    "alpha_validation_probe_cache": "/data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k_sid8w8",
     "num_train_epochs": 2,
     "per_device_train_batch_size": 1,
     "gradient_accumulation_steps": 16,
@@ -227,6 +229,14 @@ def _validate_native_contract() -> None:
         _fail("Native SID8/material loss route source audit failed")
 
 
+def _validate_persisted_sid8_cache(config: dict[str, Any]) -> dict[str, object]:
+    """Trust the cache contents, not merely the environment variable."""
+    try:
+        return scan_alpha_sid8_cache(config["tokenized_path"])
+    except AlphaSID8CacheContractError as error:
+        _fail(f"Persisted SID8 cache contract failed: {error}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
@@ -241,6 +251,7 @@ def main() -> None:
         train_rows, dev_rows, train_packs, dev_packs = _validate_registry_and_split(config)
         probe_rows, probe_groups, probe_packs = _validate_probe(config)
         _validate_native_contract()
+        sid8_cache = _validate_persisted_sid8_cache(config)
         per_update = args.world_size * int(config["per_device_train_batch_size"]) * int(config["gradient_accumulation_steps"])
         steps_per_epoch = math.ceil(train_packs / per_update)
         total_steps = math.ceil(steps_per_epoch * float(config["num_train_epochs"]))
@@ -258,6 +269,7 @@ def main() -> None:
             "probe_sha256": EXPECTED_PROBE_SHA, "probe_interval": config["alpha_dev_probe_interval"],
             "full_dev_epoch_end": "ON", "full_dev_packs": dev_packs,
             "sid_domain_weight": 8, "canonical_response_weight": 4,
+            "sid8_cache_packs": sid8_cache["packs"],
         }
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True))

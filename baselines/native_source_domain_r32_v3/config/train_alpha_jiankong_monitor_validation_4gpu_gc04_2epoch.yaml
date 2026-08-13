@@ -13,7 +13,7 @@ enable_liger_kernel: true
 
 dataset: onereason_alpha_jiankong_train98
 dataset_dir: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1
-tokenized_path: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_train98_8k
+tokenized_path: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_train98_8k_sid8w8
 template: qwen3_nothink
 cutoff_len: 8192
 packing: true
@@ -58,8 +58,8 @@ alpha_train_tf_interval: 50
 alpha_validation_enabled: true
 alpha_validation_dev_dataset: onereason_alpha_jiankong_dev2
 alpha_validation_split_dir: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1
-alpha_validation_dev_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k
-alpha_validation_probe_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k
+alpha_validation_dev_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k_sid8w8
+alpha_validation_probe_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k_sid8w8
 alpha_validation_metrics_path: /data/logs/baselines/native_source_domain_r32_v3/ALPHA-MONITOR-VALIDATION-R32-2E-GC04-4GPU/alpha_validation_metrics.jsonl
 alpha_dev_probe_enabled: true
 alpha_dev_probe_interval: 100
