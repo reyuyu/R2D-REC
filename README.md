@@ -34,13 +34,28 @@
 
 ## Alpha 系列
 
-Alpha 系列基于 baseline，重点研究数据提示、数据清洗、Action Select 约束和训练监控。除记录中明确说明的变量外，模型、LoRA、优化器和评测方式保持一致。
+Alpha 系列基于 BETA-baseline，重点研究数据提示、数据清洗、Action Select 约束、loss 目标与训练监控。除各实验记录中明确说明的变量外，模型（OneReason-8B + LoRA r32/a64）、优化器、8K neat packing 与外部评测方式保持一致。
 
-| 实验 | 主要改动 | 关注点 |
-| --- | --- | --- |
-| Alpha-监控优化 | 98/2 leak-safe dev、固定 probe、训练阶段验证 | 训练损失和验证指标是否同步，避免数据泄漏 |
-| Alpha-SID8 cache fix | 修复静态 tokenized cache 的 SID/domain 权重合同 | 普通 token=1、canonical=4、非 canonical SID/domain=8 |
-| Alpha-CoT | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` | 降低重复 CoT 对训练 numerator 的主导，同时保持 Gold SID=8 |
+### 实验脉络
+
+| 实验 | 主线 | 主要改动 | 外部评测得分 |
+| --- | --- | --- | --- |
+| Alpha-监控优化 | 验证体系 | 98/2 leak-safe dev、固定 probe、训练阶段验证 | 监控本身不改变训练梯度 |
+| Alpha-Jiankong | 正式母版 | monitor + validation 正式训练配方（train98 / dev2 / probe） | Epoch 1 总分 `1.2605` |
+| Alpha-SID8 cache fix | 权重合同 | 修复静态 tokenized cache 的 SID/domain 权重合同 | 普通 token=1、canonical=4、非 canonical SID/domain=8 |
+| Alpha-CoT | 权重侧 | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` | Epoch 1 总分 `1.2263` |
+| **Alpha-Smooth** | **loss 目标侧** | **第二 epoch 起开启标签平滑 ε=0.05**（`alpha_smooth_start_epoch: 1.0`） | **Epoch 2 总分 `1.3185`，较 Alpha-Jiankong 有提升** |
+| Alpha-V2 | 数据重建 | 推荐全量 CoT 重建 + NoCoT 恢复至 1/3 + 与 dev2 零交叉 | 训练待启动 |
+
+### Alpha 系列得分一览（外部评测器，总分）
+
+| 实验 | Epoch 1 | Epoch 2 |
+| --- | ---: | ---: |
+| BETA-baseline（统一参考线） | `1.3090` | `1.3246` |
+| Alpha-Jiankong | `1.2605` | — |
+| Alpha-CoT | `1.2263` | — |
+| **Alpha-Smooth** | — | **`1.3185`** |
+| Alpha-V2 | 待训练 | 待训练 |
 
 Alpha 记录入口：
 
@@ -48,8 +63,11 @@ Alpha 记录入口：
 - [Alpha 监控结果分析](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化_结果分析.md)
 - [Alpha SID8 cache 修复](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
 - [Alpha-CoT 重复归一化](./baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)
+- [Alpha-Smooth 标签平滑](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHASMOOTH.md)
+- [Alpha-V2 推荐重建](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_V2.md)
+- [Alpha Mini R32 两 epoch](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)
 
-Alpha-CoT 的正式运行配置和代码位于服务器的 Native baseline 工作目录；其核心对比必须使用 raw CoT body CE、CoT Gold SID CE、No-think Gold SID CE 和验证集指标，不能直接比较改变权重后的 recommendation task loss。
+Alpha-CoT 与 Alpha-Smooth 的正式运行配置和代码位于服务器的 Native baseline 工作目录。核心对比必须使用 raw CoT body CE、CoT Gold SID CE、No-think Gold SID CE、验证集指标以及外部评测总分与分项，不能直接比较改变权重或损失目标后的 recommendation task loss。
 
 ## Mini 系列
 
