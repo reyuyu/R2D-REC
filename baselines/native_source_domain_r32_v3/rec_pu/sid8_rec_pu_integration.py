@@ -11,6 +11,7 @@ denominator.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 from typing import Any, Iterable, Mapping, Sequence
 
 import torch
@@ -21,6 +22,7 @@ from rec_pu.core_recommendation_metrics import (
 )
 from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss, rec_pu_position_loss
 from rec_pu.recommendation_pu_phase2 import RecPUPackedTarget, TokenPrefixPositiveSets
+from rec_pu.mini_topk_loss import MiniTopKConfig, mini_topk_position_loss, mini_topk_batched_position_loss
 
 
 IGNORE_INDEX = -100
@@ -46,6 +48,33 @@ class RecPUConfig:
     def unlabeled_sid_grad_scale(self) -> float:
         """Compatibility name: this is now the Set-PU U weight (alpha)."""
         return self.rec_pu_unlabeled_sid_grad_scale
+
+
+@dataclass(frozen=True)
+class AlphaSmoothConfig:
+    """Epoch-gated same-level SID label smoothing for Alpha ablations."""
+
+    enabled: bool = False
+    epsilon: float = 0.05
+    start_epoch: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= float(self.epsilon) < 1.0 or not isfinite(float(self.epsilon)):
+            raise ValueError("alpha_smooth_epsilon must be finite and in [0, 1).")
+        if float(self.start_epoch) < 0.0 or not isfinite(float(self.start_epoch)):
+            raise ValueError("alpha_smooth_start_epoch must be finite and >= 0.")
+
+    def active_for_epoch(self, epoch: float | None) -> bool:
+        """Stateless activation, including a checkpoint resumed in Epoch2."""
+
+        return self.enabled and epoch is not None and float(epoch) >= float(self.start_epoch)
+
+
+def final_sid_targets_required(*, rec_pu_enabled: bool, alpha_monitor_enabled: bool, alpha_smooth_enabled: bool,
+                               mini_topk_enabled: bool = False) -> bool:
+    """Whether packed final-SID locator metadata must survive to the trainer."""
+
+    return rec_pu_enabled or alpha_monitor_enabled or alpha_smooth_enabled or mini_topk_enabled
 
 
 @dataclass(frozen=True)
@@ -88,6 +117,8 @@ class RecPULossDetails:
     positive_count_b_sum: int
     positive_count_c_sum: int
     changed_positions: tuple[tuple[int, int], ...]
+    alpha_smooth_sum_count: torch.Tensor
+    mini_topk_sum_count: torch.Tensor
 
     @property
     def denominator(self) -> torch.Tensor:
@@ -201,6 +232,9 @@ def compute_native_sid8_loss(
     sample_domain_weights: torch.Tensor,
     rec_pu_targets: Sequence[Sequence[RecPUPackedTarget | Mapping[str, Any]]] | None = None,
     rec_pu_config: RecPUConfig | None = None,
+    alpha_smooth_config: AlphaSmoothConfig | None = None,
+    alpha_smooth_active: bool = False,
+    mini_topk_config: MiniTopKConfig | None = None,
     sid_component_vocab: SIDComponentVocab | None = None,
     collect_candidate_metrics: bool = False,
     collect_rec_metrics: bool = False,
@@ -213,6 +247,14 @@ def compute_native_sid8_loss(
     """
 
     config = rec_pu_config or RecPUConfig(rec_pu_enabled=False)
+    smooth_config = alpha_smooth_config or AlphaSmoothConfig()
+    topk_config = mini_topk_config or MiniTopKConfig(enabled=False)
+    if sum((config.enabled, smooth_config.enabled, topk_config.enabled)) > 1:
+        raise ValueError("REC-PU, AlphaSmooth and MiniTopK cannot replace final-SID losses together.")
+    if alpha_smooth_active and not smooth_config.enabled:
+        raise ValueError("AlphaSmooth cannot be active when alpha_smooth_enabled is false.")
+    if alpha_smooth_active and rec_pu_targets is None:
+        raise ValueError("AlphaSmooth requires packed final-SID targets; rec_pu_targets is absent.")
     if logits.ndim != 3 or labels.ndim != 2:
         raise ValueError("Expected logits [batch, length, vocab] and 2-D label tensors.")
     if labels.shape != loss_weights.shape or labels.shape != sample_ids.shape:
@@ -245,18 +287,29 @@ def compute_native_sid8_loss(
     rec_posentropy_a_sum_count = torch.zeros(2, device=metric_device, dtype=torch.float64)
     # a hit8/hit32, a coverage8/coverage32, b hit8, c hit8, chain 32/8/8.
     rec_candidate_sum_count = torch.zeros((7, 2), device=metric_device, dtype=torch.float64)
+    alpha_smooth_sum_count = torch.zeros((4, 2), device=metric_device, dtype=torch.float64)
+    # Common metrics (0:18) plus A/B/C native,set,rank,MP (18:30) and
+    # weakest-positive gap/violation (30:36), all as detached sum/count pairs.
+    mini_topk_sum_count = torch.zeros((36, 2), device=metric_device, dtype=torch.float64)
+    if smooth_config.enabled:
+        alpha_smooth_sum_count[0, 0] = float(alpha_smooth_active)
+        alpha_smooth_sum_count[0, 1] = 1.0
+        alpha_smooth_sum_count[1, 0] = float(smooth_config.epsilon) if alpha_smooth_active else 0.0
+        alpha_smooth_sum_count[1, 1] = 1.0
     rec_segments = 0
     rec_positions = 0
     singleton_segments = 0
     positive_sums = {"a": 0, "b": 0, "c": 0}
     changed: list[tuple[int, int]] = []
-    if config.enabled or collect_rec_metrics:
+    if config.enabled or collect_rec_metrics or alpha_smooth_active or topk_config.enabled:
         if sid_component_vocab is None:
-            raise ValueError("sid_component_vocab is required for REC-PU training or recommendation monitoring.")
+            raise ValueError("sid_component_vocab is required for final-SID objective or recommendation monitoring.")
         grouped_positions: dict[str, list[tuple[int, int, tuple[int, ...]]]] = {"a": [], "b": [], "c": []}
         for row_index, row_targets in enumerate(normalised_targets):
             rec_segments += len(row_targets)
             for target in row_targets:
+                if alpha_smooth_active and target.source_segment not in {"recommendation_cot", "recommendation_nocot"}:
+                    raise ValueError("AlphaSmooth target must be from recommendation_cot or recommendation_nocot.")
                 target_sizes = (len(target.positives.a), len(target.positives.b), len(target.positives.c))
                 if target_sizes == (1, 1, 1):
                     singleton_segments += 1
@@ -302,6 +355,89 @@ def compute_native_sid8_loss(
 
             if config.enabled:
                 changed.extend((int(row), int(position)) for row, position, _ in entries)
+
+        if alpha_smooth_active and smooth_config.epsilon > 0.0:
+            # Preserve the native full-vocabulary CE and replace only final
+            # A/B/C terms with same-level smoothing. The selected component
+            # gathers are float32 so BF16 logits do not reduce the correction.
+            # Native contributions already cast base CE to float32 below. Use
+            # that same representation for untouched tokens and preserve the
+            # new correction's float32 precision at final A/B/C positions.
+            per_token_ce = base_per_token_ce.float()
+            for level, entries in grouped_positions.items():
+                if not entries:
+                    continue
+                component_ids = _cached_sid_ids(sid_component_vocab.for_level(level), logits.device)
+                if component_ids.numel() < 2:
+                    raise ValueError(f"AlphaSmooth requires at least two SID tokens at level {level}.")
+                rows = torch.tensor([entry[0] for entry in entries], dtype=torch.long, device=logits.device)
+                positions = torch.tensor([entry[1] for entry in entries], dtype=torch.long, device=logits.device)
+                selected_logits = shift_logits[rows, positions].float()
+                gold = shift_labels[rows, positions]
+                same_level_logits = selected_logits.index_select(1, component_ids)
+                gold_in_level = (component_ids.unsqueeze(0) == gold.unsqueeze(1)).any(dim=1)
+                if not bool(gold_in_level.all().item()):
+                    raise ValueError(f"AlphaSmooth {level} target label is not in its same-level SID vocabulary.")
+                gold_logits = selected_logits.gather(1, gold.unsqueeze(1)).squeeze(1)
+                mean_other = (same_level_logits.sum(dim=1) - gold_logits) / float(component_ids.numel() - 1)
+                smoothed = base_per_token_ce[rows, positions].float() + float(smooth_config.epsilon) * (
+                    gold_logits - mean_other
+                )
+                per_token_ce = per_token_ce.index_put((rows, positions), smoothed)
+                changed.extend((int(row), int(position)) for row, position, _ in entries)
+                alpha_smooth_sum_count[2].add_(finite_sum_count(smoothed.detach()))
+                alpha_smooth_sum_count[3].add_(
+                    finite_sum_count((smoothed - base_per_token_ce[rows, positions].float()).detach())
+                )
+
+        # mini_topK is a replacement objective for final recommendation a/b/c
+        # only. It intentionally runs after the mutually-exclusive branches
+        # above, preserving all ordinary/think/domain-marker CE terms.
+        if topk_config.enabled:
+            per_token_ce = base_per_token_ce.float()
+            mini_topk_sum_count[0, 0] = float(rec_segments)
+            mini_topk_sum_count[0, 1] = 1.0
+            allin_by_level: dict[str, torch.Tensor] = {}
+            for level, entries in grouped_positions.items():
+                if not entries:
+                    continue
+                rows = torch.tensor([row for row, _, _ in entries], dtype=torch.long, device=logits.device)
+                positions = torch.tensor([position for _, position, _ in entries], dtype=torch.long, device=logits.device)
+                result = mini_topk_batched_position_loss(
+                    shift_logits[rows, positions], gold_ids=shift_labels[rows, positions],
+                    positive_sets=[positives for _, _, positives in entries],
+                    same_level_ids=sid_component_vocab.for_level(level), level=level, config=topk_config,
+                )
+                changed.extend((int(row), int(position)) for row, position, _ in entries)
+                per_token_ce = per_token_ce.index_put((rows, positions), result.loss)
+                level_index = {"a": 0, "b": 1, "c": 2}[level]
+                multi_count = result.multi.to(dtype=torch.float64).sum()
+                mini_topk_sum_count[1, 0] += multi_count
+                mini_topk_sum_count[1, 1] += multi_count
+                mini_topk_sum_count[2].add_(finite_sum_count(result.set_nll.detach()[result.multi]))
+                mini_topk_sum_count[3].add_(finite_sum_count(result.rank_loss.detach()[result.multi]))
+                mini_topk_sum_count[4].add_(finite_sum_count(result.loss.detach()))
+                mini_topk_sum_count[5].add_(finite_sum_count((result.loss - result.native_ce).detach()))
+                mini_topk_sum_count[6 + level_index].add_(finite_sum_count(result.all_in.detach()))
+                allin_by_level[level] = result.all_in.detach()
+                mini_topk_sum_count[10 + level_index, 0] += result.positive_count.sum().to(dtype=torch.float64)
+                mini_topk_sum_count[10 + level_index, 1] += float(len(entries))
+                mini_topk_sum_count[13 + level_index, 0] += result.k.sum().to(dtype=torch.float64)
+                mini_topk_sum_count[13 + level_index, 1] += float(len(entries))
+                mini_topk_sum_count[16].add_(finite_sum_count(result.native_ce.detach()))
+                mini_topk_sum_count[17].add_(finite_sum_count(result.loss.detach()))
+                per_level_base = 18 + level_index * 4
+                mini_topk_sum_count[per_level_base].add_(finite_sum_count(result.native_ce.detach()))
+                mini_topk_sum_count[per_level_base + 3].add_(finite_sum_count(result.loss.detach()))
+                mini_topk_sum_count[per_level_base + 1].add_(finite_sum_count(result.set_nll.detach()[result.multi]))
+                mini_topk_sum_count[per_level_base + 2].add_(finite_sum_count(result.rank_loss.detach()[result.multi]))
+                mini_topk_sum_count[30 + level_index].add_(finite_sum_count(result.weakest_gap.detach()[result.multi]))
+                mini_topk_sum_count[33 + level_index].add_(finite_sum_count(result.boundary_violation.detach()[result.multi]))
+            # `_component_positions` appends A/B/C in the same packed-target
+            # order, so vector rows correspond to the same segment.
+            if len(allin_by_level) == 3:
+                chain = torch.stack((allin_by_level["a"], allin_by_level["b"], allin_by_level["c"])).prod(dim=0)
+                mini_topk_sum_count[9].add_(finite_sum_count(chain))
 
         # Set-PU is a true scalar objective: no detached logits and no custom
         # backward. The metrics below only reuse its detached values.
@@ -374,6 +510,8 @@ def compute_native_sid8_loss(
             rec_candidate_sum_count=rec_candidate_sum_count, rec_pu_segments=0,
             rec_pu_positions=0, rec_pu_singleton_segments=0, positive_count_a_sum=0,
             positive_count_b_sum=0, positive_count_c_sum=0, changed_positions=(),
+            alpha_smooth_sum_count=alpha_smooth_sum_count,
+            mini_topk_sum_count=mini_topk_sum_count,
         )
 
     unique_ids, inverse = torch.unique(flat_sample_ids, sorted=False, return_inverse=True)
@@ -415,6 +553,8 @@ def compute_native_sid8_loss(
         rec_pu_singleton_segments=singleton_segments,
         positive_count_a_sum=positive_sums["a"], positive_count_b_sum=positive_sums["b"],
         positive_count_c_sum=positive_sums["c"], changed_positions=tuple(changed),
+        alpha_smooth_sum_count=alpha_smooth_sum_count,
+        mini_topk_sum_count=mini_topk_sum_count,
     )
     return loss, details
 

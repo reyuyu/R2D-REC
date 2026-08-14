@@ -190,6 +190,219 @@
           "sha256": "84043f25199ad428317a0f527f6a17dd39802562c47393aa77ca3a2fa2012dd8"
         }
       }
+    },
+    "rec_material_bucket_reverse_v1": {
+      "parent": "v3_recommendation_multi_positive",
+      "created_at_utc": "2026-08-09T08:07:17Z",
+      "description": "Recommendation-material experiment version: 11298 high-confidence SID bucket canonical rows, deterministic reverse caption-to-SID rows, and a seeded 100k non-bucket material remainder sample; user and recommendation inherit the complete V3 dual parent.",
+      "overrides": {
+        "onereason_material_cot": {
+          "registry_name": "onereason_material_cot_rec_material_bucket_reverse_v1",
+          "file_name": "/data/lf_data_versions/alltrain/rec_material_bucket_reverse_v1/onereason_material_cot.jsonl",
+          "records": 72596,
+          "sha256": "74039d7302cebc751491c190048486467a460acbd53b03bf95ad02db5ff03138"
+        },
+        "onereason_material_nocot": {
+          "registry_name": "onereason_material_nocot_rec_material_bucket_reverse_v1",
+          "file_name": "/data/lf_data_versions/alltrain/rec_material_bucket_reverse_v1/onereason_material_nocot.jsonl",
+          "records": 72596,
+          "sha256": "db2f4aba687ba5c466ffb281a4fa08a2d953d2e87978b4334454290505cd411c"
+        }
+      }
+    },
+    "BETA": {
+      "parent": "v3_recommendation_multi_positive",
+      "created_at_utc": "2026-08-10T07:31:03Z",
+      "description": "BETA: full local material_understanding replacement plus normalized inline think/no_think marker and explicit think blocks. Intended for no-world four-task layouts.",
+      "world_included": false,
+      "overrides": {
+        "onereason_material_cot": {
+          "registry_name": "onereason_material_cot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_material_cot.jsonl",
+          "records": 64781,
+          "sha256": "18e2fba7515b3b2ad655661aa9c262c96cb716215a602cc09cec0b0472a9117f"
+        },
+        "onereason_material_nocot": {
+          "registry_name": "onereason_material_nocot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_material_nocot.jsonl",
+          "records": 76103,
+          "sha256": "67da4539a3d7ab7a6809ae53139ab81b06e6272acae2e0f9cfe289f0350a857f"
+        },
+        "onereason_user_action_nocot": {
+          "registry_name": "onereason_user_action_nocot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_user_action_nocot.jsonl",
+          "records": 16657,
+          "sha256": "f623e26372ba2fa47c2005c558b69bda16126667911fe0503c050fdbd7f20124"
+        },
+        "onereason_user_chain_cot": {
+          "registry_name": "onereason_user_chain_cot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_user_chain_cot.jsonl",
+          "records": 8339,
+          "sha256": "c6375820e8dcfa839edea4a9e2f9547d30ec2b0e5d5ecf865f5a1c34b44364d7"
+        },
+        "onereason_user_chain_nocot": {
+          "registry_name": "onereason_user_chain_nocot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_user_chain_nocot.jsonl",
+          "records": 7852,
+          "sha256": "5436ec27785da2a86d8a217295de75a2004c583ed69b18bac8f043096187656d"
+        },
+        "onereason_recommendation_cot": {
+          "registry_name": "onereason_recommendation_cot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_recommendation_cot.jsonl",
+          "records": 20664,
+          "sha256": "ccc8cc5a1a9c5da1c55fa85e30816696c9555f7acad19b98b2ca3efa08597926"
+        }
+      },
+      "extra_registry_entries": {
+        "onereason_recommendation_nocot": {
+          "registry_name": "onereason_recommendation_nocot_beta",
+          "file_name": "/data/lf_data_versions/alltrain/BETA/onereason_recommendation_nocot.jsonl",
+          "records": 20666,
+          "sha256": "0a1f9303814fab064ac78ac5fb9e3cb8252c5a902703b102c2366f300a953f3d"
+        }
+      }
+    },
+    "BETA_material_aligned_v1": {
+      "parent": "BETA",
+      "created_at_utc": "2026-08-10T11:09:03Z",
+      "description": "BETA with the audited original material upload, preserved three-route data_source labels, and packaged material-domain weights. User and recommendation data inherit from BETA.",
+      "world_included": false,
+      "overrides": {
+        "onereason_material_cot": {
+          "registry_name": "onereason_material_cot_beta_material_aligned_v1",
+          "file_name": "/data/lf_data_versions/alltrain/BETA_material_aligned_v1/onereason_material_cot.jsonl",
+          "records": 64781,
+          "sha256": "f98b6e5dd58cb7c12d2fba6f8be1b32b12977f6ed0426bb661f5eb95f27fe20b"
+        },
+        "onereason_material_nocot": {
+          "registry_name": "onereason_material_nocot_beta_material_aligned_v1",
+          "file_name": "/data/lf_data_versions/alltrain/BETA_material_aligned_v1/onereason_material_nocot.jsonl",
+          "records": 76103,
+          "sha256": "29cf3dc76cbc0bc0e4554de7315f743fb61b63569ed8db5e5597ced64d16ae24"
+        }
+      },
+      "extra_registry_entries": {
+        "onereason_beta_material_aligned": {
+          "registry_name": "onereason_beta_material_aligned",
+          "file_name": "/data/lf_data_versions/alltrain/BETA_material_aligned_v1/onereason_beta_material_aligned.jsonl",
+          "records": 215062,
+          "sha256": "b372e51007107ff50b88b642f574be7a7a297088061877ae7ee946f5f279e94f"
+        }
+      },
+      "material_contract": {
+        "source_sha256": "a29042f9b997c1defe539f482cee0390848eda2dff2037ec05435c3095e23bd0",
+        "source_counts": {
+          "material_sample": 100000,
+          "sid_bucket_canonical_no_think": 11298,
+          "sid_bucket_reverse": 29586
+        },
+        "domain_counts": {
+          "ad": 22768,
+          "prod": 29180,
+          "living": 17960,
+          "video": 30092
+        },
+        "domain_weights": {
+          "video": 1.1791795483099141,
+          "prod": 0.7738397930531297,
+          "ad": 1.133452723686895,
+          "living": 0.8980530210503628
+        },
+        "projection_preserved": true
+      }
+    },
+    "bata_baseline_v1": {
+      "parent": "BETA_material_aligned_v1",
+      "created_at_utc": "2026-08-11T22:16:57Z",
+      "description": "Clean reproduction baseline: archive material, SID buckets and recommendation are exact; only understand_user is replaced by active BETA.",
+      "world_included": false,
+      "extra_registry_entries": {
+        "onereason_bata_baseline": {
+          "registry_name": "onereason_bata_baseline",
+          "file_name": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+          "records": 222001,
+          "sha256": "f84f288b8a9685b4c9cb769c937a5250407723dfab11bdc548486ac7751ec8ca"
+        }
+      },
+      "reproduction_contract": {
+        "archive_parquet_sha256": "ea1ede1e7f2f96e00ad935cfdd222d1c14a23280f2a2bd1049a8bd67d1b44985",
+        "archive_non_user_projection_sha256": "fe0b12c033c1f0449469c2cd10f2b9281c4fafc8e311725813ee12cad0d67b72",
+        "archive_non_user_projection_preserved": true,
+        "intentional_difference": "understand_user is replaced by active BETA understand_user",
+        "source_counts": {
+          "understand_user": 32848,
+          "recommend": 48269,
+          "material_sample": 100000,
+          "sid_bucket_canonical_no_think": 11298,
+          "sid_bucket_reverse": 29586
+        },
+        "material_domain_weights": {
+          "video": 1.1791795483099141,
+          "prod": 0.7738397930531297,
+          "ad": 1.133452723686895,
+          "living": 0.8980530210503628
+        },
+        "recommendation_metadata": {
+          "group_key": "exact user prompt without terminal think marker + target domain",
+          "groups": 20531,
+          "gold_count_histogram": {
+            "1": 12743,
+            "2": 2961,
+            "3": 1474,
+            "4": 936,
+            "5": 609,
+            "6": 407,
+            "7": 310,
+            "8": 211,
+            "9": 161,
+            "10": 145,
+            "11": 90,
+            "12": 82,
+            "13": 55,
+            "14": 58,
+            "15": 40,
+            "16": 29,
+            "17": 28,
+            "18": 20,
+            "19": 27,
+            "20": 145
+          },
+          "rows": {
+            "singleton": 12931,
+            "multi_positive": 35338
+          },
+          "maximum_unique_gold_count": 20,
+          "training_usage": "interface retained; REC-PU disabled for bata_baseline"
+        }
+      }
+    },
+    "alpha_v2": {
+      "parent": "bata_baseline_v1",
+      "created_at_utc": "2026-08-15T02:10:00Z",
+      "description": "Alpha V2 composed training dataset: understand_user chian-clean (31,457) + recommendation beta_cot_full_v1 (47,208, 1/3 NoCoT, dev-group-excluded) + material beta (136,491, dev-exact-row-excluded). Zero overlap with alpha-jiankong dev2. Recommendation rebuilt from full CoT pool with incomplete-CoT downgrade and no-think restore to reach 33.3% NoCoT.",
+      "world_included": false,
+      "extra_registry_entries": {
+        "onereason_alpha_v2": {
+          "registry_name": "onereason_alpha_v2",
+          "file_name": "/data/lf_data_versions/alltrain/alpha_v2/onereason_alpha_v2.jsonl",
+          "records": 216732,
+          "sha256": "81bc88bf9803109a148960f8b7d1c9fda163aedafece3cdf51b600df7825655d"
+        }
+      },
+      "reproduction_contract": {
+        "task_pools": {
+          "understand_user": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/understand_user_clean.jsonl",
+          "recommendation": "/data/lf_data_versions/task_pools/懂推荐/beta_cot_full_v1/recommendation_beta_cot_full_v1.jsonl",
+          "material": "/data/lf_data_versions/task_pools/懂物料/beta版/material_beta.jsonl"
+        },
+        "excluded_dev_rows": {
+          "understand_user": 642,
+          "recommendation": 0,
+          "material": 2817
+        },
+        "nocot_ratio": 0.333333,
+        "docs": "baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_V2.md"
+      }
     }
   }
 }

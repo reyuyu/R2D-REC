@@ -1,0 +1,11 @@
+{
+  "onereason_native_source_domain_r32_v3": {
+    "file_name": "onereason_native_source_domain_r32_v3.jsonl",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  }
+}

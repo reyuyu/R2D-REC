@@ -1,0 +1,47 @@
+### Two-rank structural smoke for the isolated native R32 baseline.
+### Keep global batch size equal to the four-rank formal configuration:
+### 2 ranks x batch 1 x accumulation 32 = 64 sequences per optimizer step.
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target: all
+enable_liger_kernel: true
+
+dataset: onereason_native_source_domain_r32_v3
+dataset_dir: /data/baselines/native_source_domain_r32_v3/dataset
+template: qwen3_nothink
+cutoff_len: 8192
+packing: true
+neat_packing: true
+overwrite_cache: true
+preprocessing_num_workers: 8
+dataloader_num_workers: 4
+remove_unused_columns: false
+
+output_dir: /data/outputs/onereason_native_source_domain_r32_v3_smoke_2gpu
+logging_steps: 1
+save_strategy: "no"
+plot_loss: false
+overwrite_output_dir: true
+report_to: none
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 32
+learning_rate: 2.0e-4
+max_steps: 5
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+bf16: true
+pure_bf16: true
+gradient_checkpointing: true
+use_reentrant_gc: false
+ddp_timeout: 180000000
+seed: 20260806

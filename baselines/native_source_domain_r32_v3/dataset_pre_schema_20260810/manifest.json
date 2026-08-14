@@ -1,0 +1,48 @@
+{
+  "name": "native_source_domain_r32_v3",
+  "parent_dataset_version": "rec_material_bucket_reverse_v1",
+  "world_included": false,
+  "records": 219370,
+  "sha256": "01e2d08892918bd810768f315598d5bd9f945df7e7ba2ef892c0e8546bcac9fa",
+  "source_counts": {
+    "sid_bucket_canonical_no_think": 11298,
+    "sid_bucket_reverse": 22596,
+    "material_sample": 111298,
+    "understand_user": 32848,
+    "recommend": 41330
+  },
+  "material_domain_counts": {
+    "ad": 27303,
+    "living": 21371,
+    "prod": 31605,
+    "video": 31019
+  },
+  "material_domain_targets": {
+    "video": 0.22,
+    "prod": 0.14,
+    "ad": 0.16,
+    "living": 0.1
+  },
+  "material_domain_weights": {
+    "video": 1.2731822015434868,
+    "prod": 0.7951845104133176,
+    "ad": 1.0519746737035869,
+    "living": 0.8399836377605467
+  },
+  "source_order": [
+    "sid_bucket_canonical_no_think",
+    "sid_bucket_reverse",
+    "material_sample",
+    "understand_user",
+    "recommend"
+  ],
+  "input_files": {
+    "material_cot": "/data/lf_data_versions/alltrain/rec_material_bucket_reverse_v1/onereason_material_cot.jsonl",
+    "material_nocot": "/data/lf_data_versions/alltrain/rec_material_bucket_reverse_v1/onereason_material_nocot.jsonl",
+    "user_action": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_action_nocot.jsonl",
+    "user_chain_cot": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_cot.jsonl",
+    "user_chain_nocot": "/data/lf_data_versions/alltrain/v1_thought_prompt_all/onereason_user_chain_nocot.jsonl",
+    "recommendation_cot": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_cot_v3_multi_positive.jsonl",
+    "recommendation_nocot": "/data/lf_data_versions/alltrain/v3_recommendation_multi_positive/onereason_recommendation_nocot_v3_multi_positive.jsonl"
+  }
+}

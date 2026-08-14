@@ -1,0 +1,47 @@
+{
+  "name": "beta_material_aligned_v1",
+  "material_source": "/data/lf_data_versions/source_uploads/material_understanding_20260810.jsonl",
+  "material_source_sha256": "a29042f9b997c1defe539f482cee0390848eda2dff2037ec05435c3095e23bd0",
+  "material_projection_sha256": "a29042f9b997c1defe539f482cee0390848eda2dff2037ec05435c3095e23bd0",
+  "material_projection_preserved": true,
+  "records": 215062,
+  "sha256": "b372e51007107ff50b88b642f574be7a7a297088061877ae7ee946f5f279e94f",
+  "source_counts": {
+    "material_sample": 100000,
+    "sid_bucket_canonical_no_think": 11298,
+    "sid_bucket_reverse": 29586,
+    "understand_user": 32848,
+    "recommend": 41330
+  },
+  "source_segment_counts": {
+    "material_sample": 100000,
+    "sid_bucket_canonical_no_think": 11298,
+    "sid_bucket_reverse": 29586,
+    "user_action": 16657,
+    "user_chain_cot": 8339,
+    "user_chain_nocot": 7852,
+    "recommendation_cot": 20664,
+    "recommendation_nocot": 20666
+  },
+  "material_domain_counts": {
+    "ad": 22768,
+    "prod": 29180,
+    "living": 17960,
+    "video": 30092
+  },
+  "material_domain_targets": {
+    "video": 0.22,
+    "prod": 0.14,
+    "ad": 0.16,
+    "living": 0.1
+  },
+  "material_domain_weights": {
+    "video": 1.1791795483099141,
+    "prod": 0.7738397930531297,
+    "ad": 1.133452723686895,
+    "living": 0.8980530210503628
+  },
+  "material_row_order": "identical to material source upload",
+  "non_material_source": "/data/lf_data_versions/alltrain/BETA",
+  "world_included": false
+}

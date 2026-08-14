@@ -14,7 +14,7 @@ import os
 import re
 import sys
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from functools import wraps
 from pathlib import Path
 
@@ -28,6 +28,7 @@ if str(BASELINE_ROOT) not in sys.path:
 
 from rec_pu.recommendation_pu_phase2 import PackedSegment, locate_packed_rec_pu_targets
 from rec_pu.recommendation_pu_loss import rec_pu_batched_position_loss
+from rec_pu.mini_topk_loss import MiniTopKConfig
 from rec_pu.core_recommendation_metrics import candidate_window_active, pack_effective_share_sum_count
 from rec_pu.alpha_recommendation_monitor import (
     ALL_METRIC_NAMES as ALPHA_MONITOR_METRIC_NAMES,
@@ -36,10 +37,12 @@ from rec_pu.alpha_recommendation_monitor import (
 )
 from rec_pu.alpha_validation_monitor import AlphaValidationConfig, AlphaValidationRunner, VALIDATION_METRIC_NAMES
 from rec_pu.sid8_rec_pu_integration import (
+    AlphaSmoothConfig,
     RecPUConfig,
     build_sid_component_vocab,
     coerce_packed_target,
     compute_native_sid8_loss,
+    final_sid_targets_required,
     probe_rec_pu_position,
     serialise_packed_target,
 )
@@ -69,10 +72,6 @@ ITEM_TOKEN_PATTERN = re.compile(r"(?:<s_[abc]_\d+>|<\|(?:ad|video|prod|living|se
 MATERIAL_DOMAIN_PATTERN = re.compile(r"<\|(video|prod|ad|living)_begin\|>")
 TASK_NAMES = ("material", "recommendation", "user_action", "user_chain")
 TASK_ID_BY_NAME = {name: index for index, name in enumerate(TASK_NAMES)}
-ALPHA_COT_REPEAT_WEIGHTING_KEY = "alpha_cot_repeat_weighting"
-ALPHA_COT_REPEAT_MANIFEST_KEY = "alpha_cot_repeat_manifest"
-THINK_OPEN_TOKEN = "<think>"
-THINK_CLOSE_TOKEN = "</think>"
 _REFERENCE_DOMAIN_WEIGHTS = {
     # alpha / p_d, normalized to keep the mean material-sample scale near 1.0
     # for train_bucket_grouped_item8: video=30092, prod=29180, ad=22768, living=17960.
@@ -116,6 +115,27 @@ def _load_rec_pu_config() -> RecPUConfig:
     )
     scale = raw.get("rec_pu_unlabeled_sid_grad_scale", os.getenv("REC_PU_UNLABELED_SID_GRAD_SCALE", "0.05"))
     return RecPUConfig(rec_pu_enabled=bool(enabled), rec_pu_unlabeled_sid_grad_scale=float(scale))
+
+
+def _load_mini_topk_config() -> MiniTopKConfig:
+    """Read the opt-in Alpha-Mini final-SID replacement settings."""
+    raw: dict[str, object] = {}
+    if len(sys.argv) > 1:
+        path = Path(sys.argv[1])
+        if path.suffix in {".yaml", ".yml"} and path.is_file():
+            import yaml
+            raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    enabled = raw.get("mini_topk_enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("mini_topk_enabled must be boolean.")
+    return MiniTopKConfig(
+        enabled=enabled,
+        slack_a=int(raw.get("mini_topk_rank_slack_a", 4)),
+        slack_b=int(raw.get("mini_topk_rank_slack_b", 8)),
+        slack_c=int(raw.get("mini_topk_rank_slack_c", 12)),
+        rank_weight=float(raw.get("mini_topk_rank_weight", 1.0)),
+        temperature=float(raw.get("mini_topk_temperature", 1.0)),
+    )
 
 
 def _load_pack_ratio_config() -> PackRatioConfig:
@@ -213,20 +233,9 @@ def _load_alpha_validation_config() -> AlphaValidationConfig:
     return AlphaValidationConfig(**values)
 
 
-@dataclass(frozen=True)
-class AlphaCotRepeatConfig:
-    """Opt-in duplicate-normalized weight rule for recommendation CoT bodies.
+def _load_alpha_smooth_config() -> AlphaSmoothConfig:
+    """Read optional AlphaSmooth fields while keeping all legacy runs off."""
 
-    The mapping is deliberately external and immutable per cache build.  This
-    makes the training cache fail closed when the train98 grouping changes,
-    rather than silently substituting ``recommendation_group_size`` or 1.
-    """
-
-    enabled: bool = False
-    manifest_path: str = ""
-
-
-def _load_alpha_cot_repeat_config() -> AlphaCotRepeatConfig:
     raw: dict[str, object] = {}
     if len(sys.argv) > 1:
         config_path = Path(sys.argv[1])
@@ -234,55 +243,23 @@ def _load_alpha_cot_repeat_config() -> AlphaCotRepeatConfig:
             import yaml
 
             raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
-    enabled = raw.get(ALPHA_COT_REPEAT_WEIGHTING_KEY, False)
-    manifest_path = raw.get(ALPHA_COT_REPEAT_MANIFEST_KEY, "")
+    enabled = raw.get("alpha_smooth_enabled", False)
+    epsilon = raw.get("alpha_smooth_epsilon", 0.05)
+    start_epoch = raw.get("alpha_smooth_start_epoch", 1.0)
     if not isinstance(enabled, bool):
-        raise ValueError(f"{ALPHA_COT_REPEAT_WEIGHTING_KEY} must be boolean.")
-    if not isinstance(manifest_path, str):
-        raise ValueError(f"{ALPHA_COT_REPEAT_MANIFEST_KEY} must be a string.")
-    if enabled and not manifest_path:
-        raise ValueError(f"{ALPHA_COT_REPEAT_MANIFEST_KEY} is required when CoT repeat weighting is enabled.")
-    return AlphaCotRepeatConfig(enabled=enabled, manifest_path=manifest_path)
-
-
-def _load_alpha_cot_repeat_counts(config: AlphaCotRepeatConfig) -> dict[str, int]:
-    """Load only a validated ``recommendation_group_id -> N_cot`` mapping."""
-
-    if not config.enabled:
-        return {}
-    path = Path(config.manifest_path)
-    if not path.is_file():
-        raise ValueError(f"Alpha CoT repeat manifest does not exist: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or payload.get("kind") != "alpha_cot_repeat_count_manifest_v1":
-        raise ValueError(f"Invalid Alpha CoT repeat manifest: {path}")
-    raw_counts = payload.get("group_cot_counts")
-    if not isinstance(raw_counts, dict) or not raw_counts:
-        raise ValueError(f"Alpha CoT repeat manifest has no group_cot_counts: {path}")
-    counts: dict[str, int] = {}
-    for group_id, count in raw_counts.items():
-        if not isinstance(group_id, str) or not group_id or isinstance(count, bool) or not isinstance(count, int) or count <= 0:
-            raise ValueError(f"Invalid CoT count in manifest for group={group_id!r}: {count!r}")
-        counts[group_id] = count
-    expected_rows = payload.get("recommendation_cot_rows")
-    if not isinstance(expected_rows, int) or sum(counts.values()) != expected_rows:
-        raise ValueError("Alpha CoT repeat manifest row conservation failed.")
-    return counts
+        raise ValueError("alpha_smooth_enabled must be boolean.")
+    return AlphaSmoothConfig(enabled=enabled, epsilon=float(epsilon), start_epoch=float(start_epoch))
 
 
 REC_PU_CONFIG = _load_rec_pu_config()
+MINI_TOPK_CONFIG = _load_mini_topk_config()
 PACK_RATIO_CONFIG = _load_pack_ratio_config()
 REC_CANDIDATE_METRICS_ENABLED, REC_CANDIDATE_METRICS_INTERVAL = _load_rec_candidate_metric_config()
 ALPHA_MONITOR_CONFIG = _load_alpha_monitor_config()
 ALPHA_VALIDATION_CONFIG = _load_alpha_validation_config()
-ALPHA_COT_REPEAT_CONFIG = _load_alpha_cot_repeat_config()
-ALPHA_COT_REPEAT_COUNTS = _load_alpha_cot_repeat_counts(ALPHA_COT_REPEAT_CONFIG)
-# Strictly detached, smoke-only visibility into where recommendation's native
-# weighted CE numerator goes.  OFF is byte-for-byte no-op for training.
-ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS = os.getenv(
-    "ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS", "0"
-).strip().lower() in {"1", "true", "yes", "on"}
-ALPHA_COT_STEP0_PARITY = os.getenv("ALPHA_COT_STEP0_PARITY", "0").strip().lower() in {"1", "true", "yes", "on"}
+ALPHA_SMOOTH_CONFIG = _load_alpha_smooth_config()
+if sum((REC_PU_CONFIG.enabled, ALPHA_SMOOTH_CONFIG.enabled, MINI_TOPK_CONFIG.enabled)) > 1:
+    raise ValueError("rec_pu_enabled, alpha_smooth_enabled and mini_topk_enabled are mutually exclusive.")
 REC_PU_DEBUG_PROBE = os.getenv("REC_PU_DEBUG_PROBE", "0").strip().lower() in {"1", "true", "yes", "on"}
 # Diagnostic-only: values use the same logits produced by the training
 # forward. Set-PU is a direct scalar objective, so its logged final-SID value
@@ -291,9 +268,21 @@ REC_PU_DIAGNOSTICS = os.getenv("REC_PU_DIAGNOSTICS", "0").strip().lower() in {"1
 REC_PU_DIAGNOSTICS_RANK0_ONLY = os.getenv("REC_PU_DIAGNOSTICS_RANK0_ONLY", "1").strip().lower() in {"1", "true", "yes", "on"}
 REC_PU_GRAD_DIAGNOSTICS = os.getenv("REC_PU_GRAD_DIAGNOSTICS", "0").strip().lower() in {"1", "true", "yes", "on"}
 REC_PU_GRAD_DIAG_STEPS = frozenset({10, 20, 25, 30, 35, 40})
+MINI_TOPK_STEP0_DIAGNOSTICS = os.getenv("MINI_TOPK_STEP0_DIAGNOSTICS", "0").strip().lower() in {"1", "true", "yes", "on"}
 _original_alpaca_convert = AlpacaDatasetConverter.__call__
 _original_get_train_sampler = CustomSeq2SeqTrainer._get_train_sampler
 _original_trainer_init = CustomSeq2SeqTrainer.__init__
+
+
+def _rec_targets_required() -> bool:
+    """Keep locator metadata whenever any runtime consumer needs final SID ABC."""
+
+    return final_sid_targets_required(
+        rec_pu_enabled=REC_PU_CONFIG.enabled,
+        alpha_monitor_enabled=ALPHA_MONITOR_CONFIG.enabled,
+        alpha_smooth_enabled=ALPHA_SMOOTH_CONFIG.enabled,
+        mini_topk_enabled=MINI_TOPK_CONFIG.enabled,
+    )
 
 
 def _convert_with_source(self, example):
@@ -318,15 +307,6 @@ def _convert_with_source(self, example):
     if raw_rec_pu and set(raw_rec_pu) != set(rec_pu_fields):
         raise ValueError("Recommendation REC-PU metadata is incomplete before tokenization.")
     output["_rec_pu_metadata_json"] = json.dumps(raw_rec_pu, ensure_ascii=False, sort_keys=True) if raw_rec_pu else ""
-    output["_alpha_cot_repeat_count"] = 0
-    if ALPHA_COT_REPEAT_CONFIG.enabled and output["_source_segment"] == "recommendation_cot":
-        if not output["_rec_pu_metadata_json"]:
-            raise ValueError("recommendation_cot has no metadata while Alpha CoT repeat weighting is enabled.")
-        group_id = str(json.loads(output["_rec_pu_metadata_json"])["recommendation_group_id"])
-        count = ALPHA_COT_REPEAT_COUNTS.get(group_id)
-        if count is None or count <= 0:
-            raise ValueError(f"Missing/invalid CoT count for recommendation_group_id={group_id!r}.")
-        output["_alpha_cot_repeat_count"] = count
     return output
 
 
@@ -355,42 +335,6 @@ def _build_loss_weights(labels: list[int], source: str, item_ids: set[int]) -> l
         0.0 if label == IGNORE_INDEX else item_weight if label in item_ids else 1.0
         for label in labels
     ]
-
-
-def _apply_alpha_cot_repeat_weights(
-    labels: list[int], weights: list[float], source_segment: str, repeat_count: int, tokenizer
-) -> list[float]:
-    """Replace exactly the audited supervised ``<think>...</think>`` span.
-
-    This is intentionally token-ID based, not string matching.  It includes the
-    two think delimiters and excludes every token after ``</think>``: the answer
-    prefix, final domain/a/b/c SID, and the template close remain baseline SID8.
-    """
-
-    if not ALPHA_COT_REPEAT_CONFIG.enabled or source_segment != "recommendation_cot":
-        return weights
-    if not isinstance(repeat_count, int) or repeat_count <= 0:
-        raise ValueError(f"Invalid CoT repeat count: {repeat_count!r}")
-    vocab = tokenizer.get_vocab()
-    try:
-        open_id, close_id = int(vocab[THINK_OPEN_TOKEN]), int(vocab[THINK_CLOSE_TOKEN])
-    except KeyError as error:
-        raise ValueError("Tokenizer has no exact <think>/</think> token IDs.") from error
-    open_positions = [index for index, label in enumerate(labels) if label == open_id]
-    close_positions = [index for index, label in enumerate(labels) if label == close_id]
-    if len(open_positions) != 1 or len(close_positions) != 1 or open_positions[0] >= close_positions[0]:
-        raise ValueError(
-            "recommendation_cot must contain exactly one supervised <think>...</think> span; "
-            f"open={open_positions}, close={close_positions}."
-        )
-    start, end = open_positions[0], close_positions[0]
-    if any(label == IGNORE_INDEX for label in labels[start : end + 1]):
-        raise ValueError("CoT body contains ignored positions; refusing ambiguous repeat weighting.")
-    body_weight = 0.5 / float(repeat_count)
-    updated = list(weights)
-    for position in range(start, end + 1):
-        updated[position] = body_weight
-    return updated
 
 
 def _material_domain_weight(source: str, prompt, response) -> float:
@@ -468,16 +412,7 @@ def _preprocess_packed_with_weights(self, examples):
         length2indexes[length].append(valid_num)
         batch_input_ids.append(input_ids)
         batch_labels.append(labels)
-        base_loss_weights = _build_loss_weights(labels, source, item_ids)
-        batch_loss_weights.append(
-            _apply_alpha_cot_repeat_weights(
-                labels,
-                base_loss_weights,
-                source_segment,
-                examples["_alpha_cot_repeat_count"][i],
-                self.tokenizer,
-            )
-        )
+        batch_loss_weights.append(_build_loss_weights(labels, source, item_ids))
         batch_sample_domain_weights.append(
             _material_domain_weight(source, examples["_prompt"][i], examples["_response"][i])
         )
@@ -520,7 +455,7 @@ def _preprocess_packed_with_weights(self, examples):
                     "alpha monitor requires recommendation_cot or recommendation_nocot source_segment; "
                     f"got {segment_source!r}."
                 )
-            if (REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled) and raw_rec_pu:
+            if _rec_targets_required() and raw_rec_pu:
                 packed_rec_pu_segments.append(
                     PackedSegment(
                         start=segment_start,
@@ -569,7 +504,7 @@ def _preprocess_packed_with_weights(self, examples):
         model_inputs["sample_task_ids"].append(packed_sample_task_ids)
         model_inputs["sample_domain_weights"].append(packed_sample_domain_weights)
         model_inputs["pack_task_id"].append(pack_task_id)
-        if REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled:
+        if _rec_targets_required():
             targets = locate_packed_rec_pu_targets(
                 packed_labels, packed_rec_pu_segments, self.tokenizer, final_occurrence=True
             )
@@ -604,11 +539,13 @@ _original_collator_call = SFTDataCollatorWith4DAttentionMask.__call__
 def _collate_with_rec_pu_metadata(self, features):
     """Keep REC-PU targets trainer-side; never let the base collator tensorize them."""
 
+    if _rec_targets_required() and any("rec_pu_targets_json" not in feature for feature in features):
+        raise ValueError("Packed cache is missing rec_pu_targets_json required by the final-SID consumer.")
     targets_json_by_row = [feature.pop("rec_pu_targets_json", "[]") for feature in features]
     for feature in features:
         feature.pop("pack_task_id", None)
     batch = _original_collator_call(self, features)
-    if REC_PU_CONFIG.enabled or ALPHA_MONITOR_CONFIG.enabled:
+    if _rec_targets_required():
         batch["rec_pu_targets"] = [json.loads(value) for value in targets_json_by_row]
     return batch
 
@@ -786,7 +723,7 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
     rec_pu_targets = inputs.pop("rec_pu_targets", None)
     outputs = model(**inputs)
     sid_component_vocab = None
-    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED or ALPHA_MONITOR_CONFIG.enabled:
+    if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED or ALPHA_MONITOR_CONFIG.enabled or ALPHA_SMOOTH_CONFIG.enabled or MINI_TOPK_CONFIG.enabled:
         sid_component_vocab = getattr(self, "_rec_pu_component_vocab", None)
         if sid_component_vocab is None:
             tokenizer = getattr(self, "processing_class", None) or getattr(self, "tokenizer", None)
@@ -800,6 +737,8 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         ALPHA_MONITOR_CONFIG.enabled and ALPHA_MONITOR_CONFIG.train_tf_enabled,
         ALPHA_MONITOR_CONFIG.train_tf_interval,
     )
+    current_epoch = getattr(self.state, "epoch", None)
+    alpha_smooth_active = ALPHA_SMOOTH_CONFIG.active_for_epoch(current_epoch)
     loss, details = compute_native_sid8_loss(
         logits=outputs.logits,
         labels=labels,
@@ -809,9 +748,17 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         sample_domain_weights=sample_domain_weights,
         rec_pu_targets=rec_pu_targets,
         rec_pu_config=REC_PU_CONFIG,
+        alpha_smooth_config=ALPHA_SMOOTH_CONFIG,
+        alpha_smooth_active=alpha_smooth_active,
+        mini_topk_config=MINI_TOPK_CONFIG,
         sid_component_vocab=sid_component_vocab,
         collect_candidate_metrics=collect_candidate_metrics,
         collect_rec_metrics=REC_CANDIDATE_METRICS_ENABLED,
+    )
+    _maybe_print_mini_topk_step0_same_logits(
+        self, logits=outputs.logits, labels=labels, weights=weights, sample_ids=sample_ids,
+        sample_task_ids=sample_task_ids, sample_domain_weights=sample_domain_weights,
+        rec_pu_targets=rec_pu_targets, sid_component_vocab=sid_component_vocab, mini_loss=loss, mini_details=details,
     )
     _maybe_run_rec_pu_debug_probe(
         self,
@@ -830,14 +777,8 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
     if REC_PU_CONFIG.enabled or REC_CANDIDATE_METRICS_ENABLED:
         _accumulate_core_recommendation_metrics(self, details)
     _accumulate_rec_candidate_metrics(self, details)
-    _record_alpha_cot_step0_parity(
-        self,
-        details=details,
-        logits=outputs.logits,
-        labels=labels,
-        rec_pu_targets=rec_pu_targets,
-        sid_component_vocab=sid_component_vocab,
-    )
+    _accumulate_alpha_smooth_metrics(self, details)
+    _accumulate_mini_topk_metrics(self, details)
     _accumulate_alpha_recommendation_monitor(
         self,
         details=details,
@@ -846,13 +787,6 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         rec_pu_targets=rec_pu_targets,
         sid_component_vocab=sid_component_vocab,
         collect_tf=collect_alpha_tf,
-    )
-    _accumulate_alpha_cot_numerator_shares(
-        self,
-        details=details,
-        labels=labels,
-        loss_weights=weights,
-        rec_pu_targets=rec_pu_targets,
     )
     _accumulate_rec_pu_diagnostics(
         self,
@@ -874,6 +808,94 @@ def _compute_source_weighted_loss(self, model, inputs, return_outputs=False, **k
         details=details,
     )
     return (loss, outputs) if return_outputs else loss
+
+
+def _maybe_print_mini_topk_step0_same_logits(
+    trainer, *, logits, labels, weights, sample_ids, sample_task_ids, sample_domain_weights,
+    rec_pu_targets, sid_component_vocab, mini_loss, mini_details,
+) -> None:
+    """One smoke-only same-forward comparison; never adds a model forward/update."""
+    if not (MINI_TOPK_CONFIG.enabled and MINI_TOPK_STEP0_DIAGNOSTICS):
+        return
+    if getattr(trainer, "_mini_topk_step0_printed", False) or int(trainer.state.global_step) != 0:
+        return
+    with torch.no_grad():
+        native_loss, _ = compute_native_sid8_loss(
+            logits=logits.detach(), labels=labels, loss_weights=weights, sample_ids=sample_ids,
+            sample_task_ids=sample_task_ids, sample_domain_weights=sample_domain_weights,
+            rec_pu_targets=rec_pu_targets, rec_pu_config=RecPUConfig(rec_pu_enabled=False),
+            alpha_smooth_config=AlphaSmoothConfig(), mini_topk_config=MiniTopKConfig(enabled=False),
+            sid_component_vocab=sid_component_vocab,
+        )
+    # [native total, mini total, global native sum/count, mini sum/count] plus
+    # the complete detached per-level metric matrix. One diagnostic collective.
+    summary = torch.stack((native_loss.detach(), mini_loss.detach(),
+                           mini_details.mini_topk_sum_count[16, 0], mini_details.mini_topk_sum_count[16, 1],
+                           mini_details.mini_topk_sum_count[17, 0], mini_details.mini_topk_sum_count[17, 1]))
+    metrics = mini_details.mini_topk_sum_count.detach().clone()
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.all_reduce(summary, op=torch.distributed.ReduceOp.SUM)
+        torch.distributed.all_reduce(metrics, op=torch.distributed.ReduceOp.SUM)
+        world = torch.distributed.get_world_size()
+    else:
+        world = 1
+    if int(os.getenv("RANK", "0")) == 0:
+        def mean(index: int) -> float:
+            return float((metrics[index, 0] / metrics[index, 1].clamp_min(1.0)).item())
+        levels = {}
+        for level, start in zip("abc", (18, 22, 26)):
+            levels[level] = {"native_ce": mean(start), "set_nll": mean(start + 1),
+                             "rank_loss": mean(start + 2), "final_mp_loss": mean(start + 3)}
+        payload = {
+            "native_total_loss": float((summary[0] / world).item()),
+            "mini_topk_total_loss": float((summary[1] / world).item()),
+            "native_final_sid_ce": float((summary[2] / summary[3].clamp_min(1.0)).item()),
+            "mini_topk_final_sid_loss": float((summary[4] / summary[5].clamp_min(1.0)).item()),
+            "mini_topk_native_ratio": float((summary[4] / summary[5].clamp_min(1.0) / (summary[2] / summary[3].clamp_min(1.0))).item()),
+            "levels": levels,
+        }
+        print("MINI_TOPK_STEP0_SAME_LOGITS=" + json.dumps(payload, sort_keys=True), flush=True)
+    trainer._mini_topk_step0_printed = True
+
+
+_ALPHA_SMOOTH_METRIC_NAMES = ("as_0_active", "as_1_epsilon", "as_2_sid_ls", "as_3_ls_delta")
+
+_MINI_TOPK_METRIC_NAMES = (
+    "mini_topk_segments", "mini_topk_multi_positions",
+    "mini_topk_set_nll", "mini_topk_rank_loss", "mini_topk_position_loss", "mini_topk_delta_vs_native_ce",
+    "mini_topk_a_allin", "mini_topk_b_allin", "mini_topk_c_allin", "mini_topk_chain_allin",
+    "mini_topk_mean_positive_a", "mini_topk_mean_positive_b", "mini_topk_mean_positive_c",
+    "mini_topk_mean_k_a", "mini_topk_mean_k_b", "mini_topk_mean_k_c",
+    "native_final_sid_ce", "mini_topk_final_sid_loss",
+    "mini_topk_a_native_ce", "mini_topk_a_set_nll", "mini_topk_a_rank_loss", "mini_topk_a_position_loss",
+    "mini_topk_b_native_ce", "mini_topk_b_set_nll", "mini_topk_b_rank_loss", "mini_topk_b_position_loss",
+    "mini_topk_c_native_ce", "mini_topk_c_set_nll", "mini_topk_c_rank_loss", "mini_topk_c_position_loss",
+    "mini_topk_a_weakest_gap", "mini_topk_b_weakest_gap", "mini_topk_c_weakest_gap",
+    "mini_topk_a_boundary_violation", "mini_topk_b_boundary_violation", "mini_topk_c_boundary_violation",
+)
+
+
+def _accumulate_alpha_smooth_metrics(trainer, details) -> None:
+    """Accumulate optimization-only AlphaSmooth diagnostics as sum/count pairs."""
+
+    if not ALPHA_SMOOTH_CONFIG.enabled:
+        return
+    stats = getattr(trainer, "_alpha_smooth_stats", None)
+    if stats is None or stats.device != details.contributions.device:
+        stats = torch.zeros((len(_ALPHA_SMOOTH_METRIC_NAMES), 2), device=details.contributions.device, dtype=torch.float64)
+        trainer._alpha_smooth_stats = stats
+    stats.add_(details.alpha_smooth_sum_count)
+
+
+def _accumulate_mini_topk_metrics(trainer, details) -> None:
+    """Store only detached sum/count monitor state; never affects backward."""
+    if not MINI_TOPK_CONFIG.enabled:
+        return
+    stats = getattr(trainer, "_mini_topk_stats", None)
+    if stats is None or stats.device != details.contributions.device:
+        stats = torch.zeros((len(_MINI_TOPK_METRIC_NAMES), 2), device=details.contributions.device, dtype=torch.float64)
+        trainer._mini_topk_stats = stats
+    stats.add_(details.mini_topk_sum_count)
 
 
 def _accumulate_task_loss_metrics(trainer, sample_losses: torch.Tensor, sample_tasks: torch.Tensor) -> None:
@@ -998,133 +1020,6 @@ def _accumulate_alpha_recommendation_monitor(
             gap_stats = torch.zeros((6, 2), device=logits.device, dtype=torch.float64)
             trainer._alpha_train_gap_stats = gap_stats
         gap_stats.add_(collected[:6])
-
-
-def _record_alpha_cot_step0_parity(
-    trainer, *, details, logits: torch.Tensor, labels: torch.Tensor, rec_pu_targets, sid_component_vocab
-) -> None:
-    """Emit raw CE from the first real forward after static cache parity.
-
-    The cache audit already proves every model input column is exactly equal
-    between corrected SID8 and CoT05N.  Therefore this same real base-model
-    forward is also the baseline forward; raw CE has no dependence on loss
-    weights.  The routine adds one small detached all-reduce only in smoke
-    mode, before the first optimizer update.
-    """
-
-    if not ALPHA_COT_STEP0_PARITY or getattr(trainer, "_alpha_cot_step0_parity_recorded", False):
-        return
-    stats = collect_alpha_recommendation_monitor(
-        base_per_token_ce=details.base_per_token_ce.detach(),
-        logits=logits.detach(),
-        labels=labels,
-        rec_targets=rec_pu_targets,
-        sid_component_vocab=sid_component_vocab,
-        collect_tf=False,
-    )
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        torch.distributed.all_reduce(stats, op=torch.distributed.ReduceOp.SUM)
-    if int(os.getenv("RANK", "0")) == 0:
-        payload = {"step": 0, "input_columns_static_parity": True}
-        for index, name in enumerate(ALPHA_MONITOR_METRIC_NAMES[:6]):
-            value, count = stats[index]
-            payload[name] = value.item() / count.item() if count.item() else None
-        print("ALPHA_COT_STEP0_RAW_CE_PARITY=" + json.dumps(payload, sort_keys=True), flush=True)
-    trainer._alpha_cot_step0_parity_recorded = True
-
-
-_ALPHA_COT_NUMERATOR_SHARE_NAMES = (
-    "rec_cot_body_numerator_share",
-    "rec_cot_final_answer_numerator_share",
-    "rec_cot_final_sid_numerator_share",
-    "rec_nocot_numerator_share",
-)
-
-
-def _alpha_cot_numerator_share_stats(trainer, device: torch.device) -> torch.Tensor:
-    """Return an accumulator of detached recommendation weighted-CE masses."""
-
-    stats = getattr(trainer, "_alpha_cot_numerator_share_stats", None)
-    if stats is None or stats.device != device:
-        stats = torch.zeros(len(_ALPHA_COT_NUMERATOR_SHARE_NAMES), device=device, dtype=torch.float64)
-        trainer._alpha_cot_numerator_share_stats = stats
-    return stats
-
-
-def _accumulate_alpha_cot_numerator_shares(
-    trainer, *, details, labels: torch.Tensor, loss_weights: torch.Tensor, rec_pu_targets
-) -> None:
-    """Measure actual weighted CE masses without entering loss/backward.
-
-    ``details.base_contributions`` is the native shifted one-hot CE multiplied
-    by the exact persisted loss weight.  As REC-PU is OFF for Alpha-CoT, it is
-    also the actual training contribution.  Target metadata, rather than a
-    text heuristic, identifies CoT versus NoThink packed segments.
-    """
-
-    if not ALPHA_COT_REPEAT_NUMERATOR_DIAGNOSTICS:
-        return
-    if rec_pu_targets is None:
-        raise ValueError("Alpha-CoT numerator diagnostics require packed recommendation metadata.")
-    stats = _alpha_cot_numerator_share_stats(trainer, details.base_contributions.device)
-    shift_labels = labels[:, 1:]
-    shift_positions = torch.arange(shift_labels.size(1), device=labels.device) + 1
-    valid = details.valid_mask
-    think_token_ids = getattr(trainer, "_alpha_cot_think_token_ids", None)
-    if think_token_ids is None:
-        tokenizer = getattr(trainer, "processing_class", None) or getattr(trainer, "tokenizer", None)
-        if tokenizer is None:
-            raise ValueError("Alpha-CoT numerator diagnostics cannot access the training tokenizer.")
-        vocab = tokenizer.get_vocab()
-        think_token_ids = (int(vocab[THINK_OPEN_TOKEN]), int(vocab[THINK_CLOSE_TOKEN]))
-        trainer._alpha_cot_think_token_ids = think_token_ids
-    open_id, close_id = think_token_ids
-    with torch.no_grad():
-        for row, raw_targets in enumerate(rec_pu_targets):
-            for raw_target in raw_targets:
-                target = coerce_packed_target(raw_target)
-                if target.source_segment not in {"recommendation_cot", "recommendation_nocot"}:
-                    raise ValueError(f"Unexpected recommendation source route: {target.source_segment!r}")
-                if not (0 <= target.segment_start < target.segment_end <= labels.size(1)):
-                    raise ValueError("Recommendation target has invalid packed segment boundaries.")
-                segment = (
-                    (shift_positions >= target.segment_start)
-                    & (shift_positions < target.segment_end)
-                    & valid[row]
-                )
-                final_label_positions = (
-                    target.a_label_position - 1,
-                    target.a_label_position,
-                    target.b_label_position,
-                    target.c_label_position,
-                )
-                if any(position < target.segment_start or position >= target.segment_end for position in final_label_positions):
-                    raise ValueError("Final Gold SID lies outside its packed recommendation segment.")
-                if any(float(loss_weights[row, position].item()) != 8.0 for position in final_label_positions):
-                    raise ValueError("Final Gold SID must remain weight 8 in Alpha-CoT diagnostics.")
-                final_indices = torch.tensor([position - 1 for position in final_label_positions], device=labels.device)
-                if not bool(valid[row, final_indices].all().item()):
-                    raise ValueError("Final Gold SID lies outside the supervised shifted response span.")
-                final_mask = torch.zeros_like(segment)
-                final_mask[final_indices] = True
-                if target.source_segment == "recommendation_nocot":
-                    stats[3] += details.base_contributions[row, segment].detach().to(torch.float64).sum()
-                    continue
-
-                segment_labels = labels[row, target.segment_start : target.segment_end]
-                open_positions = torch.nonzero(segment_labels == open_id, as_tuple=False).flatten()
-                close_positions = torch.nonzero(segment_labels == close_id, as_tuple=False).flatten()
-                if open_positions.numel() != 1 or close_positions.numel() != 1:
-                    raise ValueError("recommendation_cot must have one exact supervised <think>...</think> span.")
-                body_start = target.segment_start + int(open_positions.item())
-                body_end = target.segment_start + int(close_positions.item())
-                if body_start >= body_end:
-                    raise ValueError("Invalid recommendation_cot think span order.")
-                body = (shift_positions >= body_start) & (shift_positions <= body_end) & valid[row]
-                answer = (shift_positions > body_end) & (shift_positions < target.segment_end) & valid[row]
-                stats[0] += details.base_contributions[row, body].detach().to(torch.float64).sum()
-                stats[1] += details.base_contributions[row, answer].detach().to(torch.float64).sum()
-                stats[2] += details.base_contributions[row, final_mask].detach().to(torch.float64).sum()
 
 
 _REC_DIAG_NAMES = (
@@ -1460,20 +1355,31 @@ def _log_with_task_losses(self, logs, *args, **kwargs):
             elif count.item() > 0:
                 logs[metric_name] = (value / count).item()
         alpha_stats.zero_()
-    cot_share_stats = getattr(self, "_alpha_cot_numerator_share_stats", None)
-    if cot_share_stats is not None:
-        global_cot_share = cot_share_stats.detach().clone()
+    alpha_smooth_stats = getattr(self, "_alpha_smooth_stats", None)
+    if alpha_smooth_stats is not None:
+        global_alpha_smooth = alpha_smooth_stats.detach().clone()
         if torch.distributed.is_available() and torch.distributed.is_initialized():
-            # One four-scalar reduction per logging window; these are numerator
-            # sums only and never enter the training graph.
-            torch.distributed.all_reduce(global_cot_share, op=torch.distributed.ReduceOp.SUM)
-        total = global_cot_share[0] + global_cot_share[1] + global_cot_share[3]
-        if total.item() > 0:
-            logs["rec_cot_body_numerator_share"] = (global_cot_share[0] / total).item()
-            logs["rec_cot_final_answer_numerator_share"] = (global_cot_share[1] / total).item()
-            logs["rec_cot_final_sid_numerator_share"] = (global_cot_share[2] / total).item()
-            logs["rec_nocot_numerator_share"] = (global_cot_share[3] / total).item()
-        cot_share_stats.zero_()
+            torch.distributed.all_reduce(global_alpha_smooth, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(_ALPHA_SMOOTH_METRIC_NAMES):
+            value, count = global_alpha_smooth[metric_index]
+            if count.item() > 0:
+                logs[metric_name] = (value / count).item()
+        alpha_smooth_stats.zero_()
+    mini_topk_stats = getattr(self, "_mini_topk_stats", None)
+    if mini_topk_stats is not None:
+        global_mini_topk = mini_topk_stats.detach().clone()
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            torch.distributed.all_reduce(global_mini_topk, op=torch.distributed.ReduceOp.SUM)
+        for metric_index, metric_name in enumerate(_MINI_TOPK_METRIC_NAMES):
+            value, count = global_mini_topk[metric_index]
+            if count.item() > 0:
+                logs[metric_name] = value.item() if metric_index < 2 else (value / count).item()
+        native_count = global_mini_topk[16, 1]
+        if native_count.item() > 0:
+            logs["mini_topk_native_ratio"] = (
+                global_mini_topk[17, 0] / global_mini_topk[16, 0].clamp_min(1e-30)
+            ).item()
+        mini_topk_stats.zero_()
     rec_stats = getattr(self, "_rec_pu_stats", None)
     if rec_stats is not None:
         global_rec_stats = rec_stats.detach().clone()

@@ -1,0 +1,67 @@
+### alpha_mini_v3: alpha_mini recipe with the mini_v3 combined dataset.
+### Independent output/cache; do not overwrite alpha_mini_v1/v2.
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target: all
+enable_liger_kernel: true
+
+dataset: onereason_mini_v3
+dataset_dir: /data/lf_data_versions/alltrain/mini_v3
+tokenized_path: /data/lf_data_versions/alltrain/mini_v3/tokenized_mini_v3_train_8k_sid8w8
+template: qwen3_nothink
+cutoff_len: 8192
+packing: true
+neat_packing: true
+overwrite_cache: false
+preprocessing_num_workers: 16
+dataloader_num_workers: 8
+remove_unused_columns: false
+
+output_dir: /data/outputs/baselines/native_source_domain_r32_v3/ALPHA-MINI-V3-R32-2E-GC04-4GPU
+logging_steps: 5
+save_strategy: epoch
+save_total_limit: 3
+save_only_model: false
+plot_loss: true
+overwrite_output_dir: false
+report_to: none
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+num_train_epochs: 2
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+bf16: true
+pure_bf16: true
+gradient_checkpointing: true
+use_reentrant_gc: false
+ddp_timeout: 180000000
+seed: 20260806
+resume_from_checkpoint: null
+
+rec_pu_enabled: false
+multitask_pack_ratio_enabled: false
+rec_candidate_metrics_enabled: false
+alpha_monitor_enabled: true
+alpha_train_tf_enabled: true
+alpha_train_tf_interval: 10
+
+alpha_validation_enabled: true
+alpha_validation_dev_dataset: onereason_alpha_mini_v1_dev_filtered
+alpha_validation_split_dir: /data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1
+alpha_validation_dev_cache: /data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1/tokenized_alpha_mini_v1_dev_8k_sid8w8
+alpha_validation_probe_cache: /data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1/tokenized_alpha_mini_v1_probe_8k_sid8w8
+alpha_validation_metrics_path: /data/logs/baselines/native_source_domain_r32_v3/ALPHA-MINI-V3-R32-2E-GC04-4GPU/alpha_validation_metrics.jsonl
+alpha_dev_probe_enabled: true
+alpha_dev_probe_interval: 20
+alpha_full_dev_enabled: true
+alpha_full_dev_at_epoch_end: true

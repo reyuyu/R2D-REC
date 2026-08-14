@@ -1,0 +1,12 @@
+{
+  "onereason_beta_material_aligned": {
+    "file_name": "onereason_beta_material_aligned.jsonl",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history",
+      "system": "system"
+    }
+  }
+}

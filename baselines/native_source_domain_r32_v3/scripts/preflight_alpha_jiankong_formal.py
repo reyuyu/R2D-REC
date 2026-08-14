@@ -68,6 +68,13 @@ EXPECTED = {
     "save_strategy": "epoch",
 }
 
+ALPHA_SMOOTH_EXPECTED = {
+    **EXPECTED,
+    "alpha_smooth_enabled": True,
+    "alpha_smooth_epsilon": 0.05,
+    "alpha_smooth_start_epoch": 1.0,
+}
+
 SPLIT_DIR = Path("/data/lf_data_versions/alltrain/alpha-jiankong-split-v1")
 PROBE_DIR = SPLIT_DIR / "probe_v1"
 # This is recomputed from probe_v1/manifest.json raw_row_sha256.  A prior
@@ -122,7 +129,9 @@ def _cache_len(path: str) -> int:
 
 
 def _validate_config(config: dict[str, Any]) -> None:
-    for key, expected in EXPECTED.items():
+    alpha_smooth = bool(config.get("alpha_smooth_enabled", False))
+    expected_fields = ALPHA_SMOOTH_EXPECTED if alpha_smooth else EXPECTED
+    for key, expected in expected_fields.items():
         if config.get(key) != expected:
             _fail(f"Frozen config mismatch for {key}: expected {expected!r}, got {config.get(key)!r}")
     if "max_steps" in config and config["max_steps"] not in (None, -1):
@@ -133,6 +142,8 @@ def _validate_config(config: dict[str, Any]) -> None:
         _fail("metric_for_best_model must not control training")
     if config.get("lr_scheduler_type") == "reduce_lr_on_plateau":
         _fail("ReduceLROnPlateau is forbidden for monitor-only validation")
+    if alpha_smooth and config.get("rec_pu_enabled"):
+        _fail("AlphaSmooth requires rec_pu_enabled=false")
     if config.get("model_name_or_path") != "/data/models/onereason-8b-pretrain-competition":
         _fail("Wrong base model")
     if not isinstance(config.get("alpha_validation_metrics_path"), str) or "SMOKE" in config["alpha_validation_metrics_path"]:
@@ -264,12 +275,14 @@ def main() -> None:
             "world_size": args.world_size, "global_batch_packs": per_update,
             "steps_per_epoch": steps_per_epoch, "total_steps": total_steps, "warmup_steps": warmup_steps,
             "rec_pu": "OFF", "pack_ratio": "OFF", "alpha_monitor": "ON",
+            "alpha_smooth": "ON" if config.get("alpha_smooth_enabled") else "OFF",
             "train_tf_interval": config["alpha_train_tf_interval"],
             "probe_rows": probe_rows, "probe_groups": probe_groups, "probe_packs": probe_packs,
             "probe_sha256": EXPECTED_PROBE_SHA, "probe_interval": config["alpha_dev_probe_interval"],
             "full_dev_epoch_end": "ON", "full_dev_packs": dev_packs,
             "sid_domain_weight": 8, "canonical_response_weight": 4,
             "sid8_cache_packs": sid8_cache["packs"],
+            "final_sid_targets": sid8_cache["final_sid_targets"],
         }
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, sort_keys=True))

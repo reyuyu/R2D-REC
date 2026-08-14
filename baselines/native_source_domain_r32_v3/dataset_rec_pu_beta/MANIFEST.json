@@ -1,0 +1,14 @@
+{
+  "source": "/data/lf_data_versions/alltrain/BETA",
+  "rows": {
+    "material_cot": 64781,
+    "material_nocot": 76103,
+    "user_action": 16657,
+    "user_chain_cot": 8339,
+    "user_chain_nocot": 7852,
+    "recommendation_cot": 20664,
+    "recommendation_nocot": 20666
+  },
+  "total": 215062,
+  "sha256": "57a97a5751543359c4c4f531ad1da594272192795a8560121b6e86f13cd6ed66"
+}

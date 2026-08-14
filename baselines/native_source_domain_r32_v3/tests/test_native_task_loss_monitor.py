@@ -5,7 +5,7 @@ from pathlib import Path
 
 import torch
 
-PATH = Path(__file__).parents[1] / 'scripts' / 'train_native_source_domain_r32_v3.py'
+PATH = Path('/data/baselines/native_source_domain_r32_v3/scripts/train_native_source_domain_r32_v3.py')
 spec = importlib.util.spec_from_file_location('native_source', PATH)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

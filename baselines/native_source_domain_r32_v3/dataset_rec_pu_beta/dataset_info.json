@@ -1,0 +1,11 @@
+{
+  "onereason_native_rec_pu_beta": {
+    "file_name": "onereason_native_rec_pu_beta.jsonl",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "history": "history"
+    }
+  }
+}

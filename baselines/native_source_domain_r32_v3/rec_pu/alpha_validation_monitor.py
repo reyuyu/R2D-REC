@@ -27,7 +27,13 @@ from rec_pu.alpha_recommendation_monitor import (
     _topk_current_hits,
     collect_alpha_recommendation_monitor,
 )
-from rec_pu.sid8_rec_pu_integration import RecPUConfig, SIDComponentVocab, coerce_packed_target, compute_native_sid8_loss
+from rec_pu.sid8_rec_pu_integration import (
+    AlphaSmoothConfig,
+    RecPUConfig,
+    SIDComponentVocab,
+    coerce_packed_target,
+    compute_native_sid8_loss,
+)
 
 
 DOMAINS = ("video", "prod", "ad", "living")
@@ -315,6 +321,9 @@ class AlphaValidationRunner:
                     sample_domain_weights=sample_domain_weights,
                     rec_pu_targets=rec_targets,
                     rec_pu_config=RecPUConfig(False, 0.05),
+                    # Validation metrics always retain raw one-hot CE semantics,
+                    # independent of the current training epoch.
+                    alpha_smooth_config=AlphaSmoothConfig(enabled=False),
                     sid_component_vocab=vocab,
                 )
                 primary.add_(validation_metric_parity(
@@ -334,10 +343,11 @@ class AlphaValidationRunner:
                 ))
                 local_packs += 1
                 del outputs, details
-        if torch.cuda.is_available():
+        is_cuda_device = device.type == "cuda"
+        if is_cuda_device:
             torch.cuda.synchronize(device)
         elapsed = time.perf_counter() - start
-        timing = torch.tensor([elapsed, float(local_packs), torch.cuda.max_memory_allocated(device) if torch.cuda.is_available() else 0.0], device=device, dtype=torch.float64)
+        timing = torch.tensor([elapsed, float(local_packs), torch.cuda.max_memory_allocated(device) if is_cuda_device else 0.0], device=device, dtype=torch.float64)
         if _dist_ready():
             torch.distributed.all_reduce(primary, op=torch.distributed.ReduceOp.SUM)
             torch.distributed.all_reduce(extra, op=torch.distributed.ReduceOp.SUM)

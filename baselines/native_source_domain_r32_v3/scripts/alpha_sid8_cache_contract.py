@@ -6,6 +6,7 @@ the persisted Arrow cache that a formal run will actually consume.
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
 
@@ -19,6 +20,8 @@ EXPECTED_ALL = {0.0: 235_784_325, 1.0: 37_758_578, 2.0: 0, 3.0: 0, 4.0: 765_393,
 EXPECTED_ITEM = {"material": 313_148, "recommendation": 994_312, "user_action": 899_460, "user_chain": 456_304}
 EXPECTED_CANONICAL_SEGMENTS = 11_072
 MODEL = "/data/models/onereason-8b-pretrain-competition"
+FINAL_SID_TARGET_COLUMN = "rec_pu_targets_json"
+FINAL_SID_ROUTES = ("recommendation_cot", "recommendation_nocot")
 
 
 class AlphaSID8CacheContractError(RuntimeError):
@@ -45,6 +48,102 @@ def _update(counter: Counter[float], values: np.ndarray, mask: np.ndarray) -> No
         counter.update({float(value): int(count) for value, count in zip(values_unique, counts)})
 
 
+def _audit_final_sid_targets(
+    labels: np.ndarray,
+    weights: np.ndarray,
+    sample_ids: np.ndarray,
+    task_ids: np.ndarray,
+    raw_targets_by_row: list[object],
+) -> tuple[Counter[str], Counter[str]]:
+    """Validate cached final-SID locators independently of the training code.
+
+    Alpha monitor and AlphaSmooth both consume this Arrow-only field after the
+    base collator has run.  Treat a missing, malformed, or misaligned target as
+    a preflight failure rather than allowing an Epoch2 objective no-op.
+    """
+
+    routes: Counter[str] = Counter()
+    errors: Counter[str] = Counter()
+    if len(raw_targets_by_row) != labels.shape[0]:
+        errors["target_row_count"] += 1
+        return routes, errors
+    for row, raw_targets in enumerate(raw_targets_by_row):
+        if not isinstance(raw_targets, str):
+            errors["target_json_not_string"] += 1
+            continue
+        try:
+            targets = json.loads(raw_targets)
+        except json.JSONDecodeError:
+            errors["target_json_invalid"] += 1
+            continue
+        if not isinstance(targets, list):
+            errors["target_json_not_list"] += 1
+            continue
+        for target in targets:
+            if not isinstance(target, dict):
+                errors["target_not_mapping"] += 1
+                continue
+            route = target.get("source_segment")
+            if route not in FINAL_SID_ROUTES:
+                errors["target_invalid_route"] += 1
+                continue
+            try:
+                segment_start = int(target["segment_start"])
+                segment_end = int(target["segment_end"])
+                label_positions = tuple(int(target[f"{level}_label_position"]) for level in ("a", "b", "c"))
+                logit_positions = tuple(int(target[f"{level}_logit_position"]) for level in ("a", "b", "c"))
+                positives = target["positives"]
+            except (KeyError, TypeError, ValueError):
+                errors["target_fields_invalid"] += 1
+                continue
+            if not isinstance(positives, dict):
+                errors["target_positives_invalid"] += 1
+                continue
+            if any(not isinstance(positives.get(level), list) or not positives[level] for level in ("a", "b", "c")):
+                errors["target_positives_invalid"] += 1
+                continue
+            if not (0 <= segment_start < segment_end <= labels.shape[1]):
+                errors["target_segment_bounds"] += 1
+                continue
+            if label_positions != (logit_positions[0] + 1, logit_positions[1] + 1, logit_positions[2] + 1):
+                errors["target_causal_positions"] += 1
+                continue
+            if label_positions != (label_positions[0], label_positions[0] + 1, label_positions[0] + 2):
+                errors["target_component_order"] += 1
+                continue
+            positions = (*label_positions, *logit_positions)
+            if any(position < segment_start or position >= segment_end for position in positions):
+                errors["target_crosses_segment"] += 1
+                continue
+            if any(labels[row, position] == -100 for position in label_positions):
+                errors["target_ignored_label"] += 1
+                continue
+            if not np.all(weights[row, list(label_positions)] == 8.0):
+                errors["target_not_sid8"] += 1
+                continue
+            if not np.all(task_ids[row, list(label_positions)] == 1):
+                errors["target_not_recommendation"] += 1
+                continue
+            target_sample_ids = sample_ids[row, list(positions)]
+            if np.any(target_sample_ids < 0) or np.unique(target_sample_ids).size != 1:
+                errors["target_crosses_sample"] += 1
+                continue
+            try:
+                positive_sets = {level: {int(value) for value in positives[level]} for level in ("a", "b", "c")}
+            except (TypeError, ValueError):
+                errors["target_positives_invalid"] += 1
+                continue
+            label_matches = all(
+                int(labels[row, position]) in positive_sets[level]
+                for level, position in zip(("a", "b", "c"), label_positions)
+            )
+            if not label_matches:
+                errors["target_gold_not_positive"] += 1
+                continue
+            routes[route] += 1
+    return routes, errors
+
+
 def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
     """Scan all cache tokens and return contract-relevant counts.
 
@@ -55,7 +154,7 @@ def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
     if "train" not in dataset_dict:
         raise AlphaSID8CacheContractError(f"Missing train split: {cache_path}")
     dataset = dataset_dict["train"]
-    required = {"labels", "loss_weights", "sample_ids", "sample_task_ids"}
+    required = {"labels", "loss_weights", "sample_ids", "sample_task_ids", FINAL_SID_TARGET_COLUMN}
     if not required <= set(dataset.column_names):
         raise AlphaSID8CacheContractError(f"Missing cache columns: {sorted(required - set(dataset.column_names))}")
 
@@ -67,6 +166,7 @@ def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
     item_weights = {task: Counter() for task in TASKS}
     text_weights = {task: Counter() for task in TASKS}
     canonical_segments = 0
+    final_sid_routes: Counter[str] = Counter()
     errors: Counter[str] = Counter()
 
     chunks = columns["labels"].num_chunks
@@ -75,6 +175,15 @@ def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
         weights = np.asarray(columns["loss_weights"].chunk(chunk).values.to_numpy(zero_copy_only=False), dtype=np.float64).reshape(-1, 8192)
         sample_ids = np.asarray(columns["sample_ids"].chunk(chunk).values.to_numpy(zero_copy_only=False), dtype=np.int64).reshape(-1, 8192)
         task_ids = np.asarray(columns["sample_task_ids"].chunk(chunk).values.to_numpy(zero_copy_only=False), dtype=np.int64).reshape(-1, 8192)
+        target_routes, target_errors = _audit_final_sid_targets(
+            labels,
+            weights,
+            sample_ids,
+            task_ids,
+            columns[FINAL_SID_TARGET_COLUMN].chunk(chunk).to_pylist(),
+        )
+        final_sid_routes.update(target_routes)
+        errors.update(target_errors)
         valid = labels != -100
         flat_labels, flat_weights, flat_tasks = labels.ravel(), weights.ravel(), task_ids.ravel()
         flat_valid = valid.ravel()
@@ -121,6 +230,7 @@ def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
         "item_weight_counts": {task: {str(key): int(value) for key, value in sorted(counter.items())} for task, counter in item_weights.items()},
         "text_weight_counts": {task: {str(key): int(value) for key, value in sorted(counter.items())} for task, counter in text_weights.items()},
         "canonical_segments": canonical_segments,
+        "final_sid_targets": {route: int(final_sid_routes[route]) for route in FINAL_SID_ROUTES},
         "errors": {key: int(value) for key, value in errors.items() if value},
     }
     failures: list[str] = []
@@ -134,6 +244,8 @@ def scan_alpha_sid8_cache(cache_path: str | Path) -> dict[str, object]:
             failures.append(f"{task}_text_weights={dict(text_weights[task])}")
     if canonical_segments != EXPECTED_CANONICAL_SEGMENTS:
         failures.append(f"canonical_segments={canonical_segments}")
+    if any(final_sid_routes[route] == 0 for route in FINAL_SID_ROUTES):
+        failures.append(f"final_sid_targets={report['final_sid_targets']}")
     nonzero_errors = {key: value for key, value in errors.items() if value}
     if nonzero_errors:
         failures.append(f"alignment_errors={nonzero_errors}")

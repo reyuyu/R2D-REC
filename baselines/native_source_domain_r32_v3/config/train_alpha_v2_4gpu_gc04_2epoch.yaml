@@ -1,0 +1,77 @@
+### Alpha V2 formal configuration.  Replaces alpha-jiankong train98 with the
+### new alpha_v2 dataset (recommendation rebuilt: 1/3 NoCoT, zero dev cross).
+### Only dataset/cache/output/metrics paths differ from the jiankong template;
+### rec_candidate_metrics_enabled is additionally turned on so the multi-positive
+### candidate metrics (hit/coverage over ALL golds, not just current gold) are
+### collected for the first time in the alpha series.
+model_name_or_path: /data/models/onereason-8b-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 32
+lora_alpha: 64
+lora_dropout: 0.05
+lora_target: all
+enable_liger_kernel: true
+
+dataset: onereason_alpha_v2
+dataset_dir: /data/lf_data_versions/alltrain/alpha_v2
+tokenized_path: /data/lf_data_versions/alltrain/alpha_v2/tokenized_alpha_v2_8k_sid8w8
+template: qwen3_nothink
+cutoff_len: 8192
+packing: true
+neat_packing: true
+overwrite_cache: false
+preprocessing_num_workers: 16
+dataloader_num_workers: 8
+remove_unused_columns: false
+
+output_dir: /data/outputs/baselines/native_source_domain_r32_v3/ALPHA-V2-R32-2E-GC04-4GPU
+logging_steps: 5
+save_strategy: epoch
+save_total_limit: 3
+save_only_model: false
+plot_loss: true
+overwrite_output_dir: false
+report_to: none
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 2.0e-4
+num_train_epochs: 2
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+weight_decay: 0.01
+bf16: true
+pure_bf16: true
+gradient_checkpointing: true
+use_reentrant_gc: false
+ddp_timeout: 180000000
+seed: 20260806
+resume_from_checkpoint: null
+
+rec_pu_enabled: false
+multitask_pack_ratio_enabled: false
+# Candidate metrics over the FULL positive set (hit8/hit32/coverage8/coverage32
+# and chain) in addition to the gold-only teacher-forcing diagnostics.  The
+# alpha_v2 recommendation pool keeps multi-positive groups (38% of groups), so
+# gold-only hit can mislabel a miss when another legal gold is ranked first.
+rec_candidate_metrics_enabled: true
+alpha_monitor_enabled: true
+alpha_train_tf_enabled: true
+alpha_train_tf_interval: 50
+
+# Sidecar validation reuses the alpha-jiankong dev2 view.  alpha_v2 training
+# rows are group/exact-row disjoint from dev2 (verified zero cross).
+alpha_validation_enabled: true
+alpha_validation_dev_dataset: onereason_alpha_jiankong_dev2
+alpha_validation_split_dir: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1
+alpha_validation_dev_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev2_8k_sid8w8
+alpha_validation_probe_cache: /data/lf_data_versions/alltrain/alpha-jiankong-split-v1/tokenized_dev_probe_v1_8k_sid8w8
+alpha_validation_metrics_path: /data/logs/baselines/native_source_domain_r32_v3/ALPHA-V2-R32-2E-GC04-4GPU/alpha_validation_metrics.jsonl
+alpha_dev_probe_enabled: true
+alpha_dev_probe_interval: 100
+alpha_full_dev_enabled: true
+alpha_full_dev_at_epoch_end: true
