@@ -97,3 +97,20 @@ baseline.  Alpha uses the cleaned `alpha-jiankong` source and the leak-safe
 ordinary native SID8 baseline.  Monitor OFF/ON loss and gradient parity show
 that the monitoring itself does not alter training gradients, but future score
 differences must not be attributed to monitoring alone.
+
+## Formal training result: alpha_jiankong (mother experiment)
+
+The stages above (leak-safe split, validation sidecar, SID/domain weight
+contract fix, formal config freeze) are milestones of the single mother
+experiment `alpha_jiankong`, not separate experiments.  After the SID8 cache
+weight-contract fix (plain token=1, canonical=4, non-canonical SID/domain=8),
+the formal 2-epoch run scored:
+
+| Epoch | Total | Breakdown |
+| --- | ---: | --- |
+| 1 | `1.2605` | material `0.0465, 0.0379, 0.0441, 0.0426`; user `0.1502, 0.0915`; recommendation `0.1204, 0.1394, 0.2016, 0.1521`; world `0.2342` |
+| 2 | **`1.2992`** | material `0.0490, 0.0369, 0.0516, 0.0420`; user `0.1556, 0.0955`; recommendation `0.1241, 0.1394, 0.2002, 0.1683`; world `0.2364` |
+
+Epoch 1 → 2 improvement `+0.0387`, driven mainly by user and recommendation
+subscores; world stays stable.  Material subscores follow the historical
+convention of not being comparable across runs.

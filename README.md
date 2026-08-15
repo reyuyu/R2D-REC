@@ -38,30 +38,41 @@ Alpha 系列基于 BETA-baseline，重点研究数据提示、数据清洗、Act
 
 ### 实验脉络
 
+Alpha 系列的第一条主线是建立**可复现的正式母版 `alpha_jiankong`**：从监控验证体系搭建开始，经历了 SID/domain 权重合同修复等调试阶段，最终收敛为统一正式实验。此前的「Alpha-监控优化」「Alpha-SID8 cache fix」并非独立实验，而是 `alpha_jiankong` 形成过程中的中间阶段（监控验证体系 + 权重合同 bug 修复），最终以 `alpha_jiankong` 为准。
+
 | 实验 | 主线 | 主要改动 | 外部评测得分 |
 | --- | --- | --- | --- |
-| Alpha-监控优化 | 验证体系 | 98/2 leak-safe dev、固定 probe、训练阶段验证 | 监控本身不改变训练梯度 |
-| Alpha-Jiankong | 正式母版 | monitor + validation 正式训练配方（train98 / dev2 / probe） | Epoch 1 总分 `1.2605` |
-| Alpha-SID8 cache fix | 权重合同 | 修复静态 tokenized cache 的 SID/domain 权重合同 | 普通 token=1、canonical=4、非 canonical SID/domain=8 |
+| **Alpha-Jiankong** | **正式母版** | 98/2 leak-safe dev（train98/dev2/probe）+ 训练阶段验证 + monitor；修复静态 tokenized cache 的 SID/domain 权重合同（普通 token=1、canonical=4、非 canonical SID/domain=8） | **Epoch 1 总分 `1.2605`，Epoch 2 总分 `1.2992`** |
 | Alpha-CoT | 权重侧 | Recommendation CoT 重复归一化，CoT body 使用 `0.5/N` | Epoch 1 总分 `1.2263` |
 | **Alpha-Smooth** | **loss 目标侧** | **第二 epoch 起开启标签平滑 ε=0.05**（`alpha_smooth_start_epoch: 1.0`） | **Epoch 2 总分 `1.3185`，较 Alpha-Jiankong 有提升** |
 | Alpha-V2 | 数据重建 | 推荐全量 CoT 重建 + NoCoT 恢复至 1/3 + 与 dev2 零交叉 | 训练待启动 |
+
+### Alpha-Jiankong 正式母版得分（外部评测器）
+
+`alpha_jiankong` 是 Alpha 系列的对照基准（train98 / dev2 / probe + SID8 权重合同修复后）。分项顺序与 BETA-baseline 一致：懂物料 4 项 → 懂用户 2 项 → 懂推荐 4 项 → 懂世界 1 项（懂物料分项按历史约定不具备横向参考性，比较时以其余分项加和为准）。
+
+| Epoch | 总分 | 分项 |
+| --- | ---: | --- |
+| Epoch 1 | `1.2605` | 物料 `0.0465, 0.0379, 0.0441, 0.0426`；用户 `0.1502, 0.0915`；推荐 `0.1204, 0.1394, 0.2016, 0.1521`；世界 `0.2342` |
+| Epoch 2 | **`1.2992`** | 物料 `0.0490, 0.0369, 0.0516, 0.0420`；用户 `0.1556, 0.0955`；推荐 `0.1241, 0.1394, 0.2002, 0.1683`；世界 `0.2364` |
+
+Epoch 1 → Epoch 2 提升 `+0.0387`，主要来自用户与推荐分项改善；世界分项保持稳定。
 
 ### Alpha 系列得分一览（外部评测器，总分）
 
 | 实验 | Epoch 1 | Epoch 2 |
 | --- | ---: | ---: |
 | BETA-baseline（统一参考线） | `1.3090` | `1.3246` |
-| Alpha-Jiankong | `1.2605` | — |
+| Alpha-Jiankong（正式母版） | `1.2605` | **`1.2992`** |
 | Alpha-CoT | `1.2263` | — |
 | **Alpha-Smooth** | — | **`1.3185`** |
 | Alpha-V2 | 待训练 | 待训练 |
 
 Alpha 记录入口：
 
-- [Alpha 监控优化](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)
+- [Alpha-Jiankong 正式母版（含监控优化与 SID8 权重合同修复历程）](./baselines/native_source_domain_r32_v3/docs/experiment_alpha_monitor.md)
 - [Alpha 监控结果分析](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化_结果分析.md)
-- [Alpha SID8 cache 修复](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
+- [Alpha SID8 cache 权重合同修复记录](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_SID8_cache_fix.md)
 - [Alpha-CoT 重复归一化](./baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)
 - [Alpha-Smooth 标签平滑](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHASMOOTH.md)
 - [Alpha-V2 推荐重建](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_V2.md)
