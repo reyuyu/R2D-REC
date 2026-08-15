@@ -47,6 +47,8 @@ Alpha 系列的第一条主线是建立**可复现的正式母版 `alpha_jiankon
 | **Alpha-Smooth** | **loss 目标侧** | **第二 epoch 起开启标签平滑 ε=0.05**（`alpha_smooth_start_epoch: 1.0`） | **Epoch 2 总分 `1.3185`，较 Alpha-Jiankong 有提升** |
 | Alpha-V2 | 数据重建 | 推荐全量 CoT 重建 + NoCoT 恢复至 1/3 + 与 dev2 零交叉 | 训练待启动 |
 
+> **Alpha-Smooth 的动机**：监控发现**懂推荐**在第二轮训练出现"训练集损失继续下降（尤其 NoCoT 样本）、验证集损失反而上升"的阶梯式过拟合——模型在第二轮主要是在记忆第一轮见过的训练结果。因此对推荐最终 A/B/C 位置施加标签平滑 ε=0.05 作为正则，并采用"先拟合、后平滑"的分阶段 schedule：第一轮原生 CE 充分拟合结构，第二轮起平滑目标抑制过度自信（`alpha_smooth_start_epoch: 1.0`）。Mini 系列的 Mini-Smooth / Mini-Whole-Smooth 是同一机制在小型数据版本上的复刻与 start-epoch 消融。
+
 ### Alpha-Jiankong 正式母版得分（外部评测器）
 
 `alpha_jiankong` 是 Alpha 系列的对照基准（train98 / dev2 / probe + SID8 权重合同修复后）。分项顺序与 BETA-baseline 一致：懂物料 4 项 → 懂用户 2 项 → 懂推荐 4 项 → 懂世界 1 项（懂物料分项按历史约定不具备横向参考性，比较时以其余分项加和为准）。
@@ -84,7 +86,7 @@ Alpha-CoT 与 Alpha-Smooth 的正式运行配置和代码位于服务器的 Nati
 
 Mini 系列是 Alpha 正式实验的轻量复现、排查和数据消融版本：不启动完整全量训练，用缩小的任务池验证数据、loss route、梯度和监控，同时每个 Mini 版本本身也会跑完 2 epoch 并给出外部评测分数，用于回答"数据怎么改会带来什么影响"。
 
-Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后续 Mini 版本只改数据构造（用户/推荐/物料比例与形态），模型、LoRA、优化器、packing 与评测方式保持不变。
+Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后续 Mini 版本以数据构造改动为主（用户/推荐/物料比例与形态），Mini-Smooth / Mini-Whole-Smooth 则在同一数据版本上验证 loss 目标（标签平滑）改动；模型、LoRA、优化器、packing 与评测方式保持不变。
 
 ### 实验脉络
 
@@ -94,6 +96,8 @@ Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后
 | **Mini-V2** | 懂用户扩到 3,000；懂推荐 NoCoT 比例恢复至约 1/3（其余恢复为 CoT）；懂物料不变 = **50,490** | **总分 `1.2671`** |
 | **Mini-V3** | 懂推荐全部恢复为 CoT（NoCoT=0）；懂用户 3,000、懂物料 36,298 不变 = **50,490** | **总分 `1.2178`** |
 | Mini-CoT | ~~Alpha-mini 基础上对 recommendation CoT think span 加 `0.5/N` 重复归一化权重~~（**已放弃该 trick**） | CPU 验收通过（未启动正式训练） |
+| **Mini-Smooth** | 在 Mini 基线上开启推荐最终 A/B/C 标签平滑 ε=0.05，**第二 epoch 起生效**（`alpha_smooth_start_epoch: 1.0`），缓解第二轮过拟合 | **训练中**（2026-08-15 启动） |
+| **Mini-Whole-Smooth** | 与 Mini-Smooth 同源，但平滑**全程生效**（`alpha_smooth_start_epoch: 0.0`），两个 epoch 都平滑，回答"平滑应该从哪个 epoch 开始" | 待启动（等 Mini-Smooth 完成后接力） |
 
 ### Mini 系列得分一览（外部评测器，总分与分项）
 
@@ -115,6 +119,8 @@ Mini 记录：
 - [Mini-V2（NoCoT 1/3 + 用户 3,000）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V2.md)
 - [Mini-V3（推荐全 CoT）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V3.md)
 - [Mini-CoT（think span 0.5/N，**已放弃**）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_COT_ALPHA_Mini_R32_2E.md)
+- [Mini-Smooth（第二 epoch 标签平滑，训练中）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_SMOOTH.md)
+- [Mini-Whole-Smooth（全程标签平滑，待启动）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_WHOLE_SMOOTH.md)
 
 ## 数据版本
 
