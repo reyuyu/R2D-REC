@@ -82,18 +82,39 @@ Alpha-CoT 与 Alpha-Smooth 的正式运行配置和代码位于服务器的 Nati
 
 ## Mini 系列
 
-Mini 系列是 Alpha 正式实验的轻量复现和排查版本，用于在不启动完整 2 epoch 的前提下验证数据、loss route、梯度和监控。它服务于“先证明代码和指标正确，再启动正式训练”的流程。
+Mini 系列是 Alpha 正式实验的轻量复现、排查和数据消融版本：不启动完整全量训练，用缩小的任务池验证数据、loss route、梯度和监控，同时每个 Mini 版本本身也会跑完 2 epoch 并给出外部评测分数，用于回答"数据怎么改会带来什么影响"。
 
-| Mini 阶段 | 用途 | 典型验证 |
+Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后续 Mini 版本只改数据构造（用户/推荐/物料比例与形态），模型、LoRA、优化器、packing 与评测方式保持不变。
+
+### 实验脉络
+
+| 实验 | 数据改动 | 外部评测得分（2 epoch） |
 | --- | --- | --- |
-| Mini-CPU | 不加载大模型的数学和数据回归 | loss_weights、SID8、CoT `0.5/N`、字段和 manifest |
-| Mini-单步/短程 | 从 base model 运行 1-30 optimizer steps | forward/backward、raw CE parity、无 NaN/OOM |
-| Mini-监控 | 使用固定 probe 和少量 dev 样本 | 四任务 loss、teacher-forcing 命中、验证指标 |
-| Mini-复现包 | 打包代码、配置、数据 manifest 和复现说明 | 本地恢复数据并重建 tokenized cache |
+| **Alpha-Mini（大基线）** | 懂用户 2,000 + 懂推荐 11,192（多正 group，CoT/NoCoT 混合）+ 懂物料 36,298 = **49,490** | **总分 `1.2861`** |
+| **Mini-V2** | 懂用户扩到 3,000；懂推荐 NoCoT 比例恢复至约 1/3（其余恢复为 CoT）；懂物料不变 = **50,490** | **总分 `1.2671`** |
+| **Mini-V3** | 懂推荐全部恢复为 CoT（NoCoT=0）；懂用户 3,000、懂物料 36,298 不变 = **50,490** | **总分 `1.2178`** |
+| Mini-CoT | Alpha-mini 基础上对 recommendation CoT think span 加 `0.5/N` 重复归一化权重 | CPU 验收通过（未启动正式训练） |
+
+### Mini 系列得分一览（外部评测器，总分与分项）
+
+分项顺序与 BETA-baseline 一致：懂物料 4 项 → 懂用户 2 项 → 懂推荐 4 项 → 懂世界 1 项（懂物料分项按历史约定不具备横向参考性）。
+
+| 实验 | 总分 | 懂物料 | 懂用户 | 懂推荐 | 懂世界 |
+| --- | ---: | --- | --- | --- | ---: |
+| **Alpha-Mini（大基线）** | **`1.2861`** | `0.0621, 0.0357, 0.0516, 0.0426` | `0.1395, 0.0708` | `0.1335, 0.1496, 0.1960, 0.1746` | `0.2301` |
+| **Mini-V2** | **`1.2671`** | `0.0607, 0.0353, 0.0507, 0.0431` | `0.1333, 0.0809` | `0.1185, 0.1496, 0.1988, 0.1656` | `0.2305` |
+| **Mini-V3** | **`1.2178`** | `0.0619, 0.0345, 0.0512, 0.0432` | `0.1513, 0.0772` | `0.0980, 0.1292, 0.1722, 0.1611` | `0.2379` |
+
+观察：NoCoT 比例从基线（约 42%）降到 1/3（Mini-V2）再降到 0（Mini-V3），推荐分项逐步下降（0.6537 → 0.6325 → 0.5605），世界分项小幅上升（0.2301 → 0.2305 → 0.2379）——说明全 CoT 化对推荐任务本身未必有利，推荐分项随 NoCoT 减少而单调下降。
 
 Mini 版本不作为最终排行榜结果，不覆盖 Alpha 正式 output，也不改变正式训练的 scheduler horizon。当前 mini 复现包不包含模型权重，原始数据仍需根据 manifest 从服务器或本地数据源恢复。
 
-Mini 记录：[Alpha Mini R32 两 epoch](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)。
+Mini 记录：
+
+- [Alpha-Mini 大基线（R32 两 epoch）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)
+- [Mini-V2（NoCoT 1/3 + 用户 3,000）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V2.md)
+- [Mini-V3（推荐全 CoT）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V3.md)
+- [Mini-CoT（think span 0.5/N）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_COT_ALPHA_Mini_R32_2E.md)
 
 ## 数据版本
 
