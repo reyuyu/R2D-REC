@@ -1,6 +1,6 @@
 # 实验 Mini-Whole-Smooth：全程（两个 Epoch）标签平滑
 
-状态：**已就绪，待启动**。config + launcher 于 2026-08-15 15:34 创建并通过门控验证；等待 mini_smooth（占用 4 卡）结束后启动，预计启动时间 ~16:55，训练 ~1.5h。
+状态：**已完成**。2 epoch 训练于 2026-08-15 17:06 启动（RUN_ID `MINI-WHOLE-SMOOTH-R32-2E-GC04-4GPU-20260815-170650`），18:41 完成，共 140 步，耗时 1h35m；外部评测待补充。
 
 母版为 **Mini-Smooth**（见 `experiment_MINI_SMOOTH.md`），即 Mini 大基线（alpha_mini_v1，49,490 行）+ 推荐路由标签平滑 ε=0.05。**唯一差异**：`alpha_smooth_start_epoch: 0.0`（从 epoch 0 起平滑，两个 epoch 全程生效），替换 Mini-Smooth 的 `1.0`。
 
@@ -28,6 +28,24 @@
 | `output_dir` | `MINI-SMOOTH-R32-2E-GC04-4GPU-*` | `MINI-WHOLE-SMOOTH-R32-2E-GC04-4GPU-*` |
 | `alpha_validation_metrics_path` | MINI-SMOOTH 日志目录 | MINI-WHOLE-SMOOTH 日志目录 |
 | 其余全部字段 | 相同 | 相同 |
+
+## 训练结果
+
+- steps **140/140**、epoch 2.0、100% 完成；总耗时 1h35m（17:06 → 18:41）；
+- 关键观测点验证：`as_0_active` 从 step 1 起即为 `'1'`（与 Mini-Smooth 的 epoch 1 为 `'0'` 形成直接对照），`as_2_sid_ls` / `as_3_ls_delta` 全程非零——平滑全程生效，符合设计；
+- `rec_monitor_missing_gold = 0`、`rec_monitor_invalid_route = 0`，无 NaN/Inf。
+
+**epoch 末 full-dev 验证**（`onereason_alpha_mini_v1_dev_filtered`，与 Mini-Smooth 同口径）：
+
+| 指标 | Mini-Smooth e2 | Mini-Whole-Smooth e1 | Mini-Whole-Smooth e2 |
+| --- | ---: | ---: | ---: |
+| va_rec_cot_body_ce | 1.4135 | 1.4649 | **1.4127** |
+| vb_rec_cot_gold_sid_ce | 4.7878 | 4.7899 | 4.8363 |
+| vc_rec_nocot_gold_sid_ce | 4.7534 | 4.7536 | 4.7964 |
+| vh_rec_tf_a_hit32 | 0.5542 | 0.5515 | **0.5583** |
+| vk_rec_tf_chain_32_8_8 | 0.1260 | 0.1247 | **0.1301** |
+
+全程平滑（start_epoch 0.0）的 epoch 2 验证指标与"第二轮才开启"（start_epoch 1.0）基本持平（va 略优、vb/vc 略差、hit32 与 chain 略优），外部总分待补——两实验的最终对比以外部评测为准。
 
 ## 复现方法
 

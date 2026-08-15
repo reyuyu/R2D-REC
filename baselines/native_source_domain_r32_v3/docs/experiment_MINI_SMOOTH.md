@@ -1,6 +1,6 @@
 # 实验 Mini-Smooth：Mini 基线 + 第二 Epoch 标签平滑（Label Smoothing）
 
-状态：**训练中**。2 epoch 训练于 2026-08-15 15:25 启动（RUN_ID `MINI-SMOOTH-R32-2E-GC04-4GPU-20260815-152559`），共 140 步，~38s/步，预计 ~16:55 完成。
+状态：**已完成**。2 epoch 训练于 2026-08-15 15:25 启动（RUN_ID `MINI-SMOOTH-R32-2E-GC04-4GPU-20260815-152559`），17:02 完成，共 140 步，耗时 1h34m；外部评测结果已记录。
 
 母版为 **alpha_mini_v1（Mini 大基线）**：OneReason-8B、LoRA r32/a64/dropout 0.05、8K neat packing、GA16（global batch 64）、FA2 + Liger、bf16、GC0.4、LR 2e-4 cosine、warmup 0.03、seed 20260806、SID/domain 权重 8（GLOBAL_ITEM_WEIGHT=8）；`rec_pu_enabled` / `multitask_pack_ratio_enabled` / `rec_candidate_metrics_enabled` 关闭；`alpha_monitor_enabled` / `alpha_validation_enabled` 打开，TF 每 10 步、probe 每 20 步 + epoch 末 full-dev。数据集 `onereason_alpha_mini_v1`（49,490 行）。
 
@@ -29,11 +29,36 @@
 | `output_dir` | `MINI-*` | `MINI-SMOOTH-R32-2E-GC04-4GPU-*` |
 | 其余全部字段 | 相同 | 相同 |
 
-## 训练过程（进行中）
+## 训练结果
 
-- steps 0/140 → 运行中；当前 epoch ~0.14，`as_0_active: '0'`（epoch 1 平滑未激活，符合预期）；
-- **关键观测点**：step ~70（epoch ≥ 1.0）时 `as_0_active` 应从 0 翻转为 1，`as_2_sid_ls` / `as_3_ls_delta` 开始输出非零值；预计 ~16:10；
-- `rec_monitor_missing_gold = 0`、`rec_monitor_invalid_route = 0`（截至最新日志）。
+- steps **140/140**、epoch 2.0、100% 完成；总耗时 1h34m（15:25 → 17:02）；checkpoint-70（epoch 1）/ checkpoint-140（epoch 2）；
+- 关键观测点验证：`as_0_active` 在 step ~70（epoch ≥ 1.0）从 0 翻转为 1，`as_2_sid_ls` / `as_3_ls_delta` 在 epoch 2 输出非零值——平滑只在第二 epoch 生效，符合设计；
+- `rec_monitor_missing_gold = 0`、`rec_monitor_invalid_route = 0`，无 NaN/Inf。
+
+**epoch 末 full-dev 验证**（`onereason_alpha_mini_v1_dev_filtered`）：
+
+| 指标 | e1 (step 70) | e2 (step 140) |
+| --- | ---: | ---: |
+| va_rec_cot_body_ce | 1.4674 | **1.4135** |
+| vb_rec_cot_gold_sid_ce | — | 4.7878 |
+| vc_rec_nocot_gold_sid_ce | — | 4.7534 |
+| vg_rec_tf_a_hit8 | — | 0.3442 |
+| vh_rec_tf_a_hit32 | 0.5637 | 0.5542 |
+| vi_rec_tf_b_hit8 | — | 0.4146 |
+| vj_rec_tf_c_hit8 | — | 0.4607 |
+| vk_rec_tf_chain_32_8_8 | — | 0.1260 |
+
+## 外部评测（固定评测器）
+
+```text
+aggregate = 1.2681
+material  = 0.0624, 0.0378, 0.0516, 0.0420
+user      = 0.1359, 0.0717
+recommendation = 0.1157, 0.1598, 0.1834, 0.1764
+world/last = 0.2312
+```
+
+Mini-Smooth 外部总分 **1.2681**。其验证集与 Alpha 全量系列（jiankong dev2）不同（Mini 使用独立的 `alpha_mini_v1_dev_filtered`），且数据为 49,490 行的轻量版，不与 jiankong 全量实验直接横比；本实验的价值是与 alpha_mini_v1（Mini 大基线，1.2861）对照，验证"第二 epoch 标签平滑"在 Mini 规模下的影响，并与 Mini-Whole-Smooth（start_epoch 0.0）构成 start-epoch 消融。
 
 ## 配套消融
 

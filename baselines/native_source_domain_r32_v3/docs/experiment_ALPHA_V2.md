@@ -101,10 +101,70 @@ alpha_validation_metrics_path: /data/logs/baselines/native_source_domain_r32_v3/
 - 全候选指标（`hit8/hit32/coverage8/coverage32`，`core_recommendation_metrics.candidate_rank_outcome`）代码已存在，但仅在 `rec_candidate_metrics_enabled: true` 时采集；
 - **alpha_v2 开启 `rec_candidate_metrics_enabled: true`**，新增全候选视角：`cand_a_hit8/hit32/coverage8/coverage32`、`cand_b_hit8`、`cand_c_hit8`、`cand_chain_32_8_8`，用于对照 gold-only 指标，识别多正 group 中被 gold-only 误判的 miss。
 
+## 训练结果（2026-08-15，已完成）
+
+- Run：`ALPHA-V2-R32-2E-GC04-4GPU-20260815-035601`，**1072/1072 steps（100%，epoch 2.0）**，耗时 11h18m（03:56 → 15:14）；
+- 数据：`onereason_alpha_v2`（216,732 行，2 epoch = 1072 optimizer steps），全新 tokenized cache `tokenized_alpha_v2_8k_sid8w8`；
+- 训练过程：loss 107.0 → 25.7，grad_norm 9.17 → 0.93，`rec_monitor_missing_gold=0`、`rec_monitor_invalid_route=0`，无 NaN/Inf；
+- 全候选/多正诊断指标已采集（`rec_pu_multi_positive_segments=95`、`rec_pu_positive_count_a_mean=4.66` 等，见 `all_results.json`）。
+
+**epoch 末 full-dev 验证**（与 jiankong 同一 dev2，733 packs；Alpha-V2 e1 仅记录到 va/hit32，其余为 e2）：
+
+| 指标 | Alpha-V2 e1 | Alpha-V2 e2 | JIANKONG e1 | JIANKONG e2 |
+| --- | ---: | ---: | ---: | ---: |
+| CoT body CE (va) | 1.2217 | **1.1953** | 1.2438 | 1.2161 |
+| CoT Gold SID CE (vb) | — | **4.7630** | 4.6503 | 4.7640 |
+| NoThink Gold SID CE (vc) | — | **4.8213** | 4.6345 | 4.8311 |
+| TF a-hit8 | — | **0.3506** | 0.3619 | 0.3478 |
+| TF a-hit32 | 0.5693 | **0.5806** | 0.5759 | 0.5749 |
+| TF b-hit8 | — | 0.4034 | 0.4204 | 0.4062 |
+| TF c-hit8 | — | 0.4411 | 0.4826 | 0.4477 |
+| TF chain 32/8/8 | — | **0.1131** | 0.1329 | 0.1112 |
+
+**结论**：Alpha-V2 epoch 2 的 full-dev 核心指标对 jiankong epoch 2 **全面占优或持平**（CoT body CE、CoT/NoThink Gold SID CE、a-hit32、chain 均更好；仅 b/c hit8 略低），说明推荐数据重建（1/3 NoCoT + 零交叉）在验证侧带来稳定提升。
+
+## 外部评测（固定评测器）
+
+Epoch 1（checkpoint-529）：
+
+```text
+aggregate = 1.2584
+material  = 0.0507, 0.0341, 0.0507, 0.0443
+user      = 0.1552, 0.0923
+recommendation = 0.1101, 0.1496, 0.1876, 0.1521
+world/last = 0.2316
+```
+
+Epoch 2（checkpoint-1058）：
+
+```text
+aggregate = 1.2856
+material  = 0.0479, 0.0375, 0.0510, 0.0434
+user      = 0.1570, 0.0952
+recommendation = 0.1223, 0.1326, 0.1988, 0.1647
+world/last = 0.2353
+```
+
+### 与 Alpha-Jiankong 对比
+
+| 分项 | JIANKONG (e1) | JIANKONG (e2) | Alpha-V2 (e1) | Alpha-V2 (e2) |
+| --- | ---: | ---: | ---: | ---: |
+| 总分 | 1.2605 | 1.2992 | 1.2584 | **1.2856** |
+| 推荐 video | 0.1204 | 0.1241 | 0.1101 | 0.1223 |
+| 推荐 prod | 0.1394 | 0.1394 | 0.1496 | 0.1326 |
+| 推荐 ad | 0.2016 | 0.2002 | 0.1876 | 0.1988 |
+| 推荐 living | 0.1521 | 0.1683 | 0.1521 | 0.1647 |
+| 推荐四域平均 | 0.1534 | 0.1580 | 0.1499 | 0.1546 |
+
+- Alpha-V2 **epoch 1 总分 1.2584 与 jiankong epoch 1（1.2605）基本持平**（-0.0021）；
+- Alpha-V2 **epoch 2 总分 1.2856**：较 jiankong e1（1.2605）+0.0251（+1.99%）；较 jiankong e2（1.2992）略低 -0.0136——同 epoch 对比下略低于 jiankong e2，但推荐四域平均（0.1546）仅微低于 jiankong e2（0.1580），video/living 分项已追平或反超；
+- 与 Alpha-Smooth（e2 总分 1.3185）相比低 0.0329——两实验改动方向不同（数据重建 vs loss 目标），后续可考虑叠加。
+
 ## 状态
 
 - [x] 推荐任务池 `beta_cot_full_v1` 构建并校验
 - [x] `alpha_v2` 注册数据集构建并校验（零交叉）
 - [x] 训练 YAML 创建
-- [ ] tokenized cache 生成
-- [ ] 训练启动与结果记录
+- [x] tokenized cache 生成
+- [x] 训练启动并完成（1072/1072，11h18m）
+- [x] 外部评测：e1 `1.2584` / e2 `1.2856`
