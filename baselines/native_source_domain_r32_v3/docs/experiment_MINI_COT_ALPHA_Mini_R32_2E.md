@@ -1,4 +1,6 @@
-# mini-cot：Alpha-mini CoT repeat-normalized weighting
+# mini-cot：Alpha-mini CoT repeat-normalized weighting（已放弃）
+
+> **状态：已放弃该 trick。** 本实验只完成了 CPU manifest/cache 验收，未启动正式训练；后续不再沿此路线推进（不进入正式 Alpha 实验、不参与得分对比）。保留本记录仅用于追溯实现与验收过程。
 
 ## 定义
 

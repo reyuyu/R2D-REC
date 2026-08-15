@@ -93,7 +93,7 @@ Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后
 | **Alpha-Mini（大基线）** | 懂用户 2,000 + 懂推荐 11,192（多正 group，CoT/NoCoT 混合）+ 懂物料 36,298 = **49,490** | **总分 `1.2861`** |
 | **Mini-V2** | 懂用户扩到 3,000；懂推荐 NoCoT 比例恢复至约 1/3（其余恢复为 CoT）；懂物料不变 = **50,490** | **总分 `1.2671`** |
 | **Mini-V3** | 懂推荐全部恢复为 CoT（NoCoT=0）；懂用户 3,000、懂物料 36,298 不变 = **50,490** | **总分 `1.2178`** |
-| Mini-CoT | Alpha-mini 基础上对 recommendation CoT think span 加 `0.5/N` 重复归一化权重 | CPU 验收通过（未启动正式训练） |
+| Mini-CoT | ~~Alpha-mini 基础上对 recommendation CoT think span 加 `0.5/N` 重复归一化权重~~（**已放弃该 trick**） | CPU 验收通过（未启动正式训练） |
 
 ### Mini 系列得分一览（外部评测器，总分与分项）
 
@@ -114,7 +114,7 @@ Mini 记录：
 - [Alpha-Mini 大基线（R32 两 epoch）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)
 - [Mini-V2（NoCoT 1/3 + 用户 3,000）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V2.md)
 - [Mini-V3（推荐全 CoT）](./baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_V3.md)
-- [Mini-CoT（think span 0.5/N）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_COT_ALPHA_Mini_R32_2E.md)
+- [Mini-CoT（think span 0.5/N，**已放弃**）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_COT_ALPHA_Mini_R32_2E.md)
 
 ## 数据版本
 
