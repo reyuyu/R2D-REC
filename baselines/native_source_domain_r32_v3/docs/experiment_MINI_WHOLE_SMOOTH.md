@@ -1,6 +1,6 @@
 # 实验 Mini-Whole-Smooth：全程（两个 Epoch）标签平滑
 
-状态：**已完成**。2 epoch 训练于 2026-08-15 17:06 启动（RUN_ID `MINI-WHOLE-SMOOTH-R32-2E-GC04-4GPU-20260815-170650`），18:41 完成，共 140 步，耗时 1h35m；外部评测待补充。
+状态：**已完成**。2 epoch 训练于 2026-08-15 17:06 启动（RUN_ID `MINI-WHOLE-SMOOTH-R32-2E-GC04-4GPU-20260815-170650`），18:41 完成，共 140 步，耗时 1h35m；epoch 2 外部评测：**总分 1.2859，推荐分项 0.6478**。
 
 母版为 **Mini-Smooth**（见 `experiment_MINI_SMOOTH.md`），即 Mini 大基线（alpha_mini_v1，49,490 行）+ 推荐路由标签平滑 ε=0.05。**唯一差异**：`alpha_smooth_start_epoch: 0.0`（从 epoch 0 起平滑，两个 epoch 全程生效），替换 Mini-Smooth 的 `1.0`。
 
@@ -45,7 +45,30 @@
 | vh_rec_tf_a_hit32 | 0.5542 | 0.5515 | **0.5583** |
 | vk_rec_tf_chain_32_8_8 | 0.1260 | 0.1247 | **0.1301** |
 
-全程平滑（start_epoch 0.0）的 epoch 2 验证指标与"第二轮才开启"（start_epoch 1.0）基本持平（va 略优、vb/vc 略差、hit32 与 chain 略优），外部总分待补——两实验的最终对比以外部评测为准。
+全程平滑（start_epoch 0.0）的 epoch 2 验证指标与"第二轮才开启"（start_epoch 1.0）基本持平（va 略优、vb/vc 略差、hit32 与 chain 略优）。
+
+## 外部评测（epoch 2，固定评测器）
+
+```text
+aggregate = 1.2859
+material  = 0.0627, 0.0371, 0.0519, 0.0429
+user      = 0.1388, 0.0723
+recommendation = 0.1251, 0.1530, 0.1960, 0.1737
+world/last = 0.2323
+```
+
+### 与 smooth 变体对比
+
+| 实验 | 总分 | 推荐分项 | 平滑 schedule |
+| --- | ---: | ---: | ---: |
+| alpha_mini（基线，无 smooth） | 1.2861 | **0.6537** | — |
+| **Mini-Whole-Smooth** | **1.2859** | 0.6478 | 全程（start 0.0） |
+| mini_smooth | 1.2681 | 0.6353 | 第二 epoch（start 1.0） |
+
+**结论**：
+- **全程平滑（1.2859）明显优于"第二 epoch 才开启"（1.2681，+0.0178，推荐 +0.0125）**——平滑启动越早、切换越少，对推荐任务的副作用越小；
+- 但仍**略低于无平滑基线**（alpha_mini 1.2861，推荐 0.6537 → 0.6478，-0.0059）——mini 尺度（140 步）下 smooth 无论如何开启都有轻微净损失，与"mini_smooth -0.018 / BETA+SMOOTH（全量干净数据）-0.0135"共同确认：**smooth 在 mini 尺度与干净数据上均为负收益**；
+- start-epoch 消融结论：**全程平滑 > 第二 epoch 平滑**（更优的 schedule），但两者都不值得在 mini/干净数据上使用。
 
 ## 复现方法
 
