@@ -84,29 +84,38 @@ def q_reward(sid, gold_set):
 # ---------------- Think hierarchical credits ----------------
 
 def think_credits(beam_sids, gold_set):
-    """Hierarchical credits for a Beam32 output (per-gold coverage).
+    """Hierarchical credits for a Beam32 output with GLOBAL prefix dedup.
+
+    A prefix already covered by a higher credit level must not be credited again:
+      ABHits = matched_AB_prefixes - exact_covered_AB_prefixes
+      AHits  = matched_A_prefixes  - exact_or_AB_covered_A_prefixes
+    Example: golds {(A1,B1,C1),(A1,B1,C2)}, beam exact-hit (A1,B1,C1):
+      exact credits [8] only; (A1,B1,C2) must NOT add AB=2.
+    Reward values unchanged (8/2/0.5, geometric decay in think_reward).
     Returns (credits_sorted_desc, exact_count, ab_count, a_count)."""
+    beam = [s for s in beam_sids if s is not None]
+    beam_set = set(beam)
     golds = list(gold_set)
-    exact_golds = set()
-    ab_golds = set()
-    a_golds = set()
+
+    exact_golds = {g for g in golds if g in beam_set}
+    matched_ab = set()
+    matched_a = set()
     for g in golds:
-        gd, ga, gb, gc = g
-        exact = any(s == g for s in beam_sids)
-        ab = any(s is not None and s[0] == gd and s[1] == ga and s[2] == gb for s in beam_sids)
-        a_ok = any(s is not None and s[0] == gd and s[1] == ga for s in beam_sids)
-        if exact:
-            exact_golds.add(g)
-        elif ab:
-            ab_golds.add(g)
-        elif a_ok:
-            a_golds.add(g)
-    # count by distinct prefixes (dedupe)
-    ab_prefixes = {(g[0], g[1], g[2]) for g in ab_golds}
-    a_prefixes = {(g[0], g[1]) for g in a_golds}
+        gd, ga, gb, _gc = g
+        if any(s[0] == gd and s[1] == ga and s[2] == gb for s in beam):
+            matched_ab.add((gd, ga, gb))
+        if any(s[0] == gd and s[1] == ga for s in beam):
+            matched_a.add((gd, ga))
+
+    exact_ab = {(g[0], g[1], g[2]) for g in exact_golds}
+    ABHits = matched_ab - exact_ab
+    exact_a = {(g[0], g[1]) for g in exact_golds}
+    ab_a = {p[:2] for p in ABHits}
+    AHits = matched_a - exact_a - ab_a
+
     n_exact = len(exact_golds)
-    n_ab = len(ab_prefixes)
-    n_a = len(a_prefixes)
+    n_ab = len(ABHits)
+    n_a = len(AHits)
     credits = [8.0] * n_exact + [2.0] * n_ab + [0.5] * n_a
     credits.sort(reverse=True)
     return credits, n_exact, n_ab, n_a

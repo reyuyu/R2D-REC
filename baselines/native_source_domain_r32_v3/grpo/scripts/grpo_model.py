@@ -26,10 +26,21 @@ def load_model(device="cuda:0", dtype=torch.bfloat16):
     return model, tokenizer, template
 
 
+def render_prompt(tokenizer, prompt: str) -> str:
+    """SHARED prompt renderer: SFT/LLaMA-Factory qwen3_nothink template text.
+
+    Renders the user message exactly as LLaMA-Factory's qwen3_nothink template
+    does during SFT (format_user; no system), including the trailing
+    '<|im_start|>assistant\n' generation head. TRL rollout and Beam32 must use
+    this renderer so all three paths (SFT / TRL / Beam) see identical ids."""
+    tpl = TEMPLATES[TEMPLATE_NAME]
+    slots = tpl.format_user.apply(content=prompt)
+    return "".join(str(s) for s in slots)
+
+
 def encode_prompt(tokenizer, prompt: str):
-    """qwen3_nothink single-user format."""
-    text = f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
-    return tokenizer.encode(text, add_special_tokens=False)
+    """qwen3_nothink single-user format (SFT-identical via render_prompt)."""
+    return tokenizer.encode(render_prompt(tokenizer, prompt), add_special_tokens=False)
 
 
 @torch.inference_mode()

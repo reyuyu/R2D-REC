@@ -73,17 +73,17 @@ fake_beam = lambda prompts, completions, completion_ids, gold_sets: [
 ]
 think_rf = make_think_reward_func(beam32_fn=fake_beam)
 golds = [["<|video_begin|><s_a_1><s_b_2><s_c_3>", "<|video_begin|><s_a_4><s_b_5><s_c_6>"]]
-out = think_rf(prompts=["p"], completions=["c"], completion_ids=[[1, 2, 3]], all_gold_sids=golds)
+out = think_rf(prompts=["p"], completions=["c"], completion_ids=[[1, 2, 3]], all_gold_sids=golds, route=["think"])
 check("Think reward calls hierarchical reward", out == [12.0], str(out))
 
 # 13) NoThink reward uses existing q_reward
 no_rf = make_nothink_reward_func()
 golds = [["<|video_begin|><s_a_1><s_b_2><s_c_3>"]]
 comps = ["该用户: <|video_begin|><s_a_1><s_b_2><s_c_3>"]
-out = no_rf(prompts=["p"], completions=comps, all_gold_sids=golds)
+out = no_rf(prompts=["p"], completions=comps, all_gold_sids=golds, route=["no_think"])
 check("NoThink reward calls q_reward", out == [8.0], str(out))
 mal = ["乱码无sid"]
-out_m = no_rf(prompts=["p"], completions=mal, all_gold_sids=golds)
+out_m = no_rf(prompts=["p"], completions=mal, all_gold_sids=golds, route=["no_think"])
 check("malformed NoThink -> -1", out_m == [-1.0], str(out_m))
 
 # 14) Think Beam metadata not in completion mask: beam runs inside reward only;

@@ -10,6 +10,7 @@ import collections
 import json
 import torch
 from datasets import Dataset
+from torch.utils.data import Sampler
 
 from trl import GRPOConfig, GRPOTrainer
 
@@ -20,6 +21,10 @@ M_NO = 8
 ROUTE_G = {"think": M_THINK, "no_think": M_NO}
 ROUTE_TEMP = {"think": 0.9, "no_think": 1.0}
 ROUTE_TOP_P = {"think": 0.95, "no_think": 1.0}
+# Route loss multipliers: NoThink runs ~2x generation batches per epoch
+# (2 groups per global batch vs 4 for Think), so per-sample weight 0.5 makes
+# single-group total weight equal: 4 samples x 1.0 == 8 samples x 0.5 == 4.
+ROUTE_LOSS_W = {"think": 1.0, "no_think": 0.5}
 
 
 # ---------------- route dataset ----------------
@@ -62,6 +67,67 @@ def build_route_dataset(data_path, n_groups=20, seed=20260816, chunk=8):
     return Dataset.from_list(ordered)
 
 
+# ---------------- route-aware sampler (true dynamic G) ----------------
+
+class RouteAwareRepeatSampler(Sampler):
+    """Route-aware RepeatSampler: real dynamic G without mutating
+    num_generations after init (TRL's RepeatSampler fixes mini_repeat_count at
+    construction time, so the old G=4-init hack mixed 2 prompts into G=8 groups).
+
+    Global generation batch is ALWAYS 16:
+      Think  : 4 unique prompts x 4 repeats  -> A A A A B B B B C C C C D D D D
+      NoThink: 2 unique prompts x 8 repeats  -> A A A A A A A A B B B B B B B B
+
+    The dataset must be route-homogeneous in index order (build_route_dataset
+    guarantees this); chunk boundaries are computed from each index's route.
+    repeat_count (= num_iterations * steps_per_generation) replays each chunk
+    back-to-back so TRL reuses one rollout across policy iterations."""
+
+    def __init__(self, data_source, generation_batch_size=16, repeat_count=1,
+                 shuffle=False, seed=None):
+        assert not shuffle, (
+            "RouteAwareRepeatSampler requires shuffle=False to keep "
+            "route-homogeneous order")
+        self.data_source = data_source
+        self.gen_batch = generation_batch_size
+        self.repeat_count = repeat_count
+        self._chunks = self._build_chunks()
+
+    def _chunk_unique(self, route):
+        # unique prompts per chunk: gen_batch / G  (Think 16//4=4, NoThink 16//8=2)
+        return self.gen_batch // ROUTE_G[route]
+
+    def _build_chunks(self):
+        # Walk route-homogeneous runs; within each run cut chunks of
+        # gen_batch/G unique indices (tail shorter than a chunk is dropped,
+        # matching TRL RepeatSampler drop_last semantics).
+        n = len(self.data_source)
+        chunks = []
+        i = 0
+        while i < n:
+            route = self.data_source[i]["route"]
+            j = i
+            while j < n and self.data_source[j]["route"] == route:
+                j += 1
+            seg = list(range(i, j))
+            unique = self._chunk_unique(route)
+            for k in range(0, len(seg) - unique + 1, unique):
+                chunks.append((route, seg[k:k + unique]))
+            i = j
+        return chunks
+
+    def __iter__(self):
+        for route, indices in self._chunks:
+            for _ in range(self.repeat_count):
+                for idx in indices:
+                    for _ in range(ROUTE_G[route]):
+                        yield idx
+
+    def __len__(self):
+        return sum(len(indices) * ROUTE_G[route] * self.repeat_count
+                   for route, indices in self._chunks)
+
+
 # ---------------- population advantage helper (pure, testable) ----------------
 
 def group_advantages_population(rewards, G, eps=1e-4):
@@ -81,12 +147,20 @@ def group_advantages_population(rewards, G, eps=1e-4):
 # ---------------- reward funcs ----------------
 
 def make_nothink_reward_func():
-    """Standard TRL reward_func for NoThink (uses all_gold_sids from dataset kwargs)."""
+    """NoThink reward_func: computes q() ONLY for no_think samples; returns
+    None for think samples (TRL converts None -> NaN, excluded by nansum).
+    Route comes from the dataset column passed through TRL reward kwargs."""
     def reward_func(prompts, completions, **kwargs):
-        # kwargs contains dataset columns incl. all_gold_sids (already expanded per generation)
         golds_list = kwargs["all_gold_sids"]
+        routes = kwargs.get("route")
+        if routes is None:
+            raise RuntimeError("nothink_reward requires dataset column 'route' "
+                               "(route-specific reward routing)")
         out = []
-        for completion, golds in zip(completions, golds_list):
+        for completion, golds, route in zip(completions, golds_list, routes):
+            if route != "no_think":
+                out.append(None)  # Think sample: not this reward's route
+                continue
             gold_set = set()
             for s in golds:
                 t = parse_sid(s)
@@ -107,6 +181,14 @@ def make_think_reward_func(beam32_fn=None):
     so beam32_fn must re-decode from ids)."""
     def reward_func(prompts, completions, completion_ids, **kwargs):
         golds_list = kwargs["all_gold_sids"]
+        routes = kwargs.get("route")
+        if routes is None:
+            raise RuntimeError("think_reward requires dataset column 'route' "
+                               "(route-specific reward routing)")
+        think_idx = [i for i, r in enumerate(routes) if r == "think"]
+        if not think_idx:
+            # NoThink batch: beam32 MUST NOT run -> strict call count 0
+            return [None] * len(prompts)
         gold_sets = []
         for golds in golds_list:
             gs = set()
@@ -117,7 +199,15 @@ def make_think_reward_func(beam32_fn=None):
             gold_sets.append(gs)
         if beam32_fn is None:
             raise RuntimeError("think reward requires beam32_fn (GPU smoke wiring)")
-        return beam32_fn(prompts, completions, completion_ids, gold_sets)
+        sub_prompts = [prompts[i] for i in think_idx]
+        sub_completions = [completions[i] for i in think_idx]
+        sub_ids = [completion_ids[i] for i in think_idx]
+        sub_golds = [gold_sets[i] for i in think_idx]
+        sub_rewards = beam32_fn(sub_prompts, sub_completions, sub_ids, sub_golds)
+        out = [None] * len(prompts)
+        for pos, r in zip(think_idx, sub_rewards):
+            out[pos] = r
+        return out
     reward_func.__name__ = "think_reward"
     return reward_func
 
@@ -158,10 +248,11 @@ class RecGRPOTrainer(GRPOTrainer):
 
         device = self.accelerator.device
         kwargs = {}
-        prompts_text = [
-            maybe_apply_chat_template({"prompt": prompt}, self.processing_class)["prompt"]
-            for prompt in prompts
-        ]
+        from grpo_model import render_prompt
+        # TRL's maybe_apply_chat_template passes non-conversational (str) prompts
+        # through UNCHANGED -> rollout would see bare prompt text without the SFT
+        # chat template. Use the shared SFT-identical renderer instead.
+        prompts_text = [render_prompt(self.processing_class, prompt) for prompt in prompts]
         forward_kwargs = {}
         generate_inputs = self.processing_class(
             text=prompts_text, return_tensors="pt", padding=True,
@@ -233,6 +324,19 @@ class RecGRPOTrainer(GRPOTrainer):
         prompt_ids = [p[m].tolist() for p, m in zip(prompt_ids, prompt_mask.bool())]
         logprobs = None
         return prompt_ids, completion_ids, logprobs, forward_kwargs
+
+    def _get_train_sampler(self, dataset=None):
+        # True dynamic G: RouteAwareRepeatSampler expands Think 4x4 / NoThink
+        # 2x8 chunks; TRL's fixed mini_repeat_count is no longer relied upon.
+        if dataset is None:
+            dataset = self.train_dataset
+        return RouteAwareRepeatSampler(
+            data_source=dataset,
+            generation_batch_size=self.args.generation_batch_size,
+            repeat_count=self.num_iterations * self.args.steps_per_generation,
+            shuffle=self.shuffle_dataset,
+            seed=self.args.seed,
+        )
 
     def _prepare_inputs(self, generation_batch):
         # route-homogeneous batch: take route from first example
@@ -356,6 +460,16 @@ class RecGRPOTrainer(GRPOTrainer):
             f"local prompts {n_prompts_local} != gen_batch/world {gen_batch // world}")
         assert all(example.get("route", inputs[0].get("route")) == inputs[0]["route"]
                    for example in inputs), "mixed route inside generation batch"
+        # ---- HARD group_id assert: every rewards.view(-1, G) group must be the
+        # G samples of ONE prompt (same recommendation_group_id). TRL gather
+        # keeps rank order, same as gather_object below. ----
+        group_ids_all = gather_object([x["recommendation_group_id"] for x in inputs])
+        assert len(group_ids_all) == n_all, (
+            f"gathered group_ids {len(group_ids_all)} != rewards {n_all}")
+        for gi in range(0, n_all, self.num_generations):
+            seg = group_ids_all[gi:gi + self.num_generations]
+            assert len(set(seg)) == 1, (
+                f"view(-1,G) group {gi // self.num_generations} mixes group_ids {seg}")
         # group-relative normalization must not cross prompts: TRL gather keeps
         # rank order, so view(-1, G) groups the G completions of each prompt.
 
@@ -403,6 +517,7 @@ class RecGRPOTrainer(GRPOTrainer):
             "completion_mask": completion_mask,
             "advantages": advantages,
             "num_items_in_batch": num_items_in_batch,
+            "route": inputs[0]["route"],  # loss multiplier routing
         }
         if old_per_token_logps is not None:
             output["old_per_token_logps"] = old_per_token_logps
@@ -462,7 +577,13 @@ class RecGRPOTrainer(GRPOTrainer):
         per_token_loss = -torch.min(per_token_loss1, per_token_loss2)
 
         if self.loss_type == "grpo":
-            loss = ((per_token_loss * completion_mask).sum(-1) / completion_mask.sum(-1).clamp(min=1.0)).mean()
+            per_sample_loss = (per_token_loss * completion_mask).sum(-1) / completion_mask.sum(-1).clamp(min=1.0)
+            # route-equal weighting: NoThink has 2x batches per epoch (2 groups
+            # per 16-sample batch vs 4), so per-sample multiplier 0.5 makes
+            # single-group total weight equal (4 == 8*0.5) and epoch totals equal.
+            route = inputs.get("route", "think")
+            multiplier = ROUTE_LOSS_W[route]
+            loss = (per_sample_loss * multiplier).mean()
             loss = loss / self.current_gradient_accumulation_steps
         elif self.loss_type == "bnpo":
             loss = (per_token_loss * completion_mask).sum() / completion_mask.sum().clamp(min=1.0)

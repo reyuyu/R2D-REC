@@ -70,6 +70,17 @@ grpo/
 - 合计 ≈ 97×(174.3+155) + 97×45 ≈ 36,300s ≈ **10.1h**（+ policy 更新 ≈ 10.5-11h）
 - 最大单头为 Beam32（≈ 4.2h）。
 
+## Correctness Round（2026-08-17，详见 docs/correctness_report_20260817.md）
+- route-specific reward：reward_func 按 dataset `route` 列路由（Think 只算 think_reward，
+  NoThink 只算 nothink_reward，另一路返回 None）；NoThink 严格不触发 Beam32（call count 0）。
+- RouteAwareRepeatSampler：真正的 dynamic G —— Think 4 unique x 4 repeats、
+  NoThink 2 unique x 8 repeats（global batch 恒 16）；rollout 内硬断言
+  rewards.view(-1,G) 每组 recommendation_group_id 全同。
+- loss multiplier：Think 1.0 / NoThink 0.5（单组总权重 4 == 4；epoch 6196 == 6196）。
+- think_credits 全局 prefix 去重：Exact 已覆盖的 AB/A 前缀不再重复领取。
+- shared renderer（grpo_model.render_prompt）：SFT/TRL/Beam32 prompt token parity ALL EQUAL。
+- 测试：4 套件全 PASS + 单卡 GPU rollout-only 验证通过（无训练）。
+
 ## 待决策
 1. NoThink 组结构冲突：TRL 固定 16 样本 batch + 动态 G（T4/N8）下，rollout 1:1 /
    正确 8 样本组归一化 / 组等权三者只能满足其二。
