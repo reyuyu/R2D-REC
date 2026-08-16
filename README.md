@@ -100,8 +100,8 @@ Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后
 | **Mini-Smooth** | 在 Mini 基线上开启推荐最终 A/B/C 标签平滑 ε=0.05，**第二 epoch 起生效**（`alpha_smooth_start_epoch: 1.0`），缓解第二轮过拟合 | **已完成，总分 `1.2681`** |
 | **Mini-Whole-Smooth** | 与 Mini-Smooth 同源，但平滑**全程生效**（`alpha_smooth_start_epoch: 0.0`），两个 epoch 都平滑，回答"平滑应该从哪个 epoch 开始" | 已完成（外部评分待补充） |
 | **Mini-Fix** | alpha_mini 基础上：推荐短 think 行从 NoCoT **归还 cot**（恢复短思考教学）+ NoCoT 纯度提升至 100%（占比 44.3% 不变） | **总分 `1.3093`，推荐分项 `0.6644`（历史最高）** |
-| **Mini-Fix-U3K** | 保留 Mini-Fix 推荐样本与训练预算；懂用户扩至 3,000 条；移除 1,000 条物料反向补充冗余行以守恒总行数 | **训练中** |
-| **Mini-Fix-E3** | Mini-Fix 数据与训练合同完全不变，仅从 2 epoch 延长至 3 epoch；保留每轮 checkpoint | **已配置，等待 U3K 成功结束后自动启动** |
+| **Mini-Fix-U3K** | 保留 Mini-Fix 推荐样本与训练预算；懂用户扩至 3,000 条；移除 1,000 条物料反向补充冗余行以守恒总行数 | **已完成，总分 `1.2846`（负结果：用户扩展未带来提升）** |
+| **Mini-Fix-E3** | Mini-Fix 数据与训练合同完全不变，仅从 2 epoch 延长至 3 epoch；保留每轮 checkpoint | **已完成，总分 `1.2495`（负结果：第三轮过拟合恶化）** |
 
 ### Mini 系列得分一览（外部评测器，总分与分项）
 
@@ -114,8 +114,8 @@ Mini 系列以 **`alpha_mini`（49,490 行组合任务池）为大基线**，后
 | **Mini-V3** | **`1.2178`** | `0.0619, 0.0345, 0.0512, 0.0432` | `0.1513, 0.0772` | `0.0980, 0.1292, 0.1722, 0.1611` | `0.2379` |
 | **Mini-Smooth** | **`1.2681`** | `0.0624, 0.0378, 0.0516, 0.0420` | `0.1359, 0.0717` | `0.1157, 0.1598, 0.1834, 0.1764` | `0.2312` |
 | **Mini-Fix** | **`1.3093`** | `0.0631, 0.0363, 0.0517, 0.0426` | `0.1479, 0.0720` | `0.1297, 0.1598, 0.2030, 0.1719` | `0.2312` |
-| **Mini-Fix-U3K** | 训练中 | — | — | — | — |
-| **Mini-Fix-E3** | 排队中 | — | — | — | — |
+| **Mini-Fix-U3K** | **`1.2846`** | `0.0620, 0.0359, 0.0529, 0.0418` | `0.1410, 0.0731` | `0.1400, 0.1564, 0.1918, 0.1674` | `0.2223` |
+| **Mini-Fix-E3** | **`1.2495`** | `0.0617, 0.0367, 0.0520, 0.0428` | `0.1315, 0.0808` | `0.1120, 0.1224, 0.2030, 0.1746` | `0.2320` |
 
 观察：NoCoT 比例从基线（约 42%）降到 1/3（Mini-V2）再降到 0（Mini-V3），推荐分项逐步下降（0.6537 → 0.6325 → 0.5605），世界分项小幅上升（0.2301 → 0.2305 → 0.2379）——说明全 CoT 化对推荐任务本身未必有利，推荐分项随 NoCoT 减少而单调下降。Mini-Smooth（Mini 基线 + 第二 epoch 推荐 A/B/C 标签平滑）总分 1.2681、推荐分项 0.6353，介于 Mini-V2 与基线之间——平滑正则对 Mini 基线有一定正则代价，其与 Mini-Whole-Smooth 的 start-epoch 消融结论以外部评分为准。**Mini-Fix（NoCoT 高纯度 100% + cot 恢复短思考教学）总分 1.3093、推荐分项 0.6644，为全系列最高（超过 BETA 0.6594）**——验证了"推荐分受 NoCoT 纯度与短序列思考监督影响"的机制假说；其总分仍低于 BETA（1.3313），差异来自用户分项（mini 用户占比仅 4% vs BETA 14.8%）。
 
@@ -130,6 +130,8 @@ Mini 记录：
 - [Mini-Smooth（第二 epoch 标签平滑，总分 `1.2681`）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_SMOOTH.md)
 - [Mini-Whole-Smooth（全程标签平滑，已完成）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_WHOLE_SMOOTH.md)
 - [Mini-Fix（NoCoT 高纯度 + cot 短思考教学，总分 `1.3093` / 推荐 `0.6644`）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_FIX.md)
+- [Mini-Fix-U3K（用户扩到 3,000，总分 `1.2846`，负结果）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_FIX_U3K.md)
+- [Mini-Fix-E3（3 epoch，总分 `1.2495`，第三轮过拟合）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_FIX_E3.md)
 - [Mini-Fix-U3K（保留推荐优势、懂用户 3,000 条，已配置待训练）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_FIX_U3K.md)
 - [Mini-Fix-E3（Mini-Fix 仅延长至 3 epoch，U3K 成功后自动启动）](./baselines/native_source_domain_r32_v3/docs/experiment_MINI_FIX_E3.md)
 

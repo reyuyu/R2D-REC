@@ -38,3 +38,26 @@ Mini-Fix 的已知锚点为总分 `1.3093`、推荐 `0.6644`。E3 应分别评�
 - 守护：`scripts/wait_for_mini_fix_u3k_then_launch_mini_fix_e3.sh`
 - 上游数据：`/data/lf_data_versions/alltrain/mini_fix/`
 - E3 输出：`/data/outputs/baselines/native_source_domain_r32_v3/MINI-FIX-E3-R32-3E-GC04-4GPU-<timestamp>/`
+
+## 外部评测结果（epoch 3，2026-08-16 完成）
+
+```text
+aggregate = 1.2495
+material  = 0.0617, 0.0367, 0.0520, 0.0428
+user      = 0.1315, 0.0808
+recommendation = 0.1120, 0.1224, 0.2030, 0.1746
+world/last = 0.2320
+```
+
+### 判定（对照预注册门槛）
+
+| 指标 | Mini-Fix (2ep) | E3 epoch 3 | 判定 |
+| --- | ---: | ---: | ---: |
+| 总分 | 1.3093 | **1.2495** | ❌ -0.0598 |
+| 推荐分项 | 0.6644 | **0.6120** | ❌ -0.0524 |
+| 推荐 prod | 0.1598 | **0.1224** | ❌ 崩 -0.0374 |
+| 世界 | 0.2312 | 0.2320 | ≈ |
+
+### 结论
+
+**第三轮严重过拟合恶化，E3 作为负结果记录，不覆盖 Mini-Fix 的 2 epoch 结论。** 推荐分项 -0.0524（prod 崩 -0.0374、video -0.0177），总分 -0.0598。mini 尺度（49,490 行，2 epoch = 140 步）第三轮（210 步）重复拟合已记忆的训练内容，直接破坏推荐决策信号——与"懂推荐第二轮阶梯式过拟合"的监控发现一致且第三轮更严重。**mini 最优训练量为 2 epoch；3 epoch 明确负优化。**
