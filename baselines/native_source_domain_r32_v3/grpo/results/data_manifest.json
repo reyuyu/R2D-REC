@@ -1,0 +1,26 @@
+{
+  "kind": "grpo_train_dataset",
+  "name": "rec_mp_grpo_v2",
+  "experiment": "REC-MP-GRPO-v1",
+  "note": "v2: prompts rewritten with target-domain-specific instructions (video/prod/ad/living), 3 template variants per domain, stably assigned per group; history SID lines and /think|/no_think markers unchanged",
+  "source": {
+    "version": "rec_mp_grpo_v1",
+    "path": "/data/GRPO/data/rec_mp_grpo_v1/train.jsonl"
+  },
+  "grpo_train_records": 3098,
+  "route_split": {
+    "no_think": 1549,
+    "think": 1549
+  },
+  "target_domain_records": {
+    "video": 1100,
+    "ad": 854,
+    "prod": 764,
+    "living": 380
+  },
+  "gold_count": {
+    "mean": 7.114,
+    "p50": 3
+  },
+  "issues": 0
+}
