@@ -16,12 +16,16 @@ import trl_import_fix
 from grpo_trl_trainer import (
     build_route_dataset, RouteAwareRepeatSampler,
     make_nothink_reward_func, make_think_reward_func,
-    ROUTE_G, ROUTE_LOSS_W, M_THINK, M_NO,
+    ROUTE_G, ROUTE_LOSS_W, M_THINK, M_NO, ROUTE_ID,
 )
-from grpo_sid import think_credits, think_reward
+from grpo_sid import think_credits, think_reward, final_sid, parse_sid, q_reward
 
 DATA = "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl"
 failures = []
+
+from transformers import AutoTokenizer
+TOK = AutoTokenizer.from_pretrained(
+    "/data/models/onereason-8b-pretrain-competition", trust_remote_code=True)
 
 def check(name, cond, detail=""):
     ok = bool(cond)
@@ -36,20 +40,22 @@ def counting_beam(prompts, completions, completion_ids, gold_sets):
     return [think_reward([("video", 1, 2, 3)], gs)[0] for gs in gold_sets]
 
 think_rf = make_think_reward_func(beam32_fn=counting_beam)
-no_rf = make_nothink_reward_func()
+no_rf = make_nothink_reward_func(tokenizer=TOK)
 golds = [["<|video_begin|><s_a_1><s_b_2><s_c_3>"]] * 4
+cid = TOK.encode("<|im_start|>assistant\n<|living_begin|><s_a_1><s_b_2><s_c_3><|im_end|>",
+                 add_special_tokens=False)
 
 r_think = think_rf(prompts=["p"] * 4, completions=["c"] * 4,
-                   completion_ids=[[1, 2]] * 4, all_gold_sids=golds, route=["think"] * 4)
+                   completion_ids=[cid] * 4, all_gold_sids=golds, route=["think"] * 4)
 r_no_on_think = no_rf(prompts=["p"] * 4, completions=["c"] * 4,
-                      all_gold_sids=golds, route=["think"] * 4)
+                      completion_ids=[cid] * 4, all_gold_sids=golds, route=["think"] * 4)
 check("Think batch: think_reward numeric", all(isinstance(x, float) for x in r_think))
 check("Think batch: nothink_reward all None", r_no_on_think == [None] * 4)
 check("Think batch: beam called once (think subset)", beam_calls["n"] == 1)
 
 beam_calls["n"] = 0
 r_no = no_rf(prompts=["p"] * 4, completions=["c"] * 4,
-             all_gold_sids=golds, route=["no_think"] * 4)
+             completion_ids=[cid] * 4, all_gold_sids=golds, route=["no_think"] * 4)
 r_think_on_no = think_rf(prompts=["p"] * 4, completions=["c"] * 4,
                          completion_ids=[[1, 2]] * 4, all_gold_sids=golds,
                          route=["no_think"] * 4)
@@ -65,7 +71,8 @@ check("Mixed batch: routing per sample", r_mix[0] is None and isinstance(r_mix[1
       and r_mix[2] is None and isinstance(r_mix[3], float))
 
 try:
-    no_rf(prompts=["p"], completions=["c"], all_gold_sids=golds)
+    no_rf(prompts=["p"], completions=["c"], completion_ids=[cid],
+          all_gold_sids=golds)
     check("missing route column raises", False)
 except RuntimeError:
     check("missing route column raises", True)
@@ -164,12 +171,42 @@ check("reward [8,2] -> 9.0 geometric decay (unchanged)", abs(r - 9.0) < 1e-9, st
 r, _, _, _ = think_reward([("video", 4, 9, 9)], g_pure_a)
 check("reward 0.5 (unchanged)", abs(r - 0.5) < 1e-9)
 
-# ============ 5. shared renderer parity ============
+# ============ 5. NoThink raw SID parse (skip_special_tokens diff) ============
+sid_text = "好的<|im_end|>\n<|living_begin|><s_a_4843><s_b_6234><s_c_5555>"
+sid_ids = TOK.encode(sid_text, add_special_tokens=False)
+raw_dec = TOK.decode(sid_ids, skip_special_tokens=False)
+strip_dec = TOK.decode(sid_ids, skip_special_tokens=True)
+sid_raw = final_sid(raw_dec)
+sid_strip = final_sid(strip_dec)
+gold = {("living", 4843, 6234, 5555)}
+q_raw = q_reward(sid_raw, gold)
+q_strip = q_reward(sid_strip, gold)
+check("raw decode keeps SID (q=8)", q_raw == 8.0, f"raw={sid_raw} q={q_raw}")
+print(f"[note] skip_special_tokens=False sid={sid_raw} q={q_raw} | "
+      f"True sid={sid_strip} q={q_strip} | strip_text={strip_dec[-40:]!r}", flush=True)
+# record decode difference honestly: in THIS tokenizer SID tokens are NOT
+# special (only <|im_start|>/<|im_end|> are stripped), so both decodes parse.
+# If they ever differ, raw parse must be the source of truth (never -1 for a
+# valid SID in raw ids).
+if sid_strip != sid_raw:
+    check("strip decode loses SID (raw superior)",
+          q_strip <= q_raw and sid_strip != sid_raw, f"strip={sid_strip} q={q_strip}")
+else:
+    check("strip SID == raw SID (SID tokens not special here)",
+          sid_strip == sid_raw and q_strip == q_raw == 8.0,
+          f"strip={sid_strip} raw={sid_raw}")
+# reward_func output == manual raw parse
+golds_n = [["<|living_begin|><s_a_4843><s_b_6234><s_c_5555>"]]
+manual = q_reward(final_sid(raw_dec), gold)
+rf_out = no_rf(prompts=["p"], completions=["x"], completion_ids=[sid_ids],
+               all_gold_sids=golds_n, route=["no_think"])
+check("reward_func raw parse == manual raw parse", rf_out == [manual],
+      f"rf={rf_out} manual={manual}")
+
+# ============ 6. shared renderer parity ============
 from grpo_model import render_prompt, encode_prompt
 from llamafactory.data.template import TEMPLATES
-from transformers import AutoTokenizer
-tok = AutoTokenizer.from_pretrained(
-    "/data/models/onereason-8b-pretrain-competition", trust_remote_code=True)
+tok = TOK
 tpl = TEMPLATES["qwen3_nothink"]
 rows_all = [json.loads(l) for l in open(DATA, encoding="utf-8")]
 p = rows_all[0]["prompt"]
@@ -180,6 +217,46 @@ b_ids = tok.encode(render_prompt(tok, p), add_special_tokens=False)
 c_ids = encode_prompt(tok, p)
 check("SFT == TRL render ids", a_ids == b_ids, f"{len(a_ids)} vs {len(b_ids)}")
 check("SFT == Beam ids", a_ids == c_ids, f"{len(a_ids)} vs {len(c_ids)}")
+
+# ============ 7. route_id through shuffle/split/buffer pipeline ============
+from grpo_trl_trainer import route_multiplier
+from trl.trainer.utils import shuffle_sequence_dict, split_tensor_dict
+
+check("route_multiplier think=0 -> 1.0",
+      route_multiplier(torch.tensor([0, 0, 0, 0])) == 1.0)
+check("route_multiplier no_think=1 -> 0.5",
+      route_multiplier(torch.tensor([1, 1, 1])) == 0.5)
+try:
+    route_multiplier(torch.tensor([0, 0, 1, 0]))
+    check("mixed route_id raises", False)
+except AssertionError:
+    check("mixed route_id raises", True)
+
+out = {
+    "completion_ids": torch.arange(16).view(8, 2),
+    "completion_mask": torch.ones(8, 2, dtype=torch.long),
+    "advantages": torch.randn(8),
+    "route_id": torch.full((8,), 0, dtype=torch.long),
+}
+sh = shuffle_sequence_dict(out)
+check("shuffle keeps route_id tensor shape", sh["route_id"].shape == (8,))
+check("shuffle keeps route_id homogeneous (think)",
+      bool((sh["route_id"] == 0).all()))
+splits = split_tensor_dict(sh, 2)
+check("split keeps route_id per slice",
+      all(s["route_id"].shape == (4,) for s in splits))
+check("multiplier after split/buffer == 1.0",
+      route_multiplier(splits[0]["route_id"]) == 1.0)
+orig_rows = [tuple(r.tolist()) for r in out["completion_ids"]]
+sh_rows = [tuple(r.tolist()) for r in sh["completion_ids"]]
+check("shuffle permutes completion rows (same set)",
+      sorted(orig_rows) == sorted(sh_rows))
+out2 = {"completion_ids": torch.arange(8).view(4, 2),
+        "route_id": torch.tensor([0, 1, 0, 1])}
+sh2 = shuffle_sequence_dict(out2)
+pairs = sorted((int(r[0]), int(rid)) for r, rid in zip(sh2["completion_ids"], sh2["route_id"]))
+pairs0 = sorted((int(r[0]), int(rid)) for r, rid in zip(out2["completion_ids"], out2["route_id"]))
+check("shuffle aligns route_id with rows (pairwise)", pairs == pairs0, f"{pairs}")
 
 print()
 if failures:

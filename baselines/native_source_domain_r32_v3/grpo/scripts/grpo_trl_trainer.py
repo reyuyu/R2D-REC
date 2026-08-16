@@ -25,6 +25,7 @@ ROUTE_TOP_P = {"think": 0.95, "no_think": 1.0}
 # (2 groups per global batch vs 4 for Think), so per-sample weight 0.5 makes
 # single-group total weight equal: 4 samples x 1.0 == 8 samples x 0.5 == 4.
 ROUTE_LOSS_W = {"think": 1.0, "no_think": 0.5}
+ROUTE_ID = {"think": 0, "no_think": 1}
 
 
 # ---------------- route dataset ----------------
@@ -128,6 +129,18 @@ class RouteAwareRepeatSampler(Sampler):
                    for route, indices in self._chunks)
 
 
+
+# ---------------- route multiplier (pure, testable) ----------------
+
+def route_multiplier(route_ids):
+    # route_id tensor (think=0, no_think=1) -> loss multiplier;
+    # asserts the rollout batch is route-homogeneous.
+    assert bool((route_ids == route_ids[0]).all()), (
+        "route_id mixed inside rollout batch")
+    route = "think" if int(route_ids[0]) == ROUTE_ID["think"] else "no_think"
+    return ROUTE_LOSS_W[route]
+
+
 # ---------------- population advantage helper (pure, testable) ----------------
 
 def group_advantages_population(rewards, G, eps=1e-4):
@@ -146,27 +159,35 @@ def group_advantages_population(rewards, G, eps=1e-4):
 
 # ---------------- reward funcs ----------------
 
-def make_nothink_reward_func():
+def make_nothink_reward_func(tokenizer=None):
     """NoThink reward_func: computes q() ONLY for no_think samples; returns
     None for think samples (TRL converts None -> NaN, excluded by nansum).
-    Route comes from the dataset column passed through TRL reward kwargs."""
-    def reward_func(prompts, completions, **kwargs):
+    Route comes from the dataset column passed through TRL reward kwargs.
+    SID is parsed from RAW completion_ids (tokenizer.decode with
+    skip_special_tokens=False) - TRL's decoded completions use
+    skip_special_tokens=True which strips <|..._begin|>/<s_a_>/<s_b_>/<s_c_>
+    added tokens and would turn valid SIDs into -1."""
+    if tokenizer is None:
+        raise RuntimeError("make_nothink_reward_func requires tokenizer "
+                           "(raw completion_ids SID parse)")
+    def reward_func(prompts, completions, completion_ids, **kwargs):
         golds_list = kwargs["all_gold_sids"]
         routes = kwargs.get("route")
         if routes is None:
             raise RuntimeError("nothink_reward requires dataset column 'route' "
                                "(route-specific reward routing)")
         out = []
-        for completion, golds, route in zip(completions, golds_list, routes):
+        for cids, golds, route in zip(completion_ids, golds_list, routes):
             if route != "no_think":
                 out.append(None)  # Think sample: not this reward's route
                 continue
+            text = tokenizer.decode(cids, skip_special_tokens=False)
+            sid = final_sid(text)
             gold_set = set()
             for s in golds:
                 t = parse_sid(s)
                 if t:
                     gold_set.add(t)
-            sid = final_sid(completion)
             out.append(q_reward(sid, gold_set))
         return out
     reward_func.__name__ = "nothink_reward"
@@ -345,12 +366,19 @@ class RecGRPOTrainer(GRPOTrainer):
         else:
             route = generation_batch["route"][0] if isinstance(generation_batch["route"], (list, torch.Tensor)) else generation_batch["route"]
         self.num_generations = ROUTE_G[route]
+        # dynamic sampling params must be synced across ALL consumers:
+        # generation uses generation_config; policy logprob scoring uses
+        # self.temperature/self.top_p; TRL internals read self.args.
         self.args.temperature = ROUTE_TEMP[route]
         self.args.top_p = ROUTE_TOP_P[route]
+        self.temperature = ROUTE_TEMP[route]
+        self.top_p = ROUTE_TOP_P[route]
         # TRL RepeatSampler already repeats each prompt num_generations times
         # (mini_repeat_count), so generate must use num_return_sequences=1 (the
         # default); do NOT touch generation_config.num_return_sequences here.
         if getattr(self, "generation_config", None) is not None:
+            self.generation_config.temperature = ROUTE_TEMP[route]
+            self.generation_config.top_p = ROUTE_TOP_P[route]
             # stop CoT at </think> only for the Think route (NoThink completions
             # also contain </think> inside the empty-think wrapper -> must NOT stop)
             if route == "think":
@@ -389,6 +417,20 @@ class RecGRPOTrainer(GRPOTrainer):
         mode = "train" if self.model.training else "eval"
         prompts = [x["prompt"] for x in inputs]
         images = None
+        # ---- runtime assert: dynamic temperature/top_p actually in effect ----
+        _route = inputs[0]["route"]
+        assert abs(self.args.temperature - ROUTE_TEMP[_route]) < 1e-6, (
+            f"args.temperature {self.args.temperature} != {ROUTE_TEMP[_route]} ({_route})")
+        assert abs(self.temperature - ROUTE_TEMP[_route]) < 1e-6, (
+            f"self.temperature {self.temperature} != {ROUTE_TEMP[_route]} ({_route})")
+        assert abs(self.generation_config.temperature - ROUTE_TEMP[_route]) < 1e-6, (
+            f"generation_config.temperature {self.generation_config.temperature} != {ROUTE_TEMP[_route]}")
+        assert abs(self.args.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
+            f"args.top_p {self.args.top_p} != {ROUTE_TOP_P[_route]} ({_route})")
+        assert abs(self.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
+            f"self.top_p {self.top_p} != {ROUTE_TOP_P[_route]} ({_route})")
+        assert abs(self.generation_config.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
+            f"generation_config.top_p {self.generation_config.top_p} != {ROUTE_TOP_P[_route]}")
         (
             prompt_ids_list, completion_ids_list, num_items_in_batch,
             sampling_per_token_logps_list, forward_kwargs,
@@ -517,7 +559,11 @@ class RecGRPOTrainer(GRPOTrainer):
             "completion_mask": completion_mask,
             "advantages": advantages,
             "num_items_in_batch": num_items_in_batch,
-            "route": inputs[0]["route"],  # loss multiplier routing
+            # batch-aligned route_id tensor (think=0, no_think=1): scalar str
+            # would be corrupted by shuffle_sequence_dict (str indexed by char)
+            "route_id": torch.full(
+                (completion_ids.size(0),), ROUTE_ID[inputs[0]["route"]],
+                dtype=torch.long, device=device),
         }
         if old_per_token_logps is not None:
             output["old_per_token_logps"] = old_per_token_logps
@@ -581,8 +627,8 @@ class RecGRPOTrainer(GRPOTrainer):
             # route-equal weighting: NoThink has 2x batches per epoch (2 groups
             # per 16-sample batch vs 4), so per-sample multiplier 0.5 makes
             # single-group total weight equal (4 == 8*0.5) and epoch totals equal.
-            route = inputs.get("route", "think")
-            multiplier = ROUTE_LOSS_W[route]
+            route_ids = inputs["route_id"]
+            multiplier = route_multiplier(route_ids)
             loss = (per_sample_loss * multiplier).mean()
             loss = loss / self.current_gradient_accumulation_steps
         elif self.loss_type == "bnpo":

@@ -56,7 +56,7 @@ cfg = GRPOConfig(
 )
 trainer = RecGRPOTrainer(
     model=model, args=cfg, processing_class=tokenizer, train_dataset=ds,
-    reward_funcs=[make_nothink_reward_func(),
+    reward_funcs=[make_nothink_reward_func(tokenizer=tokenizer),
                   make_think_reward_func(beam32_fn=beam32_fn)],
 )
 trainer.model.eval()
@@ -77,15 +77,15 @@ def run_batch(tag, idxs):
     gen_batch = [dict(rows[i]) for i in idxs]
     routes = {g["route"] for g in gen_batch}
     print(f"\n=== {tag}: route={gen_batch[0]['route']} unique={len(routes)} ===", flush=True)
-    # smoke-log bookkeeping normally done by _prepare_inputs (skipped here)
-    trainer._smoke_rollout_id += 1
-    trainer._smoke_log.append(dict(
-        rollout_id=trainer._smoke_rollout_id, step=0,
-        route=gen_batch[0]["route"], num_generations=ROUTE_G[gen_batch[0]["route"]],
-        local_prompts=len(gen_batch)))
+    # FULL path: _prepare_inputs sets route temp/top_p/G, generates, buffers,
+    # splits -> returns loss-ready inputs (route_id included).
+    trainer._step = 0
+    trainer._buffered_inputs = None
     t0 = time.time()
-    out = trainer._generate_and_score_completions(gen_batch)
+    out = trainer._prepare_inputs(gen_batch)
     dt = time.time() - t0
+    assert "route_id" in out, "route_id missing from generation output"
+    assert bool((out["route_id"] == out["route_id"][0]).all()), "route_id mixed" 
     rw = {k: list(v) for k, v in trainer._logs["rewards"].items()}
     # last 16 entries per func
     tail = {k: v[-16:] for k, v in rw.items()}

@@ -81,6 +81,17 @@ grpo/
 - shared renderer（grpo_model.render_prompt）：SFT/TRL/Beam32 prompt token parity ALL EQUAL。
 - 测试：4 套件全 PASS + 单卡 GPU rollout-only 验证通过（无训练）。
 
+## Final Correctness Round（2026-08-17，详见 docs/final_correctness_20260817.md）
+- max_prompt_length：全量 3098 条统计 p50=1142 / p95=2003 / max=3036，全部 <= SFT cutoff
+  8192 -> 显式 max_prompt_length=8192（原 TRL 默认 512 会截断 100% 样本）；10240 < 131072。
+- NoThink reward 改从 raw completion_ids decode(skip_special_tokens=False) 解析 SID。
+- route 元数据改 batch-aligned route_id tensor（think=0/no_think=1），shuffle/split/buffer 安全。
+- temperature/top_p 三处同步（args/self/generation_config）+ runtime assert。
+- 4 进程真实分布式 audit：Think 4u x4 / NoThink 2u x8，view(-1,G) group_id 全同，
+  num_iterations=2 复用正确；TRL prompt ids 与 SFT parity 4/4 True。
+- 全 epoch 静态审计：1548/1548 组、387/774 rollouts、2322 steps、effective weight 6192==6192。
+- smoke runner 已更新新 route 序列（未启动训练）。
+
 ## 待决策
 1. NoThink 组结构冲突：TRL 固定 16 样本 batch + 动态 G（T4/N8）下，rollout 1:1 /
    正确 8 样本组归一化 / 组等权三者只能满足其二。

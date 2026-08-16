@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """REC-MP-GRPO-v1 TRL 4x A800 GRPO GPU smoke.
-6 generation batches (Think x3 / NoThink x3 alternating) x num_iterations=2.
+RouteAwareRepeatSampler with chunk=8 dataset (n_groups=24 -> 48 records):
+chunk sequence T(2)xN(4) per 8-record segment -> T,T,N,N,N,N,T,T,N,N,N,N,T,T,N,N,N,N.
+max_steps=12 covers the first 6 rollouts (T,T,N,N,N,N = 3 Think + 3 NoThink).
 Run: torchrun --nproc_per_node=4 run_grpo_trl_smoke.py"""
 import argparse
 import json
@@ -109,8 +111,8 @@ def main():
     pre_lora = lora_norm()
     pre_base = base_checksum()
 
-    # route dataset: segment size 8 -> with RepeatSampler chunking (4 idx/step
-    # per rank at G=4), segments give T,T,N,N,T,T = 3 Think + 3 NoThink rollouts.
+    # route dataset: segment size 8 -> RouteAwareRepeatSampler chunks
+    # T(4u x4), N(2u x8) -> segment yields T,T,N,N,N,N rollouts.
     chunk = 8
     n_groups = N_THINK_BATCHES * chunk  # 24 groups -> 24 think + 24 no_think records
     ds = build_route_dataset(DATA, n_groups=n_groups, seed=args.seed, chunk=chunk)
@@ -119,6 +121,10 @@ def main():
         chunks = [routes[i:i + chunk] for i in range(0, len(routes), chunk)]
         print(f"dataset records: {len(ds)}, chunk={chunk}, "
               f"chunk routes: {[c[0] for c in chunks]}", flush=True)
+        from grpo_trl_trainer import RouteAwareRepeatSampler
+        _sam = RouteAwareRepeatSampler(ds, generation_batch_size=16, repeat_count=2)
+        _seq = [_sam.data_source[i]["route"] for c in _sam._chunks for i in c[1][:1]]
+        print(f"expected rollout route sequence: {_seq[:18]} (x2 replay)", flush=True)
 
     from trl import GRPOConfig
     cfg = GRPOConfig(
@@ -126,6 +132,7 @@ def main():
         per_device_train_batch_size=WORLD_CHUNK,
         gradient_accumulation_steps=1,
         num_generations=M_THINK,          # initial; per-batch switched to 4/8
+        max_prompt_length=8192,           # explicit: SFT cutoff_len (no silent 512)
         max_completion_length=2048,
         num_iterations=2,
         steps_per_generation=1,
@@ -161,7 +168,7 @@ def main():
         processing_class=tokenizer,
         train_dataset=ds,
         reward_funcs=[
-            make_nothink_reward_func(),
+            make_nothink_reward_func(tokenizer=tokenizer),
             make_think_reward_func(beam32_fn=beam32_fn),
         ],
     )

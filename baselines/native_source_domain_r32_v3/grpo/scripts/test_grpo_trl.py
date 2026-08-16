@@ -9,6 +9,9 @@ import trl_import_fix
 from grpo_trl_trainer import (build_route_dataset, group_advantages_population,
                               make_nothink_reward_func, make_think_reward_func,
                               M_THINK, M_NO, ROUTE_G, ROUTE_TEMP, ROUTE_TOP_P)
+from transformers import AutoTokenizer
+_TOK = AutoTokenizer.from_pretrained(
+    "/data/models/onereason-8b-pretrain-competition", trust_remote_code=True)
 from grpo_sid import q_reward, think_reward, final_sid, parse_sid
 
 DATA = "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl"
@@ -77,13 +80,17 @@ out = think_rf(prompts=["p"], completions=["c"], completion_ids=[[1, 2, 3]], all
 check("Think reward calls hierarchical reward", out == [12.0], str(out))
 
 # 13) NoThink reward uses existing q_reward
-no_rf = make_nothink_reward_func()
+no_rf = make_nothink_reward_func(tokenizer=_TOK)
+_cid = _TOK.encode("<|im_start|>assistant\n<|video_begin|><s_a_1><s_b_2><s_c_3><|im_end|>",
+                   add_special_tokens=False)
 golds = [["<|video_begin|><s_a_1><s_b_2><s_c_3>"]]
 comps = ["该用户: <|video_begin|><s_a_1><s_b_2><s_c_3>"]
-out = no_rf(prompts=["p"], completions=comps, all_gold_sids=golds, route=["no_think"])
+out = no_rf(prompts=["p"], completions=comps, completion_ids=[_cid],
+            all_gold_sids=golds, route=["no_think"])
 check("NoThink reward calls q_reward", out == [8.0], str(out))
 mal = ["乱码无sid"]
-out_m = no_rf(prompts=["p"], completions=mal, all_gold_sids=golds, route=["no_think"])
+out_m = no_rf(prompts=["p"], completions=mal, completion_ids=[[9, 9, 9]],
+              all_gold_sids=golds, route=["no_think"])
 check("malformed NoThink -> -1", out_m == [-1.0], str(out_m))
 
 # 14) Think Beam metadata not in completion mask: beam runs inside reward only;
