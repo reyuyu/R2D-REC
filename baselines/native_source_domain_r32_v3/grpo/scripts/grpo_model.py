@@ -58,7 +58,11 @@ def generate_batch(
     device = model.device
     B = len(input_ids_list)
     max_len = max(len(x) for x in input_ids_list)
-    input_t = torch.zeros(B, max_len, dtype=torch.long, device=device)
+    # decoder-only correct LEFT padding: pad with the real pad token (151643),
+    # NOT 0 (which is the plain char '!') and NOT eos (151645); attention mask
+    # keeps padded positions out of the computation.
+    pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+    input_t = torch.full((B, max_len), pad_id, dtype=torch.long, device=device)
     attn = torch.zeros(B, max_len, dtype=torch.long, device=device)
     for i, ids in enumerate(input_ids_list):
         ids_t = torch.tensor(ids, dtype=torch.long, device=device)
@@ -71,7 +75,7 @@ def generate_batch(
         top_p=top_p,
         num_beams=num_beams,
         num_return_sequences=num_return_sequences,
-        pad_token_id=tokenizer.eos_token_id,
+        pad_token_id=pad_id,
     )
     out = model.generate(inputs=input_t, attention_mask=attn, **gen_kwargs)
     texts = []
@@ -79,5 +83,9 @@ def generate_batch(
         input_idx = i // num_return_sequences
         plen = len(input_ids_list[input_idx])
         seq = out[i, plen:].tolist()
+        # strip trailing right-pad tokens so decode never sees pad garbage;
+        # each output maps back to its OWN input context via per-row plen.
+        while seq and seq[-1] == pad_id:
+            seq.pop()
         texts.append(tokenizer.decode(seq, skip_special_tokens=False))
     return texts
