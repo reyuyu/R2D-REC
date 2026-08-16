@@ -52,22 +52,27 @@ def generate_batch(
     top_p=1.0,
     num_beams=1,
     num_return_sequences=1,
+    return_ids=False,
 ):
     """Generate from a list of input prompts (each may produce R sequences).
-    Returns flat list of texts ordered by (input_idx, sample_idx)."""
+    Returns flat list of texts ordered by (input_idx, sample_idx); with
+    return_ids=True returns (texts, ids_list) where ids are the raw generated
+    token ids (post right-pad strip)."""
     device = model.device
     B = len(input_ids_list)
     max_len = max(len(x) for x in input_ids_list)
-    # decoder-only correct LEFT padding: pad with the real pad token (151643),
-    # NOT 0 (which is the plain char '!') and NOT eos (151645); attention mask
-    # keeps padded positions out of the computation.
+    # TRUE decoder-only LEFT padding: each row's ids occupy the TRAILING part
+    # [max_len-len(ids):max_len], pad (real pad token 151643) on the left.
+    # Right-padding (ids at [0:len]) puts the pad token at the LAST position of
+    # short rows, so generation starts from a pad token -> garbage output.
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
     input_t = torch.full((B, max_len), pad_id, dtype=torch.long, device=device)
     attn = torch.zeros(B, max_len, dtype=torch.long, device=device)
     for i, ids in enumerate(input_ids_list):
+        start = max_len - len(ids)
         ids_t = torch.tensor(ids, dtype=torch.long, device=device)
-        input_t[i, :len(ids)] = ids_t
-        attn[i, :len(ids)] = 1
+        input_t[i, start:] = ids_t
+        attn[i, start:] = 1
     gen_kwargs = dict(
         max_new_tokens=max_new_tokens,
         do_sample=do_sample,
@@ -79,13 +84,14 @@ def generate_batch(
     )
     out = model.generate(inputs=input_t, attention_mask=attn, **gen_kwargs)
     texts = []
+    ids_out = []
     for i in range(out.shape[0]):
-        input_idx = i // num_return_sequences
-        plen = len(input_ids_list[input_idx])
-        seq = out[i, plen:].tolist()
-        # strip trailing right-pad tokens so decode never sees pad garbage;
-        # each output maps back to its OWN input context via per-row plen.
+        # generated tokens of EVERY row start at the unified padded width
+        # max_len (generate appends new tokens after the input width), so we
+        # must slice out[..., max_len:], NOT per-row plen.
+        seq = out[i, max_len:].tolist()
         while seq and seq[-1] == pad_id:
             seq.pop()
+        ids_out.append(seq)
         texts.append(tokenizer.decode(seq, skip_special_tokens=False))
-    return texts
+    return (texts, ids_out) if return_ids else texts
