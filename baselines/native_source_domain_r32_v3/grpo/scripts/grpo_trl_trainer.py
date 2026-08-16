@@ -431,10 +431,12 @@ class RecGRPOTrainer(GRPOTrainer):
             f"self.top_p {self.top_p} != {ROUTE_TOP_P[_route]} ({_route})")
         assert abs(self.generation_config.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
             f"generation_config.top_p {self.generation_config.top_p} != {ROUTE_TOP_P[_route]}")
+        _tgen = _t.time()
         (
             prompt_ids_list, completion_ids_list, num_items_in_batch,
             sampling_per_token_logps_list, forward_kwargs,
         ) = self._generate(prompts, images)
+        gen_wall_sec = _t.time() - _tgen  # CoT generation wall (this rank)
 
         prompt_ids = [torch.tensor(ids, device=device) for ids in prompt_ids_list]
         prompt_mask = [torch.ones_like(ids, dtype=torch.long) for ids in prompt_ids]
@@ -572,6 +574,7 @@ class RecGRPOTrainer(GRPOTrainer):
 
         # ---- smoke monitoring: rollout-level stats ----
         import statistics as _st
+        _plens = sorted(len(x) for x in prompt_ids_list)
         entry = dict(
             rollout_id=self._smoke_rollout_id,
             route=self._smoke_log[-1]["route"] if self._smoke_log else "?",
@@ -583,6 +586,10 @@ class RecGRPOTrainer(GRPOTrainer):
             advantage_std=float(all_process_advantages.std(unbiased=False)),
             abs_advantage_mean=float(all_process_advantages.abs().mean()),
             rollout_sec=round(_t.time() - _t0, 2),
+            gen_wall_sec=round(gen_wall_sec, 2),
+            prompt_len_mean=round(_st.mean(_plens), 1),
+            prompt_len_p95=_plens[min(len(_plens) - 1, int(0.95 * len(_plens)))],
+            prompt_len_max=_plens[-1],
         )
         # NoThink six-level reward distribution (local rewards, pre-gather slice)
         if entry["route"] == "no_think":

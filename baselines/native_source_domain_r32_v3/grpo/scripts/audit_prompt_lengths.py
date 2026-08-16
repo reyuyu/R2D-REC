@@ -19,11 +19,14 @@ for r in rows:
 lens.sort()
 def pct(p):
     return lens[min(len(lens) - 1, int(p * len(lens)))]
+n_over_512 = sum(1 for x in lens if x > 512)
 stats = {
     "n": len(lens),
     "p50": pct(0.50), "p90": pct(0.90), "p95": pct(0.95), "p99": pct(0.99),
     "max": lens[-1], "min": lens[0],
     "mean": round(statistics.mean(lens), 1),
+    "n_over_512": n_over_512,
+    "ratio_over_512": round(n_over_512 / len(lens), 4),
     "n_over_8192": len(over8192),
     "over8192_samples": over8192[:10],
     "tokenizer_model_max_length": tok.model_max_length,
