@@ -1,6 +1,6 @@
 # 实验 Mini-Fix-U3K：保留推荐优势，强化懂用户
 
-状态：**已配置，尚未启动正式训练**（配置日期 2026-08-16）。本实验针对 Mini 系列中“懂物料分高、懂用户分低”的结构性问题：以 Mini-Fix 的推荐路线和总训练预算为锚点，只扩大懂用户监督。
+状态：**训练中**。Run：`MINI-FIX-U3K-R32-2E-GC04-4GPU-20260816-174640`（2026-08-16 启动）。本实验针对 Mini 系列中“懂物料分高、懂用户分低”的结构性问题：以 Mini-Fix 的推荐路线和总训练预算为锚点，只扩大懂用户监督。
 
 ## 动机与假说
 
@@ -29,7 +29,7 @@ Mini-Fix 的 epoch 2 外部评测为总分 `1.3093`、推荐分项 `0.6644`（�
 
 模型与优化器完全沿用 Mini-Fix：OneReason-8B、LoRA r32/a64/dropout 0.05、4 GPU、8K neat packing、per-device batch 1、GA16、LR `2e-4`、cosine、warmup `0.03`、GC `0.4`、`GLOBAL_ITEM_WEIGHT=8`、seed `20260806`、2 epoch。沿用固定 Mini-disjoint dev/probe 验证集，现场 tokenize，不复用旧 Mini cache。
 
-启动前应先执行构建脚本并检查 manifest；本次仅完成配置和数据合同验证，**未启动训练**。正式入口默认会把训练配置、数据 manifest、日志和输出写入：
+启动前已完成构建脚本与 manifest 检查；当前正式训练已启动。正式入口会把训练配置、数据 manifest、日志和输出写入：
 
 `/data/outputs/baselines/native_source_domain_r32_v3/MINI-FIX-U3K-R32-2E-GC04-4GPU-<timestamp>/`
 
