@@ -25,13 +25,14 @@ with tempfile.TemporaryDirectory() as temporary:
     rows = []
     for index in range(12):
         gid = f"group-{index:02d}"
+        domain = ("video", "living", "prod", "ad")[index % 4]
         for route in ("think", "no_think"):
             rows.append({
                 "recommendation_group_id": gid,
                 "route": route,
                 "prompt": f"{route} prompt {index}",
-                "target_domain": "video",
-                "all_gold_sids": ["<|video_begin|><s_a_1><s_b_2><s_c_3>"],
+                "target_domain": domain,
+                "all_gold_sids": [f"<|{domain}_begin|><s_a_1><s_b_2><s_c_3>"],
             })
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
@@ -40,12 +41,16 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(set(probes)) == 4
     records = load_probe_records(path, probes)
     assert all(set(records[gid]) == {"think", "no_think"} for gid in probes)
+    assert [records[gid]["think"]["target_domain"] for gid in probes] == [
+        "video", "living", "prod", "ad"
+    ]
 
     dataset = build_route_dataset(path, n_groups=12, seed=7, exclude_group_ids=probes)
     assert not set(probes).intersection(dataset["recommendation_group_id"])
     assert len(set(dataset["recommendation_group_id"])) == 8
 
     assert select_probe_group_ids(path, 12, 7, explicit_ids=probes) == probes
+    expect_value_error(select_probe_group_ids, path, 12, 7, explicit_ids=list(reversed(probes)))
     expect_value_error(select_probe_group_ids, path, 12, 7, count=3)
     expect_value_error(select_probe_group_ids, path, 12, 7, explicit_ids=probes[:3])
     validate_probe_schedule(probes, 200)

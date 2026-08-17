@@ -16,10 +16,20 @@ from transformers import TrainerCallback
 from grpo_sid import final_sid, parse_sid, q_reward
 
 
+PROBE_DOMAINS = ("video", "living", "prod", "ad")
+
+
 def select_probe_group_ids(data_path, n_groups, seed, count=0, explicit_ids=None):
-    """Select probes from the same shuffled prefix used by build_route_dataset."""
+    """Select one held-out group per domain from the shuffled training prefix."""
     rows = [json.loads(line) for line in open(data_path, encoding="utf-8")]
     gids = sorted({row["recommendation_group_id"] for row in rows})
+    domains_by_gid = defaultdict(set)
+    for row in rows:
+        domains_by_gid[row["recommendation_group_id"]].add(row["target_domain"])
+    inconsistent = {gid: values for gid, values in domains_by_gid.items() if len(values) != 1}
+    if inconsistent:
+        raise ValueError(f"probe groups have inconsistent target domains: {inconsistent}")
+    domain_by_gid = {gid: next(iter(values)) for gid, values in domains_by_gid.items()}
     rng = random.Random(seed)
     rng.shuffle(gids)
     selected = gids[:n_groups]
@@ -29,12 +39,29 @@ def select_probe_group_ids(data_path, n_groups, seed, count=0, explicit_ids=None
             raise ValueError("--probe-groups must match the number of --probe-group-id values")
         probes = explicit
     else:
-        probes = selected[:count]
+        probes_by_domain = {}
+        for gid in selected:
+            domain = domain_by_gid[gid]
+            if domain in PROBE_DOMAINS and domain not in probes_by_domain:
+                probes_by_domain[domain] = gid
+        probes = [probes_by_domain[domain] for domain in PROBE_DOMAINS
+                  if domain in probes_by_domain][:count]
     if probes and len(probes) != 4:
-        raise ValueError("fixed probes require exactly 4 groups to preserve production batch shapes")
+        missing_domains = [domain for domain in PROBE_DOMAINS
+                           if domain not in {domain_by_gid.get(gid) for gid in probes}]
+        raise ValueError(
+            "fixed probes require exactly 4 groups covering video/living/prod/ad; "
+            f"missing domains: {missing_domains}"
+        )
     missing = set(probes).difference(selected)
     if missing:
         raise ValueError(f"probe group IDs are outside the selected dataset: {sorted(missing)}")
+    probe_domains = [domain_by_gid[gid] for gid in probes]
+    if probes and probe_domains != list(PROBE_DOMAINS):
+        raise ValueError(
+            "fixed probe groups must be ordered video/living/prod/ad; "
+            f"got {probe_domains}"
+        )
     return probes
 
 
