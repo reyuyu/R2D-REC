@@ -46,13 +46,18 @@ python monitor/generate_demo_run.py \
   --run-id demo-phase1
 
 python monitor/server.py \
-  --run-dir /data/GRPO/runs/demo-phase1 \
+  --runs-dir /data/GRPO/runs \
   --port 8765
 ```
 
 Open `http://127.0.0.1:8765`.
 
-The Chinese dashboard polls append-only data every three seconds. Clicking a
+The Chinese dashboard lists experiments under `--runs-dir`; every data request
+is scoped to the selected `run_id`, so metrics and rollout traces cannot mix
+between experiments. The older `--run-dir <one-run>` mode remains supported.
+The selected run is also stored in the page URL for refresh/share continuity.
+
+The dashboard polls append-only data every three seconds. Clicking a
 chart opens an enlarged view with 20/50/all-point ranges. Think traces retain
 the 32 SIDs that were already parsed for reward and highlight exact gold, AB
 prefix, A prefix, and invalid outputs. Beam SID retention is monitor-only and
@@ -64,7 +69,7 @@ adds no DDP collective. Every metric panel has an on-demand definition and a
 short description of a healthy trend; metrics without a monotonic optimum are
 explicitly described as joint diagnostics rather than "higher is better".
 
-The server exposes `/api/manifest`, `/api/metrics`, `/api/rollouts`,
+The server exposes `/api/runs`, `/api/manifest`, `/api/metrics`, `/api/rollouts`,
 `/api/ranks`, and `/api/traces`. JSONL endpoints accept `from_step`,
 `to_step`, `route`, and `rollout_id`; `/api/ranks` additionally accepts
 `rank`.

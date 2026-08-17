@@ -68,6 +68,21 @@ with tempfile.TemporaryDirectory() as temporary:
     assert client.get("/").status_code == 200
     print("[PASS] FastAPI endpoints and query filters")
 
+    isolated = MonitorWriter(True, root, "isolated-run", rank=0)
+    assert isolated.write_manifest({"seed": 99, "max_steps": 120})
+    assert isolated.write_step({"step": 17, "loss": 9.9})
+    multi_client = TestClient(create_app(runs_dir=root))
+    runs = multi_client.get("/api/runs").json()
+    assert {item["run_id"] for item in runs} >= {"writer-test", "isolated-run"}
+    assert multi_client.get("/api/manifest?run_id=writer-test").json()["seed"] == 7
+    assert multi_client.get("/api/manifest?run_id=isolated-run").json()["seed"] == 99
+    assert [row["step"] for row in multi_client.get("/api/metrics?run_id=isolated-run").json()] == [17]
+    assert all(row["step"] != 17 for row in multi_client.get("/api/metrics?run_id=writer-test").json())
+    assert multi_client.get("/api/metrics").status_code == 400
+    assert multi_client.get("/api/metrics?run_id=..").status_code == 400
+    assert multi_client.get("/api/metrics?run_id=missing").status_code == 404
+    print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
+
     demo_dir = Path(generate(str(root), "demo"))
     assert len(parse_every_line(demo_dir / "metrics.jsonl")) == 100
     assert len(parse_every_line(demo_dir / "rollouts.jsonl")) == 50
@@ -80,7 +95,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(nothink_trace["candidates"]) == 8
     assert all(candidate["reward"] is not None for candidate in nothink_trace["candidates"])
     html = client.get("/").text
-    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视"))
+    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视", "选择实验"))
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
