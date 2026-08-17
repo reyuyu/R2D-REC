@@ -361,8 +361,8 @@ def main():
     cos_sorted = sorted(cosines)
     adv_cos = dict(
         mean=round(statistics.mean(cosines), 6) if cosines else None,
-        p50=round(cos_sorted[len(cos_sorted) // 2], 6) if cosines else None,
-        p10=round(cos_sorted[max(0, int(0.1 * len(cos_sorted)) - 1)], 6) if cosines else None,
+        p50=round(cos_sorted[max(0, math.ceil(0.5 * len(cos_sorted)) - 1)], 6) if cosines else None,
+        p10=round(cos_sorted[max(0, math.ceil(0.1 * len(cos_sorted)) - 1)], 6) if cosines else None,
         min=round(cos_sorted[0], 6) if cosines else None,
         n=len(cosines))
     # advantage diff stats
