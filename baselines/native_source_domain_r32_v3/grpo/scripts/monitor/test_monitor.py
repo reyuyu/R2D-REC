@@ -72,9 +72,13 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(parse_every_line(demo_dir / "metrics.jsonl")) == 100
     assert len(parse_every_line(demo_dir / "rollouts.jsonl")) == 50
     assert all(len(parse_every_line(demo_dir / f"ranks/rank{rank}.jsonl")) == 50 for rank in range(4))
-    assert len(parse_every_line(demo_dir / "traces/traces.jsonl")) == 5
+    traces = parse_every_line(demo_dir / "traces/traces.jsonl")
+    assert len(traces) == 5
+    assert len(traces[0]["candidates"][0]["beam_sids"]) == 32
+    assert traces[0]["candidates"][0]["beam_sids"][0] == traces[0]["gold_sids"][0]
     html = client.get("/").text
     assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视"))
+    assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
 print("ALL MONITOR CPU TESTS PASSED")

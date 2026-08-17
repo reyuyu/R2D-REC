@@ -776,6 +776,7 @@ class RecGRPOTrainer(GRPOTrainer):
                 "exact": result.get("exact"),
                 "ab": result.get("ab"),
                 "a": result.get("a"),
+                "beam_sids": result.get("beam_sids"),
             })
         self._monitor.write_trace({
             "rollout_id": entry["rollout_id"],

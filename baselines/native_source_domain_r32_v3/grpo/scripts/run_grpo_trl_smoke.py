@@ -94,6 +94,9 @@ def run_beam32_task(model, tokenizer, task):
         "ab": ab,
         "a": a,
         "invalid": invalid,
+        # The SIDs are already parsed for reward. Retain them only while the
+        # optional monitor is enabled; the default training payload is unchanged.
+        **({"beam_sids": beam_sids} if task.get("capture_monitor") else {}),
     }
 
 
@@ -139,6 +142,7 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                         "input_ids": prompt_ids + cot_ids2,
                         "gold": [list(item) for item in sorted(gs)],
                         "closed": closed,
+                        "capture_monitor": bool(monitor_writer is not None and monitor_writer.enabled),
                     })
 
                 if distributed_beam_enabled():

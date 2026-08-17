@@ -19,7 +19,7 @@ def iso(base: datetime, seconds: float) -> str:
 def generate(output_dir: str, run_id: str = "demo-phase1") -> str:
     rng = random.Random(20260817)
     writers = [MonitorWriter(True, output_dir, run_id, rank, trace_every=10) for rank in range(4)]
-    base = datetime.now(timezone.utc) - timedelta(hours=2, minutes=12)
+    base = datetime(2026, 8, 17, 12, 26, 40, 922100, tzinfo=timezone.utc)
     writers[0].write_manifest({
         "run_id": run_id,
         "start_time": iso(base, 0),
@@ -104,6 +104,18 @@ def generate(output_dir: str, run_id: str = "demo-phase1") -> str:
             if writers[0].trace_due(rollout_id):
                 candidates = []
                 for candidate in range(4 if think else 8):
+                    beam_sids = None
+                    if think:
+                        beam_sids = []
+                        for beam_index in range(32):
+                            if candidate == 0 and beam_index == 0:
+                                beam_sids.append(["prod", 1000, 42, 7])
+                            elif candidate == 1 and beam_index == 0:
+                                beam_sids.append(["prod", 1000, 42, 99])
+                            elif candidate == 2 and beam_index == 0:
+                                beam_sids.append(["prod", 1000, 77, 3])
+                            else:
+                                beam_sids.append(["prod", 2000 + candidate, 80 + beam_index, beam_index])
                     candidates.append({
                         "candidate_id": candidate,
                         "completion": (f"Consider user history and material fit for candidate {candidate}. </think>" if think else f"<s_a_{1000 + candidate}><s_b_42><s_c_7>"),
@@ -115,6 +127,7 @@ def generate(output_dir: str, run_id: str = "demo-phase1") -> str:
                         "exact": 1 if think and candidate == 0 else 0,
                         "ab": 1 if think and candidate == 1 else 0,
                         "a": 0,
+                        "beam_sids": beam_sids,
                     })
                 writers[0].write_trace({
                     "rollout_id": rollout_id,
