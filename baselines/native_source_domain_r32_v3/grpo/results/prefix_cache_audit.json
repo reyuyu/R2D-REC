@@ -1,0 +1,134 @@
+{
+ "n_groups": 32,
+ "n_cots": 128,
+ "seed": 20260816,
+ "cand_parity_rate": 0.0,
+ "sid_set_parity_rate": 0.0,
+ "raw_reward_parity_rate": 0.7578,
+ "reward_mismatch": 31,
+ "reward_mean_bias": 0.1356,
+ "reward_mae": 0.4367,
+ "reward_max_abs_diff": 7.75,
+ "agg": {
+  "exact": {
+   "baseline": 44,
+   "cache": 44,
+   "delta": 0
+  },
+  "ab": {
+   "baseline": 28,
+   "cache": 27,
+   "delta": -1
+  },
+  "a": {
+   "baseline": 96,
+   "cache": 88,
+   "delta": -8
+  },
+  "invalid": {
+   "baseline": 14,
+   "cache": 14,
+   "delta": 0
+  }
+ },
+ "argmax_agree": 0.5625,
+ "argmin_agree": 0.5938,
+ "full_rank_agree": 0.5625,
+ "top2_agree": 0.6875,
+ "adv_sign_agree": 0.679688,
+ "adv_exact_agree": 0.5,
+ "adv_close_agree": 0.5,
+ "adv_cosine": {
+  "mean": 0.705921,
+  "p50": 1.0,
+  "p10": -0.57735,
+  "min": -0.57735,
+  "n": 15
+ },
+ "adv_mean_abs_diff": 0.39286,
+ "adv_max_diff": 2.73085,
+ "zero_std": {
+  "base0_cache_mixed": 5,
+  "base_mixed_cache0": 3,
+  "both_zero": 9,
+  "both_mixed": 15
+ },
+ "sign_flip_pos_neg": 4,
+ "sign_flip_neg_pos": 5,
+ "pearson_surrogate": 0.55664,
+ "learning_signal_distortion": 50.2867,
+ "determinism": {
+  "base_det": 8,
+  "base_sids_det": 8,
+  "base_reward_det": 8,
+  "cache_det": 1,
+  "cache_sids_det": 1,
+  "cache_reward_det": 8,
+  "n": 8
+ },
+ "cot_generation": {
+  "n_groups": 32,
+  "mean": 58.97,
+  "p50": 58.6,
+  "p90": 68.65,
+  "p95": 70.55,
+  "max": 72.36
+ },
+ "perf": {
+  "all": {
+   "n": 128,
+   "base": {
+    "mean": 8.58,
+    "p50": 8.25,
+    "p90": 12.06,
+    "p95": 13.02,
+    "max": 13.81
+   },
+   "cache": {
+    "prefill_mean": 0.279,
+    "repeat_mean": 0.0112,
+    "beam_mean": 2.2,
+    "post_mean": 0.0012,
+    "total_mean": 2.49,
+    "p50": 2.32,
+    "p90": 2.96,
+    "p95": 3.09,
+    "max": 17.47
+   },
+   "speedup": 3.443,
+   "peak_base_mb": 47089,
+   "peak_cache_mb": 30874,
+   "peak_reserved_base_mb": 78106,
+   "peak_reserved_cache_mb": 74024
+  },
+  "typical": {
+   "n": 128,
+   "base": {
+    "mean": 8.58,
+    "p50": 8.25,
+    "p90": 12.06,
+    "p95": 13.02,
+    "max": 13.81
+   },
+   "cache": {
+    "prefill_mean": 0.279,
+    "repeat_mean": 0.0112,
+    "beam_mean": 2.2,
+    "post_mean": 0.0012,
+    "total_mean": 2.49,
+    "p50": 2.32,
+    "p90": 2.96,
+    "p95": 3.09,
+    "max": 17.47
+   },
+   "speedup": 3.443,
+   "peak_base_mb": 47089,
+   "peak_cache_mb": 30874,
+   "peak_reserved_base_mb": 78106,
+   "peak_reserved_cache_mb": 74024
+  },
+  "long": {
+   "n": 0
+  }
+ }
+}
