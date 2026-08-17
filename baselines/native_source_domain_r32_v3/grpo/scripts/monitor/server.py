@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -58,14 +59,17 @@ def create_app(
     run_dir: str | Path | None = None,
     *,
     runs_dir: str | Path | None = None,
+    outputs_dir: str | Path | None = None,
 ) -> FastAPI:
     if (run_dir is None) == (runs_dir is None):
         raise ValueError("exactly one of run_dir or runs_dir is required")
     single_run = Path(run_dir).expanduser().resolve() if run_dir is not None else None
     root = single_run.parent if single_run is not None else Path(runs_dir).expanduser().resolve()
+    outputs_root = Path(outputs_dir).expanduser().resolve() if outputs_dir is not None else None
     app = FastAPI(title="GRPO Monitor", docs_url="/api/docs", redoc_url=None)
     app.state.run_dir = single_run
     app.state.runs_dir = root
+    app.state.outputs_dir = outputs_root
 
     def available_runs() -> list[dict[str, Any]]:
         paths = [single_run] if single_run is not None else (
@@ -118,6 +122,40 @@ def create_app(
     @app.get("/api/runs")
     def runs():
         return available_runs()
+
+    @app.get("/api/checkpoints")
+    def checkpoints(run_id: str | None = None):
+        selected = selected_run(run_id)
+        if outputs_root is None:
+            return []
+        run_output = (outputs_root / selected.name).resolve()
+        if run_output.parent != outputs_root or not run_output.is_dir():
+            return []
+        result = []
+        for path in run_output.iterdir():
+            match = re.fullmatch(r"checkpoint-(\d+)", path.name)
+            if not path.is_dir() or match is None:
+                continue
+            files = {}
+            for name in ("adapter_config.json", "adapter_model.safetensors"):
+                candidate = path / name
+                if candidate.is_file():
+                    files[name] = candidate.stat().st_size
+            result.append({"checkpoint": path.name, "step": int(match.group(1)), "files": files})
+        return sorted(result, key=lambda item: item["step"])
+
+    @app.get("/api/checkpoints/{checkpoint}/download")
+    def download_checkpoint_file(checkpoint: str, file: str, run_id: str | None = None):
+        selected = selected_run(run_id)
+        allowed = {"adapter_config.json", "adapter_model.safetensors"}
+        if outputs_root is None or file not in allowed or re.fullmatch(r"checkpoint-\d+", checkpoint) is None:
+            raise HTTPException(status_code=404, detail="checkpoint file not found")
+        checkpoint_dir = (outputs_root / selected.name / checkpoint).resolve()
+        expected_parent = (outputs_root / selected.name).resolve()
+        candidate = (checkpoint_dir / file).resolve()
+        if checkpoint_dir.parent != expected_parent or candidate.parent != checkpoint_dir or not candidate.is_file():
+            raise HTTPException(status_code=404, detail="checkpoint file not found")
+        return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
 
     @app.get("/api/manifest")
     def manifest(run_id: str | None = None):
@@ -199,13 +237,14 @@ def main() -> None:
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--run-dir", help="Serve one run (backward-compatible mode)")
     source.add_argument("--runs-dir", help="Serve an experiment list rooted at this directory")
+    parser.add_argument("--outputs-dir", help="Formal output root used for checkpoint adapter downloads")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     import uvicorn
 
     print(f"GRPO Monitor: http://{args.host}:{args.port}", flush=True)
-    uvicorn.run(create_app(args.run_dir, runs_dir=args.runs_dir), host=args.host, port=args.port, log_level="warning")
+    uvicorn.run(create_app(args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir), host=args.host, port=args.port, log_level="warning")
 
 
 if __name__ == "__main__":

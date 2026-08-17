@@ -71,7 +71,13 @@ with tempfile.TemporaryDirectory() as temporary:
     isolated = MonitorWriter(True, root, "isolated-run", rank=0)
     assert isolated.write_manifest({"seed": 99, "max_steps": 120})
     assert isolated.write_step({"step": 17, "loss": 9.9})
-    multi_client = TestClient(create_app(runs_dir=root))
+    outputs = root / "_outputs"
+    checkpoint = outputs / "isolated-run" / "checkpoint-17"
+    checkpoint.mkdir(parents=True)
+    (checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (checkpoint / "adapter_model.safetensors").write_bytes(b"safe-adapter")
+    (checkpoint / "optimizer.pt").write_bytes(b"private-training-state")
+    multi_client = TestClient(create_app(runs_dir=root, outputs_dir=outputs))
     runs = multi_client.get("/api/runs").json()
     assert {item["run_id"] for item in runs} >= {"writer-test", "isolated-run"}
     assert multi_client.get("/api/manifest?run_id=writer-test").json()["seed"] == 7
@@ -81,6 +87,13 @@ with tempfile.TemporaryDirectory() as temporary:
     assert multi_client.get("/api/metrics").status_code == 400
     assert multi_client.get("/api/metrics?run_id=..").status_code == 400
     assert multi_client.get("/api/metrics?run_id=missing").status_code == 404
+    checkpoints = multi_client.get("/api/checkpoints?run_id=isolated-run").json()
+    assert checkpoints[0]["checkpoint"] == "checkpoint-17"
+    assert set(checkpoints[0]["files"]) == {"adapter_config.json", "adapter_model.safetensors"}
+    download = multi_client.get("/api/checkpoints/checkpoint-17/download?run_id=isolated-run&file=adapter_config.json")
+    assert download.status_code == 200 and download.json() == {"r": 32}
+    assert multi_client.get("/api/checkpoints/checkpoint-17/download?run_id=isolated-run&file=optimizer.pt").status_code == 404
+    assert multi_client.get("/api/checkpoints/../download?run_id=isolated-run&file=adapter_config.json").status_code == 404
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 
     demo_dir = Path(generate(str(root), "demo"))

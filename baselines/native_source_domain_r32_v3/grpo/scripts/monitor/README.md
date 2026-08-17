@@ -47,6 +47,7 @@ python monitor/generate_demo_run.py \
 
 python monitor/server.py \
   --runs-dir /data/GRPO/runs \
+  --outputs-dir /data/GRPO/outputs/formal \
   --port 8765
 ```
 
@@ -56,6 +57,10 @@ The Chinese dashboard lists experiments under `--runs-dir`; every data request
 is scoped to the selected `run_id`, so metrics and rollout traces cannot mix
 between experiments. The older `--run-dir <one-run>` mode remains supported.
 The selected run is also stored in the page URL for refresh/share continuity.
+When `--outputs-dir` is configured, the dashboard lists that experiment's
+checkpoints and exposes downloads only for `adapter_config.json` and
+`adapter_model.safetensors`; optimizer and other training-state files are not
+served.
 
 The dashboard polls append-only data every three seconds. Clicking a
 chart opens an enlarged view with 20/50/all-point ranges. Think traces retain
