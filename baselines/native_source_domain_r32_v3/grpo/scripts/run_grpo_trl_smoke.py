@@ -30,6 +30,13 @@ WORLD_CHUNK = 4  # per_device_train_batch_size
 N_GROUPS = 8     # one full T,T,N,N,N,N cycle (8 think + 8 no_think records)
 
 
+def cached_prompt_ids(tokenizer, prompt, cache):
+    """Encode a Beam prompt once within one reward-function invocation."""
+    if prompt not in cache:
+        cache[prompt] = encode_prompt(tokenizer, prompt)
+    return cache[prompt]
+
+
 def make_beam32_fn(model, tokenizer):
     """Beam32 on sampled CoT (eval + inference_mode), hierarchical reward.
     Re-decodes completions from raw token ids. Accumulates closed/no-close
@@ -46,6 +53,8 @@ def make_beam32_fn(model, tokenizer):
     )
 
     def beam32_fn(prompts, completions, completion_ids, gold_sets):
+        # Reward-call scoped only: repeated G=4 completions share one prompt.
+        prompt_ids_cache = {}
         was_training = model.training
         model.eval()
         out = []
@@ -60,7 +69,7 @@ def make_beam32_fn(model, tokenizer):
                         stats["closure"] += 1
                     idx = cot.find("</think>")
                     cot_trim = cot[: idx + len("</think>")] if idx >= 0 else cot
-                    prompt_ids = encode_prompt(tokenizer, prompt)
+                    prompt_ids = cached_prompt_ids(tokenizer, prompt, prompt_ids_cache)
                     cot_ids2 = tokenizer.encode(cot_trim, add_special_tokens=False)
                     t0 = time.time()
                     texts = generate_batch(model, tokenizer, [prompt_ids + cot_ids2],
