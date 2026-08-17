@@ -1,0 +1,126 @@
+{
+ "stage1": {
+  "n": 32,
+  "raw_max_abs_diff_mean": 0.8488,
+  "raw_mean_abs_diff_mean": 0.1422,
+  "js_mean": 0.0,
+  "js_max": 0.0,
+  "kl_mean": 0.0,
+  "top20_mean": 1.0,
+  "top50_mean": 1.0,
+  "top1_agree_rate": 1.0,
+  "tpp_support_overlap_mean": 1.0,
+  "mass_l1_mean": 0.0,
+  "base_rows_maxdiff_max": 0.0,
+  "cache_rows_maxdiff_max": 0.0
+ },
+ "stage2": {
+  "n_groups": 16,
+  "n_cots_baseline": 64,
+  "n_cots_cache": 64,
+  "closure_base": 1.0,
+  "closure_cache": 1.0,
+  "no_close_base": 0.0,
+  "no_close_cache": 0.0,
+  "len_base": {
+   "mean": 694.1,
+   "p50": 698,
+   "p90": 817,
+   "p95": 834,
+   "max": 960
+  },
+  "len_cache": {
+   "mean": 683.9,
+   "p50": 713,
+   "p90": 796,
+   "p95": 813,
+   "max": 932
+  },
+  "uniq_ratio_base": 1.0,
+  "uniq_ratio_cache": 1.0,
+  "dup_pairs_base": 0.010416666666666666,
+  "dup_pairs_cache": 0.010416666666666666,
+  "len_std_base_mean": 92.97,
+  "len_std_cache_mean": 106.23,
+  "fwd_proof": [
+   [
+    4,
+    1
+   ],
+   [
+    4,
+    1
+   ],
+   [
+    4,
+    1
+   ],
+   [
+    4,
+    1
+   ],
+   [
+    4,
+    1
+   ],
+   [
+    4,
+    1
+   ]
+  ]
+ },
+ "perf": {
+  "base": {
+   "mean": 60.64,
+   "p50": 60.23,
+   "p90": 66.19,
+   "p95": 68.85,
+   "max": 72.75
+  },
+  "cache": {
+   "prefill_mean": 0.205,
+   "repeat_mean": 0.0016,
+   "gen_mean": 59.49,
+   "total_mean": 59.7,
+   "p50": 57.68,
+   "p90": 69.12,
+   "p95": 70.09,
+   "max": 70.1
+  },
+  "speedup": 1.016,
+  "peak_base_mb": 26634,
+  "peak_cache_mb": 26344
+ },
+ "buckets": {
+  "short": {
+   "n": 5,
+   "base_sec": 58.39,
+   "cache_sec": 56.22,
+   "speedup": 1.038,
+   "plen_range": [
+    503,
+    921
+   ]
+  },
+  "medium": {
+   "n": 5,
+   "base_sec": 59.26,
+   "cache_sec": 59.68,
+   "speedup": 0.993,
+   "plen_range": [
+    1002,
+    1355
+   ]
+  },
+  "long": {
+   "n": 6,
+   "base_sec": 63.66,
+   "cache_sec": 62.61,
+   "speedup": 1.017,
+   "plen_range": [
+    1365,
+    2041
+   ]
+  }
+ }
+}
