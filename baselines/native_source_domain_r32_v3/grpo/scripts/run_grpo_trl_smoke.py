@@ -8,6 +8,7 @@ mask_truncated_completions=False, beta=0.0, loss_type="grpo", use_vllm=False,
 max_prompt_length=8192, max_completion_length=2048.
 Run: torchrun --nproc_per_node=4 run_grpo_trl_smoke.py"""
 import argparse
+import hashlib
 import json
 import os
 import statistics
@@ -15,6 +16,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import torch
 import torch.distributed as dist
@@ -42,12 +44,21 @@ def cached_prompt_ids(tokenizer, prompt, cache):
 
 
 def current_git_commit():
+    environment_commit = os.environ.get("GRPO_GIT_COMMIT")
+    if environment_commit:
+        return environment_commit
     try:
-        return subprocess.run(
+        commit = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd="/data/GRPO",
             capture_output=True, text=True, timeout=2, check=False,
-        ).stdout.strip() or None
+        ).stdout.strip()
+        if commit:
+            return commit
     except (OSError, subprocess.SubprocessError):
+        pass
+    try:
+        return Path("/data/GRPO/.source_commit").read_text(encoding="ascii").strip() or None
+    except OSError:
         return None
 
 
@@ -181,7 +192,8 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                     local_results = [run_beam32_task(model, tokenizer, task) for task in local_tasks]
                     stats["beam_sec"] += sum(item["beam_sec"] for item in local_results)
 
-                if monitor_writer is not None and monitor_writer.enabled:
+                parity_audit = os.environ.get("GRPO_PARITY_AUDIT", "0") == "1"
+                if (monitor_writer is not None and monitor_writer.enabled) or parity_audit:
                     if not distributed_beam_enabled():
                         input_gather_sec = scheduler_sec = result_gather_sec = 0.0
                         global_tasks = local_tasks
@@ -240,6 +252,63 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
     return beam32_fn
 
 
+def parameter_sha256(model, include_lora):
+    """Streaming parameter hash for parity audits; call outside timed training."""
+    digest = hashlib.sha256()
+    for name, parameter in model.named_parameters():
+        if ("lora" in name.lower()) != include_lora:
+            continue
+        value = parameter.detach().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(value.shape)).encode("ascii"))
+        digest.update(str(value.dtype).encode("ascii"))
+        digest.update(value.view(torch.uint8).cpu().numpy().tobytes())
+    return digest.hexdigest()
+
+
+def make_grpo_config(output_dir, max_steps, lr, seed, *, save_strategy="no",
+                     save_steps=500, save_total_limit=None, use_cpu=False):
+    """Build the single frozen GRPO config shared by smoke and formal runners."""
+    from trl import GRPOConfig
+    cfg = GRPOConfig(
+        output_dir=output_dir,
+        per_device_train_batch_size=WORLD_CHUNK,
+        gradient_accumulation_steps=1,
+        num_generations=M_THINK,
+        max_prompt_length=8192,
+        max_completion_length=2048,
+        num_iterations=2,
+        steps_per_generation=1,
+        beta=0.0,
+        epsilon=0.2,
+        loss_type="grpo",
+        scale_rewards="group",
+        disable_dropout=True,
+        importance_sampling_level="token",
+        top_entropy_quantile=1.0,
+        mask_truncated_completions=False,
+        use_vllm=False,
+        learning_rate=lr,
+        weight_decay=0.0,
+        max_grad_norm=1.0,
+        lr_scheduler_type="constant",
+        max_steps=max_steps,
+        logging_steps=1,
+        save_strategy=save_strategy,
+        save_steps=save_steps,
+        save_total_limit=save_total_limit,
+        report_to="none",
+        temperature=1.0,
+        top_p=1.0,
+        seed=seed,
+        generation_kwargs=None,
+        shuffle_dataset=False,
+        use_cpu=use_cpu,
+    )
+    cfg.generation_kwargs = None
+    return cfg
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--max-steps", type=int, default=12)
@@ -252,6 +321,7 @@ def main():
     world = int(os.environ.get("WORLD_SIZE", "1"))
     run_started = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     monitor = monitor_from_env(args.tag, rank)
+    parity_audit = os.environ.get("GRPO_PARITY_AUDIT", "0") == "1"
     device = f"cuda:{rank}"
     torch.cuda.set_device(rank)
     is_main = rank == 0
@@ -279,6 +349,8 @@ def main():
 
     pre_lora = lora_norm()
     pre_base = base_checksum()
+    pre_lora_sha256 = parameter_sha256(model, True) if parity_audit and is_main else None
+    pre_base_sha256 = parameter_sha256(model, False) if parity_audit and is_main else None
 
     # one full unique cycle: T(2 chunks) + N(4 chunks) -> T,T,N,N,N,N
     chunk = 8
@@ -290,41 +362,10 @@ def main():
         print(f"dataset records: {len(ds)}, chunks: {len(_sam._chunks)}, "
               f"unique rollout route sequence: {_seq}", flush=True)
 
-    from trl import GRPOConfig
-    cfg = GRPOConfig(
-        output_dir=os.path.join(OUT_DIR, args.tag + "-" + time.strftime("%Y%m%d-%H%M%S")),
-        per_device_train_batch_size=WORLD_CHUNK,
-        gradient_accumulation_steps=1,
-        num_generations=M_THINK,          # initial; per-batch switched to 4/8
-        max_prompt_length=8192,           # explicit: SFT cutoff_len (no silent 512)
-        max_completion_length=2048,
-        num_iterations=2,
-        steps_per_generation=1,
-        beta=0.0,
-        epsilon=0.2,
-        loss_type="grpo",
-        scale_rewards="group",
-        disable_dropout=True,
-        # ---- frozen trainer contract ----
-        importance_sampling_level="token",
-        top_entropy_quantile=1.0,
-        mask_truncated_completions=False,
-        use_vllm=False,
-        learning_rate=args.lr,
-        weight_decay=0.0,
-        max_grad_norm=1.0,
-        lr_scheduler_type="constant",
-        max_steps=args.max_steps,
-        logging_steps=1,
-        save_strategy="no",
-        report_to="none",
-        temperature=1.0,
-        top_p=1.0,
-        seed=args.seed,
-        generation_kwargs=None,
-        shuffle_dataset=False,  # keep route-homogeneous alternating order across ranks
+    cfg = make_grpo_config(
+        os.path.join(OUT_DIR, args.tag + "-" + time.strftime("%Y%m%d-%H%M%S")),
+        args.max_steps, args.lr, args.seed,
     )
-    cfg.generation_kwargs = None
 
     if monitor.enabled:
         monitor.write_manifest({
@@ -394,6 +435,8 @@ def main():
     total = time.time() - t0
     post_lora = lora_norm()
     post_base = base_checksum()
+    post_lora_sha256 = parameter_sha256(model, True) if parity_audit and is_main else None
+    post_base_sha256 = parameter_sha256(model, False) if parity_audit and is_main else None
     history = trainer.state.log_history if hasattr(trainer.state, "log_history") else []
     smoke_log = getattr(trainer, "_smoke_log", [])
     generation_profile = getattr(trainer, "_generation_profile_log", [])
@@ -408,6 +451,10 @@ def main():
         lora_delta=abs(post_lora - pre_lora),
         base_norm_pre=pre_base, base_norm_post=post_base,
         base_delta=abs(post_base - pre_base),
+        lora_sha256_pre=pre_lora_sha256,
+        lora_sha256_post=post_lora_sha256,
+        base_sha256_pre=pre_base_sha256,
+        base_sha256_post=post_base_sha256,
         total_sec=total,
         peak_allocated_mb=torch.cuda.max_memory_allocated(device) // (1024 * 1024),
         peak_reserved_mb=torch.cuda.max_memory_reserved(device) // (1024 * 1024),
@@ -415,9 +462,16 @@ def main():
         generation_profile=generation_profile,
         log_history=history,
         beam_stats=beam_stats,
+        parity_log=getattr(trainer, "_parity_log", []),
     )
     with open(f"{OUT_DIR}/{args.tag}-rank{rank}.json", "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
+    if parity_audit and is_main:
+        torch.save(
+            {name: parameter.detach().cpu() for name, parameter in model.named_parameters()
+             if "lora" in name.lower()},
+            f"{OUT_DIR}/{args.tag}-lora-final.pt",
+        )
 
     if is_main:
         steps = [h for h in history if "loss" in h]

@@ -8,6 +8,7 @@ sys.path.insert(0, "/data/GRPO/scripts")
 import trl_import_fix  # must run before trl.trainer imports (no site-packages change)
 
 import collections
+import hashlib
 import json
 import os
 import torch
@@ -267,6 +268,8 @@ class RecGRPOTrainer(GRPOTrainer):
         self._detailed_monitor = _env_flag("GRPO_DETAILED_MONITOR")
         self._generation_profile = _env_flag("GRPO_GENERATION_PROFILE", default="0")
         self._generation_profile_log = []
+        self._parity_audit = _env_flag("GRPO_PARITY_AUDIT", default="0")
+        self._parity_log = []
         super().__init__(*args, **kwargs)
 
     def _monitor_enabled(self):
@@ -681,6 +684,47 @@ class RecGRPOTrainer(GRPOTrainer):
                     invalid_count=beam_call["invalid"],
                     beam_wall_sec=beam_call["global_beam_wall_sec"],
                 )
+        elif self._parity_audit and entry["route"] == "think":
+            beam_call = self._current_beam_call()
+        if self._parity_audit:
+            think_token = None
+            if entry["route"] == "think":
+                encoded = self.processing_class.encode("</think>", add_special_tokens=False)
+                if len(encoded) != 1:
+                    raise RuntimeError(f"expected one </think> token, got {encoded}")
+                think_token = encoded[0]
+            completion_sha256 = []
+            closure_positions = []
+            for candidate_ids in completion_ids_list:
+                payload = json.dumps(candidate_ids, separators=(",", ":")).encode("ascii")
+                completion_sha256.append(hashlib.sha256(payload).hexdigest())
+                if think_token is None:
+                    closure_positions.append(None)
+                else:
+                    try:
+                        closure_positions.append(candidate_ids.index(think_token))
+                    except ValueError:
+                        closure_positions.append(None)
+            self._parity_log.append({
+                "rollout_id": self._smoke_rollout_id,
+                "route": entry["route"],
+                "recommendation_group_ids": [x["recommendation_group_id"] for x in inputs],
+                "completion_ids": completion_ids_list,
+                "completion_sha256": completion_sha256,
+                "closure_positions": closure_positions,
+                "rewards": rewards[process_slice].tolist(),
+                "advantages": advantages.tolist(),
+                "exact_count": beam_call.get("exact") if beam_call else None,
+                "ab_count": beam_call.get("ab") if beam_call else None,
+                "a_count": beam_call.get("a") if beam_call else None,
+                "invalid_count": beam_call.get("invalid") if beam_call else None,
+                "beam_global_wall_sec": beam_call.get("global_beam_wall_sec") if beam_call else None,
+                "beam_rank_exec_wall_sec": beam_call.get("rank_beam_exec_wall_sec") if beam_call else None,
+                "beam_rank_task_count": beam_call.get("rank_beam_task_count") if beam_call else None,
+                "beam_input_gather_wall_sec": beam_call.get("input_gather_wall_sec") if beam_call else None,
+                "beam_scheduler_wall_sec": beam_call.get("scheduler_wall_sec") if beam_call else None,
+                "beam_result_gather_wall_sec": beam_call.get("result_gather_wall_sec") if beam_call else None,
+            })
         if self._detailed_monitor:
             import statistics as _st
             _plens = sorted(len(x) for x in prompt_ids_list)

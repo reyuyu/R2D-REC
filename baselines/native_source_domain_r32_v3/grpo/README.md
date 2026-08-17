@@ -30,6 +30,7 @@ grpo/
 | `scripts/grpo_sid.py` | SID 正则解析、`final_sid`、NoThink 六档 q()、Think 分层学分（纯函数，可测） |
 | `scripts/grpo_trl_trainer.py` | `RecGRPOTrainer(GRPOTrainer)`：route-aware 动态 G/温度、`</think>` token-id 停止（per-sample）、population std、smoke 统计、`build_route_dataset` |
 | `scripts/run_grpo_trl_smoke.py` | 4GPU TRL smoke 入口（beam32 从 completion_ids 重解码） |
+| `scripts/run_grpo_trl_train.py` | 正式 full-data 入口：sampler 审计、独立 RUN_ID、偶数 rollout 边界 checkpoint/resume |
 | `scripts/launch_grpo_trl_smoke.sh` | torchrun 4 卡启动（NCCL lo，expandable_segments） |
 | `scripts/trl_import_fix.py` | 修正 TRL 0.24 可选依赖探测（tuple-truthy），零安装 |
 | `scripts/run_nothink_m_ablation.py` | M 消融（结论 M_NO=8 混合 96.9%） |
@@ -112,4 +113,46 @@ FastAPI 进程读取文件，详见 `scripts/monitor/README.md`。
 ```bash
 cd /data/GRPO/scripts
 bash launch_grpo_trl_smoke.sh   # torchrun --nproc_per_node=4 --master_port=29519
+```
+
+## 正式 runner
+
+正式入口默认开启 Phase 1 Monitor，并默认使用
+`DETAILED=0 / GENERATION_PROFILE=0 / BEAM_RANK_BALANCE=1 / TRACE_EVERY=20`；
+已有环境变量可以覆盖这些默认值。每次运行必须提供未使用过的 `--run-id`。
+
+120-step pilot（仅命令示例，不会由验收脚本自动启动）：
+
+```bash
+cd /data/GRPO/scripts
+NCCL_SOCKET_IFNAME=lo GLOO_SOCKET_IFNAME=lo NCCL_IB_DISABLE=1 \
+python -m torch.distributed.run --nproc_per_node=4 --master_port=29519 \
+  run_grpo_trl_train.py --n-groups all --max-steps 120 \
+  --run-id REC-MP-GRPO-PILOT120 --output-dir /data/GRPO/outputs/formal
+```
+
+完整 epoch 省略 `--max-steps`，实际步数由当前 sampler 审计计算：
+
+```bash
+cd /data/GRPO/scripts
+NCCL_SOCKET_IFNAME=lo GLOO_SOCKET_IFNAME=lo NCCL_IB_DISABLE=1 \
+python -m torch.distributed.run --nproc_per_node=4 --master_port=29519 \
+  run_grpo_trl_train.py --n-groups all \
+  --run-id REC-MP-GRPO-FULL-E1 --output-dir /data/GRPO/outputs/formal
+```
+
+默认每 100 个 global steps 保存，且只允许偶数 `save_steps`。恢复路径必须以
+`checkpoint-<偶数>` 结尾，例如：
+
+```bash
+python -m torch.distributed.run --nproc_per_node=4 --master_port=29519 \
+  run_grpo_trl_train.py --n-groups all --run-id REC-MP-GRPO-FULL-E1 \
+  --output-dir /data/GRPO/outputs/formal \
+  --resume-from-checkpoint /data/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1/checkpoint-200
+```
+
+Dashboard 使用同一个 RUN_ID：
+
+```bash
+python monitor/server.py --run-dir /data/GRPO/runs/REC-MP-GRPO-FULL-E1 --port 8765
 ```
