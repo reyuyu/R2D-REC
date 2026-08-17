@@ -163,6 +163,11 @@ class MonitorWriter:
             return False
         return self._append("traces/traces.jsonl", {"type": "trace", **event})
 
+    def write_probe(self, event: Mapping[str, Any]) -> bool:
+        if self.rank != 0:
+            return False
+        return self._append("probes.jsonl", {"type": "probe", **event})
+
 
 def monitor_from_env(run_id: str, rank: int) -> MonitorWriter:
     enabled = os.environ.get("GRPO_MONITOR", "0").strip() == "1"

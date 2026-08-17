@@ -14,6 +14,13 @@ import torch
 sys.path.insert(0, "/data/GRPO/scripts")
 import trl_import_fix  # noqa: F401
 from grpo_model import ADAPTER, BASE, load_model
+from grpo_probe import (
+    FixedProbeCallback,
+    FixedProbeEvaluator,
+    load_probe_records,
+    select_probe_group_ids,
+    validate_probe_schedule,
+)
 from grpo_run_support import (
     audit_sampler,
     count_raw_groups,
@@ -51,6 +58,10 @@ def build_arg_parser():
     parser.add_argument("--resume-from-checkpoint", default=None)
     parser.add_argument("--save-steps", type=int, default=100)
     parser.add_argument("--save-total-limit", type=int, default=2)
+    parser.add_argument("--probe-groups", type=int, default=0, choices=(0, 4))
+    parser.add_argument("--probe-group-id", action="append", default=[])
+    parser.add_argument("--probe-every-steps", type=int, default=200)
+    parser.add_argument("--probe-seed", type=int, default=20260818)
     return parser
 
 
@@ -81,7 +92,15 @@ def prepare_run_plan(args):
         raise ValueError("--save-total-limit must be positive")
     raw_groups = count_raw_groups(DATA)
     selected_groups = resolve_n_groups(args.n_groups, raw_groups)
-    dataset = build_route_dataset(DATA, n_groups=selected_groups, seed=args.seed, chunk=8)
+    probe_group_ids = select_probe_group_ids(
+        DATA, selected_groups, args.seed, args.probe_groups, args.probe_group_id
+    )
+    validate_probe_schedule(probe_group_ids, args.probe_every_steps)
+    probe_records = load_probe_records(DATA, probe_group_ids) if probe_group_ids else {}
+    dataset = build_route_dataset(
+        DATA, n_groups=selected_groups, seed=args.seed, chunk=8,
+        exclude_group_ids=probe_group_ids,
+    )
     sampler = RouteAwareRepeatSampler(
         dataset, generation_batch_size=16, repeat_count=2, shuffle=False
     )
@@ -98,6 +117,8 @@ def prepare_run_plan(args):
         "max_steps": max_steps,
         "output_dir": output_dir,
         "resume_step": resume_step,
+        "probe_group_ids": probe_group_ids,
+        "probe_records": probe_records,
     }
 
 
@@ -172,6 +193,18 @@ def main(argv=None):
             },
             "expected_optimizer_steps": plan["audit"]["optimizer_steps"],
             "effective_max_steps": plan["max_steps"],
+            "fixed_probe": {
+                "enabled": bool(plan["probe_group_ids"]),
+                "group_ids": plan["probe_group_ids"],
+                "every_steps": args.probe_every_steps,
+                "seed": args.probe_seed,
+                "routes": ["think", "no_think"],
+                "excluded_from_training": True,
+                "batch_shape": {
+                    "think": "4 groups x G=4",
+                    "no_think": "2 groups x G=8 (two batches)",
+                },
+            },
             "checkpoint": {
                 "save_strategy": "steps",
                 "save_steps": args.save_steps,
@@ -207,6 +240,18 @@ def main(argv=None):
         ],
         monitor_writer=monitor,
     )
+    if plan["probe_group_ids"]:
+        probe_beam32_fn = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
+        probe_evaluator = FixedProbeEvaluator(
+            trainer=trainer,
+            records=plan["probe_records"],
+            group_ids=plan["probe_group_ids"],
+            beam32_fn=probe_beam32_fn,
+            monitor=monitor,
+            seed=args.probe_seed,
+            every_steps=args.probe_every_steps,
+        )
+        trainer.add_callback(FixedProbeCallback(probe_evaluator))
     started_wall = time.time()
     result = trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
     post_lora = lora_norm()

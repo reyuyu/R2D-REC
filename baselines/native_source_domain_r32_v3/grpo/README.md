@@ -141,6 +141,21 @@ python -m torch.distributed.run --nproc_per_node=4 --master_port=29519 \
   --run-id REC-MP-GRPO-FULL-E1 --output-dir /data/GRPO/outputs/formal
 ```
 
+可选的固定留出 Probe 使用 4 个 group，以保持 Think `4×G4` 和 NoThink
+`2×G8` 的生产 batch shape。Probe group 会从训练 dataset 永久排除；评估使用固定
+seed，并在前后恢复训练 RNG：
+
+```bash
+python -m torch.distributed.run --nproc_per_node=4 --master_port=29519 \
+  run_grpo_trl_train.py --n-groups all --probe-groups 4 \
+  --probe-every-steps 200 --probe-seed 20260818 \
+  --run-id REC-MP-GRPO-FULL-E1 --output-dir /data/GRPO/outputs/formal
+```
+
+评估发生在 Step 0、每 200 个偶数 step 及训练结束，结果独立写入
+`probes.jsonl`，不进入 reward、advantage 或 optimizer。按 120-step Pilot 的实测
+关键路径估算，每次约 107--110 秒；完整 epoch 约增加 21--24 分钟（约 3%）。
+
 默认每 100 个 global steps 保存，且只允许偶数 `save_steps`。恢复路径必须以
 `checkpoint-<偶数>` 结尾，例如：
 

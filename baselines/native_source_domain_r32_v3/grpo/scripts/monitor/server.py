@@ -225,6 +225,22 @@ def create_app(
                 continue
         return queried_rows(rows, from_step, to_step, route, rollout_id)
 
+    @app.get("/api/probes")
+    def probes(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        group_id: str | None = None,
+    ):
+        rows = filter_rows(
+            read_jsonl(selected_run(run_id) / "probes.jsonl"),
+            from_step=from_step,
+            to_step=to_step,
+        )
+        if group_id is not None:
+            rows = [row for row in rows if row.get("group_id") == group_id]
+        return rows
+
     @app.get("/api/health")
     def health():
         return {"ok": True, "mode": "single" if single_run is not None else "multi", "runs_dir": str(root)}

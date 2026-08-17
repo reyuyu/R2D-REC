@@ -33,7 +33,7 @@ runs/<RUN_ID>/
 │   └── rankN.jsonl
 ├── traces/
 │   └── traces.jsonl
-└── probes/                 # reserved for Phase 2
+└── probes.jsonl            # optional fixed held-out evaluation
 ```
 
 ## CPU-only demo
@@ -75,7 +75,7 @@ short description of a healthy trend; metrics without a monotonic optimum are
 explicitly described as joint diagnostics rather than "higher is better".
 
 The server exposes `/api/runs`, `/api/manifest`, `/api/metrics`, `/api/rollouts`,
-`/api/ranks`, and `/api/traces`. JSONL endpoints accept `from_step`,
+`/api/ranks`, `/api/traces`, and `/api/probes`. JSONL endpoints accept `from_step`,
 `to_step`, `route`, and `rollout_id`; `/api/ranks` additionally accepts
 `rank`.
 
@@ -84,9 +84,13 @@ The server exposes `/api/runs`, `/api/manifest`, `/api/metrics`, `/api/rollouts`
 ```bash
 cd /data/GRPO/scripts
 python -m monitor.test_monitor
+python test_fixed_probe.py
+python test_formal_runner.py
 python test_beam_prompt_cache.py
 python test_correctness_v2.py
 ```
 
-Phase 2 may add fixed checkpoint probes under `probes/`. Phase 1 never loads a
-model or generates an additional completion for monitoring.
+Fixed Probe evaluation is opt-in at the formal runner. Its four group IDs are
+recorded in the manifest and excluded from the training sampler. It runs both
+routes with production batch shapes and a fixed seed, restores training RNG,
+and writes complete candidates and Beam SIDs separately from passive metrics.

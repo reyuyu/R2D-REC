@@ -40,7 +40,8 @@ def _env_flag(name, default="1"):
 
 # ---------------- route dataset ----------------
 
-def build_route_dataset(data_path, n_groups=20, seed=20260816, chunk=8):
+def build_route_dataset(data_path, n_groups=20, seed=20260816, chunk=8,
+                        exclude_group_ids=None):
     """Route-homogeneous alternating dataset.
     Order: [think x chunk][no_think x chunk][think x chunk]...
     chunk=8 aligns with RepeatSampler chunking under dynamic G (G=4 -> sampler
@@ -56,6 +57,11 @@ def build_route_dataset(data_path, n_groups=20, seed=20260816, chunk=8):
     rng = random.Random(seed)
     rng.shuffle(gids)
     chosen = gids[:n_groups]
+    excluded = set(exclude_group_ids or ())
+    unknown = excluded.difference(chosen)
+    if unknown:
+        raise ValueError(f"excluded group IDs are outside the selected dataset: {sorted(unknown)}")
+    chosen = [gid for gid in chosen if gid not in excluded]
     recs = []
     for gid in chosen:
         g = by_group[gid]
@@ -423,29 +429,30 @@ class RecGRPOTrainer(GRPOTrainer):
             seed=self.args.seed,
         )
 
+    def _set_route_config(self, route):
+        """Apply the frozen route generation contract to every TRL consumer."""
+        self.num_generations = ROUTE_G[route]
+        self.args.temperature = ROUTE_TEMP[route]
+        self.args.top_p = ROUTE_TOP_P[route]
+        self.temperature = ROUTE_TEMP[route]
+        self.top_p = ROUTE_TOP_P[route]
+        if getattr(self, "generation_config", None) is not None:
+            self.generation_config.temperature = ROUTE_TEMP[route]
+            self.generation_config.top_p = ROUTE_TOP_P[route]
+            self.generation_config.stop_strings = None
+
     def _prepare_inputs(self, generation_batch):
         # route-homogeneous batch: take route from first example
         if isinstance(generation_batch, list):
             route = generation_batch[0]["route"]
         else:
             route = generation_batch["route"][0] if isinstance(generation_batch["route"], (list, torch.Tensor)) else generation_batch["route"]
-        self.num_generations = ROUTE_G[route]
-        # dynamic sampling params must be synced across ALL consumers:
-        # generation uses generation_config; policy logprob scoring uses
-        # self.temperature/self.top_p; TRL internals read self.args.
-        self.args.temperature = ROUTE_TEMP[route]
-        self.args.top_p = ROUTE_TOP_P[route]
-        self.temperature = ROUTE_TEMP[route]
-        self.top_p = ROUTE_TOP_P[route]
+        # dynamic sampling params must be synced across ALL consumers.
+        self._set_route_config(route)
         # TRL RepeatSampler already repeats each prompt num_generations times
         # (mini_repeat_count), so generate must use num_return_sequences=1 (the
         # default); do NOT touch generation_config.num_return_sequences here.
         if getattr(self, "generation_config", None) is not None:
-            self.generation_config.temperature = ROUTE_TEMP[route]
-            self.generation_config.top_p = ROUTE_TOP_P[route]
-            # Think uses the exact per-sample token-id StoppingCriteria above;
-            # NoThink remains unchanged with no stop string.
-            self.generation_config.stop_strings = None
             if self._smoke_rollout_id <= 2:
                 import os
                 if int(os.environ.get("LOCAL_RANK", "0")) == 0:

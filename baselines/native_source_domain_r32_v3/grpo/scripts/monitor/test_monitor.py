@@ -40,6 +40,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert rank0.write_rank({"rollout_id": 2, "route": "think", "beam_exec_wall_sec": 4.0})
     assert rank1.write_rank({"rollout_id": 2, "route": "think", "beam_exec_wall_sec": 5.0})
     assert rank0.write_trace({"rollout_id": 2, "step": 2, "route": "think", "candidates": []})
+    assert rank0.write_probe({"step": 0, "group_id": "probe-a", "think": {"reward_mean": 1.0}})
     assert parse_every_line(rank0.run_dir / "metrics.jsonl")[1]["loss"] is None
     assert json.loads((rank0.run_dir / "manifest.json").read_text())["unsafe_nan"] is None
     assert parse_every_line(rank0.run_dir / "ranks/rank0.jsonl")[0]["rank"] == 0
@@ -65,6 +66,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(client.get("/api/rollouts?route=think&rollout_id=2").json()) == 1
     assert len(client.get("/api/ranks?rank=1").json()) == 1
     assert len(client.get("/api/traces?rollout_id=2").json()) == 1
+    assert client.get("/api/probes?group_id=probe-a").json()[0]["step"] == 0
     assert client.get("/").status_code == 200
     print("[PASS] FastAPI endpoints and query filters")
 
@@ -84,6 +86,8 @@ with tempfile.TemporaryDirectory() as temporary:
     assert multi_client.get("/api/manifest?run_id=isolated-run").json()["seed"] == 99
     assert [row["step"] for row in multi_client.get("/api/metrics?run_id=isolated-run").json()] == [17]
     assert all(row["step"] != 17 for row in multi_client.get("/api/metrics?run_id=writer-test").json())
+    assert len(multi_client.get("/api/probes?run_id=writer-test").json()) == 1
+    assert multi_client.get("/api/probes?run_id=isolated-run").json() == []
     assert multi_client.get("/api/metrics").status_code == 400
     assert multi_client.get("/api/metrics?run_id=..").status_code == 400
     assert multi_client.get("/api/metrics?run_id=missing").status_code == 404
@@ -101,6 +105,10 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(parse_every_line(demo_dir / "rollouts.jsonl")) == 50
     assert all(len(parse_every_line(demo_dir / f"ranks/rank{rank}.jsonl")) == 50 for rank in range(4))
     traces = parse_every_line(demo_dir / "traces/traces.jsonl")
+    probes = parse_every_line(demo_dir / "probes.jsonl")
+    assert len(probes) == 12
+    assert all(len(row["think"]["candidates"]) == 4 for row in probes)
+    assert all(len(row["nothink"]["candidates"]) == 8 for row in probes)
     assert len(traces) == 5
     assert len(traces[0]["candidates"][0]["beam_sids"]) == 32
     assert traces[0]["candidates"][0]["beam_sids"][0] == traces[0]["gold_sids"][0]
@@ -108,7 +116,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(nothink_trace["candidates"]) == 8
     assert all(candidate["reward"] is not None for candidate in nothink_trace["candidates"])
     html = client.get("/").text
-    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视", "选择实验"))
+    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视", "Probe 检视", "选择实验"))
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")

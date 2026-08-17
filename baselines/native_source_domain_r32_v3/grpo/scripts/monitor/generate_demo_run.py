@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import math
 import random
+import statistics
 from datetime import datetime, timedelta, timezone
 
 try:
@@ -43,7 +44,73 @@ def generate(output_dir: str, run_id: str = "demo-phase1") -> str:
         "max_completion_length": 2048,
         "beam32": {"num_beams": 32, "num_return_sequences": 32, "max_new_tokens": 128, "batch": 1},
         "beam_rank_balance": True,
+        "fixed_probe": {
+            "enabled": True,
+            "group_ids": [f"probe-group-{index}" for index in range(4)],
+            "every_steps": 50,
+            "seed": 20260818,
+            "excluded_from_training": True,
+        },
     })
+
+    for step in (0, 50, 100):
+        for group_index in range(4):
+            gold = ["prod", 1000 + group_index, 42, 7]
+            think_candidates = []
+            for candidate_index in range(4):
+                reward = min(8.0, candidate_index * 0.5 + step * 0.025 + group_index * 0.1)
+                beams = [gold if beam_index == 0 and step >= 50 else
+                         ["prod", 2000 + candidate_index, 80 + beam_index, beam_index]
+                         for beam_index in range(32)]
+                think_candidates.append({
+                    "completion": f"Fixed probe reasoning {group_index}/{candidate_index} at step {step}. </think>",
+                    "completion_length": 520 + candidate_index * 31,
+                    "completion_sha256": f"think-{step}-{group_index}-{candidate_index}",
+                    "closed": True,
+                    "reward": reward,
+                    "exact": 1 if step >= 50 else 0,
+                    "ab": candidate_index % 2,
+                    "a": 1,
+                    "invalid": 0,
+                    "beam_sids": beams,
+                })
+            nothink_candidates = []
+            for candidate_index in range(8):
+                exact = step >= 100 and candidate_index == 0
+                sid = gold if exact else ["prod", 3000 + candidate_index, 90, candidate_index]
+                nothink_candidates.append({
+                    "completion": f"<|prod_begin|><s_a_{sid[1]}><s_b_{sid[2]}><s_c_{sid[3]}>",
+                    "completion_length": 18,
+                    "completion_sha256": f"nothink-{step}-{group_index}-{candidate_index}",
+                    "parsed_sid": sid,
+                    "reward": 8.0 if exact else 0.0,
+                })
+            writers[0].write_probe({
+                "step": step,
+                "reason": "baseline" if step == 0 else "final" if step == 100 else "interval",
+                "group_id": f"probe-group-{group_index}",
+                "target_domain": "prod",
+                "gold_sids": [gold],
+                "think_prompt": f"Think fixed prompt {group_index}",
+                "nothink_prompt": f"NoThink fixed prompt {group_index}",
+                "think": {
+                    "reward_mean": statistics.fmean(item["reward"] for item in think_candidates),
+                    "reward_std": statistics.pstdev(item["reward"] for item in think_candidates),
+                    "closure_rate": 1.0,
+                    "exact_count": sum(item["exact"] for item in think_candidates),
+                    "ab_count": sum(item["ab"] for item in think_candidates),
+                    "a_count": sum(item["a"] for item in think_candidates),
+                    "invalid_count": 0,
+                    "candidates": think_candidates,
+                },
+                "nothink": {
+                    "reward_mean": statistics.fmean(item["reward"] for item in nothink_candidates),
+                    "reward_std": statistics.pstdev(item["reward"] for item in nothink_candidates),
+                    "candidates": nothink_candidates,
+                },
+                "probe_wall_sec": 108.0,
+                "seed": 20260818,
+            })
 
     elapsed = 0.0
     rollout_id = 0
