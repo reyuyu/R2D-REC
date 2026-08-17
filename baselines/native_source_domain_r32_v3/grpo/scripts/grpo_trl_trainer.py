@@ -2,12 +2,14 @@
 """RecGRPOTrainer: route-aware minimal subclass of TRL GRPOTrainer.
 Think G=4 / NoThink G=8 via route-homogeneous batches + dynamic num_generations.
 Population-std advantage override. No training performed in this file's tests."""
+# Set GRPO_DETAILED_MONITOR=0 to omit per-sample text and non-core statistics.
 import sys
 sys.path.insert(0, "/data/GRPO/scripts")
 import trl_import_fix  # must run before trl.trainer imports (no site-packages change)
 
 import collections
 import json
+import os
 import torch
 from datasets import Dataset
 from torch.utils.data import Sampler
@@ -26,6 +28,13 @@ ROUTE_TOP_P = {"think": 0.95, "no_think": 1.0}
 # single-group total weight equal: 4 samples x 1.0 == 8 samples x 0.5 == 4.
 ROUTE_LOSS_W = {"think": 1.0, "no_think": 0.5}
 ROUTE_ID = {"think": 0, "no_think": 1}
+
+
+def _env_flag(name, default="1"):
+    value = os.environ.get(name, default)
+    if value not in {"0", "1"}:
+        raise ValueError(f"{name} must be 0 or 1, got {value!r}")
+    return value == "1"
 
 
 # ---------------- route dataset ----------------
@@ -254,6 +263,7 @@ class RecGRPOTrainer(GRPOTrainer):
         self._smoke_rollout_id = 0
         self._smoke_log = []
         self._smoke_policy_epoch = {}
+        self._detailed_monitor = _env_flag("GRPO_DETAILED_MONITOR")
         super().__init__(*args, **kwargs)
 
     def _generate_single_turn(self, prompts, images=None):
@@ -548,11 +558,12 @@ class RecGRPOTrainer(GRPOTrainer):
         self._metrics[mode]["reward_std"].append(std_rewards.mean().item())
         self._metrics[mode]["frac_reward_zero_std"].append(is_std_zero.float().mean().item())
 
-        self._logs["prompt"].extend(gather_object(prompts_text))
-        self._logs["completion"].extend(gather_object(completions_text))
-        for i, name in enumerate(self.reward_func_names):
-            self._logs["rewards"][name].extend(rewards_per_func[:, i].tolist())
-        self._logs["advantages"].extend(all_process_advantages.tolist())
+        if self._detailed_monitor:
+            self._logs["prompt"].extend(gather_object(prompts_text))
+            self._logs["completion"].extend(gather_object(completions_text))
+            for i, name in enumerate(self.reward_func_names):
+                self._logs["rewards"][name].extend(rewards_per_func[:, i].tolist())
+            self._logs["advantages"].extend(all_process_advantages.tolist())
 
         output = {
             "prompt_ids": prompt_ids,
@@ -573,8 +584,6 @@ class RecGRPOTrainer(GRPOTrainer):
             output["ref_per_token_logps"] = ref_per_token_logps
 
         # ---- smoke monitoring: rollout-level stats ----
-        import statistics as _st
-        _plens = sorted(len(x) for x in prompt_ids_list)
         entry = dict(
             rollout_id=self._smoke_rollout_id,
             route=self._smoke_log[-1]["route"] if self._smoke_log else "?",
@@ -582,21 +591,26 @@ class RecGRPOTrainer(GRPOTrainer):
             reward_mean=float(mean_grouped_rewards.mean()),
             reward_std=float(std_rewards.mean()),
             zero_std_ratio=float(is_std_zero.float().mean()),
-            advantage_mean=float(all_process_advantages.mean()),
-            advantage_std=float(all_process_advantages.std(unbiased=False)),
-            abs_advantage_mean=float(all_process_advantages.abs().mean()),
             rollout_sec=round(_t.time() - _t0, 2),
             gen_wall_sec=round(gen_wall_sec, 2),
-            prompt_len_mean=round(_st.mean(_plens), 1),
-            prompt_len_p95=_plens[min(len(_plens) - 1, int(0.95 * len(_plens)))],
-            prompt_len_max=_plens[-1],
         )
-        # NoThink six-level reward distribution (local rewards, pre-gather slice)
-        if entry["route"] == "no_think":
-            local_r = rewards[process_slice].tolist()
-            entry["reward_level_dist"] = {
-                str(k): local_r.count(k) for k in (-1.0, -0.25, 0.0, 0.5, 2.0, 8.0)
-            }
+        if self._detailed_monitor:
+            import statistics as _st
+            _plens = sorted(len(x) for x in prompt_ids_list)
+            entry.update(
+                advantage_mean=float(all_process_advantages.mean()),
+                advantage_std=float(all_process_advantages.std(unbiased=False)),
+                abs_advantage_mean=float(all_process_advantages.abs().mean()),
+                prompt_len_mean=round(_st.mean(_plens), 1),
+                prompt_len_p95=_plens[min(len(_plens) - 1, int(0.95 * len(_plens)))],
+                prompt_len_max=_plens[-1],
+            )
+            # NoThink six-level reward distribution (local rewards, pre-gather slice)
+            if entry["route"] == "no_think":
+                local_r = rewards[process_slice].tolist()
+                entry["reward_level_dist"] = {
+                    str(k): local_r.count(k) for k in (-1.0, -0.25, 0.0, 0.5, 2.0, 8.0)
+                }
         self._smoke_log[-1].update(entry)
         return output
 
@@ -612,8 +626,8 @@ class RecGRPOTrainer(GRPOTrainer):
         attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
         logits_to_keep = completion_ids.size(1)
 
-        per_token_logps, entropies = self._get_per_token_logps_and_entropies(
-            model, input_ids, attention_mask, logits_to_keep, compute_entropy=True,
+        per_token_logps, _ = self._get_per_token_logps_and_entropies(
+            model, input_ids, attention_mask, logits_to_keep, compute_entropy=False,
         )
 
         advantages = inputs["advantages"]
@@ -653,15 +667,18 @@ class RecGRPOTrainer(GRPOTrainer):
                 f"policy_epoch_{pe+1}": 1,
                 f"step_{pe+1}": self.state.global_step,
                 f"ratio_mean_ep{pe+1}": float(ratio_flat.mean()),
-                f"ratio_std_ep{pe+1}": float(ratio_flat.std(unbiased=False)),
-                f"ratio_p95_ep{pe+1}": float(ratio_flat.quantile(0.95)),
-                f"ratio_p99_ep{pe+1}": float(ratio_flat.quantile(0.99)),
-                f"max_abs_log_ratio_ep{pe+1}": float(flat.abs().max()),
                 f"clip_fraction_ep{pe+1}": float(((ratio_flat - 1.0).abs() > self.epsilon_low).float().mean()),
                 f"approx_kl_ep{pe+1}": float((ratio_flat - 1.0 - flat).mean()),
-                f"action_tokens_ep{pe+1}": float(completion_mask.sum()),
                 f"policy_fwb_sec_ep{pe+1}": round(_t.time() - t0, 2),
             }
+            if self._detailed_monitor:
+                entry.update({
+                    f"ratio_std_ep{pe+1}": float(ratio_flat.std(unbiased=False)),
+                    f"ratio_p95_ep{pe+1}": float(ratio_flat.quantile(0.95)),
+                    f"ratio_p99_ep{pe+1}": float(ratio_flat.quantile(0.99)),
+                    f"max_abs_log_ratio_ep{pe+1}": float(flat.abs().max()),
+                    f"action_tokens_ep{pe+1}": float(completion_mask.sum()),
+                })
             self._smoke_policy_epoch[self._smoke_rollout_id] = pe + 1
             self._smoke_log[-1].update(entry)
         return loss
