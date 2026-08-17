@@ -264,6 +264,8 @@ class RecGRPOTrainer(GRPOTrainer):
         self._smoke_log = []
         self._smoke_policy_epoch = {}
         self._detailed_monitor = _env_flag("GRPO_DETAILED_MONITOR")
+        self._generation_profile = _env_flag("GRPO_GENERATION_PROFILE", default="0")
+        self._generation_profile_log = []
         super().__init__(*args, **kwargs)
 
     def _generate_single_turn(self, prompts, images=None):
@@ -298,7 +300,8 @@ class RecGRPOTrainer(GRPOTrainer):
         # ---- token-id based </think> stopping for the Think route ----
         # (stop_strings unreliable here; token-id StoppingCriteria is exact)
         stopping_criteria = None
-        if getattr(self, "num_generations", 0) == 4:  # Think route
+        is_think = getattr(self, "num_generations", 0) == 4
+        if is_think:
             from transformers import StoppingCriteria, StoppingCriteriaList
 
             class _ThinkStop(StoppingCriteria):
@@ -312,13 +315,19 @@ class RecGRPOTrainer(GRPOTrainer):
 
             think_tok_id = self.processing_class.encode("</think>", add_special_tokens=False)[0]
             stopping_criteria = StoppingCriteriaList([_ThinkStop(think_tok_id)])
+        generation_context = torch.inference_mode() if is_think else torch.no_grad()
+        if self._generation_profile:
+            import time as _profile_time
+            torch.cuda.synchronize(device)
+            torch.cuda.reset_peak_memory_stats(device)
+            _generate_started = _profile_time.perf_counter()
         with (
             profiling_context(self, "transformers.generate"),
             unwrap_model_for_generation(
                 self.model_wrapped, self.accelerator,
                 gather_deepspeed3_params=self.args.ds3_gather_for_generation,
             ) as unwrapped_model,
-            torch.no_grad(),
+            generation_context,
             FSDP.summon_full_params(self.model_wrapped, recurse=False)
             if getattr(self, "is_fsdp_enabled", False) else nullcontext(),
         ):
@@ -328,12 +337,14 @@ class RecGRPOTrainer(GRPOTrainer):
                 tokenizer=self.processing_class,
                 stopping_criteria=stopping_criteria,
             )
+        if self._generation_profile:
+            torch.cuda.synchronize(device)
+            _generate_wall = _profile_time.perf_counter() - _generate_started
         prompt_ids, prompt_mask = generate_inputs["input_ids"], generate_inputs["attention_mask"]
         prompt_length = prompt_ids.size(1)
         completion_ids = prompt_completion_ids[:, prompt_length:]
 
         # ---- Think-route truncation at </think> token ----
-        is_think = getattr(self, "num_generations", 0) == 4
         completion_ids_list_raw = [completion_ids[i].tolist() for i in range(completion_ids.size(0))]
         if is_think:
             think_tok = self.processing_class.encode("</think>", add_special_tokens=False)[0]
@@ -352,6 +363,32 @@ class RecGRPOTrainer(GRPOTrainer):
             if self.eos_token_id in c:
                 c = c[: c.index(self.eos_token_id) + 1]
             completion_ids.append(c)
+        if self._generation_profile:
+            completion_lengths = [len(ids) for ids in completion_ids]
+            closure_positions = []
+            for ids in completion_ids:
+                try:
+                    closure_positions.append(ids.index(think_tok_id) if is_think else None)
+                except ValueError:
+                    closure_positions.append(None)
+            max_completion = max(completion_lengths, default=0)
+            sequence_slots = max_completion * len(completion_lengths)
+            useful_tokens = sum(completion_lengths)
+            self._generation_profile_log.append({
+                "rollout_id": self._smoke_rollout_id,
+                "route": "think" if is_think else "no_think",
+                "rank": self.accelerator.process_index,
+                "prompt_lengths": prompt_mask.sum(dim=1).tolist(),
+                "completion_lengths": completion_lengths,
+                "closure_positions": closure_positions,
+                "generate_wall_sec": _generate_wall,
+                "useful_generated_tokens": useful_tokens,
+                "useful_tokens_per_sec": useful_tokens / max(_generate_wall, 1e-12),
+                "batch_tail_empty_slots": sequence_slots - useful_tokens,
+                "batch_tail_empty_ratio": (sequence_slots - useful_tokens) / max(sequence_slots, 1),
+                "peak_allocated_mb": torch.cuda.max_memory_allocated(device) // (1024 * 1024),
+                "peak_reserved_mb": torch.cuda.max_memory_reserved(device) // (1024 * 1024),
+            })
         prompt_ids = [p[m].tolist() for p, m in zip(prompt_ids, prompt_mask.bool())]
         logprobs = None
         return prompt_ids, completion_ids, logprobs, forward_kwargs

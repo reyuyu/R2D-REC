@@ -1,0 +1,222 @@
+{
+  "seed": 20260819,
+  "prompt_tokens": 1101,
+  "think_token_ids": [
+    151668
+  ],
+  "paired_repeats": 2,
+  "baseline_completion_lengths": [
+    833,
+    826,
+    672,
+    691
+  ],
+  "baseline_closure_positions": [
+    832,
+    825,
+    671,
+    690
+  ],
+  "model_config_use_cache": true,
+  "model_generation_config_use_cache": null,
+  "benchmark_cache_implementation": null,
+  "parity": {
+    "baseline": {
+      "token_equal": [
+        true,
+        true
+      ],
+      "closure_equal": [
+        true,
+        true
+      ],
+      "reconstructed_is_inference": [
+        false,
+        false
+      ]
+    },
+    "inference_mode": {
+      "token_equal": [
+        true,
+        true
+      ],
+      "closure_equal": [
+        true,
+        true
+      ],
+      "reconstructed_is_inference": [
+        false,
+        false
+      ]
+    },
+    "no_tokenizer": {
+      "token_equal": [
+        true,
+        true
+      ],
+      "closure_equal": [
+        true,
+        true
+      ],
+      "reconstructed_is_inference": [
+        false,
+        false
+      ]
+    }
+  },
+  "timing": {
+    "baseline": {
+      "wall_sec": {
+        "values": [
+          67.89724435843527,
+          67.4850780852139
+        ],
+        "mean": 67.69116122182459,
+        "median": 67.69116122182459,
+        "min": 67.4850780852139,
+        "max": 67.89724435843527
+      },
+      "useful_tokens_per_sec": {
+        "values": [
+          44.508433715610124,
+          44.78026973880209
+        ],
+        "mean": 44.64435172720611,
+        "median": 44.64435172720611,
+        "min": 44.508433715610124,
+        "max": 44.78026973880209
+      },
+      "peak_allocated_mb": [
+        17796,
+        17796
+      ],
+      "peak_reserved_mb": [
+        18218,
+        18218
+      ]
+    },
+    "inference_mode": {
+      "wall_sec": {
+        "values": [
+          62.414256007410586,
+          62.425863299518824
+        ],
+        "mean": 62.420059653464705,
+        "median": 62.420059653464705,
+        "min": 62.414256007410586,
+        "max": 62.425863299518824
+      },
+      "useful_tokens_per_sec": {
+        "values": [
+          48.41842542577438,
+          48.40942263786512
+        ],
+        "mean": 48.41392403181975,
+        "median": 48.41392403181975,
+        "min": 48.40942263786512,
+        "max": 48.41842542577438
+      },
+      "peak_allocated_mb": [
+        17796,
+        17796
+      ],
+      "peak_reserved_mb": [
+        18218,
+        18218
+      ]
+    },
+    "no_tokenizer": {
+      "wall_sec": {
+        "values": [
+          67.46260117087513,
+          67.4295462667942
+        ],
+        "mean": 67.44607371883467,
+        "median": 67.44607371883467,
+        "min": 67.4295462667942,
+        "max": 67.46260117087513
+      },
+      "useful_tokens_per_sec": {
+        "values": [
+          44.79518944645517,
+          44.8171486731209
+        ],
+        "mean": 44.80616905978803,
+        "median": 44.80616905978803,
+        "min": 44.79518944645517,
+        "max": 44.8171486731209
+      },
+      "peak_allocated_mb": [
+        17796,
+        17796
+      ],
+      "peak_reserved_mb": [
+        18218,
+        18218
+      ]
+    }
+  },
+  "reward": {
+    "baseline": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "inference_mode": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "no_tokenizer": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "reward_wall_sec": {
+    "baseline": 36.18442116770893,
+    "inference_mode": 36.199974766001105,
+    "no_tokenizer": 36.20640565827489
+  },
+  "compile_diagnostic": {
+    "disable_compile": false,
+    "error": null,
+    "counters_before": {
+      "frames_total": 0,
+      "unique_graphs": 0,
+      "fxgraph_cache_hit": 0,
+      "fxgraph_cache_miss": 0
+    },
+    "runs": [
+      {
+        "wall_sec": 67.70449799578637,
+        "token_equal": true,
+        "closure_equal": true,
+        "peak_allocated_mb": 17796,
+        "peak_reserved_mb": 39504,
+        "compile_counters": {
+          "frames_total": 0,
+          "unique_graphs": 0,
+          "fxgraph_cache_hit": 0,
+          "fxgraph_cache_miss": 0
+        }
+      },
+      {
+        "wall_sec": 67.09177256096154,
+        "token_equal": true,
+        "closure_equal": true,
+        "peak_allocated_mb": 17796,
+        "peak_reserved_mb": 39504,
+        "compile_counters": {
+          "frames_total": 0,
+          "unique_graphs": 0,
+          "fxgraph_cache_hit": 0,
+          "fxgraph_cache_miss": 0
+        }
+      }
+    ]
+  }
+}

@@ -226,6 +226,7 @@ def main():
     post_base = base_checksum()
     history = trainer.state.log_history if hasattr(trainer.state, "log_history") else []
     smoke_log = getattr(trainer, "_smoke_log", [])
+    generation_profile = getattr(trainer, "_generation_profile_log", [])
     beam_stats = getattr(model, "_beam_stats", None)
 
     summary = dict(
@@ -241,6 +242,7 @@ def main():
         peak_allocated_mb=torch.cuda.max_memory_allocated(device) // (1024 * 1024),
         peak_reserved_mb=torch.cuda.max_memory_reserved(device) // (1024 * 1024),
         rollout_ids=smoke_log,
+        generation_profile=generation_profile,
         log_history=history,
         beam_stats=beam_stats,
     )
