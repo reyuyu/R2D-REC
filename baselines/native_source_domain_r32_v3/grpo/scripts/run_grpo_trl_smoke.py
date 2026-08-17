@@ -15,6 +15,7 @@ import sys
 import time
 
 import torch
+import torch.distributed as dist
 
 sys.path.insert(0, "/data/GRPO/scripts")
 import trl_import_fix  # noqa: F401
@@ -37,12 +38,58 @@ def cached_prompt_ids(tokenizer, prompt, cache):
     return cache[prompt]
 
 
+def beam_lpt_assignment(tasks, world_size):
+    """Deterministic length-LPT assignment for frozen batch=1 Beam tasks."""
+    assignments = {rank: [] for rank in range(world_size)}
+    predicted_loads = [0] * world_size
+    for task in sorted(tasks, key=lambda item: (-len(item["input_ids"]), item["task_id"])):
+        target = min(range(world_size), key=lambda rank: (predicted_loads[rank], rank))
+        assignments[target].append(task["task_id"])
+        predicted_loads[target] += len(task["input_ids"])
+    return assignments, predicted_loads
+
+
+def distributed_beam_enabled():
+    value = os.environ.get("GRPO_BEAM_RANK_BALANCE", "1").strip().lower()
+    requested = value not in {"0", "false", "no", "off"}
+    return requested and dist.is_available() and dist.is_initialized() and dist.get_world_size() > 1
+
+
+def all_gather_objects(value):
+    gathered = [None] * dist.get_world_size()
+    dist.all_gather_object(gathered, value)
+    return gathered
+
+
+def run_beam32_task(model, tokenizer, task):
+    torch.cuda.synchronize()
+    t0 = time.perf_counter()
+    texts = generate_batch(
+        model, tokenizer, [task["input_ids"]],
+        max_new_tokens=128, num_beams=32, num_return_sequences=32,
+    )
+    torch.cuda.synchronize()
+    beam_sec = time.perf_counter() - t0
+    beam_sids = [final_sid(text) for text in texts]
+    invalid = sum(sid is None for sid in beam_sids)
+    reward, exact, ab, a = think_reward(beam_sids, {tuple(item) for item in task["gold"]})
+    return {
+        "task_id": task["task_id"],
+        "beam_sec": beam_sec,
+        "reward": reward,
+        "exact": exact,
+        "ab": ab,
+        "a": a,
+        "invalid": invalid,
+    }
+
+
 def make_beam32_fn(model, tokenizer):
     """Beam32 on sampled CoT (eval + inference_mode), hierarchical reward.
     Re-decodes completions from raw token ids. Accumulates closed/no-close
     split stats (reward mean, beam invalid, beam wall) onto model._beam_stats.
-    Wall time is THIS rank's beam time (4 ranks beam their own cots in
-    parallel - never summed across ranks)."""
+    With distributed length-LPT enabled, wall time is the Beam work actually
+    executed by this rank; rewards are restored to each origin rank's order."""
     stats = dict(
         beam_sec=0.0, n_cot=0, exact=0, ab=0, a=0, invalid=0,
         closure=0, n_closure_check=0,
@@ -50,6 +97,9 @@ def make_beam32_fn(model, tokenizer):
         closed_beam_sec=0.0,
         noclose_n=0, noclose_r_sum=0.0, noclose_invalid=0, noclose_beam_total=0,
         noclose_beam_sec=0.0,
+        scheduler_calls=0, scheduler_input_gather_sec=0.0,
+        scheduler_sec=0.0, scheduler_result_gather_sec=0.0,
+        scheduler_exec_sec=0.0, scheduler_task_count=0,
     )
 
     def beam32_fn(prompts, completions, completion_ids, gold_sets):
@@ -60,43 +110,82 @@ def make_beam32_fn(model, tokenizer):
         out = []
         try:
             with torch.inference_mode():
-                for prompt, cot_ids, gs in zip(prompts, completion_ids, gold_sets):
+                rank = dist.get_rank() if distributed_beam_enabled() else 0
+                local_tasks = []
+                for local_index, (prompt, cot_ids, gs) in enumerate(zip(prompts, completion_ids, gold_sets)):
                     cot = tokenizer.decode(cot_ids, skip_special_tokens=False)
-                    stats["n_cot"] += 1
-                    stats["n_closure_check"] += 1
                     closed = "</think>" in cot
-                    if closed:
-                        stats["closure"] += 1
                     idx = cot.find("</think>")
                     cot_trim = cot[: idx + len("</think>")] if idx >= 0 else cot
                     prompt_ids = cached_prompt_ids(tokenizer, prompt, prompt_ids_cache)
                     cot_ids2 = tokenizer.encode(cot_trim, add_special_tokens=False)
-                    t0 = time.time()
-                    texts = generate_batch(model, tokenizer, [prompt_ids + cot_ids2],
-                                           max_new_tokens=128, num_beams=32,
-                                           num_return_sequences=32)
-                    beam_t = time.time() - t0
-                    stats["beam_sec"] += beam_t
-                    beam_sids = [final_sid(t) for t in texts]
-                    n_inv = sum(1 for s in beam_sids if s is None)
-                    stats["invalid"] += n_inv
-                    r, ec, ac, a2 = think_reward(beam_sids, gs)
-                    stats["exact"] += ec
-                    stats["ab"] += ac
-                    stats["a"] += a2
-                    out.append(r)
-                    if closed:
+                    local_tasks.append({
+                        "task_id": (rank, local_index),
+                        "origin_rank": rank,
+                        "local_index": local_index,
+                        "input_ids": prompt_ids + cot_ids2,
+                        "gold": [list(item) for item in sorted(gs)],
+                        "closed": closed,
+                    })
+
+                if distributed_beam_enabled():
+                    gather_started = time.perf_counter()
+                    gathered_tasks = all_gather_objects(local_tasks)
+                    input_gather_sec = time.perf_counter() - gather_started
+                    global_tasks = [task for rank_tasks in gathered_tasks for task in rank_tasks]
+
+                    scheduler_started = time.perf_counter()
+                    assignments, _ = beam_lpt_assignment(global_tasks, dist.get_world_size())
+                    scheduler_sec = time.perf_counter() - scheduler_started
+                    by_id = {task["task_id"]: task for task in global_tasks}
+                    assigned_ids = assignments[rank]
+
+                    exec_started = time.perf_counter()
+                    executed = [run_beam32_task(model, tokenizer, by_id[task_id]) for task_id in assigned_ids]
+                    exec_sec = time.perf_counter() - exec_started
+
+                    result_gather_started = time.perf_counter()
+                    gathered_results = all_gather_objects(executed)
+                    result_gather_sec = time.perf_counter() - result_gather_started
+                    global_results = [item for rank_results in gathered_results for item in rank_results]
+                    result_by_id = {item["task_id"]: item for item in global_results}
+                    if len(result_by_id) != len(global_tasks):
+                        raise RuntimeError("distributed Beam scheduler did not return every task exactly once")
+                    local_results = [result_by_id[task["task_id"]] for task in local_tasks]
+
+                    stats["scheduler_calls"] += 1
+                    stats["scheduler_input_gather_sec"] += input_gather_sec
+                    stats["scheduler_sec"] += scheduler_sec
+                    stats["scheduler_result_gather_sec"] += result_gather_sec
+                    stats["scheduler_exec_sec"] += exec_sec
+                    stats["scheduler_task_count"] += len(assigned_ids)
+                    stats["beam_sec"] += sum(item["beam_sec"] for item in executed)
+                else:
+                    local_results = [run_beam32_task(model, tokenizer, task) for task in local_tasks]
+                    stats["beam_sec"] += sum(item["beam_sec"] for item in local_results)
+
+                for task, result in zip(local_tasks, local_results):
+                    stats["n_cot"] += 1
+                    stats["n_closure_check"] += 1
+                    if task["closed"]:
+                        stats["closure"] += 1
+                    stats["invalid"] += result["invalid"]
+                    stats["exact"] += result["exact"]
+                    stats["ab"] += result["ab"]
+                    stats["a"] += result["a"]
+                    out.append(result["reward"])
+                    if task["closed"]:
                         stats["closed_n"] += 1
-                        stats["closed_r_sum"] += r
-                        stats["closed_invalid"] += n_inv
-                        stats["closed_beam_total"] += len(beam_sids)
-                        stats["closed_beam_sec"] += beam_t
+                        stats["closed_r_sum"] += result["reward"]
+                        stats["closed_invalid"] += result["invalid"]
+                        stats["closed_beam_total"] += 32
+                        stats["closed_beam_sec"] += result["beam_sec"]
                     else:
                         stats["noclose_n"] += 1
-                        stats["noclose_r_sum"] += r
-                        stats["noclose_invalid"] += n_inv
-                        stats["noclose_beam_total"] += len(beam_sids)
-                        stats["noclose_beam_sec"] += beam_t
+                        stats["noclose_r_sum"] += result["reward"]
+                        stats["noclose_invalid"] += result["invalid"]
+                        stats["noclose_beam_total"] += 32
+                        stats["noclose_beam_sec"] += result["beam_sec"]
         finally:
             if was_training:
                 model.train()
@@ -289,6 +378,14 @@ def main():
                   "beam_invalid", f"{bs.get('noclose_invalid', 0)}/{bs.get('noclose_beam_total', 0)}",
                   f"beam_sec {bs.get('noclose_beam_sec', 0.0):.1f}", flush=True)
             print("beam total_sec (this rank):", round(bs.get("beam_sec", 0.0), 1), flush=True)
+            if bs.get("scheduler_calls", 0):
+                print("beam scheduler: calls", bs["scheduler_calls"],
+                      "tasks", bs.get("scheduler_task_count"),
+                      "exec_sec", round(bs.get("scheduler_exec_sec", 0.0), 3),
+                      "input_gather_sec", round(bs.get("scheduler_input_gather_sec", 0.0), 4),
+                      "schedule_sec", round(bs.get("scheduler_sec", 0.0), 4),
+                      "result_gather_sec", round(bs.get("scheduler_result_gather_sec", 0.0), 4),
+                      flush=True)
         for e in smoke_log:
             if "route" in e:
                 print("rollout", e.get("rollout_id"), e.get("route"),
