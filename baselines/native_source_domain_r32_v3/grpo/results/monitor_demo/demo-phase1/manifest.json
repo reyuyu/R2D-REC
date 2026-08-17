@@ -1,0 +1,45 @@
+{
+  "run_id": "demo-phase1",
+  "start_time": "2026-08-17T12:26:40Z",
+  "git_commit": "demo-cpu-only",
+  "seed": 20260817,
+  "world_size": 4,
+  "model_path": "/models/Qwen3-8B",
+  "adapter_path": "/adapters/BATA-BASELINE-R32-2E",
+  "dataset_path": "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl",
+  "dataset_version": "rec_mp_grpo_v2",
+  "learning_rate": 1e-06,
+  "max_steps": 100,
+  "num_iterations": 2,
+  "think_g": 4,
+  "nothink_g": 8,
+  "temperature": {
+    "think": 0.9,
+    "no_think": 1.0
+  },
+  "top_p": {
+    "think": 0.95,
+    "no_think": 1.0
+  },
+  "beta": 0.0,
+  "epsilon": 0.2,
+  "max_prompt_length": 8192,
+  "max_completion_length": 2048,
+  "beam32": {
+    "num_beams": 32,
+    "num_return_sequences": 32,
+    "max_new_tokens": 128,
+    "batch": 1
+  },
+  "beam_rank_balance": true,
+  "environment": {
+    "GRPO_MONITOR": null,
+    "GRPO_MONITOR_DIR": null,
+    "GRPO_MONITOR_STEP_EVERY": null,
+    "GRPO_MONITOR_ROLLOUT_EVERY": null,
+    "GRPO_TRACE_EVERY": null,
+    "GRPO_BEAM_RANK_BALANCE": null,
+    "GRPO_DETAILED_MONITOR": null,
+    "GRPO_GENERATION_PROFILE": null
+  }
+}

@@ -255,6 +255,7 @@ class RecGRPOTrainer(GRPOTrainer):
     def __init__(self, *args, **kwargs):
         # transformers 5.x removed PreTrainedModel.warnings_issued which TRL 0.24
         # assumes; add it on the instance (user-code fix, site-packages untouched)
+        self._monitor = kwargs.pop("monitor_writer", None)
         model = kwargs.get("model")
         if model is None and args:
             model = args[0]
@@ -267,6 +268,19 @@ class RecGRPOTrainer(GRPOTrainer):
         self._generation_profile = _env_flag("GRPO_GENERATION_PROFILE", default="0")
         self._generation_profile_log = []
         super().__init__(*args, **kwargs)
+
+    def _monitor_enabled(self):
+        return self._monitor is not None and self._monitor.enabled
+
+    def _current_beam_call(self):
+        for candidate in (self.model, getattr(self, "model_wrapped", None)):
+            if candidate is None:
+                continue
+            for obj in (candidate, getattr(candidate, "module", None)):
+                stats = getattr(obj, "_beam_stats", None)
+                if stats and stats.get("last_call"):
+                    return stats["last_call"]
+        return None
 
     def _generate_single_turn(self, prompts, images=None):
         """TRL transformers-path copy with one addition: Think-route completions
@@ -551,7 +565,16 @@ class RecGRPOTrainer(GRPOTrainer):
         # ---- HARD group_id assert: every rewards.view(-1, G) group must be the
         # G samples of ONE prompt (same recommendation_group_id). TRL gather
         # keeps rank order, same as gather_object below. ----
-        group_ids_all = gather_object([x["recommendation_group_id"] for x in inputs])
+        if self._monitor_enabled():
+            group_metadata_all = gather_object([
+                (x["recommendation_group_id"], len(completion_ids_list[index]))
+                for index, x in enumerate(inputs)
+            ])
+            group_ids_all = [item[0] for item in group_metadata_all]
+            monitor_completion_lengths = [item[1] for item in group_metadata_all]
+        else:
+            group_ids_all = gather_object([x["recommendation_group_id"] for x in inputs])
+            monitor_completion_lengths = None
         assert len(group_ids_all) == n_all, (
             f"gathered group_ids {len(group_ids_all)} != rewards {n_all}")
         for gi in range(0, n_all, self.num_generations):
@@ -628,6 +651,25 @@ class RecGRPOTrainer(GRPOTrainer):
             rollout_sec=round(_t.time() - _t0, 2),
             gen_wall_sec=round(gen_wall_sec, 2),
         )
+        beam_call = None
+        if self._monitor_enabled():
+            lengths_for_monitor = monitor_completion_lengths
+            entry.update(
+                completion_length_mean=sum(lengths_for_monitor) / max(len(lengths_for_monitor), 1),
+                completion_length_min=min(lengths_for_monitor, default=0),
+                completion_length_max=max(lengths_for_monitor, default=0),
+                recommendation_group_ids=list(dict.fromkeys(group_ids_all)),
+            )
+            beam_call = self._current_beam_call() if entry["route"] == "think" else None
+            if beam_call:
+                entry.update(
+                    closure_rate=beam_call["closure"] / max(beam_call["n_cot"], 1),
+                    exact_count=beam_call["exact"],
+                    ab_count=beam_call["ab"],
+                    a_count=beam_call["a"],
+                    invalid_count=beam_call["invalid"],
+                    beam_wall_sec=beam_call["global_beam_wall_sec"],
+                )
         if self._detailed_monitor:
             import statistics as _st
             _plens = sorted(len(x) for x in prompt_ids_list)
@@ -645,8 +687,105 @@ class RecGRPOTrainer(GRPOTrainer):
                 entry["reward_level_dist"] = {
                     str(k): local_r.count(k) for k in (-1.0, -0.25, 0.0, 0.5, 2.0, 8.0)
                 }
+        if self._monitor_enabled() and entry["route"] == "no_think":
+            reward_values = rewards.tolist()
+            entry["reward_level_dist"] = {
+                str(k): reward_values.count(k) for k in (-1.0, -0.25, 0.0, 0.5, 2.0, 8.0)
+            }
         self._smoke_log[-1].update(entry)
+        self._write_rollout_monitor(entry, inputs, completion_ids_list, completions_text,
+                                    rewards[process_slice].tolist(), beam_call)
         return output
+
+    def _write_rollout_monitor(self, entry, inputs, completion_ids_list,
+                               completions_text, local_rewards, beam_call):
+        if not self._monitor_enabled():
+            return
+        rollout_event = {
+            "rollout_id": entry["rollout_id"],
+            "step": self.state.global_step,
+            "route": entry["route"],
+            "g": entry["num_generations"],
+            "recommendation_group_ids": entry.get("recommendation_group_ids"),
+            "reward_mean": entry["reward_mean"],
+            "reward_std": entry["reward_std"],
+            "zero_std_ratio": entry["zero_std_ratio"],
+            "closure_rate": entry.get("closure_rate"),
+            "exact_count": entry.get("exact_count"),
+            "ab_count": entry.get("ab_count"),
+            "a_count": entry.get("a_count"),
+            "invalid_count": entry.get("invalid_count"),
+            "reward_level_dist": entry.get("reward_level_dist"),
+            "completion_length_mean": entry["completion_length_mean"],
+            "completion_length_min": entry["completion_length_min"],
+            "completion_length_max": entry["completion_length_max"],
+            "generation_wall_sec": entry["gen_wall_sec"],
+            "beam_wall_sec": entry.get("beam_wall_sec"),
+            "rollout_wall_sec": entry["rollout_sec"],
+        }
+        self._monitor.write_rollout(rollout_event)
+        profile = None
+        if self._generation_profile_log:
+            latest_profile = self._generation_profile_log[-1]
+            if latest_profile.get("rollout_id") == entry["rollout_id"]:
+                profile = latest_profile
+        self._monitor.write_rank({
+            "rollout_id": entry["rollout_id"],
+            "step": self.state.global_step,
+            "route": entry["route"],
+            "generation_wall_sec": entry["gen_wall_sec"],
+            "beam_exec_wall_sec": beam_call.get("rank_beam_exec_wall_sec") if beam_call else 0.0,
+            "beam_task_count": beam_call.get("rank_beam_task_count") if beam_call else 0,
+            "beam_input_gather_wall_sec": beam_call.get("input_gather_wall_sec") if beam_call else 0.0,
+            "beam_scheduler_wall_sec": beam_call.get("scheduler_wall_sec") if beam_call else 0.0,
+            "beam_result_gather_wall_sec": beam_call.get("result_gather_wall_sec") if beam_call else 0.0,
+            "peak_allocated_mb": profile.get("peak_allocated_mb") if profile else None,
+            "peak_reserved_mb": profile.get("peak_reserved_mb") if profile else None,
+        })
+        if not self._monitor.trace_due(entry["rollout_id"]):
+            return
+        group_id = inputs[0]["recommendation_group_id"]
+        indices = [index for index, item in enumerate(inputs)
+                   if item["recommendation_group_id"] == group_id]
+        local_beam = {
+            result["task_id"][1]: result
+            for result in (beam_call.get("local_results", []) if beam_call else [])
+        }
+        think_token = None
+        if entry["route"] == "think":
+            encoded = self.processing_class.encode("</think>", add_special_tokens=False)
+            think_token = encoded[0] if encoded else None
+        candidates = []
+        from grpo_sid import final_sid
+        for candidate_id, index in enumerate(indices):
+            result = local_beam.get(index, {})
+            raw_text = completions_text[index]
+            parsed_sid = None
+            if entry["route"] == "no_think":
+                raw_text = self.processing_class.decode(
+                    completion_ids_list[index], skip_special_tokens=False)
+                parsed_sid = final_sid(raw_text)
+            candidates.append({
+                "candidate_id": candidate_id,
+                "completion": raw_text,
+                "completion_length": len(completion_ids_list[index]),
+                "closed": (think_token in completion_ids_list[index]) if think_token is not None else None,
+                "parsed_sid": parsed_sid,
+                "reward": local_rewards[index],
+                "reward_level": local_rewards[index] if entry["route"] == "no_think" else None,
+                "exact": result.get("exact"),
+                "ab": result.get("ab"),
+                "a": result.get("a"),
+            })
+        self._monitor.write_trace({
+            "rollout_id": entry["rollout_id"],
+            "step": self.state.global_step,
+            "route": entry["route"],
+            "group_id": group_id,
+            "scope": "rank0_local",
+            "gold_sids": inputs[0].get("all_gold_sids"),
+            "candidates": candidates,
+        })
 
     def _compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """Copy of TRL 0.24 _compute_loss with smoke instrumentation only
@@ -716,3 +855,30 @@ class RecGRPOTrainer(GRPOTrainer):
             self._smoke_policy_epoch[self._smoke_rollout_id] = pe + 1
             self._smoke_log[-1].update(entry)
         return loss
+
+    def log(self, logs, start_time=None):
+        result = super().log(logs, start_time)
+        if not self._monitor_enabled() or self.accelerator.process_index != 0 or "loss" not in logs:
+            return result
+        rollout = self._smoke_log[-1] if self._smoke_log else {}
+        policy_epoch = self._smoke_policy_epoch.get(self._smoke_rollout_id, 0)
+        self._monitor.write_step({
+            "step": self.state.global_step,
+            "epoch": logs.get("epoch", self.state.epoch),
+            "rollout_id": rollout.get("rollout_id"),
+            "route": rollout.get("route"),
+            "loss": logs.get("loss"),
+            "grad_norm": logs.get("grad_norm"),
+            "learning_rate": logs.get("learning_rate"),
+            "ratio_mean": rollout.get(f"ratio_mean_ep{policy_epoch}"),
+            "clip_fraction": rollout.get(f"clip_fraction_ep{policy_epoch}"),
+            "approx_kl": rollout.get(f"approx_kl_ep{policy_epoch}"),
+            "reward_mean": rollout.get("reward_mean"),
+            "reward_std": rollout.get("reward_std"),
+            "zero_std_ratio": rollout.get("zero_std_ratio"),
+            "completion_mean_length": rollout.get("completion_length_mean"),
+            "generation_wall_sec": rollout.get("gen_wall_sec") if policy_epoch == 1 else None,
+            "rollout_wall_sec": rollout.get("rollout_sec") if policy_epoch == 1 else None,
+            "policy_wall_sec": rollout.get(f"policy_fwb_sec_ep{policy_epoch}"),
+        })
+        return result

@@ -11,8 +11,10 @@ import argparse
 import json
 import os
 import statistics
+import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 
 import torch
 import torch.distributed as dist
@@ -23,7 +25,8 @@ from grpo_trl_trainer import (RecGRPOTrainer, build_route_dataset,
                               make_nothink_reward_func, make_think_reward_func,
                               M_THINK, M_NO)
 from grpo_sid import final_sid, think_reward
-from grpo_model import load_model, encode_prompt, generate_batch
+from grpo_model import load_model, encode_prompt, generate_batch, BASE, ADAPTER
+from monitor.writer import monitor_from_env
 
 DATA = "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl"
 OUT_DIR = "/data/GRPO/outputs"
@@ -36,6 +39,16 @@ def cached_prompt_ids(tokenizer, prompt, cache):
     if prompt not in cache:
         cache[prompt] = encode_prompt(tokenizer, prompt)
     return cache[prompt]
+
+
+def current_git_commit():
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd="/data/GRPO",
+            capture_output=True, text=True, timeout=2, check=False,
+        ).stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 def beam_lpt_assignment(tasks, world_size):
@@ -84,7 +97,7 @@ def run_beam32_task(model, tokenizer, task):
     }
 
 
-def make_beam32_fn(model, tokenizer):
+def make_beam32_fn(model, tokenizer, monitor_writer=None):
     """Beam32 on sampled CoT (eval + inference_mode), hierarchical reward.
     Re-decodes completions from raw token ids. Accumulates closed/no-close
     split stats (reward mean, beam invalid, beam wall) onto model._beam_stats.
@@ -164,6 +177,35 @@ def make_beam32_fn(model, tokenizer):
                     local_results = [run_beam32_task(model, tokenizer, task) for task in local_tasks]
                     stats["beam_sec"] += sum(item["beam_sec"] for item in local_results)
 
+                if monitor_writer is not None and monitor_writer.enabled:
+                    if not distributed_beam_enabled():
+                        input_gather_sec = scheduler_sec = result_gather_sec = 0.0
+                        global_tasks = local_tasks
+                        global_results = executed = local_results
+                        exec_sec = sum(item["beam_sec"] for item in executed)
+                    # Passive monitoring reads this already-computed, compact
+                    # call summary. No generation or collective is added.
+                    stats["last_call"] = {
+                        "scope": "global" if distributed_beam_enabled() else "local",
+                        "closure": sum(bool(task["closed"]) for task in global_tasks),
+                        "n_cot": len(global_tasks),
+                        "exact": sum(item["exact"] for item in global_results),
+                        "ab": sum(item["ab"] for item in global_results),
+                        "a": sum(item["a"] for item in global_results),
+                        "invalid": sum(item["invalid"] for item in global_results),
+                        "global_beam_wall_sec": max(
+                            (sum(item["beam_sec"] for item in rank_results)
+                             for rank_results in gathered_results),
+                            default=exec_sec,
+                        ) if distributed_beam_enabled() else exec_sec,
+                        "rank_beam_exec_wall_sec": exec_sec,
+                        "rank_beam_task_count": len(executed),
+                        "input_gather_wall_sec": input_gather_sec,
+                        "scheduler_wall_sec": scheduler_sec,
+                        "result_gather_wall_sec": result_gather_sec,
+                        "local_results": local_results,
+                    }
+
                 for task, result in zip(local_tasks, local_results):
                     stats["n_cot"] += 1
                     stats["n_closure_check"] += 1
@@ -204,6 +246,8 @@ def main():
 
     rank = int(os.environ.get("LOCAL_RANK", "0"))
     world = int(os.environ.get("WORLD_SIZE", "1"))
+    run_started = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    monitor = monitor_from_env(args.tag, rank)
     device = f"cuda:{rank}"
     torch.cuda.set_device(rank)
     is_main = rank == 0
@@ -278,7 +322,39 @@ def main():
     )
     cfg.generation_kwargs = None
 
-    beam32_fn = make_beam32_fn(model, tokenizer)
+    if monitor.enabled:
+        monitor.write_manifest({
+            "run_id": monitor.run_id,
+            "start_time": run_started,
+            "git_commit": current_git_commit(),
+            "seed": args.seed,
+            "world_size": world,
+            "model_path": BASE,
+            "adapter_path": ADAPTER,
+            "dataset_path": DATA,
+            "dataset_version": "rec_mp_grpo_v2",
+            "learning_rate": args.lr,
+            "max_steps": args.max_steps,
+            "num_iterations": cfg.num_iterations,
+            "think_g": M_THINK,
+            "nothink_g": M_NO,
+            "temperature": {"think": 0.9, "no_think": 1.0},
+            "top_p": {"think": 0.95, "no_think": 1.0},
+            "beta": cfg.beta,
+            "epsilon": 0.2,
+            "max_prompt_length": cfg.max_prompt_length,
+            "max_completion_length": cfg.max_completion_length,
+            "beam32": {
+                "context_batch": 1,
+                "num_beams": 32,
+                "num_return_sequences": 32,
+                "max_new_tokens": 128,
+                "do_sample": False,
+            },
+            "beam_rank_balance": os.environ.get("GRPO_BEAM_RANK_BALANCE", "1"),
+        })
+
+    beam32_fn = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
     trainer = RecGRPOTrainer(
         model=model,
         args=cfg,
@@ -288,6 +364,7 @@ def main():
             make_nothink_reward_func(tokenizer=tokenizer),
             make_think_reward_func(beam32_fn=beam32_fn),
         ],
+        monitor_writer=monitor,
     )
     # ---- frozen contract asserts ----
     assert cfg.importance_sampling_level == "token"

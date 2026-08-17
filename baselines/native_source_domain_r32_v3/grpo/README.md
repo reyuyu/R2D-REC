@@ -16,6 +16,7 @@ SFT（BATA-BASELINE-R32-2E，见 `../README.md`）之后的强化学习阶段工
 ```
 grpo/
 ├── README.md                 # 本文件
+├── runs/                     # 运行时监控目录（默认关闭，不入库）
 ├── docs/
 │   └── fix_report_20260817.md # 正式 epoch 前 3 问题核查报告（停止机制/beam invalid/route 1:1）
 ├── scripts/                  # 全部 GRPO 脚本（加载/奖励/训练器/消融/基准/测试）
@@ -34,6 +35,14 @@ grpo/
 | `scripts/run_nothink_m_ablation.py` | M 消融（结论 M_NO=8 混合 96.9%） |
 | `scripts/run_beam_batch_bench.py` | Beam32 批量基准（结论 cbs=1 唯一可行，~9.7s/cot） |
 | `scripts/test_grpo_trl.py` 等 | CPU 结构测试（全部 PASS） |
+| `scripts/monitor/` | Phase 1 被动 JSONL writer、FastAPI Dashboard、CPU demo/test |
+
+## Monitoring Phase 1
+
+监控默认关闭（`GRPO_MONITOR=0`），开启后各 rank 只写自己的 append-only
+JSONL；rank0 额外写 manifest、全局 step/rollout 曲线和低频 passive trace。
+Writer 不发 HTTP、不启线程、不新增模型计算或 DDP collective。Dashboard 由独立
+FastAPI 进程读取文件，详见 `scripts/monitor/README.md`。
 
 ## 数据（rec_mp_grpo_v2，见 `results/data_manifest.json`）
 - 3,098 条 / 1,549 组（Think 1,549 + NoThink 1,549），四域 video 1100 / ad 854 / prod 764 / living 380。
