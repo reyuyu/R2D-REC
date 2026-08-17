@@ -1,0 +1,31 @@
+{
+  "records": 3098,
+  "think_chunks": 387,
+  "nothink_chunks": 774,
+  "think_groups_covered": 1548,
+  "nothink_groups_covered": 1548,
+  "total_groups": 1549,
+  "dropped_think": [
+    "c399e01d9eaa30e416df6c29ee118db4b9a6361bf558433439ccec27500e0d46"
+  ],
+  "dropped_nothink": [
+    "c399e01d9eaa30e416df6c29ee118db4b9a6361bf558433439ccec27500e0d46"
+  ],
+  "dropped_think_count": 1,
+  "dropped_nothink_count": 1,
+  "think_rollouts": 387,
+  "nothink_rollouts": 774,
+  "optimizer_steps": 2322,
+  "route_effective_weight": {
+    "think": 6192.0,
+    "nothink": 6192.0
+  },
+  "sampler_len": 37152,
+  "expected": {
+    "think_groups": 1548,
+    "nothink_groups": 1548,
+    "think_rollouts": 387,
+    "nothink_rollouts": 774,
+    "steps": 2322
+  }
+}

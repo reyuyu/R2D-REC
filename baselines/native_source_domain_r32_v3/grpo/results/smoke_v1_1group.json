@@ -1,0 +1,78 @@
+{
+  "groups": 1,
+  "think": {
+    "M": 4,
+    "reward_mean": 9.5,
+    "reward_std": 0.0,
+    "reward_median": 9.5,
+    "reward_p25": 9.5,
+    "reward_p75": 9.5,
+    "reward_p90": 9.5,
+    "zero_std_group_ratio": 1.0,
+    "all_zero_group_ratio": 0.0,
+    "mixed_reward_group_ratio": 0.0,
+    "mean_unique_reward_count": 1,
+    "cot_unique_ratio": 1.0,
+    "cot_mean_len": 1451.5,
+    "cot_p95_len": 1763,
+    "cot_truncation_rate": 0.0,
+    "beam_invalid_sid_rate": 0.0,
+    "exact_hit_mean": 1,
+    "ab_hit_mean": 2,
+    "a_hit_mean": 0
+  },
+  "nothink": {
+    "M": 16,
+    "reward_mean": 0.453125,
+    "reward_std": 1.9689360031181815,
+    "reward_median": -0.25,
+    "valid_sid_rate": 1.0,
+    "sampled_sid_unique_ratio": 0.9375,
+    "mean_unique_a_count": 8.0,
+    "mean_unique_ab_count": 11.0,
+    "zero_std_group_ratio": 0.0,
+    "all_zero_group_ratio": 0.0,
+    "all_exact_group_ratio": 0.0,
+    "mixed_reward_group_ratio": 1.0,
+    "reward_level_dist": {
+      "-0.25": 9,
+      "0.0": 3,
+      "0.5": 3,
+      "8.0": 1
+    },
+    "exact_sample_rate": 0.0625,
+    "ab_only_sample_rate": 0.0,
+    "a_only_sample_rate": 0.1875
+  },
+  "beam_monitor": {
+    "think_exact_hit32": 1.0,
+    "nothink_exact_hit32": 1.0,
+    "union_sid_hit64_surrogate": 1.0,
+    "both_hit_ratio": 1.0,
+    "think_only_ratio": 0.0,
+    "nothink_only_ratio": 0.0,
+    "both_miss_ratio": 0.0
+  },
+  "buckets": {
+    "3-5": {
+      "groups": 1,
+      "think_reward_mean": 9.5,
+      "nothink_reward_mean": 0.453125,
+      "think_mixed_ratio": 0.0,
+      "nothink_mixed_ratio": 1.0,
+      "think_zero_std_ratio": 1.0,
+      "nothink_zero_std_ratio": 0.0,
+      "any_exact_ratio": 1.0
+    }
+  },
+  "runtime": {
+    "total_sec": 274.6082398891449,
+    "sec_per_group": 274.6082398891449,
+    "gpu": "NVIDIA A800-SXM4-80GB",
+    "peak_allocated_mb": 39834,
+    "raw_w_mean": 1.0,
+    "raw_w_norm_mean": 1.0,
+    "raw_w_global_mean": 0.9386900990943976,
+    "raw_w_global_norm_mean": 1.0
+  }
+}

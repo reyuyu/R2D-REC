@@ -1,0 +1,56 @@
+{
+ "deterministic": {
+  "short_len": 1342,
+  "long_len": 2517,
+  "A_32": true,
+  "B_32": true,
+  "AB_exact_short": false,
+  "AB_exact_long": false,
+  "BA_exact_long": false,
+  "BA_exact_short": false
+ },
+ "bench": {
+  "typical": {
+   "1": {
+    "wall": 37.9,
+    "sec_cot": 9.5,
+    "peak_allocated_mb": 42822,
+    "candidate_parity": true,
+    "reward_parity": true,
+    "invalid": 0,
+    "oom": false
+   },
+   "2": {
+    "wall": 49.8,
+    "sec_cot": 12.5,
+    "peak_allocated_mb": 69297,
+    "candidate_parity": false,
+    "reward_parity": true,
+    "invalid": 0,
+    "oom": false
+   }
+  },
+  "long": {
+   "1": {
+    "wall": 68.1,
+    "sec_cot": 17.0,
+    "peak_allocated_mb": 55777,
+    "candidate_parity": true,
+    "reward_parity": true,
+    "invalid": 0,
+    "oom": false
+   },
+   "2": {
+    "oom": true
+   }
+  }
+ },
+ "probe4": {
+  "typical": {
+   "skipped": true
+  },
+  "long": {
+   "skipped": true
+  }
+ }
+}

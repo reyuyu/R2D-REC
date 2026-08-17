@@ -1,0 +1,32 @@
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<03:26,  1.93it/s]Loading weights:   1%|          | 2/399 [00:01<03:38,  1.82it/s]Loading weights:   2%|▏         | 6/399 [00:01<00:58,  6.72it/s]Loading weights:   4%|▍         | 16/399 [00:01<00:18, 20.89it/s]Loading weights:   7%|▋         | 26/399 [00:01<00:10, 34.42it/s]Loading weights:   8%|▊         | 33/399 [00:01<00:08, 41.27it/s]Loading weights:  10%|█         | 40/399 [00:01<00:07, 45.88it/s]Loading weights:  12%|█▏        | 49/399 [00:01<00:06, 55.24it/s]Loading weights:  15%|█▍        | 59/399 [00:01<00:05, 65.02it/s]Loading weights:  17%|█▋        | 67/399 [00:01<00:04, 67.91it/s]Loading weights:  19%|█▉        | 75/399 [00:02<00:04, 67.61it/s]Loading weights:  21%|██        | 83/399 [00:02<00:04, 63.70it/s]Loading weights:  23%|██▎       | 93/399 [00:02<00:04, 71.62it/s]Loading weights:  26%|██▌       | 103/399 [00:02<00:03, 77.68it/s]Loading weights:  28%|██▊       | 112/399 [00:02<00:03, 79.42it/s]Loading weights:  30%|███       | 121/399 [00:02<00:03, 75.96it/s]Loading weights:  32%|███▏      | 129/399 [00:02<00:03, 70.92it/s]Loading weights:  34%|███▍      | 137/399 [00:02<00:03, 71.54it/s]Loading weights:  37%|███▋      | 147/399 [00:03<00:03, 76.75it/s]Loading weights:  39%|███▉      | 155/399 [00:03<00:03, 75.25it/s]Loading weights:  41%|████      | 163/399 [00:03<00:03, 72.61it/s]Loading weights:  43%|████▎     | 171/399 [00:03<00:03, 66.98it/s]Loading weights:  45%|████▌     | 181/399 [00:03<00:02, 74.26it/s]Loading weights:  48%|████▊     | 191/399 [00:03<00:02, 79.62it/s]Loading weights:  50%|█████     | 200/399 [00:03<00:02, 80.86it/s]Loading weights:  52%|█████▏    | 209/399 [00:03<00:02, 77.21it/s]Loading weights:  54%|█████▍    | 217/399 [00:03<00:02, 72.06it/s]Loading weights:  56%|█████▋    | 225/399 [00:04<00:02, 72.95it/s]Loading weights:  59%|█████▉    | 235/399 [00:04<00:02, 77.44it/s]Loading weights:  61%|██████    | 243/399 [00:04<00:02, 75.83it/s]Loading weights:  63%|██████▎   | 251/399 [00:04<00:02, 72.88it/s]Loading weights:  65%|██████▍   | 259/399 [00:04<00:02, 67.06it/s]Loading weights:  67%|██████▋   | 269/399 [00:04<00:01, 74.04it/s]Loading weights:  70%|██████▉   | 279/399 [00:04<00:01, 79.43it/s]Loading weights:  72%|███████▏  | 288/399 [00:04<00:01, 80.55it/s]Loading weights:  74%|███████▍  | 297/399 [00:05<00:01, 76.83it/s]Loading weights:  76%|███████▋  | 305/399 [00:05<00:01, 72.07it/s]Loading weights:  78%|███████▊  | 313/399 [00:05<00:01, 72.55it/s]Loading weights:  81%|████████  | 323/399 [00:05<00:00, 78.34it/s]Loading weights:  83%|████████▎ | 331/399 [00:05<00:00, 77.90it/s]Loading weights:  85%|████████▍ | 339/399 [00:05<00:00, 74.06it/s]Loading weights:  87%|████████▋ | 347/399 [00:05<00:00, 67.36it/s]Loading weights:  89%|████████▉ | 357/399 [00:05<00:00, 74.19it/s]Loading weights:  92%|█████████▏| 367/399 [00:05<00:00, 79.48it/s]Loading weights:  94%|█████████▍| 376/399 [00:06<00:00, 81.10it/s]Loading weights:  96%|█████████▋| 385/399 [00:06<00:00, 74.57it/s]Loading weights:  98%|█████████▊| 393/399 [00:06<00:00, 72.85it/s]Loading weights: 100%|██████████| 399/399 [00:06<00:00, 62.65it/s]
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+reward funcs: ['nothink_reward', 'think_reward']
+sampler len: 192 chunks: 12
+chunks: [('think', 2), ('think', 2), ('think', 2), ('think', 2), ('no_think', 1), ('no_think', 1), ('no_think', 1), ('no_think', 1), ('no_think', 1), ('no_think', 1), ('no_think', 1), ('no_think', 1)]
+first chunk gid expansion (Think): ['281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f']
+first NoThink chunk gid expansion: ['281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700']
+
+=== THINK: route=think unique=1 ===
+Passing `generation_config` together with generation-related arguments=({'disable_compile'}) is deprecated and will be removed in future versions. Please pass either a `generation_config` object OR all generation parameters explicitly, but not both.
+THINK rollout_sec=42.6s
+THINK nothink_reward: ['NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN']
+THINK think_reward: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+THINK beam calls=1 n_cot=8
+
+NoThink batch gid order: ['281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700', '281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700']
+
+=== NOTHINK: route=no_think unique=1 ===
+NOTHINK rollout_sec=42.0s
+NOTHINK nothink_reward: [0.0, -0.25, 0.0, 0.0, 0.0, -0.25, 0.0, 0.0]
+NOTHINK think_reward: ['NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN', 'NaN']
+NOTHINK beam calls=1 n_cot=8
+
+=== RESULT ===
+{
+  "beam_calls": 1,
+  "beam_cot_total": 8,
+  "sampler_len": 192,
+  "chunks": 12
+}
+[rank0]:[W817 02:37:08.438371508 ProcessGroupNCCL.cpp:1250] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())

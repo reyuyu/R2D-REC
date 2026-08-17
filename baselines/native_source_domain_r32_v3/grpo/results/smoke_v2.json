@@ -1,0 +1,111 @@
+{
+  "groups": 32,
+  "think": {
+    "M": 4,
+    "reward_mean": 4.458221435546875,
+    "reward_std": 5.42489932266975,
+    "reward_median": 2.59375,
+    "reward_p25": 0.25,
+    "reward_p75": 9.328125,
+    "reward_p90": 12.736328125,
+    "zero_std_group_ratio": 0.375,
+    "all_zero_group_ratio": 0.1875,
+    "mixed_reward_group_ratio": 0.625,
+    "mean_unique_reward_count": 1.9375,
+    "cot_unique_ratio": 1.0,
+    "cot_mean_len": 1647.9296875,
+    "cot_p95_len": 2158.5,
+    "cot_truncation_rate": 0.0,
+    "beam_invalid_sid_rate": 0.003173828125,
+    "exact_hit_mean": 0.6796875,
+    "ab_hit_mean": 0.4296875,
+    "a_hit_mean": 1.015625
+  },
+  "nothink": {
+    "M": 16,
+    "reward_mean": 0.14697265625,
+    "reward_std": 0.9158999241878555,
+    "reward_median": -0.0625,
+    "valid_sid_rate": 1.0,
+    "sampled_sid_unique_ratio": 0.98046875,
+    "mean_unique_a_count": 9.625,
+    "mean_unique_ab_count": 14.34375,
+    "zero_std_group_ratio": 0.0,
+    "all_zero_group_ratio": 0.0,
+    "all_exact_group_ratio": 0.0,
+    "mixed_reward_group_ratio": 1.0,
+    "exact_sample_rate": 0.009765625,
+    "ab_only_sample_rate": 0.041015625,
+    "a_only_sample_rate": 0.181640625,
+    "reward_level_dist": {
+      "-0.25": 213,
+      "0.0": 180,
+      "0.5": 93,
+      "2.0": 21,
+      "8.0": 5
+    }
+  },
+  "beam_monitor": {
+    "think_exact_hit32": 0.3828125,
+    "nothink_exact_hit32": 0.46875,
+    "union_sid_hit64_surrogate": 0.4765625,
+    "both_hit_ratio": 0.375,
+    "think_only_ratio": 0.0078125,
+    "nothink_only_ratio": 0.09375,
+    "both_miss_ratio": 0.5234375
+  },
+  "buckets": {
+    "1-2": {
+      "groups": 9,
+      "think_reward_mean": 1.2430555555555556,
+      "nothink_reward_mean": -0.10416666666666667,
+      "think_mixed_ratio": 0.5555555555555556,
+      "nothink_mixed_ratio": 1.0,
+      "think_zero_std_ratio": 0.4444444444444444,
+      "nothink_zero_std_ratio": 0.0,
+      "any_exact_ratio": 0.0
+    },
+    "11-20": {
+      "groups": 4,
+      "think_reward_mean": 8.966552734375,
+      "nothink_reward_mean": 0.5546875,
+      "think_mixed_ratio": 1.0,
+      "nothink_mixed_ratio": 1.0,
+      "think_zero_std_ratio": 0.0,
+      "nothink_zero_std_ratio": 0.0,
+      "any_exact_ratio": 0.5
+    },
+    "3-5": {
+      "groups": 10,
+      "think_reward_mean": 3.5,
+      "nothink_reward_mean": 0.0765625,
+      "think_mixed_ratio": 0.6,
+      "nothink_mixed_ratio": 1.0,
+      "think_zero_std_ratio": 0.4,
+      "nothink_zero_std_ratio": 0.0,
+      "any_exact_ratio": 0.0
+    },
+    "6-10": {
+      "groups": 9,
+      "think_reward_mean": 6.734375,
+      "nothink_reward_mean": 0.2951388888888889,
+      "think_mixed_ratio": 0.5555555555555556,
+      "nothink_mixed_ratio": 1.0,
+      "think_zero_std_ratio": 0.4444444444444444,
+      "nothink_zero_std_ratio": 0.0,
+      "any_exact_ratio": 0.2222222222222222
+    }
+  },
+  "runtime": {
+    "total_sec": 3130.8088994026184,
+    "sec_per_group_avg": 97.83777810633183,
+    "gpu_per_partition": [
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB",
+      "NVIDIA A800-SXM4-80GB"
+    ],
+    "peak_allocated_mb": 46595,
+    "raw_w_global_mean": 0.9386900990943976
+  }
+}
