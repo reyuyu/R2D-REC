@@ -270,7 +270,7 @@ class RecGRPOTrainer(GRPOTrainer):
         """TRL transformers-path copy with one addition: Think-route completions
         are truncated at the </think> token (single added token 151668), keeping
         the CoT action bounded and final SIDs out of the action. No site-packages
-        change; stop is applied post-hoc since TRL does not pass stop_strings."""
+        change; token-id stopping is backed by defensive post-hoc truncation."""
         from trl.extras.profiling import profiling_context
         from trl.models.utils import unwrap_model_for_generation
         from trl.data_utils import maybe_apply_chat_template
@@ -325,7 +325,7 @@ class RecGRPOTrainer(GRPOTrainer):
             prompt_completion_ids = unwrapped_model.generate(
                 **generate_inputs, generation_config=self.generation_config,
                 disable_compile=True,
-                tokenizer=self.processing_class,  # required for stop_strings in transformers 5.3
+                tokenizer=self.processing_class,
                 stopping_criteria=stopping_criteria,
             )
         prompt_ids, prompt_mask = generate_inputs["input_ids"], generate_inputs["attention_mask"]
@@ -389,12 +389,9 @@ class RecGRPOTrainer(GRPOTrainer):
         if getattr(self, "generation_config", None) is not None:
             self.generation_config.temperature = ROUTE_TEMP[route]
             self.generation_config.top_p = ROUTE_TOP_P[route]
-            # stop CoT at </think> only for the Think route (NoThink completions
-            # also contain </think> inside the empty-think wrapper -> must NOT stop)
-            if route == "think":
-                self.generation_config.stop_strings = ["</think>"]
-            else:
-                self.generation_config.stop_strings = None
+            # Think uses the exact per-sample token-id StoppingCriteria above;
+            # NoThink remains unchanged with no stop string.
+            self.generation_config.stop_strings = None
             if self._smoke_rollout_id <= 2:
                 import os
                 if int(os.environ.get("LOCAL_RANK", "0")) == 0:

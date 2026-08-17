@@ -1,0 +1,66 @@
+{
+  "seed": 20260817,
+  "batch_size": 4,
+  "prompt_tokens": 1113,
+  "baseline_stop_strings": [
+    "</think>"
+  ],
+  "candidate_stop_strings": null,
+  "completion_ids_equal": true,
+  "closure_positions_equal": true,
+  "reward_equal": true,
+  "baseline": {
+    "generation_wall_sec": 62.35538082104176,
+    "completion_lengths": [
+      660,
+      659,
+      728,
+      816
+    ],
+    "completion_sha256": [
+      "bbaa743873579efa395bc430fdb075f980e063135fca1ee318be7658cbf37af9",
+      "0ad20f3bcce87285fc3fe1684cca5ab4f1475b1e17a89b7eed56defbcf7534c1",
+      "831a36258639e0755b1bf4c9f5c6786409621cbf0d0ca8ebf6b55ec6762239f3",
+      "6fba32cf135b28b9caa4071647cc87d4f1563bae07615dd2ab7a7e702bac4ba8"
+    ],
+    "closure_positions": [
+      659,
+      658,
+      727,
+      815
+    ],
+    "reward": [
+      0.5,
+      0.5,
+      0.75,
+      0.0
+    ]
+  },
+  "candidate": {
+    "generation_wall_sec": 60.8249277472496,
+    "completion_lengths": [
+      660,
+      659,
+      728,
+      816
+    ],
+    "completion_sha256": [
+      "bbaa743873579efa395bc430fdb075f980e063135fca1ee318be7658cbf37af9",
+      "0ad20f3bcce87285fc3fe1684cca5ab4f1475b1e17a89b7eed56defbcf7534c1",
+      "831a36258639e0755b1bf4c9f5c6786409621cbf0d0ca8ebf6b55ec6762239f3",
+      "6fba32cf135b28b9caa4071647cc87d4f1563bae07615dd2ab7a7e702bac4ba8"
+    ],
+    "closure_positions": [
+      659,
+      658,
+      727,
+      815
+    ],
+    "reward": [
+      0.5,
+      0.5,
+      0.75,
+      0.0
+    ]
+  }
+}
