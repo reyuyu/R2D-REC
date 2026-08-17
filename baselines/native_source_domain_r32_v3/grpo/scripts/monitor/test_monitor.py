@@ -76,9 +76,13 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(traces) == 5
     assert len(traces[0]["candidates"][0]["beam_sids"]) == 32
     assert traces[0]["candidates"][0]["beam_sids"][0] == traces[0]["gold_sids"][0]
+    nothink_trace = next(trace for trace in traces if trace["route"] == "no_think")
+    assert len(nothink_trace["candidates"]) == 8
+    assert all(candidate["reward"] is not None for candidate in nothink_trace["candidates"])
     html = client.get("/").text
     assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视"))
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
+    assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
 print("ALL MONITOR CPU TESTS PASSED")

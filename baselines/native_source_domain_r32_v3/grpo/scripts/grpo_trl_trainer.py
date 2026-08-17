@@ -566,15 +566,26 @@ class RecGRPOTrainer(GRPOTrainer):
         # G samples of ONE prompt (same recommendation_group_id). TRL gather
         # keeps rank order, same as gather_object below. ----
         if self._monitor_enabled():
+            capture_nothink_trace = (
+                inputs[0]["route"] == "no_think"
+                and self._smoke_rollout_id > 0
+                and self._smoke_rollout_id % self._monitor.trace_every == 0
+            )
             group_metadata_all = gather_object([
-                (x["recommendation_group_id"], len(completion_ids_list[index]))
+                (
+                    x["recommendation_group_id"],
+                    len(completion_ids_list[index]),
+                    completion_ids_list[index] if capture_nothink_trace else None,
+                )
                 for index, x in enumerate(inputs)
             ])
             group_ids_all = [item[0] for item in group_metadata_all]
             monitor_completion_lengths = [item[1] for item in group_metadata_all]
+            monitor_completion_ids_all = [item[2] for item in group_metadata_all]
         else:
             group_ids_all = gather_object([x["recommendation_group_id"] for x in inputs])
             monitor_completion_lengths = None
+            monitor_completion_ids_all = None
         assert len(group_ids_all) == n_all, (
             f"gathered group_ids {len(group_ids_all)} != rewards {n_all}")
         for gi in range(0, n_all, self.num_generations):
@@ -694,11 +705,14 @@ class RecGRPOTrainer(GRPOTrainer):
             }
         self._smoke_log[-1].update(entry)
         self._write_rollout_monitor(entry, inputs, completion_ids_list, completions_text,
-                                    rewards[process_slice].tolist(), beam_call)
+                                    rewards[process_slice].tolist(), beam_call,
+                                    group_ids_all, monitor_completion_ids_all,
+                                    rewards.tolist())
         return output
 
     def _write_rollout_monitor(self, entry, inputs, completion_ids_list,
-                               completions_text, local_rewards, beam_call):
+                               completions_text, local_rewards, beam_call,
+                               group_ids_all, completion_ids_all, global_rewards):
         if not self._monitor_enabled():
             return
         rollout_event = {
@@ -744,9 +758,19 @@ class RecGRPOTrainer(GRPOTrainer):
         })
         if not self._monitor.trace_due(entry["rollout_id"]):
             return
-        group_id = inputs[0]["recommendation_group_id"]
-        indices = [index for index, item in enumerate(inputs)
-                   if item["recommendation_group_id"] == group_id]
+        group_id = group_ids_all[0]
+        global_nothink = (
+            entry["route"] == "no_think"
+            and completion_ids_all is not None
+            and all(ids is not None for ids in completion_ids_all[:self.num_generations])
+        )
+        if global_nothink:
+            indices = [index for index, candidate_group in enumerate(group_ids_all)
+                       if candidate_group == group_id]
+        else:
+            group_id = inputs[0]["recommendation_group_id"]
+            indices = [index for index, item in enumerate(inputs)
+                       if item["recommendation_group_id"] == group_id]
         local_beam = {
             result["task_id"][1]: result
             for result in (beam_call.get("local_results", []) if beam_call else [])
@@ -759,20 +783,21 @@ class RecGRPOTrainer(GRPOTrainer):
         from grpo_sid import final_sid
         for candidate_id, index in enumerate(indices):
             result = local_beam.get(index, {})
-            raw_text = completions_text[index]
+            candidate_ids = completion_ids_all[index] if global_nothink else completion_ids_list[index]
+            raw_text = "" if global_nothink else completions_text[index]
             parsed_sid = None
             if entry["route"] == "no_think":
-                raw_text = self.processing_class.decode(
-                    completion_ids_list[index], skip_special_tokens=False)
+                raw_text = self.processing_class.decode(candidate_ids, skip_special_tokens=False)
                 parsed_sid = final_sid(raw_text)
             candidates.append({
                 "candidate_id": candidate_id,
                 "completion": raw_text,
-                "completion_length": len(completion_ids_list[index]),
-                "closed": (think_token in completion_ids_list[index]) if think_token is not None else None,
+                "completion_length": len(candidate_ids),
+                "closed": (think_token in candidate_ids) if think_token is not None else None,
                 "parsed_sid": parsed_sid,
-                "reward": local_rewards[index],
-                "reward_level": local_rewards[index] if entry["route"] == "no_think" else None,
+                "reward": global_rewards[index] if global_nothink else local_rewards[index],
+                "reward_level": (global_rewards[index] if global_nothink else local_rewards[index])
+                                if entry["route"] == "no_think" else None,
                 "exact": result.get("exact"),
                 "ab": result.get("ab"),
                 "a": result.get("a"),
@@ -783,7 +808,7 @@ class RecGRPOTrainer(GRPOTrainer):
             "step": self.state.global_step,
             "route": entry["route"],
             "group_id": group_id,
-            "scope": "rank0_local",
+            "scope": "global_group" if len(candidates) == self.num_generations else "rank0_local",
             "gold_sids": inputs[0].get("all_gold_sids"),
             "candidates": candidates,
         })

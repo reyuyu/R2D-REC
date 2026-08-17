@@ -123,7 +123,7 @@ def generate(output_dir: str, run_id: str = "demo-phase1") -> str:
                         "closed": True if think else None,
                         "parsed_sid": None if think else ["prod", 1000 + candidate, 42, 7],
                         "reward": 8.0 if candidate == 0 else (2.0 if candidate == 1 else 0.0),
-                        "reward_level": None if think else (8.0 if candidate == 0 else 0.0),
+                        "reward_level": None if think else (8.0 if candidate == 0 else (2.0 if candidate == 1 else 0.0)),
                         "exact": 1 if think and candidate == 0 else 0,
                         "ab": 1 if think and candidate == 1 else 0,
                         "a": 0,

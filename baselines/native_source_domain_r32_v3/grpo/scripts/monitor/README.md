@@ -58,6 +58,12 @@ the 32 SIDs that were already parsed for reward and highlight exact gold, AB
 prefix, A prefix, and invalid outputs. Beam SID retention is monitor-only and
 does not add generation or parsing work.
 
+NoThink traces reuse the existing group metadata gather to assemble one full
+G=8 group with candidate SID, reward level, gold match, and token length. This
+adds no DDP collective. Every metric panel has an on-demand definition and a
+short description of a healthy trend; metrics without a monotonic optimum are
+explicitly described as joint diagnostics rather than "higher is better".
+
 The server exposes `/api/manifest`, `/api/metrics`, `/api/rollouts`,
 `/api/ranks`, and `/api/traces`. JSONL endpoints accept `from_step`,
 `to_step`, `route`, and `rollout_id`; `/api/ranks` additionally accepts
