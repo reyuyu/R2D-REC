@@ -125,7 +125,8 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
     assert all(label in html for label in (
-        "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失"
+        "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失",
+        "Raw N", "Grounding Coverage"
     ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")

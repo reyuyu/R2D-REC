@@ -7,12 +7,13 @@ from .dsr_monitor import summarize_nothink_records, summarize_think_records
 from .dsr_probe import DsrProbeMonitorProxy, enrich_probe_event, mean_completion_similarity
 
 
-def _think_record(group_id, reward, s_cot, s_explore=0.5):
+def _think_record(group_id, reward, s_cot, s_explore=0.5, raw_count=4, grounded_count=3):
     return {
         "group_id": group_id,
         "primary_reward": reward,
         "parsed": {"parser_success": True},
-        "grounded_count": 3,
+        "bullet_count": raw_count,
+        "grounded_count": grounded_count,
         "s_cot": s_cot,
         "evidence_diversity": 0.8,
         "s_prefix": 0.2,
@@ -55,6 +56,22 @@ def test_think_signal_rescue_and_branch_distribution():
         "primary_variance", "dead_zero", "prefix_rescue", "cot_only_saturated_or_other"
     }
     assert len(scores) == len(advantages) == 8
+
+
+def test_think_raw_grounded_coverage_excludes_undefined_candidates():
+    records = [
+        _think_record("coverage", 0.0, 0.8, raw_count=raw, grounded_count=grounded)
+        for raw, grounded in ((4, 3), (1, 1), (4, 0), (0, 0))
+    ]
+    summary, _, _ = summarize_think_records(records)
+    assert summary["raw_interest_count_mean"] == 2.25
+    assert summary["raw_interest_count_distribution"] == {
+        "0": 1, "1": 1, "2": 0, "3": 0, "4": 2, "5+": 0
+    }
+    assert summary["grounded_interest_count_mean"] == 1.0
+    assert summary["raw_grounded_gap_mean"] == 1.25
+    assert math.isclose(summary["grounding_coverage_mean"], (0.75 + 1.0 + 0.0) / 3)
+    assert summary["grounding_coverage_defined_rate"] == 0.75
 
 
 def test_nothink_complete_monitor_statistics():
@@ -125,12 +142,26 @@ def test_probe_enrichment_is_cpu_only_and_complete():
     assert len(think["candidates"]) == 4
     assert think["branch"] == "primary_variance"
     assert all("s_aux" in candidate and "a_aux" in candidate for candidate in think["candidates"])
+    assert all(candidate["raw_interest_n"] == 2 for candidate in think["candidates"])
     assert all(candidate["grounded_n"] == 2 for candidate in think["candidates"])
+    assert all(candidate["grounding_coverage"] == 1.0 for candidate in think["candidates"])
+    assert think["raw_n_mean"] == think["grounded_n_mean"] == 2.0
+    assert think["raw_grounded_gap_mean"] == 0.0
+    assert think["grounding_coverage_mean"] == 1.0
     assert no_think["would_rescue"] is True
     assert no_think["concentration"] == 0.375
     assert math.isclose(no_think["coefficient"], 0.0375)
     assert len(no_think["candidates"]) == 8
     assert mean_completion_similarity(["abcdef", "abcdef", "uvwxyz"]) < 1.0
+
+
+def test_probe_zero_raw_interest_has_null_coverage_and_does_not_pollute_mean():
+    event = _probe_event()
+    event["think"]["candidates"][0]["completion"] = "<think>No interest list.</think>"
+    think = enrich_probe_event(event)["dsr"]["think"]
+    assert think["candidates"][0]["raw_interest_n"] == 0
+    assert think["candidates"][0]["grounding_coverage"] is None
+    assert think["grounding_coverage_mean"] == 1.0
 
 
 def test_probe_monitor_proxy_writes_one_enriched_event():

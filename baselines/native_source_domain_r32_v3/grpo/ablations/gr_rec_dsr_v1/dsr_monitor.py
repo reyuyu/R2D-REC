@@ -69,6 +69,14 @@ def _zero_std(values: Sequence[float]) -> bool:
     return len(values) < 2 or statistics.pstdev(float(value) for value in values) == 0.0
 
 
+def _count_distribution(values: Sequence[int]) -> dict[str, int]:
+    distribution = {
+        str(value): sum(count == value for count in values) for value in range(5)
+    }
+    distribution["5+"] = sum(count >= 5 for count in values)
+    return distribution
+
+
 def _plan_dict(plan) -> dict:
     return {
         "active": plan.active,
@@ -104,18 +112,29 @@ def summarize_think_records(records: Sequence[dict]) -> tuple[dict, list[float],
         signal_rescued.append(primary_is_zero and not auxiliary_is_zero)
 
     advantages = group_aux_advantages(scores, 4).tolist()
+    raw_counts = [int(item["bullet_count"]) for item in records]
     grounded_counts = [int(item["grounded_count"]) for item in records]
-    grounded_distribution = {
-        str(value): sum(count == value for count in grounded_counts) for value in range(5)
-    }
-    grounded_distribution["5+"] = sum(count >= 5 for count in grounded_counts)
+    raw_grounded_gaps = [
+        raw_count - grounded_count
+        for raw_count, grounded_count in zip(raw_counts, grounded_counts)
+    ]
+    grounding_coverages = [
+        grounded_count / raw_count
+        for raw_count, grounded_count in zip(raw_counts, grounded_counts)
+        if raw_count > 0
+    ]
     branch_counts = {name: branches.count(name) for name in THINK_BRANCHES}
     s_cot_values = [float(item["s_cot"]) for item in records]
     payload = {
         "group_count": len(grouped),
         "parser_success_rate": _rate(bool(item["parsed"]["parser_success"]) for item in records),
+        "raw_interest_count_mean": statistics.fmean(raw_counts) if raw_counts else 0.0,
+        "raw_interest_count_distribution": _count_distribution(raw_counts),
         "grounded_interest_count_mean": statistics.fmean(grounded_counts) if grounded_counts else 0.0,
-        "grounded_interest_count_distribution": grounded_distribution,
+        "grounded_interest_count_distribution": _count_distribution(grounded_counts),
+        "raw_grounded_gap_mean": statistics.fmean(raw_grounded_gaps) if raw_grounded_gaps else 0.0,
+        "grounding_coverage_mean": statistics.fmean(grounding_coverages) if grounding_coverages else None,
+        "grounding_coverage_defined_rate": len(grounding_coverages) / len(records) if records else 0.0,
         "s_cot_mean": statistics.fmean(s_cot_values) if s_cot_values else 0.0,
         "s_cot_std": statistics.pstdev(s_cot_values) if len(s_cot_values) > 1 else 0.0,
         "d_cot_mean": statistics.fmean(float(item["evidence_diversity"]) for item in records),

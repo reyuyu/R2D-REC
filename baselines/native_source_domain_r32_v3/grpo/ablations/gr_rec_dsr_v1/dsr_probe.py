@@ -78,6 +78,10 @@ def enrich_probe_event(event: dict) -> dict:
         think_candidates.append({
             "raw_interest_n": parsed_data["bullet_count"],
             "grounded_n": parsed_data["grounded_count"],
+            "grounding_coverage": (
+                parsed_data["grounded_count"] / parsed_data["bullet_count"]
+                if parsed_data["bullet_count"] > 0 else None
+            ),
             "parser_success": parsed_data["parser_success"],
             "grounded_interests": grounded,
             "ungrounded_or_fake_sids": ungrounded,
@@ -93,9 +97,21 @@ def enrich_probe_event(event: dict) -> dict:
         details.update({"s_aux": score, "a_aux": advantage})
 
     think_rewards = [float(item.get("reward") or 0.0) for item in think.get("candidates", ())]
+    raw_counts = [item["raw_interest_n"] for item in think_candidates]
+    grounded_counts = [item["grounded_n"] for item in think_candidates]
+    grounding_coverages = [
+        item["grounding_coverage"]
+        for item in think_candidates
+        if item["grounding_coverage"] is not None
+    ]
     think_dsr = {
         "parser_success_rate": sum(item["parser_success"] for item in think_candidates) / len(think_candidates) if think_candidates else 0.0,
-        "grounded_n_mean": statistics.fmean(item["grounded_n"] for item in think_candidates) if think_candidates else 0.0,
+        "raw_n_mean": statistics.fmean(raw_counts) if raw_counts else 0.0,
+        "grounded_n_mean": statistics.fmean(grounded_counts) if grounded_counts else 0.0,
+        "raw_grounded_gap_mean": statistics.fmean(
+            raw - grounded for raw, grounded in zip(raw_counts, grounded_counts)
+        ) if raw_counts else 0.0,
+        "grounding_coverage_mean": statistics.fmean(grounding_coverages) if grounding_coverages else None,
         "cot_group_similarity": mean_completion_similarity(
             item.get("completion") or "" for item in think.get("candidates", ())
         ),

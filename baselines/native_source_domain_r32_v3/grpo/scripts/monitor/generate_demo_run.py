@@ -26,6 +26,7 @@ def _probe_dsr(think_candidates, nothink_candidates, step):
     think_details = [{
         "raw_interest_n": 4,
         "grounded_n": int(grounded),
+        "grounding_coverage": int(grounded) / 4,
         "parser_success": True,
         "grounded_interests": [{
             "title": "Verified interest",
@@ -57,7 +58,10 @@ def _probe_dsr(think_candidates, nothink_candidates, step):
     return {
         "think": {
             "parser_success_rate": 1.0,
+            "raw_n_mean": 4.0,
             "grounded_n_mean": grounded,
+            "raw_grounded_gap_mean": 4.0 - grounded,
+            "grounding_coverage_mean": grounded / 4.0,
             "cot_group_similarity": 0.78 - step / 1000,
             "s_cot_mean": statistics.fmean(item["s_cot"] for item in think_details),
             "s_prefix_mean": statistics.fmean(item["s_prefix"] for item in think_details),
@@ -253,13 +257,22 @@ def generate(output_dir: str, run_id: str = "demo-phase1", dsr: bool = False) ->
             if dsr:
                 if think:
                     primary_zero = max(0.05, 0.48 - step * 0.003)
+                    raw_interest_mean = 3.8
+                    grounded_interest_mean = 2.1 + 0.003 * step
                     dsr_rollout = {
                         "type": "dsr_rollout", "rollout_id": rollout_id, "step": step,
                         "route": route, "parser_success_rate": min(0.995, 0.91 + 0.0002 * step),
-                        "grounded_interest_count_mean": 2.1 + 0.003 * step,
+                        "raw_interest_count_mean": raw_interest_mean,
+                        "raw_interest_count_distribution": {
+                            "0": 0, "1": 0, "2": 2, "3": 5, "4": 8, "5+": 1,
+                        },
+                        "grounded_interest_count_mean": grounded_interest_mean,
                         "grounded_interest_count_distribution": {
                             "0": 0, "1": 1, "2": 5, "3": 8, "4": 2, "5+": 0,
                         },
+                        "raw_grounded_gap_mean": raw_interest_mean - grounded_interest_mean,
+                        "grounding_coverage_mean": grounded_interest_mean / raw_interest_mean,
+                        "grounding_coverage_defined_rate": 1.0,
                         "s_cot_mean": 0.72 + 0.0005 * step, "s_cot_std": 0.12,
                         "d_cot_mean": 0.66 + 0.0004 * step, "s_prefix_mean": 0.04 + 0.0006 * step,
                         "s_explore_mean": 0.31, "s_dead_mean": 0.24,
