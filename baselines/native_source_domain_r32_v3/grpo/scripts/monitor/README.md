@@ -36,6 +36,16 @@ runs/<RUN_ID>/
 └── probes.jsonl            # optional fixed held-out evaluation
 ```
 
+DSR runs add optional, append-only streams in the same run directory:
+
+```text
+dsr_metrics.jsonl           # rollout-level Think/NoThink diagnostics
+dsr_steps.jsonl             # existing Python loss/drift scalars
+dsr_traces.jsonl            # sampled DSR trace details
+```
+
+Legacy runs do not need these files and require no migration.
+
 ## CPU-only demo
 
 From `/data/GRPO/scripts`:
@@ -43,7 +53,13 @@ From `/data/GRPO/scripts`:
 ```bash
 python monitor/generate_demo_run.py \
   --output-dir /data/GRPO/runs \
-  --run-id demo-phase1
+  --run-id demo-phase1 \
+  --mode legacy
+
+python monitor/generate_demo_run.py \
+  --output-dir /data/GRPO/runs \
+  --run-id demo-dsr \
+  --mode dsr
 
 python monitor/server.py \
   --runs-dir /data/GRPO/runs \
@@ -74,10 +90,12 @@ adds no DDP collective. Every metric panel has an on-demand definition and a
 short description of a healthy trend; metrics without a monotonic optimum are
 explicitly described as joint diagnostics rather than "higher is better".
 
-The server exposes `/api/runs`, `/api/manifest`, `/api/metrics`, `/api/rollouts`,
-`/api/ranks`, `/api/traces`, and `/api/probes`. JSONL endpoints accept `from_step`,
-`to_step`, `route`, and `rollout_id`; `/api/ranks` additionally accepts
-`rank`.
+The server exposes `/api/runs`, `/api/manifest`, `/api/capabilities`,
+`/api/metrics`, `/api/rollouts`, `/api/ranks`, `/api/traces`, `/api/probes`,
+and the optional `/api/dsr/metrics`, `/api/dsr/steps`, and `/api/dsr/traces`.
+JSONL endpoints accept `from_step`, `to_step`, `route`, and `rollout_id`;
+`/api/ranks` additionally accepts `rank`. Missing DSR files return `[]`, and
+the dashboard hides DSR-only controls for legacy runs.
 
 ## CPU tests
 

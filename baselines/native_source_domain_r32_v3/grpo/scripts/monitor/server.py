@@ -165,6 +165,38 @@ def create_app(
         except (OSError, json.JSONDecodeError):
             return {}
 
+    @app.get("/api/capabilities")
+    def capabilities(run_id: str | None = None):
+        selected = selected_run(run_id)
+        try:
+            manifest_data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            manifest_data = {}
+        fixed_probe = manifest_data.get("fixed_probe")
+        dsr_files = ("dsr_metrics.jsonl", "dsr_steps.jsonl", "dsr_traces.jsonl")
+        probe_rows = read_jsonl(selected / "probes.jsonl")
+        dsr = bool(
+            manifest_data.get("dsr")
+            or any((selected / name).is_file() for name in dsr_files)
+            or any(isinstance(row.get("dsr"), dict) for row in probe_rows)
+        )
+        checkpoint_available = False
+        if outputs_root is not None:
+            output = (outputs_root / selected.name).resolve()
+            if output.parent == outputs_root and output.is_dir():
+                checkpoint_available = any(
+                    path.is_dir() and re.fullmatch(r"checkpoint-\d+", path.name)
+                    for path in output.iterdir()
+                )
+        return {
+            "dsr": dsr,
+            "probes": bool(
+                (isinstance(fixed_probe, dict) and fixed_probe.get("enabled"))
+                or (selected / "probes.jsonl").is_file()
+            ),
+            "checkpoints": checkpoint_available,
+        }
+
     def queried(path: Path, from_step, to_step, route, rollout_id):
         return filter_rows(read_jsonl(path), from_step, to_step, route, rollout_id)
 
@@ -240,6 +272,45 @@ def create_app(
         if group_id is not None:
             rows = [row for row in rows if row.get("group_id") == group_id]
         return rows
+
+    def dsr_rows(filename, run_id, from_step, to_step, route, rollout_id):
+        return queried(
+            selected_run(run_id) / filename,
+            from_step,
+            to_step,
+            route,
+            rollout_id,
+        )
+
+    @app.get("/api/dsr/metrics")
+    def dsr_metrics(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        route: str | None = None,
+        rollout_id: int | None = None,
+    ):
+        return dsr_rows("dsr_metrics.jsonl", run_id, from_step, to_step, route, rollout_id)
+
+    @app.get("/api/dsr/steps")
+    def dsr_steps(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        route: str | None = None,
+        rollout_id: int | None = None,
+    ):
+        return dsr_rows("dsr_steps.jsonl", run_id, from_step, to_step, route, rollout_id)
+
+    @app.get("/api/dsr/traces")
+    def dsr_traces(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        route: str | None = None,
+        rollout_id: int | None = None,
+    ):
+        return dsr_rows("dsr_traces.jsonl", run_id, from_step, to_step, route, rollout_id)
 
     @app.get("/api/health")
     def health():

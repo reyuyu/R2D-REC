@@ -67,11 +67,15 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(client.get("/api/ranks?rank=1").json()) == 1
     assert len(client.get("/api/traces?rollout_id=2").json()) == 1
     assert client.get("/api/probes?group_id=probe-a").json()[0]["step"] == 0
+    assert client.get("/api/capabilities").json()["dsr"] is False
+    assert client.get("/api/dsr/metrics").json() == []
+    assert client.get("/api/dsr/steps").json() == []
+    assert client.get("/api/dsr/traces").json() == []
     assert client.get("/").status_code == 200
     print("[PASS] FastAPI endpoints and query filters")
 
     isolated = MonitorWriter(True, root, "isolated-run", rank=0)
-    assert isolated.write_manifest({"seed": 99, "max_steps": 120})
+    assert isolated.write_manifest({"seed": 99, "max_steps": 120, "fixed_probe": None})
     assert isolated.write_step({"step": 17, "loss": 9.9})
     outputs = root / "_outputs"
     checkpoint = outputs / "isolated-run" / "checkpoint-17"
@@ -88,6 +92,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(row["step"] != 17 for row in multi_client.get("/api/metrics?run_id=writer-test").json())
     assert len(multi_client.get("/api/probes?run_id=writer-test").json()) == 1
     assert multi_client.get("/api/probes?run_id=isolated-run").json() == []
+    assert multi_client.get("/api/capabilities?run_id=isolated-run").json()["probes"] is False
     assert multi_client.get("/api/metrics").status_code == 400
     assert multi_client.get("/api/metrics?run_id=..").status_code == 400
     assert multi_client.get("/api/metrics?run_id=missing").status_code == 404
@@ -116,9 +121,39 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(nothink_trace["candidates"]) == 8
     assert all(candidate["reward"] is not None for candidate in nothink_trace["candidates"])
     html = client.get("/").text
-    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视", "Probe 检视", "选择实验"))
+    assert all(label in html for label in ("训练总览", "性能分析", "采样检视", "固定探针", "选择实验"))
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
+    assert all(label in html for label in (
+        "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失",
+        "Raw N", "Grounding Coverage"
+    ))
+    assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
+
+    dsr_demo_dir = Path(generate(str(root), "demo-dsr", dsr=True))
+    assert json.loads((dsr_demo_dir / "manifest.json").read_text(encoding="utf-8"))["max_steps"] == 400
+    assert len(parse_every_line(dsr_demo_dir / "metrics.jsonl")) == 400
+    assert len(parse_every_line(dsr_demo_dir / "dsr_steps.jsonl")) == 400
+    assert len(parse_every_line(dsr_demo_dir / "dsr_metrics.jsonl")) == 200
+    dsr_probes = parse_every_line(dsr_demo_dir / "probes.jsonl")
+    assert {row["step"] for row in dsr_probes} == {0, 200, 400}
+    assert all("dsr" in row for row in dsr_probes)
+    assert all(row["reason"] == "final" for row in dsr_probes if row["step"] == 400)
+
+    with (dsr_demo_dir / "dsr_metrics.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write('{"type":"dsr_rollout","step":401')
+    dsr_client = TestClient(create_app(runs_dir=root))
+    assert dsr_client.get("/api/capabilities?run_id=demo-dsr").json()["dsr"] is True
+    assert dsr_client.get("/api/capabilities?run_id=demo").json()["dsr"] is False
+    assert len(dsr_client.get("/api/dsr/metrics?run_id=demo-dsr&route=think").json()) > 0
+    assert dsr_client.get("/api/dsr/metrics?run_id=demo").json() == []
+    filtered_steps = dsr_client.get(
+        "/api/dsr/steps?run_id=demo-dsr&from_step=200&to_step=205&route=think"
+    ).json()
+    assert filtered_steps and all(200 <= row["step"] <= 205 and row["route"] == "think" for row in filtered_steps)
+    assert dsr_client.get("/api/dsr/metrics?run_id=..").status_code == 400
+    assert dsr_client.get("/api/dsr/metrics?run_id=missing").status_code == 404
+    print("[PASS] DSR demo, optional APIs, run isolation, filters, and incomplete-tail tolerance")
 
 print("ALL MONITOR CPU TESTS PASSED")
