@@ -227,9 +227,9 @@ no measurable forward overhead, while generation and Beam still dominate.
 
 The final acceptance worktree is based on `origin/main` parent
 `9d1791ca1ca572d23b15013fdedab4612e70d83c` on branch
-`ablation/gr-rec-dsr-v1`. The isolated implementation commit is recorded below
-after commit creation; the commit contains only this document and
-`grpo/ablations/gr_rec_dsr_v1/`.
+`ablation/gr-rec-dsr-v1`. The isolated implementation commit is
+`fd12b392f239b263755512bba67f2b7703b4c267`; it contains only this document
+and `grpo/ablations/gr_rec_dsr_v1/`.
 
 The formal DSR runner now fail-closes all fairness-sensitive arguments. It
 forces train seed `20260816`, probe seed `20260818`, probe interval 200, and
