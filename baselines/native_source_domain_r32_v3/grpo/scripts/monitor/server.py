@@ -96,7 +96,7 @@ def create_app(
             runs.append({
                 "run_id": path.name,
                 "start_time": manifest.get("start_time"),
-                "max_steps": manifest.get("max_steps"),
+                "max_steps": manifest.get("effective_max_steps", manifest.get("max_steps")),
                 "latest_step": latest.get("step", 0),
                 "latest_route": latest.get("route"),
                 "updated_at": updated_at,
@@ -115,6 +115,26 @@ def create_app(
             raise HTTPException(status_code=404, detail="unknown run_id")
         return candidate
 
+    def checkpoint_run_dirs(selected: Path) -> list[Path]:
+        """Find current and legacy output layouts without leaving outputs_root."""
+        if outputs_root is None or not outputs_root.is_dir():
+            return []
+        candidates = [outputs_root / selected.name]
+        try:
+            candidates.extend(path / selected.name for path in outputs_root.iterdir() if path.is_dir())
+        except OSError:
+            pass
+        resolved = []
+        for candidate in candidates:
+            try:
+                path = candidate.resolve()
+                path.relative_to(outputs_root)
+            except (OSError, ValueError):
+                continue
+            if path.is_dir() and path not in resolved:
+                resolved.append(path)
+        return resolved
+
     @app.get("/")
     def dashboard():
         return FileResponse(STATIC_DIR / "index.html")
@@ -126,23 +146,27 @@ def create_app(
     @app.get("/api/checkpoints")
     def checkpoints(run_id: str | None = None):
         selected = selected_run(run_id)
-        if outputs_root is None:
-            return []
-        run_output = (outputs_root / selected.name).resolve()
-        if run_output.parent != outputs_root or not run_output.is_dir():
-            return []
-        result = []
-        for path in run_output.iterdir():
-            match = re.fullmatch(r"checkpoint-(\d+)", path.name)
-            if not path.is_dir() or match is None:
+        result = {}
+        for run_output in checkpoint_run_dirs(selected):
+            try:
+                children = run_output.iterdir()
+            except OSError:
                 continue
-            files = {}
-            for name in ("adapter_config.json", "adapter_model.safetensors"):
-                candidate = path / name
-                if candidate.is_file():
-                    files[name] = candidate.stat().st_size
-            result.append({"checkpoint": path.name, "step": int(match.group(1)), "files": files})
-        return sorted(result, key=lambda item: item["step"])
+            for path in children:
+                match = re.fullmatch(r"checkpoint-(\d+)", path.name)
+                if not path.is_dir() or match is None:
+                    continue
+                files = {}
+                for name in ("adapter_config.json", "adapter_model.safetensors"):
+                    candidate = path / name
+                    if candidate.is_file():
+                        files[name] = candidate.stat().st_size
+                result.setdefault(path.name, {
+                    "checkpoint": path.name,
+                    "step": int(match.group(1)),
+                    "files": files,
+                })
+        return sorted(result.values(), key=lambda item: item["step"])
 
     @app.get("/api/checkpoints/{checkpoint}/download")
     def download_checkpoint_file(checkpoint: str, file: str, run_id: str | None = None):
@@ -150,18 +174,21 @@ def create_app(
         allowed = {"adapter_config.json", "adapter_model.safetensors"}
         if outputs_root is None or file not in allowed or re.fullmatch(r"checkpoint-\d+", checkpoint) is None:
             raise HTTPException(status_code=404, detail="checkpoint file not found")
-        checkpoint_dir = (outputs_root / selected.name / checkpoint).resolve()
-        expected_parent = (outputs_root / selected.name).resolve()
-        candidate = (checkpoint_dir / file).resolve()
-        if checkpoint_dir.parent != expected_parent or candidate.parent != checkpoint_dir or not candidate.is_file():
-            raise HTTPException(status_code=404, detail="checkpoint file not found")
-        return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
+        for run_output in checkpoint_run_dirs(selected):
+            checkpoint_dir = (run_output / checkpoint).resolve()
+            candidate = (checkpoint_dir / file).resolve()
+            if checkpoint_dir.parent == run_output and candidate.parent == checkpoint_dir and candidate.is_file():
+                return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
+        raise HTTPException(status_code=404, detail="checkpoint file not found")
 
     @app.get("/api/manifest")
     def manifest(run_id: str | None = None):
         selected = selected_run(run_id)
         try:
-            return json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            if "effective_max_steps" in data:
+                data["max_steps"] = data["effective_max_steps"]
+            return data
         except (OSError, json.JSONDecodeError):
             return {}
 
@@ -180,14 +207,11 @@ def create_app(
             or any((selected / name).is_file() for name in dsr_files)
             or any(isinstance(row.get("dsr"), dict) for row in probe_rows)
         )
-        checkpoint_available = False
-        if outputs_root is not None:
-            output = (outputs_root / selected.name).resolve()
-            if output.parent == outputs_root and output.is_dir():
-                checkpoint_available = any(
-                    path.is_dir() and re.fullmatch(r"checkpoint-\d+", path.name)
-                    for path in output.iterdir()
-                )
+        checkpoint_available = any(
+            path.is_dir() and re.fullmatch(r"checkpoint-\d+", path.name)
+            for output in checkpoint_run_dirs(selected)
+            for path in output.iterdir()
+        )
         return {
             "dsr": dsr,
             "probes": bool(
