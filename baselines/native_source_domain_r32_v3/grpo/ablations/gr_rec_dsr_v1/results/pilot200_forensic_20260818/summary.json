@@ -1,0 +1,1139 @@
+{
+  "audit": {
+    "run": "GR-REC-DSR-V1-PILOT200-20260818",
+    "baseline": "REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818",
+    "cpu_only": true,
+    "gpu_or_training_started": false,
+    "bootstrap_resamples": 5000,
+    "bootstrap_seed": 20260819
+  },
+  "schedule": {
+    "exact_first_200_rollout_alignment": true,
+    "train_seed_dsr": 20260816,
+    "train_seed_baseline": 20260816,
+    "probe_ids_equal": true,
+    "sampler_audit_equal": true,
+    "optimizer_schedule_sha256": "ac86490e5660e365fe4adedb6ac9321cffb95db1636b2f4bafad99841ba508b7",
+    "expected_schedule_sha256": "ac86490e5660e365fe4adedb6ac9321cffb95db1636b2f4bafad99841ba508b7",
+    "matched_group_route_records": 268,
+    "unique_groups": 136
+  },
+  "data_availability": {
+    "full_dsr_think_candidates_aggregate": 544,
+    "dsr_candidate_cot_systematic_sample": 68,
+    "dsr_candidate_cot_sample_design": "first 2 candidates of first group in each of 34 Think rollouts",
+    "matched_full_think_groups_with_cot_both_runs": 2,
+    "full_beam_tasks_each_run": 544,
+    "beam_tasks_with_direct_task_level_outputs_each_run": 8,
+    "raw_invalid_beam_text": "unavailable",
+    "full_nothink_dsr_plans": 132,
+    "matched_nothink_groups_with_candidate_outputs_both_runs": 3,
+    "group_level_primary_outcomes_full_runs": "unavailable; only rollout aggregates"
+  },
+  "coverage": {
+    "fixed_probe_n4_longitudinal_only": {
+      "0": {
+        "n_groups": 4,
+        "raw_n_mean": 3.8125,
+        "grounded_n_mean": 3.5625,
+        "coverage_mean": 0.9375,
+        "gap_mean": 0.25
+      },
+      "200": {
+        "n_groups": 4,
+        "raw_n_mean": 3.75,
+        "grounded_n_mean": 2.8125,
+        "coverage_mean": 0.7604166666666666,
+        "gap_mean": 0.9375
+      }
+    },
+    "full_dsr_training_aggregate": {
+      "overall": {
+        "rollouts": 34,
+        "groups": 136,
+        "candidates": 544,
+        "raw_n": {
+          "n": 544,
+          "mean": 3.286764705882353,
+          "median": 4.0,
+          "p10": 3.0,
+          "p25": 3.0,
+          "p50": 4.0,
+          "p75": 4.0,
+          "p90": 4.0
+        },
+        "grounded_n": {
+          "n": 544,
+          "mean": 2.895220588235294,
+          "median": 3.0,
+          "p10": 1.0,
+          "p25": 3.0,
+          "p50": 3.0,
+          "p75": 4.0,
+          "p90": 4.0
+        },
+        "coverage": {
+          "defined_n": 508,
+          "defined_rate": 0.9338235294117647,
+          "mean": 0.8805774278215222,
+          "quantiles": "unavailable:candidate-level coverage_not_persisted"
+        },
+        "gap": {
+          "mean": 0.3915441176470588,
+          "quantiles": "unavailable:joint_raw_grounded_not_persisted"
+        },
+        "parser_success_rate": 0.9338235294117647,
+        "primary_zero_std_rate": 0.4264705882352941,
+        "signal_rescue_rate": 0.38235294117647056,
+        "all_zero_rate": 0.21323529411764705
+      },
+      "by_stage": {
+        "0-50": {
+          "rollouts": 9,
+          "groups": 36,
+          "candidates": 144,
+          "raw_n": {
+            "n": 144,
+            "mean": 3.2083333333333335,
+            "median": 4.0,
+            "p10": 1.6000000000000014,
+            "p25": 3.0,
+            "p50": 4.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "grounded_n": {
+            "n": 144,
+            "mean": 2.7847222222222223,
+            "median": 3.0,
+            "p10": 0.0,
+            "p25": 2.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "coverage": {
+            "defined_n": 130,
+            "defined_rate": 0.9027777777777778,
+            "mean": 0.8653846153846154,
+            "quantiles": "unavailable:candidate-level coverage_not_persisted"
+          },
+          "gap": {
+            "mean": 0.4236111111111111,
+            "quantiles": "unavailable:joint_raw_grounded_not_persisted"
+          },
+          "parser_success_rate": 0.9027777777777778,
+          "primary_zero_std_rate": 0.4444444444444444,
+          "signal_rescue_rate": 0.4166666666666667,
+          "all_zero_rate": 0.2222222222222222
+        },
+        "50-100": {
+          "rollouts": 9,
+          "groups": 36,
+          "candidates": 144,
+          "raw_n": {
+            "n": 144,
+            "mean": 3.5208333333333335,
+            "median": 4.0,
+            "p10": 3.0,
+            "p25": 3.0,
+            "p50": 4.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "grounded_n": {
+            "n": 144,
+            "mean": 3.1666666666666665,
+            "median": 3.0,
+            "p10": 2.0,
+            "p25": 3.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "coverage": {
+            "defined_n": 141,
+            "defined_rate": 0.9791666666666666,
+            "mean": 0.8936170212765957,
+            "quantiles": "unavailable:candidate-level coverage_not_persisted"
+          },
+          "gap": {
+            "mean": 0.3541666666666667,
+            "quantiles": "unavailable:joint_raw_grounded_not_persisted"
+          },
+          "parser_success_rate": 0.9791666666666666,
+          "primary_zero_std_rate": 0.4444444444444444,
+          "signal_rescue_rate": 0.3611111111111111,
+          "all_zero_rate": 0.2222222222222222
+        },
+        "100-150": {
+          "rollouts": 8,
+          "groups": 32,
+          "candidates": 128,
+          "raw_n": {
+            "n": 128,
+            "mean": 3.1328125,
+            "median": 3.0,
+            "p10": 1.0,
+            "p25": 3.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "grounded_n": {
+            "n": 128,
+            "mean": 2.7890625,
+            "median": 3.0,
+            "p10": 0.0,
+            "p25": 3.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "coverage": {
+            "defined_n": 117,
+            "defined_rate": 0.9140625,
+            "mean": 0.896011396011396,
+            "quantiles": "unavailable:candidate-level coverage_not_persisted"
+          },
+          "gap": {
+            "mean": 0.34375,
+            "quantiles": "unavailable:joint_raw_grounded_not_persisted"
+          },
+          "parser_success_rate": 0.9140625,
+          "primary_zero_std_rate": 0.53125,
+          "signal_rescue_rate": 0.5,
+          "all_zero_rate": 0.28125
+        },
+        "150-200": {
+          "rollouts": 8,
+          "groups": 32,
+          "candidates": 128,
+          "raw_n": {
+            "n": 128,
+            "mean": 3.265625,
+            "median": 3.0,
+            "p10": 3.0,
+            "p25": 3.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "grounded_n": {
+            "n": 128,
+            "mean": 2.8203125,
+            "median": 3.0,
+            "p10": 0.0,
+            "p25": 2.0,
+            "p50": 3.0,
+            "p75": 4.0,
+            "p90": 4.0
+          },
+          "coverage": {
+            "defined_n": 120,
+            "defined_rate": 0.9375,
+            "mean": 0.8666666666666668,
+            "quantiles": "unavailable:candidate-level coverage_not_persisted"
+          },
+          "gap": {
+            "mean": 0.4453125,
+            "quantiles": "unavailable:joint_raw_grounded_not_persisted"
+          },
+          "parser_success_rate": 0.9375,
+          "primary_zero_std_rate": 0.28125,
+          "signal_rescue_rate": 0.25,
+          "all_zero_rate": 0.125
+        }
+      }
+    },
+    "dsr_systematic_candidate_sample": {
+      "candidates": 68,
+      "groups": 34,
+      "raw_n": {
+        "n": 68,
+        "mean": 3.338235294117647,
+        "median": 4.0,
+        "p10": 3.0,
+        "p25": 3.0,
+        "p50": 4.0,
+        "p75": 4.0,
+        "p90": 4.0
+      },
+      "grounded_n": {
+        "n": 68,
+        "mean": 2.911764705882353,
+        "median": 3.0,
+        "p10": 1.0,
+        "p25": 2.75,
+        "p50": 3.0,
+        "p75": 4.0,
+        "p90": 4.0
+      },
+      "coverage": {
+        "n": 63,
+        "mean": 0.8796296296296295,
+        "median": 1.0,
+        "p10": 0.5,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 1.0,
+        "p90": 1.0
+      },
+      "gap": {
+        "n": 68,
+        "mean": 0.4264705882352941,
+        "median": 0.0,
+        "p10": 0.0,
+        "p25": 0.0,
+        "p50": 0.0,
+        "p75": 0.0,
+        "p90": 2.0
+      },
+      "by_stage": {
+        "0-50": {
+          "candidates": 18,
+          "groups": 9,
+          "raw_n_mean": 3.1666666666666665,
+          "grounded_n_mean": 2.611111111111111,
+          "coverage_mean": 0.8229166666666666,
+          "gap_mean": 0.5555555555555556
+        },
+        "100-150": {
+          "candidates": 16,
+          "groups": 8,
+          "raw_n_mean": 3.0625,
+          "grounded_n_mean": 2.75,
+          "coverage_mean": 0.9107142857142857,
+          "gap_mean": 0.3125
+        },
+        "150-200": {
+          "candidates": 16,
+          "groups": 8,
+          "raw_n_mean": 3.375,
+          "grounded_n_mean": 2.875,
+          "coverage_mean": 0.8666666666666667,
+          "gap_mean": 0.5
+        },
+        "50-100": {
+          "candidates": 18,
+          "groups": 9,
+          "raw_n_mean": 3.7222222222222223,
+          "grounded_n_mean": 3.388888888888889,
+          "coverage_mean": 0.9166666666666666,
+          "gap_mean": 0.3333333333333333
+        }
+      },
+      "by_domain": {
+        "ad": {
+          "candidates": 20,
+          "groups": 10,
+          "raw_n_mean": 3.1,
+          "grounded_n_mean": 2.55,
+          "coverage_mean": 0.8287037037037037,
+          "gap_mean": 0.55
+        },
+        "living": {
+          "candidates": 8,
+          "groups": 4,
+          "raw_n_mean": 3.75,
+          "grounded_n_mean": 3.125,
+          "coverage_mean": 0.84375,
+          "gap_mean": 0.625
+        },
+        "prod": {
+          "candidates": 20,
+          "groups": 10,
+          "raw_n_mean": 3.25,
+          "grounded_n_mean": 2.7,
+          "coverage_mean": 0.8472222222222222,
+          "gap_mean": 0.55
+        },
+        "video": {
+          "candidates": 20,
+          "groups": 10,
+          "raw_n_mean": 3.5,
+          "grounded_n_mean": 3.4,
+          "coverage_mean": 0.9736842105263158,
+          "gap_mean": 0.1
+        }
+      },
+      "by_gold_count": {
+        "1-2": {
+          "candidates": 40,
+          "groups": 20,
+          "raw_n_mean": 3.35,
+          "grounded_n_mean": 2.725,
+          "coverage_mean": 0.8267543859649124,
+          "gap_mean": 0.625
+        },
+        "3-4": {
+          "candidates": 8,
+          "groups": 4,
+          "raw_n_mean": 2.875,
+          "grounded_n_mean": 2.625,
+          "coverage_mean": 0.9166666666666666,
+          "gap_mean": 0.25
+        },
+        "5+": {
+          "candidates": 20,
+          "groups": 10,
+          "raw_n_mean": 3.5,
+          "grounded_n_mean": 3.4,
+          "coverage_mean": 0.9736842105263158,
+          "gap_mean": 0.1
+        }
+      },
+      "by_unique_gold_A": {
+        "1": {
+          "candidates": 8,
+          "groups": 4,
+          "raw_n_mean": 3.875,
+          "grounded_n_mean": 3.25,
+          "coverage_mean": 0.84375,
+          "gap_mean": 0.625
+        },
+        "2": {
+          "candidates": 40,
+          "groups": 20,
+          "raw_n_mean": 3.15,
+          "grounded_n_mean": 2.6,
+          "coverage_mean": 0.837962962962963,
+          "gap_mean": 0.55
+        },
+        "3+": {
+          "candidates": 20,
+          "groups": 10,
+          "raw_n_mean": 3.5,
+          "grounded_n_mean": 3.4,
+          "coverage_mean": 0.9736842105263158,
+          "gap_mean": 0.1
+        }
+      }
+    },
+    "matched_baseline_trace": {
+      "raw_n": {
+        "n_groups": 2,
+        "mean": 0.75,
+        "median": 0.75,
+        "ci95": [
+          0.5,
+          1.0
+        ],
+        "resamples": 5000,
+        "seed": 20260819
+      },
+      "grounded_n": {
+        "n_groups": 2,
+        "mean": 0.625,
+        "median": 0.625,
+        "ci95": [
+          0.5,
+          0.75
+        ],
+        "resamples": 5000,
+        "seed": 20260819
+      },
+      "coverage": {
+        "n_groups": 2,
+        "mean": -0.020833333333333315,
+        "median": -0.020833333333333315,
+        "ci95": [
+          -0.04166666666666663,
+          0.0
+        ],
+        "resamples": 5000,
+        "seed": 20260819
+      },
+      "gap": {
+        "n_groups": 2,
+        "mean": 0.125,
+        "median": 0.125,
+        "ci95": [
+          0.0,
+          0.25
+        ],
+        "resamples": 5000,
+        "seed": 20260819
+      },
+      "matched_groups": 2,
+      "p_coverage_dsr_lt_baseline": 0.5,
+      "coverage_delta_le_minus_0_25_rate": 0.0,
+      "warning": "Only 2 matched Think groups have complete candidate CoTs in both runs.",
+      "records": [
+        {
+          "group_id": "8002d0daf096df8e5d36f940e1df8a0c7966ee594ea20a785077fb59d21ebaa4",
+          "step": 38,
+          "domain": "video",
+          "baseline_raw_n": 3.5,
+          "baseline_grounded_n": 3.5,
+          "baseline_coverage": 1.0,
+          "baseline_gap": 0.0,
+          "dsr_raw_n": 4.0,
+          "dsr_grounded_n": 4.0,
+          "dsr_coverage": 1.0,
+          "dsr_gap": 0.0,
+          "delta_raw_n": 0.5,
+          "delta_grounded_n": 0.5,
+          "delta_coverage": 0.0,
+          "delta_gap": 0.0
+        },
+        {
+          "group_id": "1e69a31d62cece5fd7a4f6155c0dc1f441d5f7b7609287c44f893e8a2c0fa63d",
+          "step": 158,
+          "domain": "prod",
+          "baseline_raw_n": 2.75,
+          "baseline_grounded_n": 2.5,
+          "baseline_coverage": 0.9166666666666666,
+          "baseline_gap": 0.25,
+          "dsr_raw_n": 3.75,
+          "dsr_grounded_n": 3.25,
+          "dsr_coverage": 0.875,
+          "dsr_gap": 0.5,
+          "delta_raw_n": 1.0,
+          "delta_grounded_n": 0.75,
+          "delta_coverage": -0.04166666666666663,
+          "delta_gap": 0.25
+        }
+      ]
+    },
+    "conclusion": "PROBE-LOCAL",
+    "reason": "Full DSR training coverage is 86.54% in 0-50 and 86.67% in 150-200, with no monotonic decline. Only 2 baseline-matched Think groups have complete CoTs, so a population paired effect is unavailable."
+  },
+  "evidence_coverage_loophole": {
+    "coverage_buckets_systematic_sample": {
+      "1. Coverage = 1.0": {
+        "candidate_count": 48,
+        "group_count": 30,
+        "raw_n_mean": 3.5416666666666665,
+        "grounded_n_mean": 3.5416666666666665,
+        "d_cot_mean": 0.9948950066137566,
+        "s_cot_mean": 0.9974475033068783,
+        "s_aux_mean": 0.9076148067586356,
+        "a_aux_mean": 0.24471058180400482,
+        "a_aux_positive_rate": 0.6041666666666666,
+        "a_aux_negative_rate": 0.125,
+        "primary_reward_mean": 3.2916666666666665,
+        "exact_mean": 0.3333333333333333,
+        "ab_mean": 0.0,
+        "a_mean": 2.0,
+        "beam_invalid_mean": 0.0,
+        "primary_and_beam_observed_n": 3
+      },
+      "2. 0.75 <= Coverage < 1": {
+        "candidate_count": 4,
+        "group_count": 4,
+        "raw_n_mean": 4.0,
+        "grounded_n_mean": 3.0,
+        "d_cot_mean": 1.0,
+        "s_cot_mean": 1.0,
+        "s_aux_mean": 0.8773245464506181,
+        "a_aux_mean": 0.5880627632141113,
+        "a_aux_positive_rate": 0.75,
+        "a_aux_negative_rate": 0.25,
+        "primary_reward_mean": null,
+        "exact_mean": null,
+        "ab_mean": null,
+        "a_mean": null,
+        "beam_invalid_mean": null,
+        "primary_and_beam_observed_n": 0
+      },
+      "3. 0.50 <= Coverage < 0.75": {
+        "candidate_count": 6,
+        "group_count": 6,
+        "raw_n_mean": 3.6666666666666665,
+        "grounded_n_mean": 2.0,
+        "d_cot_mean": 1.0,
+        "s_cot_mean": 1.0,
+        "s_aux_mean": 0.8199952263500032,
+        "a_aux_mean": 0.387858757438759,
+        "a_aux_positive_rate": 0.3333333333333333,
+        "a_aux_negative_rate": 0.16666666666666666,
+        "primary_reward_mean": 8.25,
+        "exact_mean": 1.0,
+        "ab_mean": 0.0,
+        "a_mean": 1.0,
+        "beam_invalid_mean": 0.0,
+        "primary_and_beam_observed_n": 1
+      },
+      "4. 0 < Coverage < 0.50": {
+        "candidate_count": 4,
+        "group_count": 4,
+        "raw_n_mean": 3.75,
+        "grounded_n_mean": 1.0,
+        "d_cot_mean": 0.0,
+        "s_cot_mean": 0.0,
+        "s_aux_mean": 0.0,
+        "a_aux_mean": -0.9714367389678955,
+        "a_aux_positive_rate": 0.0,
+        "a_aux_negative_rate": 1.0,
+        "primary_reward_mean": null,
+        "exact_mean": null,
+        "ab_mean": null,
+        "a_mean": null,
+        "beam_invalid_mean": null,
+        "primary_and_beam_observed_n": 0
+      },
+      "5. Coverage = 0": {
+        "candidate_count": 1,
+        "group_count": 1,
+        "raw_n_mean": 4.0,
+        "grounded_n_mean": 0.0,
+        "d_cot_mean": 0.0,
+        "s_cot_mean": 0.0,
+        "s_aux_mean": 0.0,
+        "a_aux_mean": -1.731204867362976,
+        "a_aux_positive_rate": 0.0,
+        "a_aux_negative_rate": 1.0,
+        "primary_reward_mean": null,
+        "exact_mean": null,
+        "ab_mean": null,
+        "a_mean": null,
+        "beam_invalid_mean": null,
+        "primary_and_beam_observed_n": 0
+      },
+      "undefined": {
+        "candidate_count": 5,
+        "group_count": 5,
+        "raw_n_mean": 0.0,
+        "grounded_n_mean": 0.0,
+        "d_cot_mean": 0.0,
+        "s_cot_mean": 0.0,
+        "s_aux_mean": 0.009201081738666614,
+        "a_aux_mean": -1.4384000062942506,
+        "a_aux_positive_rate": 0.0,
+        "a_aux_negative_rate": 1.0,
+        "primary_reward_mean": null,
+        "exact_mean": null,
+        "ab_mean": null,
+        "a_mean": null,
+        "beam_invalid_mean": null,
+        "primary_and_beam_observed_n": 0
+      }
+    },
+    "low_coverage_positive_cases": 1,
+    "conclusion": "UNCERTAIN",
+    "reason": "A direct Raw=4/Grounded=2/Coverage=.5 candidate received A_aux=+1.73165, proving the behavior can occur, but candidate-level coverage and A_aux are jointly observable for only 68/544 candidates and low-coverage positive prevalence is not population-identifiable."
+  },
+  "beam_invalid": {
+    "dsr": {
+      "think_rollouts": 34,
+      "beam_task_count": 544,
+      "beam_outputs": 17408,
+      "invalid_outputs": 75,
+      "beam_output_invalid_rate": 0.004308363970588236,
+      "affected_rollouts": 8,
+      "affected_rollout_rate": 0.23529411764705882,
+      "max_invalid_per_rollout": 35,
+      "affected_task_count": "unavailable",
+      "affected_task_count_bounds": [
+        9,
+        43
+      ],
+      "affected_task_rate_bounds": [
+        0.016544117647058824,
+        0.07904411764705882
+      ],
+      "severe_task_count": "unavailable",
+      "severe_task_count_bounds": [
+        0,
+        7
+      ],
+      "severe_task_rate_bounds": [
+        0.0,
+        0.012867647058823529
+      ],
+      "critical_task_count": "unavailable",
+      "critical_task_count_bounds": [
+        0,
+        3
+      ],
+      "critical_task_rate_bounds": [
+        0.0,
+        0.0055147058823529415
+      ],
+      "task_trace_observed_n": 8,
+      "task_trace_affected_n": 0,
+      "raw_invalid_text_classification": "unavailable:raw_invalid_beam_text_not_persisted",
+      "top_1pct_rollout_share": 0.4666666666666667,
+      "top_5pct_rollout_share": 0.8533333333333334,
+      "top_10pct_rollout_share": 0.9466666666666667
+    },
+    "baseline": {
+      "think_rollouts": 34,
+      "beam_task_count": 544,
+      "beam_outputs": 17408,
+      "invalid_outputs": 21,
+      "beam_output_invalid_rate": 0.001206341911764706,
+      "affected_rollouts": 6,
+      "affected_rollout_rate": 0.17647058823529413,
+      "max_invalid_per_rollout": 12,
+      "affected_task_count": "unavailable",
+      "affected_task_count_bounds": [
+        6,
+        21
+      ],
+      "affected_task_rate_bounds": [
+        0.011029411764705883,
+        0.03860294117647059
+      ],
+      "severe_task_count": "unavailable",
+      "severe_task_count_bounds": [
+        0,
+        1
+      ],
+      "severe_task_rate_bounds": [
+        0.0,
+        0.001838235294117647
+      ],
+      "critical_task_count": "unavailable",
+      "critical_task_count_bounds": [
+        0,
+        0
+      ],
+      "critical_task_rate_bounds": [
+        0.0,
+        0.0
+      ],
+      "task_trace_observed_n": 8,
+      "task_trace_affected_n": 0,
+      "raw_invalid_text_classification": "unavailable:raw_invalid_beam_text_not_persisted",
+      "top_1pct_rollout_share": 0.5714285714285714,
+      "top_5pct_rollout_share": 0.8095238095238095,
+      "top_10pct_rollout_share": 0.9047619047619048
+    },
+    "comparison": {
+      "absolute_rate_delta": 0.0031020220588235297,
+      "absolute_percentage_point_delta": 0.310202205882353,
+      "relative_ratio": 3.5714285714285716
+    }
+  },
+  "think_zero_variance": {
+    "matched_groups_total": 136,
+    "baseline_primary_zero_groups": 61,
+    "dsr_primary_zero_groups": 58,
+    "baseline_primary_zero_rate": 0.4485294117647059,
+    "dsr_primary_zero_rate": 0.4264705882352941,
+    "primary_zero_rate_delta": -0.022058823529411766,
+    "dsr_auxiliary_rescued_groups": 52,
+    "dsr_auxiliary_rescue_rate": 0.38235294117647056,
+    "transition_matrix": "unavailable:group_identity_not_persisted",
+    "transition_count_bounds": {
+      "baseline_zero_to_dsr_zero": [
+        12,
+        45
+      ],
+      "baseline_zero_to_dsr_signal": [
+        16,
+        49
+      ],
+      "baseline_signal_to_dsr_zero": [
+        13,
+        46
+      ],
+      "baseline_signal_to_dsr_signal": [
+        29,
+        62
+      ],
+      "primary_improvement": [
+        16,
+        49
+      ],
+      "rescue_success": [
+        10,
+        44
+      ]
+    },
+    "direct_trace_transition_n": 2,
+    "direct_trace_transitions": {
+      "baseline_signal_to_dsr_signal": 1,
+      "baseline_signal_to_dsr_zero": 1
+    },
+    "rollout_level_association": {
+      "rescue_rate_vs_coverage_pearson": -0.011366491202069852,
+      "rescue_rate_vs_invalid_outputs_pearson": -0.13291869555850877,
+      "warning": "Ecological rollout-level association; not candidate/group causal evidence."
+    }
+  },
+  "nothink": {
+    "matched_groups_total": 132,
+    "dsr_plan_concentration_observed_groups": 132,
+    "baseline_direct_matched_groups": 3,
+    "candidate_overall": {
+      "dsr": {
+        "candidate_count": 1056,
+        "distribution": {
+          "-1": 0,
+          "-0.25": 202,
+          "0": 663,
+          "0.5": 149,
+          "2": 21,
+          "8": 21
+        },
+        "valid_sid_rate": 1.0,
+        "wrong_domain_rate": 0.19128787878787878,
+        "gold_a_or_better_rate": 0.18087121212121213,
+        "gold_ab_or_better_rate": 0.03977272727272727,
+        "exact_rate": 0.019886363636363636,
+        "reward_mean": 0.2215909090909091
+      },
+      "baseline": {
+        "candidate_count": 1056,
+        "distribution": {
+          "-1": 1,
+          "-0.25": 230,
+          "0": 635,
+          "0.5": 158,
+          "2": 15,
+          "8": 17
+        },
+        "valid_sid_rate": 0.9990530303030303,
+        "wrong_domain_rate": 0.2178030303030303,
+        "gold_a_or_better_rate": 0.17992424242424243,
+        "gold_ab_or_better_rate": 0.030303030303030304,
+        "exact_rate": 0.016098484848484848,
+        "reward_mean": 0.17660984848484848
+      }
+    },
+    "by_stage": {
+      "0-50": {
+        "dsr_group_count": 32,
+        "dsr_zero_std_rate": 0.09375,
+        "dsr_all_zero_rate": 0.0625,
+        "dsr_rescue_active_rate": 0.0625,
+        "dsr_a_concentration": 0.26953125,
+        "dsr_gold_a_group_hit_rate": 0.40625,
+        "dsr_gold_ab_group_hit_rate": 0.09375,
+        "dsr_exact_group_hit_rate": 0.03125,
+        "baseline_zero_std_rate": 0.21875,
+        "dsr_candidate": {
+          "candidate_count": 256,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 77,
+            "0": 154,
+            "0.5": 22,
+            "2": 2,
+            "8": 1
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.30078125,
+          "gold_a_or_better_rate": 0.09765625,
+          "gold_ab_or_better_rate": 0.01171875,
+          "exact_rate": 0.00390625,
+          "reward_mean": 0.0146484375
+        },
+        "baseline_candidate": {
+          "candidate_count": 256,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 80,
+            "0": 143,
+            "0.5": 28,
+            "2": 2,
+            "8": 3
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.3125,
+          "gold_a_or_better_rate": 0.12890625,
+          "gold_ab_or_better_rate": 0.01953125,
+          "exact_rate": 0.01171875,
+          "reward_mean": 0.0859375
+        },
+        "baseline_group_all_zero_and_concentration": "unavailable"
+      },
+      "50-100": {
+        "dsr_group_count": 32,
+        "dsr_zero_std_rate": 0.0625,
+        "dsr_all_zero_rate": 0.0625,
+        "dsr_rescue_active_rate": 0.0625,
+        "dsr_a_concentration": 0.29296875,
+        "dsr_gold_a_group_hit_rate": 0.75,
+        "dsr_gold_ab_group_hit_rate": 0.21875,
+        "dsr_exact_group_hit_rate": 0.0625,
+        "baseline_zero_std_rate": 0.21875,
+        "dsr_candidate": {
+          "candidate_count": 256,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 42,
+            "0": 155,
+            "0.5": 48,
+            "2": 9,
+            "8": 2
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.1640625,
+          "gold_a_or_better_rate": 0.23046875,
+          "gold_ab_or_better_rate": 0.04296875,
+          "exact_rate": 0.0078125,
+          "reward_mean": 0.185546875
+        },
+        "baseline_candidate": {
+          "candidate_count": 256,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 60,
+            "0": 149,
+            "0.5": 40,
+            "2": 5,
+            "8": 2
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.234375,
+          "gold_a_or_better_rate": 0.18359375,
+          "gold_ab_or_better_rate": 0.02734375,
+          "exact_rate": 0.0078125,
+          "reward_mean": 0.12109375
+        },
+        "baseline_group_all_zero_and_concentration": "unavailable"
+      },
+      "100-150": {
+        "dsr_group_count": 34,
+        "dsr_zero_std_rate": 0.20588235294117646,
+        "dsr_all_zero_rate": 0.20588235294117646,
+        "dsr_rescue_active_rate": 0.20588235294117646,
+        "dsr_a_concentration": 0.31985294117647056,
+        "dsr_gold_a_group_hit_rate": 0.6470588235294118,
+        "dsr_gold_ab_group_hit_rate": 0.29411764705882354,
+        "dsr_exact_group_hit_rate": 0.23529411764705882,
+        "baseline_zero_std_rate": 0.20588235294117646,
+        "dsr_candidate": {
+          "candidate_count": 272,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 56,
+            "0": 164,
+            "0.5": 37,
+            "2": 2,
+            "8": 13
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.20588235294117646,
+          "gold_a_or_better_rate": 0.19117647058823528,
+          "gold_ab_or_better_rate": 0.05514705882352941,
+          "exact_rate": 0.04779411764705882,
+          "reward_mean": 0.41360294117647056
+        },
+        "baseline_candidate": {
+          "candidate_count": 272,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 64,
+            "0": 153,
+            "0.5": 44,
+            "2": 4,
+            "8": 7
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.23529411764705882,
+          "gold_a_or_better_rate": 0.20220588235294118,
+          "gold_ab_or_better_rate": 0.04044117647058824,
+          "exact_rate": 0.025735294117647058,
+          "reward_mean": 0.25735294117647056
+        },
+        "baseline_group_all_zero_and_concentration": "unavailable"
+      },
+      "150-200": {
+        "dsr_group_count": 34,
+        "dsr_zero_std_rate": 0.4117647058823529,
+        "dsr_all_zero_rate": 0.38235294117647056,
+        "dsr_rescue_active_rate": 0.38235294117647056,
+        "dsr_a_concentration": 0.3235294117647059,
+        "dsr_gold_a_group_hit_rate": 0.5588235294117647,
+        "dsr_gold_ab_group_hit_rate": 0.20588235294117646,
+        "dsr_exact_group_hit_rate": 0.08823529411764706,
+        "baseline_zero_std_rate": 0.23529411764705882,
+        "dsr_candidate": {
+          "candidate_count": 272,
+          "distribution": {
+            "-1": 0,
+            "-0.25": 27,
+            "0": 190,
+            "0.5": 42,
+            "2": 8,
+            "8": 5
+          },
+          "valid_sid_rate": 1.0,
+          "wrong_domain_rate": 0.09926470588235294,
+          "gold_a_or_better_rate": 0.20220588235294118,
+          "gold_ab_or_better_rate": 0.04779411764705882,
+          "exact_rate": 0.01838235294117647,
+          "reward_mean": 0.25827205882352944
+        },
+        "baseline_candidate": {
+          "candidate_count": 272,
+          "distribution": {
+            "-1": 1,
+            "-0.25": 26,
+            "0": 190,
+            "0.5": 46,
+            "2": 4,
+            "8": 5
+          },
+          "valid_sid_rate": 0.9963235294117647,
+          "wrong_domain_rate": 0.09558823529411764,
+          "gold_a_or_better_rate": 0.20220588235294118,
+          "gold_ab_or_better_rate": 0.03308823529411765,
+          "exact_rate": 0.01838235294117647,
+          "reward_mean": 0.23345588235294118
+        },
+        "baseline_group_all_zero_and_concentration": "unavailable"
+      }
+    },
+    "dsr_plan_strata": {
+      "domain": {
+        "ad": {
+          "group_count": 35,
+          "dsr_concentration_mean": 0.3357142857142857,
+          "dsr_rescue_active_rate": 0.22857142857142856,
+          "matched_direct_group_count": 2,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.5
+        },
+        "living": {
+          "group_count": 17,
+          "dsr_concentration_mean": 0.27205882352941174,
+          "dsr_rescue_active_rate": 0.11764705882352941,
+          "matched_direct_group_count": 0,
+          "baseline_gold_a_hit_rate_direct_only": null,
+          "dsr_gold_a_hit_rate_direct_only": null
+        },
+        "prod": {
+          "group_count": 38,
+          "dsr_concentration_mean": 0.3256578947368421,
+          "dsr_rescue_active_rate": 0.2894736842105263,
+          "matched_direct_group_count": 1,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.0
+        },
+        "video": {
+          "group_count": 42,
+          "dsr_concentration_mean": 0.2648809523809524,
+          "dsr_rescue_active_rate": 0.07142857142857142,
+          "matched_direct_group_count": 0,
+          "baseline_gold_a_hit_rate_direct_only": null,
+          "dsr_gold_a_hit_rate_direct_only": null
+        }
+      },
+      "gold_count": {
+        "1-2": {
+          "group_count": 74,
+          "dsr_concentration_mean": 0.2989864864864865,
+          "dsr_rescue_active_rate": 0.24324324324324326,
+          "matched_direct_group_count": 1,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.0
+        },
+        "3-4": {
+          "group_count": 11,
+          "dsr_concentration_mean": 0.4318181818181818,
+          "dsr_rescue_active_rate": 0.2727272727272727,
+          "matched_direct_group_count": 2,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.5
+        },
+        "5+": {
+          "group_count": 47,
+          "dsr_concentration_mean": 0.2765957446808511,
+          "dsr_rescue_active_rate": 0.06382978723404255,
+          "matched_direct_group_count": 0,
+          "baseline_gold_a_hit_rate_direct_only": null,
+          "dsr_gold_a_hit_rate_direct_only": null
+        }
+      },
+      "unique_gold_A": {
+        "1": {
+          "group_count": 20,
+          "dsr_concentration_mean": 0.35625,
+          "dsr_rescue_active_rate": 0.2,
+          "matched_direct_group_count": 1,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.0
+        },
+        "2": {
+          "group_count": 62,
+          "dsr_concentration_mean": 0.3024193548387097,
+          "dsr_rescue_active_rate": 0.25806451612903225,
+          "matched_direct_group_count": 1,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 0.0
+        },
+        "3+": {
+          "group_count": 50,
+          "dsr_concentration_mean": 0.28,
+          "dsr_rescue_active_rate": 0.08,
+          "matched_direct_group_count": 1,
+          "baseline_gold_a_hit_rate_direct_only": 1.0,
+          "dsr_gold_a_hit_rate_direct_only": 1.0
+        }
+      }
+    },
+    "matched_transition": "unavailable_for_129_of_132_groups",
+    "direct_trace_classifications": {
+      "other": 1,
+      "lost_gold_a": 2
+    },
+    "productive_exploration_rate": 0.0,
+    "rotation_without_progress_rate": 0.0,
+    "warning": "Rates above use only 3 GRPO_TRACE_EVERY=20 matched groups and are not population estimates."
+  },
+  "counterfactual": {
+    "training_trace": {
+      "group_count": 2,
+      "s1_top_changed": 0.0,
+      "s1_pairwise_flip_rate": 0.0,
+      "s1_positive_membership_changed_rate": 0.375,
+      "s1_low_coverage_downgraded_rate": 1.0,
+      "s1_high_coverage_upgraded_rate": 0.5,
+      "s1_primary_high_downranked_rate": 0.125,
+      "s2_top_changed": 0.0,
+      "s2_pairwise_flip_rate": 0.0,
+      "s2_positive_membership_changed_rate": 0.375,
+      "s2_low_coverage_downgraded_rate": 1.0,
+      "s2_high_coverage_upgraded_rate": 0.5,
+      "s2_primary_high_downranked_rate": 0.125,
+      "s3_top_changed": 0.0,
+      "s3_pairwise_flip_rate": 0.0,
+      "s3_positive_membership_changed_rate": 0.0,
+      "s3_low_coverage_downgraded_rate": 0.0,
+      "s3_high_coverage_upgraded_rate": 0.0,
+      "s3_primary_high_downranked_rate": 0.0
+    },
+    "fixed_probe": {
+      "group_count": 8,
+      "s1_top_changed": 0.0,
+      "s1_pairwise_flip_rate": 0.0,
+      "s1_positive_membership_changed_rate": 0.25,
+      "s1_low_coverage_downgraded_rate": 0.6666666666666666,
+      "s1_high_coverage_upgraded_rate": 0.625,
+      "s1_primary_high_downranked_rate": 0.041666666666666664,
+      "s2_top_changed": 0.0,
+      "s2_pairwise_flip_rate": 0.0,
+      "s2_positive_membership_changed_rate": 0.25,
+      "s2_low_coverage_downgraded_rate": 0.6666666666666666,
+      "s2_high_coverage_upgraded_rate": 0.625,
+      "s2_primary_high_downranked_rate": 0.041666666666666664,
+      "s3_top_changed": 0.0,
+      "s3_pairwise_flip_rate": 0.0,
+      "s3_positive_membership_changed_rate": 0.0,
+      "s3_low_coverage_downgraded_rate": 0.0,
+      "s3_high_coverage_upgraded_rate": 0.0,
+      "s3_primary_high_downranked_rate": 0.0
+    },
+    "warning": "Training counterfactual has only 2 complete persisted groups; Fixed Probe has 8 group-step observations and is reported separately."
+  },
+  "answers": {
+    "A_coverage": "PROBE-LOCAL",
+    "B_s_cot_loophole": "UNCERTAIN",
+    "C_beam_invalid": {
+      "dsr_output_rate": 0.004308363970588236,
+      "baseline_output_rate": 0.001206341911764706,
+      "affected_task_rate": "UNAVAILABLE; bounds reported",
+      "concentration": "75 DSR invalid outputs are concentrated in 8/34 rollouts; the top two rollouts contain 85.33%. Task-level concentration is unavailable."
+    },
+    "D_think": "Primary zero rate improves only 2.21 percentage points in aggregate (61 to 58 groups), while DSR reports auxiliary rescue for 52/136 groups. Matched group identities are unavailable, so true primary transitions are not demonstrated; evidence mainly supports auxiliary rescue.",
+    "E_nothink": "INSUFFICIENT: full candidate Gold-A-or-better rate is essentially flat, 17.99% to 18.09%, while wrong-domain falls 21.78% to 19.13%. Productive exploration versus wrong-A rotation requires baseline group predictions, available for only 3/132 groups."
+  },
+  "final_research_judgment": "INSUFFICIENT EVIDENCE",
+  "judgment_reason": "The logs support exact full-flow aggregate diagnostics but do not persist the baseline candidate/group records needed for the requested matched coverage, zero-variance transitions, affected Beam-task rate, or NoThink rotation analysis."
+}

@@ -1,6 +1,6 @@
 # GR_REC_DSR_Ablation_v1
 
-Status: `IMPLEMENTED / SMOKE ONLY`
+Status: `PILOT200 COMPLETE / CPU-ONLY FORENSIC AUDITED`
 
 This directory is a removable, isolated ablation over the frozen
 `GR_REC_v1` implementation in `/data/GRPO/scripts`.
@@ -98,3 +98,29 @@ training and reports the sampled s_A log probabilities needed for manual smoke
 inspection, including the exact raw completion token IDs needed for a
 same-rollout backward audit. It performs zero optimizer steps and must use the same loopback
 NCCL/Gloo interface settings as the production launch scripts.
+
+## Pilot200 forensic audit
+
+The bounded `GR-REC-DSR-V1-PILOT200-20260818` run completed exactly 200
+optimizer steps. Its strict CPU-only forensic audit compares the full available
+training streams against the first 200 steps of frozen `GR_REC_v1`, verifies
+the exact matched schedule, corrects the Think Beam denominator, and separates
+direct observations from reconstructed or unavailable group-level fields.
+
+The audit's final research judgment is `INSUFFICIENT EVIDENCE`. This does not
+mean the pilot had no useful signal. The full DSR stream does not reproduce the
+Fixed Probe coverage drop as a monotonic trend, and auxiliary rescue is active,
+but the historical baseline logs do not retain enough candidate/group detail
+to identify the requested matched zero-variance transitions, affected Beam-task
+rate, or NoThink productive-exploration versus wrong-A-rotation rate.
+
+Fixed Probe has `n=4` and is treated only as fixed-prompt/fixed-seed
+longitudinal evidence. The primary report and machine-readable tables are in:
+
+- [`results/pilot200_forensic_20260818/GR_REC_DSR_PILOT200_FORENSIC_REPORT.md`](results/pilot200_forensic_20260818/GR_REC_DSR_PILOT200_FORENSIC_REPORT.md)
+- [`results/pilot200_forensic_20260818/summary.json`](results/pilot200_forensic_20260818/summary.json)
+- [`results/pilot200_forensic_20260818/matched_groups.csv`](results/pilot200_forensic_20260818/matched_groups.csv)
+- [`results/pilot200_forensic_20260818/think_candidate_coverage.csv`](results/pilot200_forensic_20260818/think_candidate_coverage.csv)
+- [`results/pilot200_forensic_20260818/beam_invalid_tasks.csv`](results/pilot200_forensic_20260818/beam_invalid_tasks.csv)
+- [`results/pilot200_forensic_20260818/nothink_matched_groups.csv`](results/pilot200_forensic_20260818/nothink_matched_groups.csv)
+- [`results/pilot200_forensic_20260818/counterfactual_structure_scores.csv`](results/pilot200_forensic_20260818/counterfactual_structure_scores.csv)
