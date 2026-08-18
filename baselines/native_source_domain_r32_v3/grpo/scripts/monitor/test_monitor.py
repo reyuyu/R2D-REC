@@ -121,11 +121,11 @@ with tempfile.TemporaryDirectory() as temporary:
     assert len(nothink_trace["candidates"]) == 8
     assert all(candidate["reward"] is not None for candidate in nothink_trace["candidates"])
     html = client.get("/").text
-    assert all(label in html for label in ("训练总览", "性能分析", "Rollout 检视", "Probe 检视", "选择实验"))
+    assert all(label in html for label in ("训练总览", "性能分析", "采样检视", "固定探针", "选择实验"))
     assert all(label in html for label in ("查看 32 条 Beam SID", "最近 20", "Gold SID"))
     assert all(label in html for label in ("名词解释", "健康趋势", "奖励档位", "candidate-count"))
     assert all(label in html for label in (
-        "DSR Diagnostics", "Signal Rescue", "Wrong-A rotation", "Think aux raw"
+        "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失"
     ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
