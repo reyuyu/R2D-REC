@@ -59,10 +59,20 @@ def validate_gate200_recovery(
 
 def main(argv=None):
     values = validate_gate200_recovery(sys.argv[1:] if argv is None else argv)
-    # The checkpoint is locally generated and path-locked above. Torch <2.6 is
-    # otherwise blocked from loading its optimizer and RNG state by Transformers.
+    checkpoint = Path(values[values.index("--resume-from-checkpoint") + 1]).resolve()
+    # The checkpoint is locally generated and path-locked above. Torch <2.6
+    # cannot safely-unpickle the NumPy objects in Trainer's RNG state.
     import transformers.trainer as trainer_module
+    original_torch_load = trainer_module.torch.load
+
+    def load_trusted_recovery_state(path, *args, **kwargs):
+        candidate = Path(path).resolve()
+        if candidate.parent == checkpoint and candidate.suffix in {".pt", ".pth"}:
+            kwargs["weights_only"] = False
+        return original_torch_load(path, *args, **kwargs)
+
     trainer_module.check_torch_load_is_safe = lambda: None
+    trainer_module.torch.load = load_trusted_recovery_state
     simple.reset_global_capture()
     simple.baseline_train.RecGRPOTrainer = simple.SimpleDsrGRPOTrainer
     simple.baseline_train.make_nothink_reward_func = simple.make_simple_nothink_reward_func
