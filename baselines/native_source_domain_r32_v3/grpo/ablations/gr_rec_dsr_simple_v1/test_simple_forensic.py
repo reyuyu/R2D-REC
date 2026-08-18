@@ -107,3 +107,32 @@ def test_gate_callback_synthetic_pass_and_stop(tmp_path=None):
         control = SimpleNamespace(should_save=False, should_training_stop=False)
         callback.on_step_end(SimpleNamespace(), state, control)
         assert control.should_save and control.should_training_stop is expected_stop
+
+
+def test_gate_checkpoint_persistence_is_checked_only_on_world_process_zero(tmp_path=None):
+    import tempfile
+    root = Path(tempfile.mkdtemp()) if tmp_path is None else Path(tmp_path)
+    evaluator = SimpleNamespace(
+        every_steps=200,
+        evaluate=lambda step, reason: None,
+        monitor=SimpleNamespace(run_dir=root),
+    )
+    callback = SimpleGateFixedProbeCallback(evaluator)
+    args = SimpleNamespace(output_dir=str(root))
+    control = SimpleNamespace()
+
+    worker_state = SimpleNamespace(global_step=200, is_world_process_zero=False)
+    callback.on_save(args, worker_state, control)
+
+    main_state = SimpleNamespace(global_step=200, is_world_process_zero=True)
+    try:
+        callback.on_save(args, main_state, control)
+    except RuntimeError as exc:
+        assert str(exc) == "Gate200 checkpoint persistence failed"
+    else:
+        raise AssertionError("rank 0 must reject a missing Gate200 adapter")
+
+    checkpoint = root / "checkpoint-200"
+    checkpoint.mkdir()
+    (checkpoint / "adapter_model.safetensors").write_bytes(b"adapter")
+    callback.on_save(args, main_state, control)

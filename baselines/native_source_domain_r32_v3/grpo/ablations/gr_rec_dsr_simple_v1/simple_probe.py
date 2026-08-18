@@ -132,7 +132,7 @@ class SimpleGateFixedProbeCallback(FixedProbeCallback):
         return control
 
     def on_save(self, args, state, control, **kwargs):
-        if int(state.global_step) == GATE_STEP:
+        if int(state.global_step) == GATE_STEP and state.is_world_process_zero:
             checkpoint = Path(args.output_dir) / f"checkpoint-{GATE_STEP}"
             if not (checkpoint / "adapter_model.safetensors").exists():
                 raise RuntimeError("Gate200 checkpoint persistence failed")
