@@ -10,6 +10,11 @@ from gr_rec_dsr_v1.dsr_monitor import summarize_nothink_records
 from gr_rec_dsr_v1.dsr_trainer import DsrGRPOTrainer
 
 from .simple_monitor import summarize_simple_think_records
+from .simple_forensic import (
+    append_forensic_rows,
+    nothink_forensic_rows,
+    think_forensic_rows,
+)
 
 
 class SimpleDsrGRPOTrainer(DsrGRPOTrainer):
@@ -62,6 +67,9 @@ class SimpleDsrGRPOTrainer(DsrGRPOTrainer):
         traces = []
         if route == "think":
             summary, _scores, advantage_values = summarize_simple_think_records(records)
+            forensic_rows = think_forensic_rows(
+                records, self.state.global_step, self._smoke_rollout_id
+            )
             output["dsr_aux_advantages"] = torch.tensor(
                 advantage_values[process_slice], dtype=torch.float32, device=device
             )
@@ -110,7 +118,12 @@ class SimpleDsrGRPOTrainer(DsrGRPOTrainer):
             )
             payload.update(summary)
             payload["nothink_implementation"] = "gr_rec_dsr_v1 (reused)"
+            forensic_rows = nothink_forensic_rows(
+                records, plans, self.state.global_step, self._smoke_rollout_id
+            )
         self._smoke_log[-1]["dsr_simple"] = payload
+        if self.accelerator.process_index == 0:
+            append_forensic_rows(self._monitor, forensic_rows)
         self._write_dsr_monitor(payload, traces)
         return output
 

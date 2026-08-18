@@ -1,6 +1,6 @@
 # GR_REC_DSR_Simple_Ablation_v1
 
-Status: **IMPLEMENTED / SMOKE ONLY**
+Status: **FULL RUN IN PROGRESS**
 
 DSR-Simple is an isolated sibling of `gr_rec_dsr_v1`. Its parent checkpoint is
 the original BATA adapter, its frozen baseline is GR_REC_v1, and DSR v1 is only
@@ -52,8 +52,14 @@ therefore use the same implementation.
 - optimizer schedule SHA-256:
   `ac86490e5660e365fe4adedb6ac9321cffb95db1636b2f4bafad99841ba508b7`
 
-`run_simple_smoke.py` accepts at most 12 optimizer steps. No bounded pilot or
-long training is authorized by this implementation.
+`run_simple_smoke.py` accepts at most 12 optimizer steps. The formal runner is
+authorized for one continuous 2316-step run with a step-200 safety gate.
+
+Full runs emit `simple_forensic.jsonl` from the already-gathered rank-0 Python
+records. The step-200 fixed-probe callback writes `gate200_report.json`, forces
+`checkpoint-200`, and continues the same Trainer unless the preregistered gate
+decision is `STOP`. These paths are monitor-only and add no model, generation,
+decode, CUDA synchronization, or distributed collective work.
 
 ## Known risks
 
@@ -70,6 +76,6 @@ long training is authorized by this implementation.
 
 CPU: 49/49 tests passed. The accepted four-A800 smoke completed 12/12 optimizer steps with the exact T,T,N,N,N,N rollout order; LoRA changed and base parameters did not. The zero-step gradient audit found 9 primary-signal groups with exact-zero Simple auxiliary gradient and 4 active rescue groups with nonzero auxiliary gradient.
 
-The accepted smoke took 285 seconds. Its measured full-schedule estimate was 13.6 hours; no full schedule was started. The shared dashboard now selects a dedicated DSR-Simple view while retaining the old DSR v1 view.
+The accepted smoke took 285 seconds. Its measured full-schedule estimate was 13.6 hours. The shared dashboard selects a dedicated DSR-Simple view while retaining the old DSR v1 view.
 
 Single-node four-GPU launches on this development machine require NCCL_SOCKET_IFNAME=lo, GLOO_SOCKET_IFNAME=lo, and NCCL_IB_DISABLE=1. No pilot was started.

@@ -1,6 +1,6 @@
 # GR_REC_DSR_Simple_Ablation_v1
 
-Status: **IMPLEMENTED / SMOKE ONLY**
+Status: **FULL RUN IN PROGRESS**
 
 - Parent: BATA
 - Baseline: GR_REC_v1
@@ -12,9 +12,25 @@ prefix-support reward, entropy exploration, and always-on Think auxiliary.
 Think retains only raw-interest-count anti-collapse and dead-zero target-domain
 Beam A diversity. NoThink directly reuses DSR v1.
 
-Engineering validation is complete. No pilot decision is implied by this smoke.
+Engineering validation is complete. One continuous 2316-step formal run is
+authorized with an automatic step-200 PASS/WARN/STOP safety gate. PASS and WARN
+continue in the same Trainer, optimizer, scheduler, and RNG process; only STOP
+ends training after persisting checkpoint-200.
 
-No pilot has been authorized or launched.
+## Formal run contract (2026-08-19)
+
+- RUN_ID: `GR-REC-DSR-SIMPLE-V1-FULL-E1-GATE200-20260819`
+- Parent: original BATA adapter; resume is forbidden.
+- Optimizer steps: 2316, one epoch only.
+- Optimizer schedule SHA-256: `ac86490e5660e365fe4adedb6ac9321cffb95db1636b2f4bafad99841ba508b7`.
+- Fixed probes: step 0, every 200 steps, and final; seed 20260818.
+- Checkpoints: gate 200 plus normal 500-step intervals; retention limit 6.
+- Compact evidence: every Think candidate and every NoThink G=8 group in
+  `simple_forensic.jsonl`, written on rank0 from the existing gathered records.
+- Gate report: `gate200_report.json`; no extra inference, decode, CUDA sync, or
+  distributed collective is introduced.
+- The exact logging-only source commit and deployment hashes are recorded in the
+  run deployment manifest before launch.
 
 ## Development-machine validation (2026-08-19)
 
@@ -39,7 +55,7 @@ No pilot has been authorized or launched.
 - Mean Think rollout wall time: 117.1 seconds.
 - Mean NoThink rollout wall time: about 3.0 seconds.
 - Mean policy-update phase: about 0.62 seconds.
-- Frozen full-schedule estimate from the smoke: about 13.6 hours. This is an estimate, not a launched run.
+- Frozen full-schedule estimate from the smoke: about 13.6 hours.
 
 ## Dashboard validation
 
@@ -49,6 +65,8 @@ No pilot has been authorized or launched.
 - Candidate details merge passive DSR traces by rollout, group, and candidate index.
 - Existing DSR v1 pilot200 cards, curves, and checkpoint downloads still render correctly.
 - Chart hover uses nearest-step snapping and reports all series at the aligned sampling step.
+- The DSR-Simple page shows a Chinese Gate200 panel with current step, decision,
+  core threshold metrics, timestamp, warnings, and stop reasons.
 
 ## Isolation proof
 

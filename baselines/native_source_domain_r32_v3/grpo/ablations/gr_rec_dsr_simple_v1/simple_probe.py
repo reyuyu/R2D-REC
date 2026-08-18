@@ -1,9 +1,11 @@
 """Fixed-probe enrichment for DSR-Simple; generation remains baseline-owned."""
 from __future__ import annotations
 
+import json
 import statistics
+from pathlib import Path
 
-from grpo_probe import FixedProbeEvaluator
+from grpo_probe import FixedProbeCallback, FixedProbeEvaluator
 from grpo_sid import parse_sid
 from gr_rec_dsr_v1.dsr_probe import enrich_probe_event as enrich_dsr_probe_event
 
@@ -13,6 +15,7 @@ from .simple_objectives import (
     interest_count_score,
     simple_group_advantages,
 )
+from .simple_forensic import GATE_STEP, write_gate200_report
 
 
 def _sid(value):
@@ -88,10 +91,49 @@ class SimpleProbeMonitorProxy:
         return getattr(self._monitor, name)
 
     def write_probe(self, event):
-        return self._monitor.write_probe(enrich_simple_probe_event(event))
+        result = self._monitor.write_probe(enrich_simple_probe_event(event))
+        if int(event.get("step", -1)) == GATE_STEP:
+            step_rows = []
+            path = self._monitor.run_dir / "probes.jsonl"
+            if path.exists():
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if int(row.get("step", -1)) == GATE_STEP:
+                        step_rows.append(row)
+            if len({row.get("target_domain") for row in step_rows}) == 4:
+                write_gate200_report(self._monitor.run_dir)
+        return result
 
 
 class SimpleFixedProbeEvaluator(FixedProbeEvaluator):
     def __init__(self, *args, monitor, **kwargs):
         self.simple_monitor_proxy = SimpleProbeMonitorProxy(monitor)
         super().__init__(*args, monitor=self.simple_monitor_proxy, **kwargs)
+
+
+class SimpleGateFixedProbeCallback(FixedProbeCallback):
+    """Force checkpoint-200 and honor only a preregistered STOP decision."""
+
+    def on_step_end(self, args, state, control, **kwargs):
+        super().on_step_end(args, state, control, **kwargs)
+        if int(state.global_step) != GATE_STEP:
+            return control
+        report_path = Path(self.evaluator.monitor.run_dir) / "gate200_report.json"
+        control.should_save = True
+        if not report_path.exists():
+            control.should_training_stop = True
+            return control
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        if report.get("decision") == "STOP":
+            control.should_training_stop = True
+        return control
+
+    def on_save(self, args, state, control, **kwargs):
+        if int(state.global_step) == GATE_STEP:
+            checkpoint = Path(args.output_dir) / f"checkpoint-{GATE_STEP}"
+            if not (checkpoint / "adapter_model.safetensors").exists():
+                raise RuntimeError("Gate200 checkpoint persistence failed")
+        return control

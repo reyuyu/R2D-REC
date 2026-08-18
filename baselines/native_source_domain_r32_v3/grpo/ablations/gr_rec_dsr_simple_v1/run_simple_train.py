@@ -12,9 +12,12 @@ import run_grpo_trl_train as baseline_train
 
 from gr_rec_dsr_simple_v1.simple_contract import enforce_simple_contract
 from gr_rec_dsr_simple_v1.simple_monitor import decorate_simple_monitor
-from gr_rec_dsr_simple_v1.simple_probe import SimpleFixedProbeEvaluator
+from gr_rec_dsr_simple_v1.simple_probe import (
+    SimpleFixedProbeEvaluator,
+    SimpleGateFixedProbeCallback,
+)
 from gr_rec_dsr_simple_v1.simple_runtime import (
-    make_dsr_nothink_reward_func,
+    make_simple_nothink_reward_func,
     make_simple_beam32_fn,
     make_simple_think_reward_func,
     reset_global_capture,
@@ -44,11 +47,12 @@ def main(argv=None):
         raise ValueError("DSR-Simple --run-id must start with GR-REC-DSR-SIMPLE-V1-")
     reset_global_capture()
     baseline_train.RecGRPOTrainer = SimpleDsrGRPOTrainer
-    baseline_train.make_nothink_reward_func = make_dsr_nothink_reward_func
+    baseline_train.make_nothink_reward_func = make_simple_nothink_reward_func
     baseline_train.make_think_reward_func = make_simple_think_reward_func
     baseline_train.make_beam32_fn = simple_beam_factory
     baseline_train.monitor_from_env = simple_monitor_factory
     baseline_train.FixedProbeEvaluator = SimpleFixedProbeEvaluator
+    baseline_train.FixedProbeCallback = SimpleGateFixedProbeCallback
     baseline_train.main(argv)
 
 

@@ -336,6 +336,23 @@ def create_app(
     ):
         return dsr_rows("dsr_traces.jsonl", run_id, from_step, to_step, route, rollout_id)
 
+    @app.get("/api/dsr/gate")
+    def dsr_gate(run_id: str | None = None):
+        selected = selected_run(run_id)
+        metrics = read_jsonl(selected / "metrics.jsonl")
+        current_step = int(metrics[-1].get("step", 0)) if metrics else 0
+        try:
+            report = json.loads((selected / "gate200_report.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            report = {
+                "gate_step": 200,
+                "decision": "PENDING",
+                "reasons": [],
+                "warnings": [],
+                "metrics": {},
+            }
+        return {**report, "current_step": current_step}
+
     @app.get("/api/health")
     def health():
         return {"ok": True, "mode": "single" if single_run is not None else "multi", "runs_dir": str(root)}

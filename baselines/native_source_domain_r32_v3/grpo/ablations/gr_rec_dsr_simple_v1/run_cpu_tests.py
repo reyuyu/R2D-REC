@@ -15,6 +15,7 @@ DEFAULT_MODULES = (
     "gr_rec_dsr_simple_v1.test_simple_objectives",
     "gr_rec_dsr_simple_v1.test_simple_monitor",
     "gr_rec_dsr_simple_v1.test_simple_trainer",
+    "gr_rec_dsr_simple_v1.test_simple_forensic",
 )
 
 

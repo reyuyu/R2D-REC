@@ -64,8 +64,12 @@ def make_simple_think_reward_func(beam32_fn=None):
                 "route": "think",
                 "group_id": kwargs["recommendation_group_id"][source_index],
                 "target_domain": target_domain,
+                "gold_count": len(sub_golds[local_index]),
+                "unique_gold_a": len({sid[1] for sid in sub_golds[local_index]}),
                 "primary_reward": float(primary[local_index]),
                 "cot": cot,
+                "completion_length": len(sub_ids[local_index]),
+                "closed": "</think>" in cot,
                 "parsed": parsed.to_dict(),
                 "raw_interest_n": raw_interest_n,
                 "s_n": interest_count_score(raw_interest_n),
@@ -99,9 +103,36 @@ def make_simple_think_reward_func(beam32_fn=None):
     return reward_func
 
 
+def make_simple_nothink_reward_func(tokenizer=None):
+    """Call the old DSR reward unchanged, then attach input metadata only."""
+    baseline = make_dsr_nothink_reward_func(tokenizer=tokenizer)
+
+    def reward_func(prompts, completions, completion_ids, **kwargs):
+        capture = get_capture()
+        before = len(capture.records)
+        output = baseline(prompts, completions, completion_ids, **kwargs)
+        indexes = [
+            index for index, route in enumerate(kwargs.get("route") or ())
+            if route == "no_think"
+        ]
+        added = capture.records[before:]
+        if len(added) != len(indexes):
+            raise RuntimeError("DSR-Simple NoThink metadata capture is not aligned")
+        domains = kwargs.get("target_domain", [None] * len(prompts))
+        for item, index in zip(added, indexes):
+            item["target_domain"] = domains[index]
+            item["gold_count"] = len(kwargs["all_gold_sids"][index])
+            item["unique_gold_a"] = len(item.get("gold_as", ()))
+        return output
+
+    reward_func.__name__ = "nothink_reward"
+    return reward_func
+
+
 __all__ = [
     "get_capture",
     "make_dsr_nothink_reward_func",
+    "make_simple_nothink_reward_func",
     "make_simple_beam32_fn",
     "make_simple_think_reward_func",
     "reset_global_capture",

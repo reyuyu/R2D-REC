@@ -16,6 +16,7 @@ from gr_rec_dsr_v1.test_dsr_trainer import (
 )
 
 from .simple_trainer import SimpleDsrGRPOTrainer
+from .simple_runtime import make_simple_nothink_reward_func
 
 
 def _simple_loss_trainer(think_lambda=0.0, nothink_scale=0.0):
@@ -95,5 +96,5 @@ def test_nothink_primary_reward_wrapper_matches_baseline():
         "target_domain": ["prod"],
     }
     baseline = make_nothink_reward_func(tokenizer)(["p"], ["c"], [completion], **kwargs)
-    simple = make_dsr_nothink_reward_func(tokenizer)(["p"], ["c"], [completion], **kwargs)
+    simple = make_simple_nothink_reward_func(tokenizer)(["p"], ["c"], [completion], **kwargs)
     assert simple == baseline == [8.0]
