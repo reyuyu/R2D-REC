@@ -19,6 +19,20 @@ The archive uses full activation checkpointing. This experiment uses fractional 
 
 The active environment uses `report_to: none` because TensorBoard is not installed. All scalar metrics remain available in `train.log`; this runtime logging adaptation does not affect the training objective.
 
+## Evaluation reference
+
+The original Epoch 2 evaluation was `1.3246`. Repeated evaluation has normal run-to-run variation of about `+/-0.01`; the GRPO series therefore uses the relatively high repeated score `1.3313` as a conservative comparison baseline rather than overwriting the historical result.
+
+```text
+aggregate: 1.3313
+material:       0.0519, 0.0363, 0.0503, 0.0422
+user:           0.1573, 0.0972
+recommendation: 0.1223, 0.1598, 0.2072, 0.1701
+world:          0.2368
+```
+
+The `0.0067` difference from the original `1.3246` is within the expected evaluation band and does not represent a model change.
+
 Monitor-only recommendation metrics reuse detached logits and the retained multi-positive metadata. Core recommendation metrics and recommendation segment/count statistics are accumulated every step, candidate hit/coverage metrics are sampled every 50 optimizer steps, and task loss/exposure metrics use the normal logging cadence. The monitor-only path never replaces baseline CE and has an exact loss/gradient parity regression.
 
 Formal launch entry:

@@ -1,6 +1,6 @@
 # 实验 GR_REC_v1：Recommendation Multi-Positive GRPO
 
-状态：**正式训练中**。本文保留 Step 1680 的运行快照，并追加截至 Step 2280 的问题侧分析；Probe 趋势和结论均为中期结果，不代表最终评测。
+状态：**正式训练与三个中间 checkpoint 外部评测已完成**。本文保留 Step 1680 的运行快照和截至 Step 2280 的问题侧分析，并以外部评测作为 checkpoint 选择的主要依据。
 
 ## 实验标识
 
@@ -39,6 +39,15 @@
 | Checkpoint | 每 500 step；最多保留 4 个 |
 
 Sampler 审计结果：四个 Probe group 排除后剩 1,545 个训练候选 group；为满足完整 batch，固定丢弃 `c399e01d...`，实际 Think/NoThink 均覆盖 1,544 个 group。预计 Think rollout 386 次、NoThink rollout 772 次，路线循环为 `T,T,N,N,N,N`，共 2,316 optimizer steps。
+
+## 正式训练完成记录
+
+- 最终 Step：`2316 / 2316`，完整跑完预定 epoch。
+- 总运行时间：`48,339.22 s`，约 13 小时 25 分 39 秒。
+- 监控记录：2,316 行 metric、1,158 行 rollout、52 行固定 Probe。
+- Checkpoint：`checkpoint-1000`、`checkpoint-1500`、`checkpoint-2000`、`checkpoint-2316`（受“最多保留 4 个”约束，早期 checkpoint 已滚动清理）。
+- 最终训练 loss：`-0.0001206216`；训练全程未见 NaN、Inf 或 OOM。
+- LoRA 参数发生更新，抽检 delta=`0.0106026863`；base 参数 delta=`0`，冻结合同成立。
 
 ## Reward 合同
 
@@ -151,6 +160,59 @@ GR_REC_v1 并非完全没有学习：NoThink 平均 reward 上升，部分 Think
 
 因此，最终 checkpoint 不应仅按训练平均 reward 选择。最终验收至少应横向比较 `checkpoint-1000`、`checkpoint-1500`、`checkpoint-2000` 和 final 的外部 11 项得分，并同步报告 CoT 长度、组内文本多样性、Think/NoThink zero-std、四域分项和 Beam invalid。当前问题分析只支持诊断，不预注册任何 reward、G、采样或数据修改。
 
+## 外部评测结果
+
+评测顺序沿用外部评测器原始输出：懂物料 4 项、懂用户 2 项、懂推荐 4 项、懂世界 1 项。BETA-baseline 的 `1.3313` 是多次评测中较高的一次，作为 GRPO 的保守比较基线；同一模型上下约 `0.01` 的波动视为正常评测噪声，不把该范围内的单次差值解释为确定提升或退化。
+
+| 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对基线 | 判读 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| BETA-baseline | `1.3313` | `0.1807` | `0.2545` | `0.6594` | `0.2368` | - | 多次评测中的较高基线 |
+| GR_REC_v1 Step 1000 | `1.3270` | `0.1817` | `0.2550` | `0.6563` | `0.2338` | `-0.0043` | 与基线同一波动水平 |
+| **GR_REC_v1 Step 1500** | **`1.3510`** | `0.1816` | `0.2563` | **`0.6800`** | `0.2331` | **`+0.0197`** | 当前最佳，优先复测 |
+| GR_REC_v1 Step 2000 | `1.3326` | `0.1806` | `0.2581` | `0.6607` | `0.2331` | `+0.0013` | 与基线同一波动水平 |
+
+> 表中合计由已四舍五入的分项相加，可能与评测器 aggregate 相差 `0.0001`，比较时以评测器 aggregate 为准。
+
+### 原始分项
+
+```text
+BETA-baseline（较高的一次复测）
+aggregate: 1.3313
+0.0519, 0.0363, 0.0503, 0.0422
+0.1573, 0.0972
+0.1223, 0.1598, 0.2072, 0.1701
+0.2368
+
+GR_REC_v1 checkpoint-1000
+aggregate: 1.3270
+0.0523, 0.0368, 0.0511, 0.0415
+0.1583, 0.0967
+0.1288, 0.1598, 0.2030, 0.1647
+0.2338
+
+GR_REC_v1 checkpoint-1500
+aggregate: 1.3510
+0.0510, 0.0366, 0.0515, 0.0425
+0.1587, 0.0976
+0.1381, 0.1598, 0.2156, 0.1665
+0.2331
+
+GR_REC_v1 checkpoint-2000
+aggregate: 1.3326
+0.0506, 0.0359, 0.0523, 0.0418
+0.1596, 0.0985
+0.1353, 0.1632, 0.2002, 0.1620
+0.2331
+```
+
+### 结果解释
+
+1. Step 1000 相对基线 `-0.0043`、Step 2000 相对基线 `+0.0013`，均落在约 `±0.01` 的正常波动范围，不能据此宣称 GRPO 有明确收益或损失。
+2. Step 1500 的 aggregate 提升 `+0.0197`，且懂推荐合计提升 `+0.0206`，超过单次 `0.01` 波动带，是当前唯一值得优先复测的正向信号。增益主要来自推荐第 1 项 `+0.0158` 和第 3 项 `+0.0084`；第 2 项不变，第 4 项回落 `-0.0036`。
+3. 懂物料、懂用户和懂世界的变化都较小；本实验观察到的主要收益集中在其直接优化的懂推荐任务，符合实验动机，但还需要同 checkpoint 重复评测确认。
+4. Step 1500 后 Step 2000 回落至基线水平，外部评测呈非单调变化。这与训练后期 CoT 变短、兴趣覆盖收缩、zero-std 上升的监控证据方向一致，但目前只能视为相关证据，不能单凭该现象证明因果。
+5. 当前 checkpoint 选择建议为 `checkpoint-1500`，不默认选择更晚的 `checkpoint-2000` 或 final。正式对外结论前，应对 Step 1500 至少重复评测，并补测 `checkpoint-2316`；若复测差异回落到 `±0.01` 内，则应降级为“与基线持平”。
+
 ## Monitoring Phase 1
 
 正式运行启用 `GRPO_MONITOR=1`、`DETAILED=0`、`GENERATION_PROFILE=0`、`BEAM_RANK_BALANCE=1`、`TRACE_EVERY=20`。前端每 3 秒拉取 metrics、rollouts、rank、trace、Probe 和 checkpoint API；监控只读取已有训练结果，不进入 loss 或 optimizer。
@@ -177,6 +239,6 @@ adapter_model.safetensors
 - 4GPU 真实 smoke 验证 reward/loss/ratio/clip/KL 有限、LoRA 更新且 base 保持冻结。
 - 相关提交：`cc3da7d`（固定 Probe）、`a044c9d`（四域分层 Probe）。
 
-## 最终验收
+## 最终验收结论
 
-训练完成后必须补充：最终 Step、四个 checkpoint 与最终 Adapter 状态、四域 Step 0/最终 Probe 对照、外部 11 项评测、Think/NoThink reward 与有效信号密度、KL/clip/ratio、Beam invalid 复核，以及 LoRA/base 参数变化。只有固定 Probe 与外部评测共同支持提升，才能将 `GR_REC_v1` 判定为正向实验。
+训练工程合同已验收：2316 steps 完成、LoRA 正常更新、base 保持冻结、无 NaN/Inf/OOM，监控和 checkpoint 完整。效果侧已有 Step 1000/1500/2000 外部 11 项评测，其中 Step 1500 为当前最佳候选；`checkpoint-2316` 尚未外部评测，Step 1500 也尚缺重复评测。因此本实验当前结论为：**存在集中于懂推荐的阶段性正向信号，但尚不能把单次 1.3510 写成稳定提升；优先保留并复测 checkpoint-1500。**

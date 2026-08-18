@@ -1,7 +1,6 @@
-   8493616..515cf01  main       -> github/main
 # OneReason 多任务 SFT
 
-本仓库记录 OneReason-8B 的数据版本、训练代码、可复现实验配置和评测结果。当前 README 只展示三条主线：**Alpha 系列**、**Mini 系列**，以及作为统一参考线的 **BETA-baseline 纯净版**。
+本仓库记录 OneReason-8B 的数据版本、训练代码、可复现实验配置和评测结果。当前重点进入 **GRPO 系列**：以 BETA-baseline 为策略初始点，针对懂推荐进行 outcome 优化；Alpha、Mini 和 BETA-baseline 作为前置 SFT 实验与统一参考线继续保留。
 
 仓库不提交模型权重、原始 JSONL、tokenized cache、日志、checkpoint 或任何凭据；这些内容保留在开发机，仓库只保留代码、配置、测试和可审计的版本元数据。
 
@@ -28,10 +27,41 @@
 | 损失 | 原生 one-hot SID8 CE；普通 token=1、非 canonical SID/domain=8、canonical response=4 |
 | Epoch 1 | 总分 `1.3090` |
 | Epoch 2 | **总分 `1.3246`，约 1.33 分参考线** |
+| GRPO 比较基线 | **多次评测中较高的一次 `1.3313`** |
 
-1.33 是当前横向比较的参考分数，不是额外的硬性验收阈值。新实验必须同时报告总分和分项分数，不能仅凭 raw task loss 判断优劣。
+外部评测自身约有 `±0.01` 的正常波动。`1.3246` 是历史 Epoch 2 首次记录；GRPO 使用同一模型多次评测中较高的 `1.3313` 作为保守对照，二者差异不代表模型发生变化。新实验必须同时报告总分和分项分数，不能仅凭 raw task loss 或 `0.01` 内的单次差异判断优劣。
 
 详细合同和结果：[BETA-baseline 纯净版](./baselines/native_source_domain_r32_v3/docs/BATA_BASELINE.md)。
+
+## GRPO 系列（当前重点）
+
+### 系列动机与实验逻辑
+
+SFT 系列已把总分稳定推到约 1.33，但 Mini 实验表明，单纯扩充懂用户数据或延长 epoch 不能稳定换取收益：Mini-Fix-U3K 和 Mini-Fix-E3 均为负结果。GRPO 系列因此不再同时改数据、训练轮数和 loss，而从 BETA-baseline 出发，只针对懂推荐的实际生成结果进行 outcome 优化，并用外部 11 项评测检查收益是否外溢或损害其他能力。
+
+当前实验链路如下：
+
+1. **BETA-baseline（GRPO 基线）**：不是新的训练实验，而是 GRPO policy 的初始 Adapter。使用多次评测中较高的 `1.3313` 作保守对照，动机是避免以偏低测次夸大 GRPO 收益。
+2. **GR_REC_v1（首个正式 GRPO 实验）**：在冻结 BETA SFT Adapter 合同的基础上，只训练 recommendation group。Think 路由用 G=4 与 Beam32 outcome reward，NoThink 路由用 G=8 SID 分档 reward；通过 route weight 保持两条路由每 group 权重可比。它要回答的核心问题是：在不修改 reward、采样、Beam 和 PPO/GRPO 数学的情况下，生成侧 outcome 信号能否提高懂推荐外部得分。
+3. **Checkpoint 选择**：不按“越晚越好”选择，也不只看训练 reward。先比较 Step 1000/1500/2000/final 的外部 11 项，再结合 CoT 长度、多样性、zero-std、Beam invalid 和固定四域 Probe。当前 Step 1500 是优先复测候选。
+4. **后续实验隔离原则**：CoT 后期单一兴趣收缩与 NoThink/Think 零方差是两类不同问题。后续若分别测试多样性约束或稀疏 reward 改进，必须单变量立项，不在同一实验中同时改 G、reward、sampler 或数据顺序。
+
+### GR_REC_v1 外部评测
+
+| 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对 `1.3313` | 结论 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| BETA-baseline | `1.3313` | `0.1807` | `0.2545` | `0.6594` | `0.2368` | - | 保守比较基线 |
+| GR_REC_v1 Step 1000 | `1.3270` | `0.1817` | `0.2550` | `0.6563` | `0.2338` | `-0.0043` | 波动范围内，视为持平 |
+| **GR_REC_v1 Step 1500** | **`1.3510`** | `0.1816` | `0.2563` | **`0.6800`** | `0.2331` | **`+0.0197`** | 当前最佳，需重复评测 |
+| GR_REC_v1 Step 2000 | `1.3326` | `0.1806` | `0.2581` | `0.6607` | `0.2331` | `+0.0013` | 波动范围内，视为持平 |
+
+Step 1500 的总分增量 `+0.0197` 和懂推荐合计增量 `+0.0206` 超过单次 `0.01` 波动带，是目前唯一明确值得复测的信号；Step 1000 和 Step 2000 都只能判为与基线同一水平。Step 1500 之后的回落与监控中 CoT 变短、兴趣覆盖收缩和 zero-std 上升方向一致，但当前只是相关证据，不作因果结论。`checkpoint-2316` 尚待外部评测。
+
+GRPO 记录入口：
+
+- [GR_REC_v1：动机、冻结合同、训练完成记录、问题侧证据与完整分项](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)
+- [GRPO 代码、监控与测试入口](./baselines/native_source_domain_r32_v3/grpo/README.md)
+- [实验记录总索引](./实验记录/README.md)
 
 ## Alpha 系列
 
@@ -175,7 +205,7 @@ GitHub 只保存数据版本注册信息、manifest、数量和 SHA-256 摘要�
 
 ### 最终评测
 
-首先看总分是否接近 BETA-baseline 的 `1.3246`，再看懂物料、懂用户和懂推荐的分项变化。不同版本若更改数据、SID 权重或输出格式，必须结合实验记录解释，不能只比较一个 checkpoint 的总分。
+首先看总分是否接近 BETA-baseline 约 1.33 的水平；GRPO 系列统一使用较高复测值 `1.3313` 作保守基线。单次差异在 `±0.01` 内默认按正常评测波动处理，再看懂物料、懂用户和懂推荐的分项变化。不同版本若更改数据、SID 权重或输出格式，必须结合实验记录解释，不能只比较一个 checkpoint 的总分。
 
 ### 训练过程
 

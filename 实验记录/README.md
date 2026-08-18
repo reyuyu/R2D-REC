@@ -16,7 +16,33 @@
 
 - [实验 Alpha：训练监控与泄漏安全验证](../baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)：基于清洗后的 `alpha-jiankong`，建立 group-safe 的 train98/dev2 切分；保留 Native SID8 训练目标，新增只读四任务 loss、推荐 teacher-forcing 指标、每 100 step 固定开发集 probe 与 epoch-end full-dev。验证使用 inference-only sidecar，不改变训练梯度或优化器状态。
 - [实验 Alpha-mini：组合任务池 R32 两 epoch 训练](../baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)：记录 `/data/lf_data_versions/task_pools` 下懂用户/懂推荐/懂物料三个 alpha_mini task pool 的构造、49,490 行组合合同和 aggregate `1.2861` 及 11 项原始分项。
-- [实验 GR_REC_v1：Recommendation Multi-Positive GRPO](../baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)：BATA SFT Adapter 上的正式 recommendation-only GRPO；Think G=4、NoThink G=8，使用 video/living/prod/ad 四域固定留出 Probe，完整 epoch 2,316 steps，每 500 step 保存 checkpoint。
+- [实验 GR_REC_v1：Recommendation Multi-Positive GRPO](../baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)：BETA SFT Adapter 上的首个正式 recommendation-only GRPO；2,316 steps 已完成。Step 1500 外部评测 `1.3510` 为当前最佳候选，Step 1000/2000 均与 `1.3313` 基线处于正常波动范围。
+
+## GRPO 系列（当前重点）
+
+### 比较基线
+
+GRPO policy 从 BETA-baseline Adapter 初始化。历史 Epoch 2 首次评测为 `1.3246`；同一模型多次评测中较高的一次为 `1.3313`。考虑外部评测约有 `±0.01` 正常波动，GRPO 系列统一采用较高的 `1.3313` 作保守比较基线，不覆盖原始记录，也不把 `0.01` 内差异解释成确定收益。
+
+### 实验链路
+
+| 实验 | 动机与单一问题 | 冻结项 | 当前结论 |
+| --- | --- | --- | --- |
+| BETA-baseline | 提供已经完成 SFT 的统一初始 policy；用较高复测值避免夸大 GRPO 增益 | 数据、LoRA 和 SFT 训练结果均不变 | GRPO 比较基线 `1.3313` |
+| GR_REC_v1 | 只用 recommendation outcome 做 group-relative 优化，检验生成结果奖励能否提高懂推荐，同时保持懂物料、懂用户和懂世界 | reward、Think G=4、NoThink G=8、Beam32、sampler、route weight、GRPO/PPO 数学和数据顺序 | Step 1500 `1.3510` 为阶段性正向信号；需复测，不能按最终 step 自动选模 |
+| 后续 CoT 多样性实验（待立项） | 单独处理后期 CoT 变短、兴趣点收缩，不与稀疏 reward 改动混合 | 首先保持 NoThink、sampler 与训练数据不变 | 尚未配置或启动 |
+| 后续稀疏 reward 实验（待立项） | 单独提高 Think/NoThink 难样本的组内区分性，减少 zero-std rollout | 首先保持 CoT 生成与 Beam32 语义不变 | 尚未配置或启动 |
+
+### GR_REC_v1 结果摘要
+
+| 模型 / Step | 总分 | 懂推荐合计 | 相对基线 | 判读 |
+| --- | ---: | ---: | ---: | --- |
+| BETA-baseline | `1.3313` | `0.6594` | - | 多次评测中的较高基线 |
+| Step 1000 | `1.3270` | `0.6563` | `-0.0043` | 正常波动范围内 |
+| **Step 1500** | **`1.3510`** | **`0.6800`** | **`+0.0197`** | 当前最佳，优先重复评测 |
+| Step 2000 | `1.3326` | `0.6607` | `+0.0013` | 正常波动范围内 |
+
+Step 1500 的提升主要集中于懂推荐，符合实验直接优化目标；Step 2000 又回落至基线水平。结合固定 Probe 中后期 CoT 兴趣覆盖收缩和 zero-std 上升，当前选模原则是“外部评测 + 生成质量 + 有效信号密度”联合判断，而不是默认使用最晚 checkpoint。完整原始 11 项和证据见 [GR_REC_v1 详细记录](../baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)。
 
 ## 实验关系
 
@@ -45,5 +71,5 @@ C-fast 不改变实验三的目标，只把重复的 full-vocabulary denominator
 ## 原生参考基线阶段
 
 - [实验 Baseline：NSD-R32-V3-2E-GC04-4GPU](./实验Baseline_NSD-R32-V3.md)：隔离复刻 material-domain 原生 SFT 路线；四卡 8K neat packing、LoRA r32、SID 权重 8、两 epoch、0.4GC。该路线保留物料、用户 Action、用户 Chain、推荐四类数据，但不使用 macro trainer、GradNorm 或推荐辅助损失；四项任务 loss 仅作训练观测。
-- [实验 BATA-baseline 纯净版](./实验BATA-baseline纯净版.md)：复现包数据合同下仅替换 active BETA 懂用户的四卡原生 baseline；epoch 1 checkpoint aggregate 为 `1.3073`，第 2 epoch 仍在训练中。
+- [实验 BATA-baseline 纯净版](./实验BATA-baseline纯净版.md)：复现包数据合同下仅替换 active BETA 懂用户的四卡原生 baseline；2 epoch 已完成，历史评测 `1.3246`，GRPO 对照用较高复测值 `1.3313`。
 - [实验 BETA-fenpei：Set-PU + PackRatio](../baselines/native_source_domain_r32_v3/docs/experiment_BETA-fenpei.md)：当前四卡正式 Native baseline。使用 `BETA_material_aligned_v1`，保持三路物料 loss 合同；推荐最终 SID 使用 Set-PU scalar replacement，以 `20/45/20/15` pack ratio 调度 material/recommendation/user_action/user_chain；2 epoch 共 1052 optimizer steps，候选 teacher-forcing 指标每 50 step 记录一次。
