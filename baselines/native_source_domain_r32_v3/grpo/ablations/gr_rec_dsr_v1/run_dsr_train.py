@@ -18,14 +18,24 @@ from gr_rec_dsr_v1.dsr_runtime import (
     reset_global_capture,
 )
 from gr_rec_dsr_v1.dsr_contract import enforce_formal_contract
+from gr_rec_dsr_v1.dsr_monitor import decorate_dsr_monitor
+from gr_rec_dsr_v1.dsr_probe import DsrFixedProbeEvaluator
 from gr_rec_dsr_v1.dsr_trainer import DsrGRPOTrainer
 
 
 BASELINE_BEAM_FACTORY = baseline_smoke.make_beam32_fn
+BASELINE_MONITOR_FACTORY = baseline_train.monitor_from_env
 
 
 def dsr_beam_factory(model, tokenizer, monitor_writer=None):
     return make_dsr_beam32_fn(BASELINE_BEAM_FACTORY, model, tokenizer, monitor_writer)
+
+
+def dsr_monitor_factory(run_id, rank):
+    return decorate_dsr_monitor(
+        BASELINE_MONITOR_FACTORY(run_id, rank),
+        "ablations/gr_rec_dsr_v1/run_dsr_train.py",
+    )
 
 
 def main(argv=None):
@@ -38,6 +48,8 @@ def main(argv=None):
     baseline_train.make_nothink_reward_func = make_dsr_nothink_reward_func
     baseline_train.make_think_reward_func = make_dsr_think_reward_func
     baseline_train.make_beam32_fn = dsr_beam_factory
+    baseline_train.monitor_from_env = dsr_monitor_factory
+    baseline_train.FixedProbeEvaluator = DsrFixedProbeEvaluator
     baseline_train.main(argv)
 
 

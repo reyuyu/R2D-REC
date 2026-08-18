@@ -22,6 +22,20 @@ separately normalized auxiliary advantage. NoThink activates token-local
 wrong-A unlikelihood only for true all-zero `G=8` groups. Neither path adds a
 model forward, generation call, Beam call, or sampling change.
 
+## Monitoring
+
+The DSR runners decorate the baseline monitor inside this ablation. They write
+rollout diagnostics from the already gathered Python records, step loss values
+from scalars already recorded by `_compute_loss`, and the wall time around the
+existing `gather_object(local_records)` call. Monitoring adds no forward,
+generation, Beam, CUDA synchronization, or second collective.
+
+`DsrFixedProbeEvaluator` delegates generation to the frozen
+`FixedProbeEvaluator` and enriches its completed event on CPU before the single
+`write_probe` call. It never regenerates a probe. The independent monitor UI
+detects DSR capability per run and keeps all legacy pages and JSONL definitions
+unchanged.
+
 ## Tests
 
 ```bash

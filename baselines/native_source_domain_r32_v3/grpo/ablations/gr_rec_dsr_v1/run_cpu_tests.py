@@ -10,6 +10,7 @@ DEFAULT_MODULES = (
     "gr_rec_dsr_v1.test_dsr_contract",
     "gr_rec_dsr_v1.test_dsr_parser",
     "gr_rec_dsr_v1.test_dsr_objectives",
+    "gr_rec_dsr_v1.test_dsr_monitor",
     "gr_rec_dsr_v1.test_dsr_trainer",
 )
 

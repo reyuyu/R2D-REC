@@ -11,6 +11,7 @@ sys.path.insert(0, "/data/GRPO/scripts/ablations")
 
 import run_grpo_trl_smoke as baseline
 
+from gr_rec_dsr_v1.dsr_monitor import decorate_dsr_monitor
 from gr_rec_dsr_v1.dsr_runtime import (
     make_dsr_beam32_fn,
     make_dsr_nothink_reward_func,
@@ -29,26 +30,10 @@ def dsr_beam_factory(model, tokenizer, monitor_writer=None):
 
 
 def dsr_monitor_factory(tag, rank):
-    writer = BASELINE_MONITOR_FACTORY(tag, rank)
-    original = writer.write_manifest
-
-    def write_manifest(manifest):
-        return original({
-            **manifest,
-            "runner": "ablations/gr_rec_dsr_v1/run_dsr_smoke.py",
-            "experiment": "GR_REC_DSR_Ablation_v1",
-            "parent": "BATA baseline",
-            "baseline": "GR_REC_v1",
-            "dsr": {
-                "think_lambda": float(os.environ.get("DSR_THINK_LAMBDA", "0.10")),
-                "nothink_scale": float(os.environ.get("DSR_NOTHINK_SCALE", "1.0")),
-                "extra_forward": False,
-                "sampling_changed": False,
-            },
-        })
-
-    writer.write_manifest = write_manifest
-    return writer
+    return decorate_dsr_monitor(
+        BASELINE_MONITOR_FACTORY(tag, rank),
+        "ablations/gr_rec_dsr_v1/run_dsr_smoke.py",
+    )
 
 
 def main():

@@ -10,11 +10,9 @@ import torch
 from grpo_trl_trainer import ROUTE_ID, RecGRPOTrainer, route_multiplier
 
 from .dsr_objectives import (
-    build_nothink_rescue_plan,
-    choose_think_aux_scores,
-    group_aux_advantages,
     nothink_unlikelihood_loss,
 )
+from .dsr_monitor import summarize_nothink_records, summarize_think_records
 from .dsr_runtime import get_capture
 
 
@@ -40,12 +38,18 @@ class DsrGRPOTrainer(RecGRPOTrainer):
     def _write_dsr_monitor(self, payload, traces):
         if not self._monitor_enabled() or self.accelerator.process_index != 0:
             return
-        event = {"type": "dsr_rollout", "rollout_id": self._smoke_rollout_id, **payload}
+        event = {
+            "type": "dsr_rollout",
+            "rollout_id": self._smoke_rollout_id,
+            "step": self.state.global_step,
+            **payload,
+        }
         self._monitor._append("dsr_metrics.jsonl", event)
         if traces:
             self._monitor._append("dsr_traces.jsonl", {
                 "type": "dsr_trace",
                 "rollout_id": self._smoke_rollout_id,
+                "step": self.state.global_step,
                 "route": payload["route"],
                 "candidates": traces,
             })
@@ -58,7 +62,9 @@ class DsrGRPOTrainer(RecGRPOTrainer):
         local_records = self._dsr_capture.records
         if len(local_records) != len(inputs):
             raise RuntimeError(f"DSR captured {len(local_records)} records for {len(inputs)} local inputs")
+        gather_started = time.perf_counter()
         records = gather_object(local_records)
+        gather_wall_sec = time.perf_counter() - gather_started
         route = inputs[0]["route"]
         group_size = 4 if route == "think" else 8
         self._validate_groups(records, group_size)
@@ -68,56 +74,22 @@ class DsrGRPOTrainer(RecGRPOTrainer):
             (self.accelerator.process_index + 1) * local_count,
         )
         device = output["completion_ids"].device
-        payload = {"route": route, "tokenizer_audit": self._dsr_capture.tokenizer_audit}
+        payload = {
+            "route": route,
+            "tokenizer_audit": self._dsr_capture.tokenizer_audit,
+            "dsr_record_gather_wall_sec": gather_wall_sec,
+        }
         traces = []
 
         if route == "think":
-            scores = []
-            branches = []
-            for start in range(0, len(records), group_size):
-                group_scores, branch = choose_think_aux_scores(records[start:start + group_size])
-                scores.extend(group_scores)
-                branches.append(branch)
-            advantages = group_aux_advantages(scores, group_size)
+            summary, scores, advantage_values = summarize_think_records(records)
+            advantages = torch.tensor(advantage_values, dtype=torch.float32)
             output["dsr_aux_advantages"] = advantages[process_slice].to(device)
             output["dsr_sa_positions"] = torch.full((local_count,), -1, dtype=torch.long, device=device)
             output["dsr_frequency_weights"] = torch.zeros(local_count, dtype=torch.float32, device=device)
             output["dsr_rescue_coefficients"] = torch.zeros(local_count, dtype=torch.float32, device=device)
-            grounded_counts = [int(item["grounded_count"]) for item in records]
-            dist = {str(value): sum(count == value for count in grounded_counts) for value in range(5)}
-            dist["5+"] = sum(count >= 5 for count in grounded_counts)
-            aux_std_zero = 0
-            for start in range(0, len(scores), group_size):
-                if float(torch.tensor(scores[start:start + group_size]).std(correction=0)) == 0.0:
-                    aux_std_zero += 1
-            primary_zero_std = 0
-            all_zero = 0
-            for start in range(0, len(records), group_size):
-                primary = [item["primary_reward"] for item in records[start:start + group_size]]
-                primary_zero_std += float(torch.tensor(primary).std(correction=0)) == 0.0
-                all_zero += all(float(value) == 0.0 for value in primary)
-            payload.update({
-                "parser_success_rate": sum(bool(item["parsed"]["parser_success"]) for item in records) / len(records),
-                "grounded_interest_count_mean": sum(grounded_counts) / len(grounded_counts),
-                "grounded_interest_count_distribution": dist,
-                "s_cot_mean": sum(float(item["s_cot"]) for item in records) / len(records),
-                "s_cot_std": float(torch.tensor([item["s_cot"] for item in records]).std(correction=0)),
-                "d_cot_mean": sum(float(item["evidence_diversity"]) for item in records) / len(records),
-                "s_prefix_mean": sum(float(item["s_prefix"]) for item in records) / len(records),
-                "s_explore_mean": sum(float(item["s_explore"]) for item in records) / len(records),
-                "s_dead_mean": sum(float(item["s_dead"]) for item in records) / len(records),
-                "think_aux_active_rate": float(self.dsr_think_lambda != 0.0),
-                "think_aux_zero_std_rate": aux_std_zero / (len(records) / group_size),
-                "primary_zero_std_rate": primary_zero_std / (len(records) / group_size),
-                "all_zero_rate": all_zero / (len(records) / group_size),
-                "unique_a_mean": sum(int(item["unique_a"]) for item in records) / len(records),
-                "a_entropy_mean": sum(float(item["a_entropy_norm"]) for item in records) / len(records),
-                "correct_a_support": sum(float(item["s_a"]) for item in records) / len(records),
-                "correct_ab_support": sum(float(item["s_ab"]) for item in records) / len(records),
-                "branches": dict((name, branches.count(name)) for name in sorted(set(branches))),
-                "aux_scores": scores,
-                "aux_advantages": advantages.tolist(),
-            })
+            payload.update(summary)
+            payload["think_aux_active_rate"] = float(self.dsr_think_lambda != 0.0)
             traces = [{
                 "group_id": item["group_id"],
                 "cot": item["cot"],
@@ -131,17 +103,8 @@ class DsrGRPOTrainer(RecGRPOTrainer):
             positions = []
             weights = []
             coefficients = []
-            plans = []
-            for start in range(0, len(records), group_size):
-                group = records[start:start + group_size]
-                plan = build_nothink_rescue_plan(
-                    [item["primary_reward"] for item in group],
-                    [item["predicted_a"] for item in group],
-                    [item["sa_position"] for item in group],
-                    group[0]["gold_as"],
-                    rescue_scale=self.dsr_nothink_scale,
-                )
-                plans.append(plan)
+            summary, plans = summarize_nothink_records(records, self.dsr_nothink_scale)
+            for plan in plans:
                 positions.extend(plan.positions if plan.active else [-1] * group_size)
                 weights.extend(plan.frequency_weights if plan.active else [0.0] * group_size)
                 coefficients.extend([plan.coefficient if plan.active else 0.0] * group_size)
@@ -149,23 +112,7 @@ class DsrGRPOTrainer(RecGRPOTrainer):
             output["dsr_sa_positions"] = torch.tensor(positions[process_slice], dtype=torch.long, device=device)
             output["dsr_frequency_weights"] = torch.tensor(weights[process_slice], dtype=torch.float32, device=device)
             output["dsr_rescue_coefficients"] = torch.tensor(coefficients[process_slice], dtype=torch.float32, device=device)
-            all_zero_plans = [
-                all(records[start + index]["primary_reward"] == 0.0 for index in range(group_size))
-                for start in range(0, len(records), group_size)
-            ]
-            concentrations = [plan.concentration for plan, zero in zip(plans, all_zero_plans) if zero]
-            sorted_concentrations = sorted(concentrations)
-            p90_index = min(len(sorted_concentrations) - 1, int(0.9 * len(sorted_concentrations))) if sorted_concentrations else 0
-            payload.update({
-                "all_zero_group_rate": sum(all_zero_plans) / len(plans),
-                "all_zero_same_a_rate": sum(zero and plan.concentration == 1.0 for plan, zero in zip(plans, all_zero_plans)) / len(plans),
-                "a_concentration_mean": sum(concentrations) / len(concentrations) if concentrations else 0.0,
-                "a_concentration_p90": sorted_concentrations[p90_index] if sorted_concentrations else 0.0,
-                "rescue_active_groups": sum(plan.active for plan in plans),
-                "sparse_rescue_count": sum(plan.active and plan.gold_unique_a < 3 for plan in plans),
-                "dense_rescue_count": sum(plan.active and plan.gold_unique_a >= 3 for plan in plans),
-                "plans": [plan.__dict__ | {"coefficient": plan.coefficient} for plan in plans],
-            })
+            payload.update(summary)
             traces = [{
                 "group_id": records[start]["group_id"],
                 "primary_rewards": [item["primary_reward"] for item in records[start:start + group_size]],
@@ -270,3 +217,30 @@ class DsrGRPOTrainer(RecGRPOTrainer):
             self._smoke_policy_epoch[self._smoke_rollout_id] = pe + 1
             self._smoke_log[-1].update(entry)
         return loss
+
+    def log(self, logs, start_time=None):
+        """Write DSR-only step scalars after the frozen baseline logger."""
+        result = super().log(logs, start_time)
+        if not self._monitor_enabled() or self.accelerator.process_index != 0 or "loss" not in logs:
+            return result
+        rollout = self._smoke_log[-1] if self._smoke_log else {}
+        policy_epoch = self._smoke_policy_epoch.get(self._smoke_rollout_id, 0)
+        raw_aux = rollout.get(f"think_aux_loss_ep{policy_epoch}")
+        self._monitor._append("dsr_steps.jsonl", {
+            "type": "dsr_step",
+            "step": self.state.global_step,
+            "rollout_id": rollout.get("rollout_id"),
+            "route": rollout.get("route"),
+            "primary_loss": rollout.get(f"primary_loss_ep{policy_epoch}"),
+            "think_aux_loss_raw": raw_aux,
+            "think_aux_contribution": (
+                self.dsr_think_lambda * raw_aux if raw_aux is not None else None
+            ),
+            "nothink_rescue_loss": rollout.get(f"nothink_rescue_loss_ep{policy_epoch}"),
+            "dsr_total_loss": rollout.get(f"dsr_total_loss_ep{policy_epoch}"),
+            "ratio_mean": rollout.get(f"ratio_mean_ep{policy_epoch}"),
+            "clip_fraction": rollout.get(f"clip_fraction_ep{policy_epoch}"),
+            "approx_kl": rollout.get(f"approx_kl_ep{policy_epoch}"),
+            "grad_norm": logs.get("grad_norm"),
+        })
+        return result

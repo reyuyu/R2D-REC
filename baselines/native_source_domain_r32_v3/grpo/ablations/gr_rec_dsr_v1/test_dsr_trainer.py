@@ -1,5 +1,7 @@
 """CPU gradient, reward parity, and baseline loss parity tests."""
+import math
 from types import MethodType, SimpleNamespace
+from unittest.mock import patch
 
 import torch
 
@@ -167,6 +169,43 @@ def test_sa_only_gradient_and_primary_zero_rescue_gradient():
     loss.backward()
     assert torch.count_nonzero(logps.grad[:, 2]) == 8
     assert torch.count_nonzero(logps.grad[:, [0, 1, 3, 4]]) == 0
+
+
+def test_dsr_step_log_uses_existing_python_scalars():
+    class Monitor:
+        def __init__(self):
+            self.rows = []
+
+        def _append(self, filename, row):
+            self.rows.append((filename, row))
+
+    trainer = DsrGRPOTrainer.__new__(DsrGRPOTrainer)
+    trainer._monitor = Monitor()
+    trainer.accelerator = SimpleNamespace(process_index=0)
+    trainer.state = SimpleNamespace(global_step=9)
+    trainer._smoke_rollout_id = 4
+    trainer._smoke_policy_epoch = {4: 2}
+    trainer._smoke_log = [{
+        "rollout_id": 4,
+        "route": "think",
+        "primary_loss_ep2": 0.4,
+        "think_aux_loss_ep2": 0.3,
+        "nothink_rescue_loss_ep2": 0.0,
+        "dsr_total_loss_ep2": 0.43,
+        "ratio_mean_ep2": 1.01,
+        "clip_fraction_ep2": 0.02,
+        "approx_kl_ep2": 0.003,
+    }]
+    trainer.dsr_think_lambda = 0.10
+    trainer._monitor_enabled = MethodType(lambda self: True, trainer)
+    with patch.object(RecGRPOTrainer, "log", return_value="baseline"):
+        assert trainer.log({"loss": 0.43, "grad_norm": 0.7}) == "baseline"
+    filename, row = trainer._monitor.rows[0]
+    assert filename == "dsr_steps.jsonl"
+    assert row["think_aux_loss_raw"] == 0.3
+    assert math.isclose(row["think_aux_contribution"], 0.03)
+    assert row["dsr_total_loss"] == 0.43
+    assert row["grad_norm"] == 0.7
 
 
 if __name__ == "__main__":
