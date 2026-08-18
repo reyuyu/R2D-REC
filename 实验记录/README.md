@@ -16,6 +16,7 @@
 
 - [实验 Alpha：训练监控与泄漏安全验证](../baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_监控优化.md)：基于清洗后的 `alpha-jiankong`，建立 group-safe 的 train98/dev2 切分；保留 Native SID8 训练目标，新增只读四任务 loss、推荐 teacher-forcing 指标、每 100 step 固定开发集 probe 与 epoch-end full-dev。验证使用 inference-only sidecar，不改变训练梯度或优化器状态。
 - [实验 Alpha-mini：组合任务池 R32 两 epoch 训练](../baselines/native_source_domain_r32_v3/docs/experiment_ALPHA_Mini_R32_2E.md)：记录 `/data/lf_data_versions/task_pools` 下懂用户/懂推荐/懂物料三个 alpha_mini task pool 的构造、49,490 行组合合同和 aggregate `1.2861` 及 11 项原始分项。
+- [实验 GR_REC_v1：Recommendation Multi-Positive GRPO](../baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)：BATA SFT Adapter 上的正式 recommendation-only GRPO；Think G=4、NoThink G=8，使用 video/living/prod/ad 四域固定留出 Probe，完整 epoch 2,316 steps，每 500 step 保存 checkpoint。
 
 ## 实验关系
 
