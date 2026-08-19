@@ -1,0 +1,19 @@
+version: gr_user_v1
+seed: 20260819
+prompt_template_version: gr_user_eval_aligned_v1
+max_rendered_prompt_tokens: 8192
+parent:
+  experiment: BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333
+  checkpoint_epoch: 2.0
+  checkpoint_step: 1106
+  checkpoint_path: /data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106
+routes:
+  action: 1500
+  chain_native_nocot: 1200
+  chain_converted_cot_to_nocot: 300
+pilot:
+  action: 300
+  chain: 300
+probe:
+  action: 12
+  chain: 8

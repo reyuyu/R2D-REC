@@ -1,0 +1,316 @@
+{
+  "version": "gr_user_v1",
+  "seed": 20260819,
+  "parent_model": {
+    "experiment": "BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+    "external_aggregate": null,
+    "base_model_path": "/data/models/onereason-8b-pretrain-competition",
+    "adapter_checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+    "checkpoint_step": 1106,
+    "checkpoint_epoch": 2.0,
+    "selection_evidence": "User explicitly selected beta-baseline Epoch 2; trainer_state.json records global_step=1106 and epoch=2.0."
+  },
+  "template": {
+    "version": "gr_user_eval_aligned_v1",
+    "tokenizer": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+    "renderer": "apply_chat_template(add_generation_prompt=True, enable_thinking=False)",
+    "action_format_demo": true,
+    "chain_format_demo": true
+  },
+  "counts": {
+    "train": 3000,
+    "action": 1500,
+    "chain": 1500,
+    "chain_native": 1200,
+    "chain_converted": 300,
+    "pilot": 600,
+    "probe": 20
+  },
+  "train_buckets": {
+    "action": {
+      "1-5": 225,
+      "31-40": 150,
+      "6-10": 300,
+      "11-20": 450,
+      "41+": 75,
+      "21-30": 300
+    },
+    "chain": {
+      "4": 375,
+      "2": 225,
+      "3": 825,
+      "5": 75
+    }
+  },
+  "sampling_quartile_targets": {
+    "action": {
+      "1-5": [
+        57,
+        56,
+        56,
+        56
+      ],
+      "6-10": [
+        75,
+        75,
+        75,
+        75
+      ],
+      "11-20": [
+        113,
+        113,
+        112,
+        112
+      ],
+      "21-30": [
+        75,
+        75,
+        75,
+        75
+      ],
+      "31-40": [
+        38,
+        38,
+        37,
+        37
+      ],
+      "41+": [
+        19,
+        19,
+        19,
+        18
+      ]
+    },
+    "chain_native": {
+      "2": [
+        45,
+        45,
+        45,
+        45
+      ],
+      "3": [
+        165,
+        165,
+        165,
+        165
+      ],
+      "4": [
+        75,
+        75,
+        75,
+        75
+      ],
+      "5": [
+        15,
+        15,
+        15,
+        15
+      ]
+    },
+    "chain_converted": {
+      "2": [
+        12,
+        11,
+        11,
+        11
+      ],
+      "3": [
+        42,
+        41,
+        41,
+        41
+      ],
+      "4": [
+        19,
+        19,
+        19,
+        18
+      ],
+      "5": [
+        4,
+        4,
+        4,
+        3
+      ]
+    }
+  },
+  "prompt_token_distribution": {
+    "train": {
+      "count": 3000,
+      "min": 967,
+      "p25": 3716,
+      "p50": 4624,
+      "p75": 5634,
+      "p95": 6952,
+      "max": 8161,
+      "mean": 4691.83
+    },
+    "action": {
+      "count": 1500,
+      "min": 967,
+      "p25": 3424,
+      "p50": 4284,
+      "p75": 5335,
+      "p95": 6666,
+      "max": 8085,
+      "mean": 4384.21
+    },
+    "chain": {
+      "count": 1500,
+      "min": 1373,
+      "p25": 4066,
+      "p50": 4913,
+      "p75": 5918,
+      "p95": 7120,
+      "max": 8161,
+      "mean": 4999.45
+    }
+  },
+  "source_manifest": {
+    "path": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/manifest.json",
+    "sha256": "c8dcbf93c848fd217c45d89be8fe3e6bcde026423e7dd97eb91ace7ae3dfd0f2"
+  },
+  "source_audits": {
+    "action": {
+      "path": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/user_action.jsonl",
+      "line_count": 16576,
+      "sha256": "07c67cb60812943c601c5db3d90900e5b664c8354c1703cb66acc3f3f984e309",
+      "exact_duplicate_rows": 0,
+      "accepted_after_full_reaudit": 16576,
+      "output_legal_and_history_grounded": 16576,
+      "rejections": {},
+      "source_segments": {
+        "user_action": 16576
+      },
+      "gold_count_distribution": {
+        "1-5": 4137,
+        "11-20": 5068,
+        "21-30": 2050,
+        "31-40": 896,
+        "41+": 579,
+        "6-10": 3846
+      },
+      "route_suffix_no_think": 16576,
+      "prompt_token_distribution": {
+        "count": 16576,
+        "min": 263,
+        "p25": 3350,
+        "p50": 4209,
+        "p75": 5288,
+        "p95": 6608,
+        "max": 8175,
+        "mean": 4331.37
+      }
+    },
+    "chain_native": {
+      "path": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/user_chain_nocot.jsonl",
+      "line_count": 7625,
+      "sha256": "fa707dfc065bd57a2b480f249c1a6c2010257b53808c97d2a8037eb2d468f58d",
+      "exact_duplicate_rows": 0,
+      "accepted_after_full_reaudit": 7209,
+      "output_legal_and_history_grounded": 7209,
+      "rejections": {
+        "chronology_violation": 361,
+        "duplicate_gold_event": 8,
+        "event_count_not_2_to_5": 18,
+        "rendered_prompt_gt_8192": 29
+      },
+      "source_segments": {
+        "user_chain_nocot": 7209
+      },
+      "gold_count_distribution": {
+        "2": 1239,
+        "3": 4149,
+        "4": 1655,
+        "5": 166
+      },
+      "route_suffix_no_think": 7209,
+      "prompt_token_distribution": {
+        "count": 7209,
+        "min": 1116,
+        "p25": 4078,
+        "p50": 4920,
+        "p75": 5962,
+        "p95": 7195,
+        "max": 8192,
+        "mean": 5009.23
+      }
+    },
+    "chain_converted": {
+      "path": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/user_chain_cot.jsonl",
+      "line_count": 7898,
+      "sha256": "decbd20ba5baf3e2fab823b3a40c4b25bfb70ef5fce072aefb57e572882317ad",
+      "exact_duplicate_rows": 0,
+      "accepted_after_full_reaudit": 7495,
+      "output_legal_and_history_grounded": 7495,
+      "rejections": {
+        "chronology_violation": 371,
+        "duplicate_gold_event": 12,
+        "event_count_not_2_to_5": 20
+      },
+      "source_segments": {
+        "user_chain_cot": 7495
+      },
+      "gold_count_distribution": {
+        "2": 1308,
+        "3": 4343,
+        "4": 1698,
+        "5": 146
+      },
+      "route_suffix_no_think": 7495,
+      "prompt_token_distribution": {
+        "count": 7495,
+        "min": 1113,
+        "p25": 4016,
+        "p50": 4838,
+        "p75": 5833,
+        "p95": 6978,
+        "max": 7894,
+        "mean": 4912.31
+      }
+    }
+  },
+  "merged_source_audit": {
+    "path": "/data/lf_data_versions/task_pools/懂用户/chian异常清洗/understand_user_clean.jsonl",
+    "line_count": 32099,
+    "sha256": "0bb475b42e651e4d975df651250ff06ff003b9ea934dd92f7ebec02d23f958e8",
+    "exact_duplicate_rows": 0,
+    "source_segments": {
+      "user_action": 16576,
+      "user_chain_cot": 7898,
+      "user_chain_nocot": 7625
+    },
+    "route_suffix_no_think": 24201
+  },
+  "outputs": {
+    "train_3000.jsonl": {
+      "sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+      "bytes": 198621004
+    },
+    "pilot_600.jsonl": {
+      "sha256": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+      "bytes": 39516439
+    },
+    "probe_v1.jsonl": {
+      "sha256": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
+      "bytes": 1055823
+    },
+    "template_alignment_audit.json": {
+      "sha256": "479601f1730eeb9b7f9d69413467521b0fedfe62c7ae29782dadb44aab700822",
+      "bytes": 91801
+    }
+  },
+  "template_alignment": {
+    "evidence_counts": {
+      "action": 5,
+      "chain": 5
+    },
+    "conclusions": {
+      "action_demonstration_stable": true,
+      "chain_demonstration_stable": true,
+      "raw_data_contains_chat_wrappers": false,
+      "adapter_adds_chat_wrappers": false,
+      "renderer": "parent checkpoint tokenizer.apply_chat_template(enable_thinking=False)"
+    }
+  }
+}
