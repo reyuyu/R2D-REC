@@ -21,7 +21,7 @@
     .smoothing-bar{display:flex;align-items:center;gap:10px;padding:8px 30px;background:#f0f5f3;border-bottom:1px solid #d5dfda}.smoothing-bar label{font-size:12px;font-weight:700;color:#3f5149}.smoothing-select{height:30px;padding:0 30px 0 9px;border:1px solid #aebdb6;border-radius:4px;background:#fff;color:#17202a;font-family:inherit}.smoothing-note{color:#66756e;font-size:11px}.smoothing-badge{padding:2px 7px;border-radius:3px;background:#dff2e9;color:#116b4e;font-size:11px;font-weight:700}@media(max-width:700px){.smoothing-bar{padding:8px 16px;flex-wrap:wrap}.smoothing-note{width:100%}}
     body{background:#f4f6f7}.wrap{max-width:1540px;padding-top:20px}.status{border-radius:6px;overflow:hidden}.status .stat:nth-child(5) .value{color:#116b4e}.panel{border-color:#d7dde1;box-shadow:0 3px 12px #17212b0a}.panel h2{font-size:15px}.chart{height:248px}.overview-core-charts{grid-template-columns:minmax(0,1.65fr) minmax(340px,.85fr)}.overview-core-charts .chart{height:286px}.primary-chart{border-top:3px solid #16835f}.primary-chart h2{font-size:16px}.legend{min-height:20px;align-items:center}.trend-guide{border-radius:0 4px 4px 0}.metric-strip{gap:12px}.big-metric{height:104px}.checkpoint-name{width:260px}.smoothing-bar{min-height:42px;padding-top:6px;padding-bottom:6px;background:#f8faf9}.smoothing-note{margin-left:auto}.smoothing-select{font-weight:650}.chart-dialog-body{background:#fbfcfc}@media(max-width:900px){.overview-core-charts{grid-template-columns:1fr}.smoothing-note{margin-left:0}.chart,.overview-core-charts .chart{height:250px}}@media(max-width:560px){.checkpoint-name{width:100%}.chart,.overview-core-charts .chart{height:230px}}
   </style>
-  <link rel="stylesheet" href="/static/user_dashboard.css">
+  <link rel="stylesheet" href="/static/user_dashboard.css?v=20260820-probe2">
 </head>
 <body>
   <header><h1>GRPO 训练监控台</h1><div class="run" id="headerRun">正在载入</div><div class="header-actions"><div class="live"><span class="dot" id="liveDot"></span><span id="updated">等待数据</span></div><button class="refresh-button" id="refreshToggle" type="button" aria-pressed="false" title="暂停自动刷新">暂停刷新</button><button class="refresh-button" id="refreshNow" type="button" title="立即刷新">立即刷新</button></div></header>
@@ -506,6 +506,6 @@ $('smoothingSelect').onchange=event=>setSmoothingWindow(event.target.value);
 $('zoomChart').onmousemove=showChartTooltip;$('zoomChart').onmouseleave=hideChartTooltip;
 document.querySelectorAll('.diagnostic-more').forEach(details=>details.addEventListener('toggle',()=>{if(!details.open)return;renderOverview();renderProbes();if($('dsr').classList.contains('active'))renderDsr()}));
 </script>
-<script src="/static/user_dashboard.js"></script>
+<script src="/static/user_dashboard.js?v=20260820-probe2"></script>
 </body>
 </html>

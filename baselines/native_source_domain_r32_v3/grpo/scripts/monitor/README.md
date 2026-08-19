@@ -59,8 +59,8 @@ contract explicitly:
 An old or missing `run_kind` is always treated as `recommendation_grpo`, so
 existing Recommendation and DSR runs keep their original pages and API
 behavior without rewriting manifests. `/api/runs` returns normalized run kinds
-and accepts an optional `run_kind` filter. User runs add five dashboard views:
-overall, Action, Chain, Token Advantage, and Rollout samples. Optional or
+and accepts an optional `run_kind` filter. User runs add six dashboard views:
+overall, Action, Chain, Token Advantage, fixed Probe, and Rollout samples. Optional or
 partially written User fields render as missing data rather than breaking the
 three-second refresh loop.
 

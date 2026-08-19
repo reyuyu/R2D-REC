@@ -177,12 +177,16 @@ with tempfile.TemporaryDirectory() as temporary:
     user_metrics = parse_every_line(user_demo_dir / "metrics.jsonl")
     user_rollouts = parse_every_line(user_demo_dir / "rollouts.jsonl")
     user_traces = parse_every_line(user_demo_dir / "traces/traces.jsonl")
+    user_probes = parse_every_line(user_demo_dir / "probes.jsonl")
     assert user_manifest["run_kind"] == "user_grpo" and user_manifest["demo"] is True
     assert user_manifest["G"] == 4 and user_manifest["token_penalty"]["lambda"] == 0.5
     assert len(user_metrics) == 40 and {row["route"] for row in user_metrics} == {"action", "chain"}
     assert len(user_rollouts) == 8 and {row["route"] for row in user_rollouts} == {"action", "chain"}
     assert len(user_traces) == 8 and all(len(row["candidates"]) == 4 for row in user_traces)
     assert any(candidate.get("masked_spans") for row in user_traces for candidate in row["candidates"])
+    assert len(user_probes) == 60 and {row["step"] for row in user_probes} == {0, 20, 40}
+    assert {row["route"] for row in user_probes} == {"action", "chain"}
+    assert any(candidate.get("match_spans") for row in user_probes for candidate in row["candidates"])
 
     with (user_demo_dir / "metrics.jsonl").open("a", encoding="utf-8") as handle:
         handle.write('{"type":"step","step":41')
@@ -196,6 +200,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert user_client.get("/api/runs?run_kind=unknown").status_code == 400
     assert user_client.get("/api/manifest?run_id=demo").json()["run_kind"] == "recommendation_grpo"
     assert user_client.get("/api/capabilities?run_id=demo-user-grpo").json()["user_grpo"] is True
+    assert user_client.get("/api/capabilities?run_id=demo-user-grpo").json()["probes"] is True
     assert user_client.get("/api/capabilities?run_id=demo").json()["user_grpo"] is False
     assert len(user_client.get("/api/metrics?run_id=demo-user-grpo").json()) == 40
     assert user_client.get("/static/user_dashboard.js").status_code == 200
@@ -204,8 +209,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in user_js for label in (
         "懂推荐 GRPO", "懂用户 GRPO", "Action Set-F1", "Chain Alignment",
         "Token Advantage", "Rollout 样本", "wrong_selection_candidate_rate",
-        "stageRunKind", "切换实验中",
+        "stageRunKind", "切换实验中", "Prob / 固定探针", "match-mark",
+        "userProbeActionChart",
     ))
-    print("[PASS] User run-kind routing, 40-step demo, optional fields, malformed tail, and five dashboard views")
+    print("[PASS] User run-kind routing, fixed probes, green matches, and six dashboard views")
 
 print("ALL MONITOR CPU TESTS PASSED")

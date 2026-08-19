@@ -136,3 +136,6 @@ class UserMonitorAdapter:
 
     def write_trace(self, event: Mapping[str, Any]) -> bool:
         return bool(self.writer.write_trace(dict(event)))
+
+    def write_probe(self, event: Mapping[str, Any]) -> bool:
+        return bool(self.writer.write_probe(dict(event)))

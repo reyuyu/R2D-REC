@@ -32,6 +32,13 @@ from run_user_grpo_smoke import (
     read_jsonl,
 )
 from user_grpo_trainer import UserGRPOTrainer, prepare_scored_rollout
+from user_fixed_probe import (
+    aggregate_probe_steps,
+    correct_match_spans,
+    evaluate_user_fixed_probe,
+    probe_due,
+    validate_probe_rows,
+)
 from user_monitor_adapter import UserMonitorAdapter
 
 
@@ -219,7 +226,7 @@ def _masked_spans(compiled):
     return sorted(spans, key=lambda item: (item["start"], item["end"], item["kind"]))
 
 
-def _candidate_trace(rollout, candidate_index, route):
+def _candidate_trace(rollout, candidate_index, route, sample):
     score = rollout["scores"][candidate_index]
     compiled = rollout["compiled_penalties"][candidate_index]
     violation_kinds = [violation.kind for violation in score.violations]
@@ -231,8 +238,12 @@ def _candidate_trace(rollout, candidate_index, route):
         "reward": float(rollout["rewards"][candidate_index]),
         "sequence_advantage": float(rollout["sequence_advantages"][candidate_index]),
         "violations": violation_kinds,
+        "penalty_kinds": sorted({
+            record["kind"] for record in compiled["records"] if record.get("included")
+        }),
         "masked_spans": _masked_spans(compiled),
         "masked_token_count": int(rollout["local_penalty_mask"][candidate_index].sum()),
+        "match_spans": correct_match_spans(score, sample, route),
     }
     if route == "action":
         record.update(
@@ -344,7 +355,7 @@ def group_records_from_rollout(rollout, rows, route_start, step):
                 "sample_id": row["sample_id"],
                 "route_index": route_start + row_index,
                 "candidates": [
-                    _candidate_trace(rollout, candidate, rollout["route"])
+                    _candidate_trace(rollout, candidate, rollout["route"], row)
                     for candidate in range(start, stop)
                 ],
             }
@@ -595,6 +606,12 @@ def main():
         raise RuntimeError("frozen GR_USER_v1 data SHA mismatch")
     selected, selection_audit = select_pilot_rows(read_jsonl(config["dataset"]), config["seed"])
     plan = build_training_plan(selected)
+    probe_config = config.get("fixed_probe", {})
+    probe_rows = read_jsonl(probe_config["dataset"]) if probe_config.get("enabled") else []
+    if probe_rows:
+        validate_probe_rows(probe_rows)
+        if sha_before["probe_v1.jsonl"] != probe_config.get("sha256"):
+            raise RuntimeError("frozen User fixed-probe SHA mismatch")
     manifest = {
         "run_id": args.run_id,
         "run_kind": "user_grpo",
@@ -617,6 +634,7 @@ def main():
         "expected_unique_prompts": 150,
         "frozen_contract": config,
         "historical_phase3b_baseline": HISTORICAL_BASELINE,
+        "fixed_probe": probe_config,
         "output_dir": str(run_dir),
     }
     if is_main:
@@ -700,6 +718,33 @@ def main():
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats(device)
     training_started = time.perf_counter()
+
+    def run_fixed_probe(step, reason):
+        if not probe_rows:
+            return
+        events = evaluate_user_fixed_probe(
+            model.module,
+            tokenizer,
+            probe_rows,
+            device,
+            rank=rank,
+            world_size=world,
+            step=step,
+            reason=reason,
+            seed=int(probe_config["seed"]),
+            generate_fn=generate_route,
+        )
+        if is_main:
+            for event in events:
+                _append_jsonl(run_dir / "probes.jsonl", event)
+                if not monitor.write_probe(event):
+                    raise RuntimeError("failed to write User fixed probe")
+            aggregate = aggregate_probe_steps(events)[0]
+            print(json.dumps({"probe_step": step, "reason": reason, **aggregate}, ensure_ascii=False), flush=True)
+        dist.barrier()
+
+    if probe_rows:
+        run_fixed_probe(0, "baseline")
 
     for plan_item in plan:
         step = plan_item["step"]
@@ -910,6 +955,7 @@ def main():
                 ),
                 flush=True,
             )
+
         stop = torch.tensor(int(bool(safety_stop_reasons) if is_main else 0), device=device)
         dist.broadcast(stop, 0)
         if bool(stop.item()):
@@ -919,6 +965,8 @@ def main():
                     encoding="utf-8",
                 )
             raise RuntimeError(f"Pilot safety stop: {safety_stop_reasons}")
+        if probe_rows and probe_due(step, len(plan), int(probe_config["every_steps"])):
+            run_fixed_probe(step, "final" if step == len(plan) else "periodic")
 
     dist.barrier()
     training_wall = time.perf_counter() - training_started

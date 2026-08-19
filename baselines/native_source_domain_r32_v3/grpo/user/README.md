@@ -135,3 +135,18 @@ The adapter accepts common policy diagnostics plus route-specific Action,
 Chain, token-advantage, violation-count, per-kind penalty-mass, rollout, and
 sampled-trace fields. Missing optional diagnostics are omitted. This keeps the
 monitor fail-open and prevents monitoring from changing optimization behavior.
+
+## Fixed Probe monitoring
+
+`scripts/user_fixed_probe.py` evaluates the frozen `probe_v1.jsonl` set with
+12 Action and 8 Chain prompts at Step 0, every 10 optimizer steps, and the
+final step. Sampling settings and seed stay fixed across checkpoints. Probe
+generation runs under inference mode and does not contribute reward,
+advantage, loss, gradients, or optimizer state.
+
+The User `Prob / 固定探针` view compares Action F1/precision/recall and Chain
+total/action/logic alignment over training time. Candidate text marks proven
+correct SID or exact event spans in green and local penalty spans in red;
+diagnostic-only violations such as `wrong_selection_sid` remain neutral.
+`scripts/backfill_user_fixed_probe.py` can populate an older run using frozen
+checkpoints, but only as rollout-only inference on four confirmed-idle GPUs.

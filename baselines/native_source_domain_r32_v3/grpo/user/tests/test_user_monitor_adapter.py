@@ -18,6 +18,7 @@ class RecordingWriter:
         self.steps = []
         self.rollouts = []
         self.traces = []
+        self.probes = []
 
     def write_manifest(self, value):
         self.manifests.append(value)
@@ -33,6 +34,10 @@ class RecordingWriter:
 
     def write_trace(self, value):
         self.traces.append(value)
+        return True
+
+    def write_probe(self, value):
+        self.probes.append(value)
         return True
 
 
@@ -87,6 +92,8 @@ class UserMonitorAdapterTests(unittest.TestCase):
         self.assertEqual(writer.steps[0]["violation_counts"], {"date_mismatch": 3})
         self.assertTrue(adapter.write_rollout({"rollout_id": 1}))
         self.assertTrue(adapter.write_trace({"rollout_id": 1, "candidates": []}))
+        self.assertTrue(adapter.write_probe({"step": 4, "route": "chain"}))
+        self.assertEqual(writer.probes, [{"step": 4, "route": "chain"}])
 
     def test_unknown_route_fails_closed(self):
         with self.assertRaises(ValueError):

@@ -26,6 +26,16 @@
   "global_prompts_per_full_step": 8,
   "expected_optimizer_steps": 20,
   "save_final_only": true,
+  "fixed_probe": {
+    "enabled": true,
+    "dataset": "/data/GRPO_USER/data/gr_user_v1/probe_v1.jsonl",
+    "sha256": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
+    "seed": 20260820,
+    "every_steps": 10,
+    "action_prompts": 12,
+    "chain_prompts": 8,
+    "G": 4
+  },
   "safety": {
     "grad_explosion_threshold": 10.0,
     "grad_explosion_consecutive_steps": 2,

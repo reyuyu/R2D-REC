@@ -63,6 +63,8 @@ def _action_candidates(step: int) -> list[dict]:
             "pred_sids": [sid],
             "violations": violations,
             "masked_spans": spans,
+            "penalty_kinds": sorted(set(violations) & {"hallucinated_sid", "duplicate_sid"}),
+            "match_spans": [_masked_span(completion, sid, "correct_sid")] if sid in gold else [],
             "masked_token_count": len(spans),
         })
     return candidates
@@ -96,9 +98,51 @@ def _chain_candidates(step: int) -> list[dict]:
             "logic_alignment": (0.64, 0.44, 0.1, 0.0)[index],
             "violations": violations,
             "masked_spans": spans,
+            "penalty_kinds": list(violations),
+            "match_spans": [_masked_span(completion, "<|prod_begin|><s_a_8><s_b_4><s_c_2>", "correct_sid")],
             "masked_token_count": len(spans),
         })
     return candidates
+
+
+def write_probe_demo(writer: MonitorWriter, steps: int = STEPS) -> None:
+    for probe_step, reason in ((0, "baseline"), (steps // 2, "periodic"), (steps, "final")):
+        progress = probe_step / max(1, steps)
+        for route, count in (("action", 12), ("chain", 8)):
+            for index in range(count):
+                candidates = _action_candidates(probe_step) if route == "action" else _chain_candidates(probe_step)
+                if route == "action":
+                    summary = {
+                        "f1_mean": lerp(0.57, 0.66, progress),
+                        "precision_mean": lerp(0.65, 0.73, progress),
+                        "recall_mean": lerp(0.54, 0.63, progress),
+                        "exact_match_rate": lerp(0.08, 0.16, progress),
+                    }
+                    for candidate in candidates:
+                        candidate["reward"] = min(1.0, candidate["reward"] + 0.08 * progress)
+                        candidate["f1"] = candidate["reward"]
+                else:
+                    summary = {
+                        "total_reward_mean": lerp(0.36, 0.43, progress),
+                        "action_alignment_mean": lerp(0.54, 0.62, progress),
+                        "logic_alignment_mean": lerp(0.18, 0.24, progress),
+                    }
+                    for candidate in candidates:
+                        candidate["reward"] = min(1.0, candidate["reward"] + 0.06 * progress)
+                writer.write_probe({
+                    "step": probe_step,
+                    "reason": reason,
+                    "seed": 20260820,
+                    "group_id": f"demo-{route}-probe-{index:02d}",
+                    "route": route,
+                    "bucket": index,
+                    "gold_sids": candidates[0].get("gold_sids", ["<|prod_begin|><s_a_8><s_b_4><s_c_2>"]),
+                    "reward_mean": sum(candidate["reward"] for candidate in candidates) / 4,
+                    "reward_std": 0.2,
+                    "probe_wall_sec": 42.0,
+                    "candidates": candidates,
+                    route: summary,
+                })
 
 
 def generate(output_dir: str, run_id: str = RUN_ID, steps: int = STEPS) -> str:
@@ -123,7 +167,18 @@ def generate(output_dir: str, run_id: str = RUN_ID, steps: int = STEPS) -> str:
         "git_commit": "demo-cpu-only",
         "demo": True,
         "demo_note": "Synthetic UI data only; not a training result.",
+        "fixed_probe": {
+            "enabled": True,
+            "dataset": "/data/GRPO_USER/data/gr_user_v1/probe_v1.jsonl",
+            "seed": 20260820,
+            "every_steps": 20,
+            "action_prompts": 12,
+            "chain_prompts": 8,
+            "G": 4,
+        },
     })
+
+    write_probe_demo(writer, steps)
 
     rollout_id = 0
     for step in range(1, steps + 1):
@@ -228,8 +283,17 @@ def main() -> None:
     parser.add_argument("--output-dir", default="/data/GRPO/runs")
     parser.add_argument("--run-id", default=RUN_ID)
     parser.add_argument("--steps", type=int, default=STEPS)
+    parser.add_argument("--probes-only", action="store_true")
     args = parser.parse_args()
-    print(generate(args.output_dir, args.run_id, args.steps))
+    if args.probes_only:
+        writer = MonitorWriter(True, args.output_dir, args.run_id, rank=0, trace_every=1)
+        probe_path = writer.run_dir / "probes.jsonl"
+        if probe_path.exists():
+            raise FileExistsError(f"demo probes already exist: {probe_path}")
+        write_probe_demo(writer, args.steps)
+        print(probe_path)
+    else:
+        print(generate(args.output_dir, args.run_id, args.steps))
 
 
 if __name__ == "__main__":
