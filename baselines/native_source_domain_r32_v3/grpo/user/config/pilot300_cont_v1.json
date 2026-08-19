@@ -1,0 +1,72 @@
+{
+  "contract_version": "gr_user_pilot300_cont_v1",
+  "experiment": "GR_USER_v1_PILOT300_CONT",
+  "runner": "run_user_pilot300_cont.py",
+  "seed": 20260820,
+  "dataset": "/data/GRPO_USER/data/gr_user_v1/pilot_600.jsonl",
+  "base_model": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/GRPO_USER/runs/GR-USER-PILOT150-20260820-004130/pilot150-final",
+  "action_prompts": 75,
+  "chain_prompts": 75,
+  "G": 4,
+  "temperature": 0.9,
+  "top_p": 0.95,
+  "max_new_tokens": 512,
+  "learning_rate": 0.000001,
+  "epsilon": 0.2,
+  "beta": 0.0,
+  "population_std_correction": 0,
+  "advantage_epsilon": 0.0001,
+  "penalty_strategy": "sqrt",
+  "lambda": 0.5,
+  "forward_batch_size": 1,
+  "gradient_checkpointing": true,
+  "gradient_checkpointing_use_reentrant": false,
+  "runtime": "P0",
+  "length_bucketing": false,
+  "global_prompts_per_full_step": 8,
+  "expected_optimizer_steps": 20,
+  "save_final_only": true,
+  "final_checkpoint_name": "pilot300-final",
+  "resume": {
+    "run_id": "GR-USER-PILOT150-20260820-004130",
+    "checkpoint": "/data/GRPO_USER/runs/GR-USER-PILOT150-20260820-004130/pilot150-final",
+    "source_manifest": "/data/GRPO_USER/runs/GR-USER-PILOT150-20260820-004130/manifest.json",
+    "cumulative_start_prompts": 150,
+    "cumulative_start_step": 20,
+    "cumulative_end_prompts": 300,
+    "cumulative_end_step": 40
+  },
+  "fixed_probe": {
+    "enabled": true,
+    "dataset": "/data/GRPO_USER/data/gr_user_v1/probe_v1.jsonl",
+    "sha256": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
+    "seed": 20260820,
+    "every_steps": 10,
+    "action_prompts": 12,
+    "chain_prompts": 8,
+    "G": 4
+  },
+  "full_epoch_cadence_contract": {
+    "scalar_metrics_every": 1,
+    "rollout_summary_every": 5,
+    "raw_trace_every": 10,
+    "fixed_probe_default_every": 20,
+    "checkpoint_every": 80,
+    "final_checkpoint_always": true
+  },
+  "safety": {
+    "grad_explosion_threshold": 10.0,
+    "grad_explosion_consecutive_steps": 2,
+    "clip_fraction_threshold": 0.8,
+    "clip_fraction_consecutive_steps": 3
+  },
+  "direction_gate": {
+    "action_f1_late_minus_early_min": -0.03,
+    "action_precision_late_minus_early_min": -0.03,
+    "action_wrong_selection_late_minus_early_max": 0.05,
+    "chain_reward_late_minus_early_min": -0.03,
+    "chain_logic_late_minus_early_min": -0.03,
+    "chain_date_mismatch_late_minus_early_max": 0.05
+  }
+}

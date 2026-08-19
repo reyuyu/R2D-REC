@@ -203,6 +203,7 @@ def aggregate_probe_steps(events: list[dict]) -> list[dict]:
             "action_f1": statistics.fmean(row["action"]["f1_mean"] for row in action),
             "action_precision": statistics.fmean(row["action"]["precision_mean"] for row in action),
             "action_recall": statistics.fmean(row["action"]["recall_mean"] for row in action),
+            "action_exact": statistics.fmean(row["action"]["exact_match_rate"] for row in action),
             "chain_reward": statistics.fmean(row["chain"]["total_reward_mean"] for row in chain),
             "chain_action_alignment": statistics.fmean(row["chain"]["action_alignment_mean"] for row in chain),
             "chain_logic_alignment": statistics.fmean(row["chain"]["logic_alignment_mean"] for row in chain),
@@ -273,4 +274,3 @@ def evaluate_user_fixed_probe(
         torch.set_rng_state(cpu_state)
         torch.cuda.set_rng_state(cuda_state, device)
         model.train(was_training)
-

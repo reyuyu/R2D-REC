@@ -102,6 +102,7 @@ class UserFixedProbeTests(unittest.TestCase):
         row = aggregate_probe_steps(events)[0]
         self.assertEqual(row["step"], 10)
         self.assertEqual(row["action_f1"], 0.625)
+        self.assertEqual(row["action_exact"], 0.0)
         self.assertEqual(row["chain_action_alignment"], 0.75)
         self.assertEqual(row["chain_logic_alignment"], 0.25)
 
