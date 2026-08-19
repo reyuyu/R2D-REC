@@ -122,3 +122,16 @@ high-reward violations.
 Phases 1-3A are CPU-only even when GPUs are idle. Phase 3B may use only devices
 confirmed to be unoccupied and must not preempt another process. It generates
 audit candidates but does not train or mutate model parameters.
+
+## Passive monitor adapter
+
+`scripts/user_monitor_adapter.py` converts already-computed User GRPO trainer
+statistics into the shared append-only monitor schema. It performs no reward
+recomputation, model call, distributed collective, or training control. A User
+run manifest must use `run_kind: user_grpo`; legacy Recommendation manifests
+remain unchanged and default to `recommendation_grpo` in the server.
+
+The adapter accepts common policy diagnostics plus route-specific Action,
+Chain, token-advantage, violation-count, per-kind penalty-mass, rollout, and
+sampled-trace fields. Missing optional diagnostics are omitted. This keeps the
+monitor fail-open and prevents monitoring from changing optimization behavior.

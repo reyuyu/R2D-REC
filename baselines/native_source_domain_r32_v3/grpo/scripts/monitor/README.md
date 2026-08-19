@@ -46,6 +46,24 @@ dsr_traces.jsonl            # sampled DSR trace details
 
 Legacy runs do not need these files and require no migration.
 
+## Recommendation and User run kinds
+
+The same monitor serves both GRPO projects. New manifests identify their
+contract explicitly:
+
+```json
+{"run_kind": "recommendation_grpo"}
+{"run_kind": "user_grpo"}
+```
+
+An old or missing `run_kind` is always treated as `recommendation_grpo`, so
+existing Recommendation and DSR runs keep their original pages and API
+behavior without rewriting manifests. `/api/runs` returns normalized run kinds
+and accepts an optional `run_kind` filter. User runs add five dashboard views:
+overall, Action, Chain, Token Advantage, and Rollout samples. Optional or
+partially written User fields render as missing data rather than breaking the
+three-second refresh loop.
+
 ## CPU-only demo
 
 From `/data/GRPO/scripts`:
@@ -61,6 +79,11 @@ python monitor/generate_demo_run.py \
   --run-id demo-dsr \
   --mode dsr
 
+python monitor/generate_user_demo_run.py \
+  --output-dir /data/GRPO/runs \
+  --run-id demo-user-grpo \
+  --steps 40
+
 python monitor/server.py \
   --runs-dir /data/GRPO/runs \
   --outputs-dir /data/GRPO/outputs/formal \
@@ -68,6 +91,9 @@ python monitor/server.py \
 ```
 
 Open `http://127.0.0.1:8765`.
+
+The User demo is synthetic CPU-only UI data and is labeled `DEMO` throughout
+the interface. It must not be interpreted as a training result.
 
 The Chinese dashboard lists experiments under `--runs-dir`; every data request
 is scoped to the selected `run_id`, so metrics and rollout traces cannot mix

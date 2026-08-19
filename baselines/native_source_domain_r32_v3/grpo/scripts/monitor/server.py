@@ -4,14 +4,23 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Iterable
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+RECOMMENDATION_RUN_KIND = "recommendation_grpo"
+USER_RUN_KIND = "user_grpo"
+
+
+def normalized_run_kind(manifest: dict[str, Any]) -> str:
+    """Return the supported run kind, preserving legacy Recommendation runs."""
+    return USER_RUN_KIND if manifest.get("run_kind") == USER_RUN_KIND else RECOMMENDATION_RUN_KIND
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -70,6 +79,7 @@ def create_app(
     app.state.run_dir = single_run
     app.state.runs_dir = root
     app.state.outputs_dir = outputs_root
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
     def available_runs() -> list[dict[str, Any]]:
         paths = [single_run] if single_run is not None else (
@@ -95,8 +105,10 @@ def create_app(
                 updated_at = 0.0
             runs.append({
                 "run_id": path.name,
+                "run_kind": normalized_run_kind(manifest),
+                "demo": bool(manifest.get("demo", False)),
                 "start_time": manifest.get("start_time"),
-                "max_steps": manifest.get("max_steps"),
+                "max_steps": manifest.get("effective_max_steps", manifest.get("max_steps")),
                 "latest_step": latest.get("step", 0),
                 "latest_route": latest.get("route"),
                 "updated_at": updated_at,
@@ -115,34 +127,63 @@ def create_app(
             raise HTTPException(status_code=404, detail="unknown run_id")
         return candidate
 
+    def checkpoint_run_dirs(selected: Path) -> list[Path]:
+        """Find current and legacy output layouts without leaving outputs_root."""
+        if outputs_root is None or not outputs_root.is_dir():
+            return []
+        candidates = [outputs_root / selected.name]
+        try:
+            candidates.extend(path / selected.name for path in outputs_root.iterdir() if path.is_dir())
+        except OSError:
+            pass
+        resolved = []
+        for candidate in candidates:
+            try:
+                path = candidate.resolve()
+                path.relative_to(outputs_root)
+            except (OSError, ValueError):
+                continue
+            if path.is_dir() and path not in resolved:
+                resolved.append(path)
+        return resolved
+
     @app.get("/")
     def dashboard():
         return FileResponse(STATIC_DIR / "index.html")
 
     @app.get("/api/runs")
-    def runs():
-        return available_runs()
+    def runs(run_kind: str | None = None):
+        items = available_runs()
+        if run_kind is None:
+            return items
+        if run_kind not in {RECOMMENDATION_RUN_KIND, USER_RUN_KIND}:
+            raise HTTPException(status_code=400, detail="unknown run_kind")
+        return [item for item in items if item["run_kind"] == run_kind]
 
     @app.get("/api/checkpoints")
     def checkpoints(run_id: str | None = None):
         selected = selected_run(run_id)
-        if outputs_root is None:
-            return []
-        run_output = (outputs_root / selected.name).resolve()
-        if run_output.parent != outputs_root or not run_output.is_dir():
-            return []
-        result = []
-        for path in run_output.iterdir():
-            match = re.fullmatch(r"checkpoint-(\d+)", path.name)
-            if not path.is_dir() or match is None:
+        result = {}
+        for run_output in checkpoint_run_dirs(selected):
+            try:
+                children = run_output.iterdir()
+            except OSError:
                 continue
-            files = {}
-            for name in ("adapter_config.json", "adapter_model.safetensors"):
-                candidate = path / name
-                if candidate.is_file():
-                    files[name] = candidate.stat().st_size
-            result.append({"checkpoint": path.name, "step": int(match.group(1)), "files": files})
-        return sorted(result, key=lambda item: item["step"])
+            for path in children:
+                match = re.fullmatch(r"checkpoint-(\d+)", path.name)
+                if not path.is_dir() or match is None:
+                    continue
+                files = {}
+                for name in ("adapter_config.json", "adapter_model.safetensors"):
+                    candidate = path / name
+                    if candidate.is_file():
+                        files[name] = candidate.stat().st_size
+                result.setdefault(path.name, {
+                    "checkpoint": path.name,
+                    "step": int(match.group(1)),
+                    "files": files,
+                })
+        return sorted(result.values(), key=lambda item: item["step"])
 
     @app.get("/api/checkpoints/{checkpoint}/download")
     def download_checkpoint_file(checkpoint: str, file: str, run_id: str | None = None):
@@ -150,18 +191,50 @@ def create_app(
         allowed = {"adapter_config.json", "adapter_model.safetensors"}
         if outputs_root is None or file not in allowed or re.fullmatch(r"checkpoint-\d+", checkpoint) is None:
             raise HTTPException(status_code=404, detail="checkpoint file not found")
-        checkpoint_dir = (outputs_root / selected.name / checkpoint).resolve()
-        expected_parent = (outputs_root / selected.name).resolve()
-        candidate = (checkpoint_dir / file).resolve()
-        if checkpoint_dir.parent != expected_parent or candidate.parent != checkpoint_dir or not candidate.is_file():
-            raise HTTPException(status_code=404, detail="checkpoint file not found")
-        return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
+        for run_output in checkpoint_run_dirs(selected):
+            checkpoint_dir = (run_output / checkpoint).resolve()
+            candidate = (checkpoint_dir / file).resolve()
+            if checkpoint_dir.parent == run_output and candidate.parent == checkpoint_dir and candidate.is_file():
+                return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
+        raise HTTPException(status_code=404, detail="checkpoint file not found")
+
+    @app.delete("/api/checkpoints/{checkpoint}")
+    def delete_checkpoint(checkpoint: str, run_id: str | None = None, confirm: str | None = None):
+        selected = selected_run(run_id)
+        if outputs_root is None or re.fullmatch(r"checkpoint-\d+", checkpoint) is None:
+            raise HTTPException(status_code=404, detail="checkpoint not found")
+        if confirm != checkpoint:
+            raise HTTPException(status_code=400, detail="checkpoint confirmation does not match")
+        targets = []
+        for run_output in checkpoint_run_dirs(selected):
+            candidate = (run_output / checkpoint).resolve()
+            if candidate.parent == run_output and candidate.is_dir():
+                targets.append(candidate)
+        if not targets:
+            raise HTTPException(status_code=404, detail="checkpoint not found")
+        released_bytes = 0
+        for target in targets:
+            try:
+                released_bytes += sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
+                shutil.rmtree(target)
+            except OSError as exc:
+                raise HTTPException(status_code=500, detail=f"checkpoint deletion failed: {exc}") from exc
+        return {
+            "run_id": selected.name,
+            "checkpoint": checkpoint,
+            "deleted_directories": len(targets),
+            "released_bytes": released_bytes,
+        }
 
     @app.get("/api/manifest")
     def manifest(run_id: str | None = None):
         selected = selected_run(run_id)
         try:
-            return json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            data["run_kind"] = normalized_run_kind(data)
+            if "effective_max_steps" in data:
+                data["max_steps"] = data["effective_max_steps"]
+            return data
         except (OSError, json.JSONDecodeError):
             return {}
 
@@ -180,15 +253,14 @@ def create_app(
             or any((selected / name).is_file() for name in dsr_files)
             or any(isinstance(row.get("dsr"), dict) for row in probe_rows)
         )
-        checkpoint_available = False
-        if outputs_root is not None:
-            output = (outputs_root / selected.name).resolve()
-            if output.parent == outputs_root and output.is_dir():
-                checkpoint_available = any(
-                    path.is_dir() and re.fullmatch(r"checkpoint-\d+", path.name)
-                    for path in output.iterdir()
-                )
+        checkpoint_available = any(
+            path.is_dir() and re.fullmatch(r"checkpoint-\d+", path.name)
+            for output in checkpoint_run_dirs(selected)
+            for path in output.iterdir()
+        )
         return {
+            "run_kind": normalized_run_kind(manifest_data),
+            "user_grpo": normalized_run_kind(manifest_data) == USER_RUN_KIND,
             "dsr": dsr,
             "probes": bool(
                 (isinstance(fixed_probe, dict) and fixed_probe.get("enabled"))
@@ -311,6 +383,23 @@ def create_app(
         rollout_id: int | None = None,
     ):
         return dsr_rows("dsr_traces.jsonl", run_id, from_step, to_step, route, rollout_id)
+
+    @app.get("/api/dsr/gate")
+    def dsr_gate(run_id: str | None = None):
+        selected = selected_run(run_id)
+        metrics = read_jsonl(selected / "metrics.jsonl")
+        current_step = int(metrics[-1].get("step", 0)) if metrics else 0
+        try:
+            report = json.loads((selected / "gate200_report.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            report = {
+                "gate_step": 200,
+                "decision": "PENDING",
+                "reasons": [],
+                "warnings": [],
+                "metrics": {},
+            }
+        return {**report, "current_step": current_step}
 
     @app.get("/api/health")
     def health():

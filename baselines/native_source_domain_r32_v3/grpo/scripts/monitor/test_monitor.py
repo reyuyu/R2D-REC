@@ -10,6 +10,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from monitor.generate_demo_run import generate
+from monitor.generate_user_demo_run import generate as generate_user
 from monitor.server import create_app, read_jsonl
 from monitor.writer import MonitorWriter, monitor_from_env
 
@@ -103,6 +104,18 @@ with tempfile.TemporaryDirectory() as temporary:
     assert download.status_code == 200 and download.json() == {"r": 32}
     assert multi_client.get("/api/checkpoints/checkpoint-17/download?run_id=isolated-run&file=optimizer.pt").status_code == 404
     assert multi_client.get("/api/checkpoints/../download?run_id=isolated-run&file=adapter_config.json").status_code == 404
+    rejected_delete = multi_client.delete("/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=wrong")
+    assert rejected_delete.status_code == 400 and checkpoint.is_dir()
+    deleted = multi_client.delete(
+        "/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=checkpoint-17"
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["released_bytes"] >= len(b"safe-adapter")
+    assert not checkpoint.exists()
+    assert multi_client.get("/api/checkpoints?run_id=isolated-run").json() == []
+    assert multi_client.delete(
+        "/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=checkpoint-17"
+    ).status_code == 404
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 
     demo_dir = Path(generate(str(root), "demo"))
@@ -127,6 +140,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in (
         "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失",
         "Raw N", "Grounding Coverage"
+    ))
+    assert all(label in html for label in (
+        "实验名称", "选择 D:\\model\\GRPO", "下载两个文件", "刷新列表", "删除检查点"
     ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
@@ -155,5 +171,41 @@ with tempfile.TemporaryDirectory() as temporary:
     assert dsr_client.get("/api/dsr/metrics?run_id=..").status_code == 400
     assert dsr_client.get("/api/dsr/metrics?run_id=missing").status_code == 404
     print("[PASS] DSR demo, optional APIs, run isolation, filters, and incomplete-tail tolerance")
+
+    user_demo_dir = Path(generate_user(str(root), "demo-user-grpo", steps=40))
+    user_manifest = json.loads((user_demo_dir / "manifest.json").read_text(encoding="utf-8"))
+    user_metrics = parse_every_line(user_demo_dir / "metrics.jsonl")
+    user_rollouts = parse_every_line(user_demo_dir / "rollouts.jsonl")
+    user_traces = parse_every_line(user_demo_dir / "traces/traces.jsonl")
+    assert user_manifest["run_kind"] == "user_grpo" and user_manifest["demo"] is True
+    assert user_manifest["G"] == 4 and user_manifest["token_penalty"]["lambda"] == 0.5
+    assert len(user_metrics) == 40 and {row["route"] for row in user_metrics} == {"action", "chain"}
+    assert len(user_rollouts) == 8 and {row["route"] for row in user_rollouts} == {"action", "chain"}
+    assert len(user_traces) == 8 and all(len(row["candidates"]) == 4 for row in user_traces)
+    assert any(candidate.get("masked_spans") for row in user_traces for candidate in row["candidates"])
+
+    with (user_demo_dir / "metrics.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write('{"type":"step","step":41')
+    user_client = TestClient(create_app(runs_dir=root))
+    all_runs = user_client.get("/api/runs").json()
+    by_id = {run["run_id"]: run for run in all_runs}
+    assert by_id["demo-user-grpo"]["run_kind"] == "user_grpo"
+    assert by_id["demo-user-grpo"]["demo"] is True
+    assert by_id["demo"]["run_kind"] == "recommendation_grpo"
+    assert {run["run_id"] for run in user_client.get("/api/runs?run_kind=user_grpo").json()} == {"demo-user-grpo"}
+    assert user_client.get("/api/runs?run_kind=unknown").status_code == 400
+    assert user_client.get("/api/manifest?run_id=demo").json()["run_kind"] == "recommendation_grpo"
+    assert user_client.get("/api/capabilities?run_id=demo-user-grpo").json()["user_grpo"] is True
+    assert user_client.get("/api/capabilities?run_id=demo").json()["user_grpo"] is False
+    assert len(user_client.get("/api/metrics?run_id=demo-user-grpo").json()) == 40
+    assert user_client.get("/static/user_dashboard.js").status_code == 200
+    assert user_client.get("/static/user_dashboard.css").status_code == 200
+    user_js = user_client.get("/static/user_dashboard.js").text
+    assert all(label in user_js for label in (
+        "懂推荐 GRPO", "懂用户 GRPO", "Action Set-F1", "Chain Alignment",
+        "Token Advantage", "Rollout 样本", "wrong_selection_candidate_rate",
+        "stageRunKind", "切换实验中",
+    ))
+    print("[PASS] User run-kind routing, 40-step demo, optional fields, malformed tail, and five dashboard views")
 
 print("ALL MONITOR CPU TESTS PASSED")
