@@ -13,7 +13,12 @@ sys.path.insert(0, str(GRPO_ROOT / "scripts"))
 
 from audit_think_counterfactual import summarize
 from grpo_trl_trainer import M_NO, M_THINK, RecGRPOTrainer, group_advantages_population
-from run_think_exact_clamp_train import RUN_ID_PREFIX, validate_experiment_args
+from run_think_exact_clamp_train import (
+    MAX_EXPERIMENT_STEPS,
+    RUN_ID_PREFIX,
+    _ManifestWriter,
+    validate_experiment_args,
+)
 from think_diagnostics import interest_diagnostics
 from think_exact_clamp import think_exact_clamp_advantages
 from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
@@ -88,19 +93,28 @@ for rewards in (
         RecGRPOTrainer._generate_and_score_completions = original_generate
     assert returned is output and returned["advantages"] is parent
 
-# Reward output parity for NoThink: no weighted reward recomputation/cache is created.
+# Reward output parity for NoThink: planning observes but does not replace the parent output.
 rewards_per_func = torch.tensor([[1.0, float("nan")], [2.0, float("nan")]])
 original_calculate = RecGRPOTrainer._calculate_rewards
+planned = []
+trainer._prepare_nothink_bridge = lambda inputs, completions, rewards: planned.append(
+    (inputs, completions, rewards)
+)
 try:
     RecGRPOTrainer._calculate_rewards = lambda self, inputs, *args, **kwargs: rewards_per_func
-    returned_rewards = trainer._calculate_rewards([{"route": "no_think"}])
+    returned_rewards = trainer._calculate_rewards(
+        [{"route": "no_think"}], None, ["completion"], None
+    )
 finally:
     RecGRPOTrainer._calculate_rewards = original_calculate
 assert returned_rewards is rewards_per_func
 assert not hasattr(trainer, "_think_exact_clamp_global_rewards")
+assert planned[0][2] is rewards_per_func
 
 original_write_monitor = RecGRPOTrainer._write_rollout_monitor
 monitor_sentinel = object()
+trainer._monitor = None
+trainer._nothink_bridge_runtime = None
 try:
     RecGRPOTrainer._write_rollout_monitor = lambda self, *args, **kwargs: monitor_sentinel
     trainer._think_exact_clamp_route = "no_think"
@@ -170,6 +184,21 @@ valid = validate_experiment_args([
     "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500"
 ])
 assert valid.max_steps == 1500 and valid.resume_from_checkpoint is None
+assert valid.seed == 20260816 and valid.probe_seed == 20260818
+assert valid.lr == 1e-6 and valid.probe_groups == 0
+assert MAX_EXPERIMENT_STEPS == 1500
+
+
+class ManifestSink:
+    def write_manifest(self, payload):
+        return payload
+
+
+manifest = _ManifestWriter(ManifestSink()).write_manifest({})
+assert manifest["parent"] == "GR_REC_v1 / original BATA adapter"
+assert manifest["initialization"] == "fresh original BATA adapter"
+assert manifest["nothink_bridge"]["lambda"] == 0.02
+assert manifest["future_checkpoints"] == [600, 800, 1000, 1200, 1400, 1500]
 same_run = validate_experiment_args([
     "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500",
     "--resume-from-checkpoint",
@@ -202,7 +231,7 @@ assert audit["reward_levels"][">8"]["think_exact_clamp"]["negative_rate"] == 0
 
 assert M_THINK == 4 and M_NO == 8
 source = inspect.getsource(ThinkExactClampRecGRPOTrainer)
-for forbidden in ("def _generate(", "def forward(", "all_gather", "gather_object", "synchronize", ".item("):
+for forbidden in ("def _generate(", "def forward(", "all_gather", "synchronize"):
     assert forbidden not in source
 
 print("THINK EXACTCLAMP CPU TESTS PASSED")

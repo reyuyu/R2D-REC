@@ -1,4 +1,4 @@
-"""Formal GR_REC runner with a Think-only ExactClamp advantage override."""
+"""Formal runner for Think ExactClamp plus the NoThink teacher bridge."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ except ImportError:  # Direct script entry point.
     from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
 
 
-RUN_ID_PREFIX = "GR-REC-THINK-EXACT-CLAMP-V1-"
+RUN_ID_PREFIX = "GR-REC-CLAMP-BRIDGE-V1-"
 MAX_EXPERIMENT_STEPS = 1500
 
 
@@ -36,6 +36,16 @@ class _ManifestWriter:
             "think_formula": "clamp_negative_if_R_ge_8((R - group_mean) / 8.0)",
             "nothink": "GR_REC_v1 population-std rule (unchanged)",
         }
+        payload["nothink_bridge"] = {
+            "name": "minimal_hierarchical_teacher_bridge_v1",
+            "lambda": 0.02,
+            "branches": ["dead_zero_a_bridge", "a_collapse_ab_bridge"],
+            "primary_grpo": "GR_REC_v1 unchanged",
+            "teacher_forward": "one two-row forward per active optimizer step; no generation",
+        }
+        payload["formal_max_steps"] = MAX_EXPERIMENT_STEPS
+        payload["future_checkpoints"] = [600, 800, 1000, 1200, 1400, 1500]
+        payload["gpu_gradient_audit"] = "required before training"
         payload["initialization"] = "fresh original BATA adapter"
         payload["resume_scope"] = "same run-id only"
         return self._writer.write_manifest(payload)

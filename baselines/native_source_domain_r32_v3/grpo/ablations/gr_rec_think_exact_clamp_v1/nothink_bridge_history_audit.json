@@ -1,0 +1,201 @@
+{
+  "contract": "GR_REC_ThinkExactClamp_Ablation_v1 Phase 2 bridge gate replay",
+  "cpu_only": true,
+  "overall": {
+    "n": 101,
+    "counts": {
+      "dead_zero_a_bridge": 33,
+      "off": 68
+    },
+    "rates": {
+      "dead_zero_a_bridge": 0.32673267326732675,
+      "off": 0.6732673267326733
+    }
+  },
+  "by_source": {
+    "dsr_simple_full_probe": {
+      "n": 52,
+      "counts": {
+        "dead_zero_a_bridge": 21,
+        "off": 31
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.40384615384615385,
+        "off": 0.5961538461538461
+      }
+    },
+    "dsr_simple_full_trace": {
+      "n": 38,
+      "counts": {
+        "dead_zero_a_bridge": 9,
+        "off": 29
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.23684210526315788,
+        "off": 0.7631578947368421
+      }
+    },
+    "gr_rec_dsr_pilot_probe": {
+      "n": 8,
+      "counts": {
+        "dead_zero_a_bridge": 1,
+        "off": 7
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.125,
+        "off": 0.875
+      }
+    },
+    "gr_rec_dsr_pilot_trace": {
+      "n": 3,
+      "counts": {
+        "dead_zero_a_bridge": 2,
+        "off": 1
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.6666666666666666,
+        "off": 0.3333333333333333
+      }
+    }
+  },
+  "by_domain": {
+    "ad": {
+      "n": 33,
+      "counts": {
+        "dead_zero_a_bridge": 18,
+        "off": 15
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.5454545454545454,
+        "off": 0.45454545454545453
+      }
+    },
+    "living": {
+      "n": 19,
+      "counts": {
+        "dead_zero_a_bridge": 6,
+        "off": 13
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.3157894736842105,
+        "off": 0.6842105263157895
+      }
+    },
+    "prod": {
+      "n": 22,
+      "counts": {
+        "dead_zero_a_bridge": 9,
+        "off": 13
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.4090909090909091,
+        "off": 0.5909090909090909
+      }
+    },
+    "video": {
+      "n": 27,
+      "counts": {
+        "off": 27
+      },
+      "rates": {
+        "off": 1.0
+      }
+    }
+  },
+  "by_gold_count": {
+    "1-2": {
+      "n": 65,
+      "counts": {
+        "dead_zero_a_bridge": 31,
+        "off": 34
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.47692307692307695,
+        "off": 0.5230769230769231
+      }
+    },
+    "3-4": {
+      "n": 9,
+      "counts": {
+        "dead_zero_a_bridge": 2,
+        "off": 7
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.2222222222222222,
+        "off": 0.7777777777777778
+      }
+    },
+    "5+": {
+      "n": 27,
+      "counts": {
+        "off": 27
+      },
+      "rates": {
+        "off": 1.0
+      }
+    }
+  },
+  "by_unique_gold_a": {
+    "1": {
+      "n": 5,
+      "counts": {
+        "dead_zero_a_bridge": 3,
+        "off": 2
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.6,
+        "off": 0.4
+      }
+    },
+    "2": {
+      "n": 64,
+      "counts": {
+        "dead_zero_a_bridge": 30,
+        "off": 34
+      },
+      "rates": {
+        "dead_zero_a_bridge": 0.46875,
+        "off": 0.53125
+      }
+    },
+    "3+": {
+      "n": 32,
+      "counts": {
+        "off": 32
+      },
+      "rates": {
+        "off": 1.0
+      }
+    }
+  },
+  "exposure": {
+    "dead_zero_a_unique_gold_a_targets": {
+      "n": 33,
+      "mean": 1.9090909090909092,
+      "median": 2,
+      "p90": 2,
+      "max": 2
+    },
+    "a_collapse_missing_a_targets": {
+      "n": 0,
+      "mean": null,
+      "median": null,
+      "p90": null,
+      "max": null
+    },
+    "a_collapse_current_b_targets": {
+      "n": 0,
+      "mean": null,
+      "median": null,
+      "p90": null,
+      "max": null
+    }
+  },
+  "unavailable": [
+    {
+      "source": "dsr_simple_full_simple_forensic",
+      "reason": "UNAVAILABLE: file contains Think candidates only; no NoThink predicted SID groups"
+    }
+  ],
+  "weighting_note": "Each observation is one G8 group; target counts use mean CE and do not scale group loss."
+}
