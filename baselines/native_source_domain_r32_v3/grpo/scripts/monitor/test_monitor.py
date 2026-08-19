@@ -103,6 +103,18 @@ with tempfile.TemporaryDirectory() as temporary:
     assert download.status_code == 200 and download.json() == {"r": 32}
     assert multi_client.get("/api/checkpoints/checkpoint-17/download?run_id=isolated-run&file=optimizer.pt").status_code == 404
     assert multi_client.get("/api/checkpoints/../download?run_id=isolated-run&file=adapter_config.json").status_code == 404
+    rejected_delete = multi_client.delete("/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=wrong")
+    assert rejected_delete.status_code == 400 and checkpoint.is_dir()
+    deleted = multi_client.delete(
+        "/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=checkpoint-17"
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["released_bytes"] >= len(b"safe-adapter")
+    assert not checkpoint.exists()
+    assert multi_client.get("/api/checkpoints?run_id=isolated-run").json() == []
+    assert multi_client.delete(
+        "/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=checkpoint-17"
+    ).status_code == 404
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 
     demo_dir = Path(generate(str(root), "demo"))
@@ -127,6 +139,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in (
         "DSR 诊断", "信号救援", "错误 A 轮换", "思考辅助原始损失",
         "Raw N", "Grounding Coverage"
+    ))
+    assert all(label in html for label in (
+        "实验名称", "选择 D:\\model\\GRPO", "下载两个文件", "刷新列表", "删除检查点"
     ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")

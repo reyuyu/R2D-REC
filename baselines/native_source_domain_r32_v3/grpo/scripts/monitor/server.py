@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -180,6 +181,34 @@ def create_app(
             if checkpoint_dir.parent == run_output and candidate.parent == checkpoint_dir and candidate.is_file():
                 return FileResponse(candidate, filename=f"{selected.name}-{checkpoint}-{file}")
         raise HTTPException(status_code=404, detail="checkpoint file not found")
+
+    @app.delete("/api/checkpoints/{checkpoint}")
+    def delete_checkpoint(checkpoint: str, run_id: str | None = None, confirm: str | None = None):
+        selected = selected_run(run_id)
+        if outputs_root is None or re.fullmatch(r"checkpoint-\d+", checkpoint) is None:
+            raise HTTPException(status_code=404, detail="checkpoint not found")
+        if confirm != checkpoint:
+            raise HTTPException(status_code=400, detail="checkpoint confirmation does not match")
+        targets = []
+        for run_output in checkpoint_run_dirs(selected):
+            candidate = (run_output / checkpoint).resolve()
+            if candidate.parent == run_output and candidate.is_dir():
+                targets.append(candidate)
+        if not targets:
+            raise HTTPException(status_code=404, detail="checkpoint not found")
+        released_bytes = 0
+        for target in targets:
+            try:
+                released_bytes += sum(path.stat().st_size for path in target.rglob("*") if path.is_file())
+                shutil.rmtree(target)
+            except OSError as exc:
+                raise HTTPException(status_code=500, detail=f"checkpoint deletion failed: {exc}") from exc
+        return {
+            "run_id": selected.name,
+            "checkpoint": checkpoint,
+            "deleted_directories": len(targets),
+            "released_bytes": released_bytes,
+        }
 
     @app.get("/api/manifest")
     def manifest(run_id: str | None = None):
