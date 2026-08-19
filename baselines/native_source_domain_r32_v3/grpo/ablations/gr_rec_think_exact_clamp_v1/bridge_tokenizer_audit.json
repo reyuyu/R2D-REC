@@ -18,10 +18,15 @@
       "count": 8192,
       "minimum": 0,
       "maximum": 8191
+    },
+    "c": {
+      "count": 8192,
+      "minimum": 0,
+      "maximum": 8191
     }
   },
   "failure_count": 0,
   "failures": [],
   "status": "PASS",
-  "runtime_contract": "Every concrete domain/A/B teacher token is revalidated before use."
+  "runtime_contract": "Every concrete domain/A/B/C token is revalidated before use."
 }

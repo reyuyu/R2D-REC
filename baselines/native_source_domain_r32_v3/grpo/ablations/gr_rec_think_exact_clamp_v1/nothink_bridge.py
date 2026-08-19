@@ -1,4 +1,4 @@
-"""Pure planner and loss primitives for the NoThink teacher bridge."""
+"""Dead-zero Gold-A teacher bridge primitives for NoThink."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import torch
 
 BRIDGE_OFF = "off"
 BRIDGE_DEAD_A = "dead_zero_a_bridge"
-BRIDGE_COLLAPSE_AB = "a_collapse_ab_bridge"
 BRIDGE_LAMBDA = 0.02
 
 
@@ -18,9 +17,6 @@ BRIDGE_LAMBDA = 0.02
 class BridgePlan:
     branch: str = BRIDGE_OFF
     gold_a_targets: tuple[int, ...] = ()
-    current_a: int | None = None
-    missing_a_targets: tuple[int, ...] = ()
-    current_b_targets: tuple[int, ...] = ()
 
     @property
     def active(self) -> bool:
@@ -37,50 +33,18 @@ def _sid_tuple(value):
         return None
 
 
-def plan_nothink_bridge(
-    rewards: Sequence[float],
-    predicted_sids: Sequence[Sequence | None],
-    gold_sids: Iterable[Sequence],
-    target_domain: str,
+def plan_dead_zero_bridge(
+    rewards: Sequence[float], gold_sids: Iterable[Sequence], target_domain: str,
 ) -> BridgePlan:
-    """Choose one mutually exclusive bridge branch for one NoThink G8 group."""
+    """Activate only for exact G8 all-zero reward and teach unique Gold A."""
     reward_values = tuple(float(value) for value in rewards)
-    if len(reward_values) != 8 or len(predicted_sids) != 8:
-        raise ValueError("NoThink bridge planner requires exactly one G8 group")
-
-    gold = tuple(sorted({sid for value in gold_sids if (sid := _sid_tuple(value)) is not None}))
-    gold_a = tuple(sorted({a for domain, a, _b, _c in gold if domain == target_domain}))
-    if reward_values == (0.0,) * 8:
-        return BridgePlan(branch=BRIDGE_DEAD_A, gold_a_targets=gold_a) if gold_a else BridgePlan()
-
-    predicted = tuple(_sid_tuple(value) for value in predicted_sids)
-    if any(sid is None for sid in predicted):
+    if len(reward_values) != 8:
+        raise ValueError("dead-zero bridge planner requires exactly one G8")
+    if reward_values != (0.0,) * 8:
         return BridgePlan()
-    if any(sid[0] != target_domain for sid in predicted):
-        return BridgePlan()
-    predicted_a = {sid[1] for sid in predicted}
-    if len(gold_a) < 3 or len(predicted_a) != 1:
-        return BridgePlan()
-    current_a = next(iter(predicted_a))
-    if current_a not in gold_a:
-        return BridgePlan()
-    if max(reward_values) > 0.5 or 0.5 not in reward_values:
-        return BridgePlan()
-
-    missing_a = tuple(a for a in gold_a if a != current_a)
-    current_b = tuple(sorted({
-        b for domain, a, b, _c in gold
-        if domain == target_domain and a == current_a
-    }))
-    if not missing_a or not current_b:
-        return BridgePlan()
-    return BridgePlan(
-        branch=BRIDGE_COLLAPSE_AB,
-        gold_a_targets=gold_a,
-        current_a=current_a,
-        missing_a_targets=missing_a,
-        current_b_targets=current_b,
-    )
+    gold = {sid for value in gold_sids if (sid := _sid_tuple(value)) is not None}
+    targets = tuple(sorted({a for domain, a, _b, _c in gold if domain == target_domain}))
+    return BridgePlan(BRIDGE_DEAD_A, targets) if targets else BridgePlan()
 
 
 def uniform_multi_positive_ce(logits: torch.Tensor, target_ids: Sequence[int]) -> torch.Tensor:
@@ -95,7 +59,6 @@ def uniform_multi_positive_ce(logits: torch.Tensor, target_ids: Sequence[int]) -
 
 
 def ddp_group_weight(world_size: int, global_group_count: int, ranks_for_group: int) -> float:
-    """Per-rank factor whose DDP mean equals a mean over global groups."""
     if min(world_size, global_group_count, ranks_for_group) <= 0:
         raise ValueError("DDP group-weight dimensions must be positive")
     return world_size / (global_group_count * ranks_for_group)
@@ -104,7 +67,7 @@ def ddp_group_weight(world_size: int, global_group_count: int, ranks_for_group: 
 def bridge_token_text(kind: str, value: int | str) -> str:
     if kind == "domain":
         return f"<|{value}_begin|>"
-    if kind in {"a", "b"}:
+    if kind in {"a", "b", "c"}:
         return f"<s_{kind}_{int(value)}>"
     raise ValueError(f"unknown bridge token kind: {kind}")
 

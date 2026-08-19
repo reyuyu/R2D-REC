@@ -63,12 +63,20 @@ for bad, group_size, error in (
     else:
         raise AssertionError("invalid Think formula input must be rejected")
 
-# NoThink parity: the child returns the exact same parent output object/tensor.
+# NoThink keeps the parent scalar advantage for debug and adds token credit separately.
 trainer = object.__new__(ThinkExactClampRecGRPOTrainer)
 trainer._think_exact_clamp_route = "no_think"
 nothink_rewards = torch.tensor([0, 0, 0, 0.5, 0, 0, 0, 0], dtype=torch.float32)
 baseline_advantages = group_advantages_population(nothink_rewards, M_NO)
-parent_output = {"advantages": baseline_advantages, "sentinel": object()}
+trainer._nothink_bridge_runtime = {
+    "token_credits": ((0.0, 0.0, 0.0),) * 8,
+    "token_positions": (None,) * 8,
+}
+parent_output = {
+    "advantages": baseline_advantages,
+    "completion_ids": torch.ones((8, 4), dtype=torch.long),
+    "sentinel": object(),
+}
 original_generate = RecGRPOTrainer._generate_and_score_completions
 try:
     RecGRPOTrainer._generate_and_score_completions = lambda self, inputs: parent_output
@@ -78,6 +86,7 @@ finally:
 assert child_output is parent_output
 assert child_output["advantages"] is baseline_advantages
 assert torch.equal(child_output["advantages"], group_advantages_population(nothink_rewards, M_NO))
+assert torch.equal(child_output["token_advantages"], torch.zeros((8, 4)))
 
 for rewards in (
     torch.tensor([-1, -0.25, 0, 0.5, 2, 8, 0, 0], dtype=torch.float64),
@@ -85,7 +94,11 @@ for rewards in (
 ):
     parent = group_advantages_population(rewards, M_NO)
     trainer._think_exact_clamp_route = "no_think"
-    output = {"advantages": parent}
+    trainer._nothink_bridge_runtime = {
+        "token_credits": ((0.0, 0.0, 0.0),) * 8,
+        "token_positions": (None,) * 8,
+    }
+    output = {"advantages": parent, "completion_ids": torch.ones((8, 4), dtype=torch.long)}
     try:
         RecGRPOTrainer._generate_and_score_completions = lambda self, inputs, value=output: value
         returned = trainer._generate_and_score_completions([])
@@ -97,8 +110,8 @@ for rewards in (
 rewards_per_func = torch.tensor([[1.0, float("nan")], [2.0, float("nan")]])
 original_calculate = RecGRPOTrainer._calculate_rewards
 planned = []
-trainer._prepare_nothink_bridge = lambda inputs, completions, rewards: planned.append(
-    (inputs, completions, rewards)
+trainer._prepare_nothink_credit_and_bridge = lambda inputs, completions, ids, rewards: planned.append(
+    (inputs, completions, ids, rewards)
 )
 try:
     RecGRPOTrainer._calculate_rewards = lambda self, inputs, *args, **kwargs: rewards_per_func
@@ -109,7 +122,7 @@ finally:
     RecGRPOTrainer._calculate_rewards = original_calculate
 assert returned_rewards is rewards_per_func
 assert not hasattr(trainer, "_think_exact_clamp_global_rewards")
-assert planned[0][2] is rewards_per_func
+assert planned[0][3] is rewards_per_func
 
 original_write_monitor = RecGRPOTrainer._write_rollout_monitor
 monitor_sentinel = object()
@@ -198,6 +211,8 @@ manifest = _ManifestWriter(ManifestSink()).write_manifest({})
 assert manifest["parent"] == "GR_REC_v1 / original BATA adapter"
 assert manifest["initialization"] == "fresh original BATA adapter"
 assert manifest["nothink_bridge"]["lambda"] == 0.02
+assert manifest["nothink_bridge"]["branches"] == ["dead_zero_a_bridge"]
+assert manifest["advantage"]["nothink"] == "conditional_hierarchical_token_credit_v1"
 assert manifest["future_checkpoints"] == [600, 800, 1000, 1200, 1400, 1500]
 same_run = validate_experiment_args([
     "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500",

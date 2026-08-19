@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 from grpo_model import BASE
 
 
-TOKEN_RE = re.compile(r"<s_(a|b)_(\d+)>")
+TOKEN_RE = re.compile(r"<s_(a|b|c)_(\d+)>")
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
         if len(encoded) != 1 or encoded[0] != vocabulary[token]:
             failures.append({"token": token, "encoded": encoded, "vocab_id": vocabulary.get(token)})
     by_level = {}
-    for level in ("a", "b"):
+    for level in ("a", "b", "c"):
         values = [int(TOKEN_RE.fullmatch(token).group(2)) for token in hierarchy_tokens if f"<s_{level}_" in token]
         by_level[level] = {
             "count": len(values),
@@ -44,7 +44,7 @@ def main():
         "failure_count": len(failures),
         "failures": failures[:20],
         "status": "PASS" if not failures else "FAIL_CLOSED",
-        "runtime_contract": "Every concrete domain/A/B teacher token is revalidated before use.",
+        "runtime_contract": "Every concrete domain/A/B/C token is revalidated before use.",
     }
     output = Path(__file__).with_name("bridge_tokenizer_audit.json")
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -34,14 +34,15 @@ class _ManifestWriter:
         payload["advantage"] = {
             "think": "centered_exact_clamp_v1",
             "think_formula": "clamp_negative_if_R_ge_8((R - group_mean) / 8.0)",
-            "nothink": "GR_REC_v1 population-std rule (unchanged)",
+            "nothink": "conditional_hierarchical_token_credit_v1",
+            "nothink_debug_scalar": "GR_REC_v1 population-std advantage (not used by loss)",
         }
         payload["nothink_bridge"] = {
             "name": "minimal_hierarchical_teacher_bridge_v1",
             "lambda": 0.02,
-            "branches": ["dead_zero_a_bridge", "a_collapse_ab_bridge"],
-            "primary_grpo": "GR_REC_v1 unchanged",
-            "teacher_forward": "one two-row forward per active optimizer step; no generation",
+            "branches": ["dead_zero_a_bridge"],
+            "primary_grpo": "token-level PPO on final SID A/B/C positions",
+            "teacher_forward": "one A-query row per active optimizer step; no generation",
         }
         payload["formal_max_steps"] = MAX_EXPERIMENT_STEPS
         payload["future_checkpoints"] = [600, 800, 1000, 1200, 1400, 1500]
