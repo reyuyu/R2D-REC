@@ -52,6 +52,8 @@ CHAIN_FIELDS = (
     "total_reward_mean",
     "action_alignment_mean",
     "logic_alignment_mean",
+    "date_mismatch_candidate_rate",
+    "action_mismatch_candidate_rate",
     "grounded_rate",
     "partially_grounded_rate",
     "ungrounded_rate",

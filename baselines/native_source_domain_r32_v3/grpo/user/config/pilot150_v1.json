@@ -1,0 +1,43 @@
+{
+  "contract_version": "gr_user_pilot150_v1",
+  "experiment": "GR_USER_v1_PILOT150",
+  "seed": 20260820,
+  "dataset": "/data/GRPO_USER/data/gr_user_v1/pilot_600.jsonl",
+  "base_model": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+  "action_prompts": 75,
+  "chain_prompts": 75,
+  "G": 4,
+  "temperature": 0.9,
+  "top_p": 0.95,
+  "max_new_tokens": 512,
+  "learning_rate": 0.000001,
+  "epsilon": 0.2,
+  "beta": 0.0,
+  "population_std_correction": 0,
+  "advantage_epsilon": 0.0001,
+  "penalty_strategy": "sqrt",
+  "lambda": 0.5,
+  "forward_batch_size": 1,
+  "gradient_checkpointing": true,
+  "gradient_checkpointing_use_reentrant": false,
+  "runtime": "P0",
+  "length_bucketing": false,
+  "global_prompts_per_full_step": 8,
+  "expected_optimizer_steps": 20,
+  "save_final_only": true,
+  "safety": {
+    "grad_explosion_threshold": 10.0,
+    "grad_explosion_consecutive_steps": 2,
+    "clip_fraction_threshold": 0.8,
+    "clip_fraction_consecutive_steps": 3
+  },
+  "direction_gate": {
+    "action_f1_late_minus_early_min": -0.03,
+    "action_precision_late_minus_early_min": -0.03,
+    "action_wrong_selection_late_minus_early_max": 0.05,
+    "chain_reward_late_minus_early_min": -0.03,
+    "chain_logic_late_minus_early_min": -0.03,
+    "chain_date_mismatch_late_minus_early_max": 0.05
+  }
+}

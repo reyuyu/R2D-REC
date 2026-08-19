@@ -75,12 +75,15 @@ class UserMonitorAdapterTests(unittest.TestCase):
                     "total_reward_mean": 0.5,
                     "action_alignment_mean": 0.8,
                     "logic_alignment_mean": 0.2,
+                    "date_mismatch_candidate_rate": 0.3,
+                    "action_mismatch_candidate_rate": 0.1,
                     "violation_counts": {"date_mismatch": 3},
                 },
                 policy_metrics={"grad_norm": 0.9},
             )
         )
         self.assertEqual(writer.steps[0]["logic_alignment_mean"], 0.2)
+        self.assertEqual(writer.steps[0]["date_mismatch_candidate_rate"], 0.3)
         self.assertEqual(writer.steps[0]["violation_counts"], {"date_mismatch": 3})
         self.assertTrue(adapter.write_rollout({"rollout_id": 1}))
         self.assertTrue(adapter.write_trace({"rollout_id": 1, "candidates": []}))
