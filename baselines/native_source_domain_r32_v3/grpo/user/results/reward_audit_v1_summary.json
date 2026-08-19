@@ -275,21 +275,21 @@
   "cpu_benchmark": {
     "action": {
       "score_count": 300,
-      "score_total_seconds": 0.03904156479984522,
-      "score_ms_per_sample": 0.1301385493328174,
-      "score_samples_per_second": 7684.118234963506,
+      "score_total_seconds": 0.03885046485811472,
+      "score_ms_per_sample": 0.12950154952704906,
+      "score_samples_per_second": 7721.915325740017,
       "score_plus_span_count": 100,
-      "score_plus_span_ms_per_sample": 0.633750231936574,
-      "span_attribution_incremental_ms_per_sample": 0.5036116826037565
+      "score_plus_span_ms_per_sample": 0.639543691650033,
+      "span_attribution_incremental_ms_per_sample": 0.5100421421229839
     },
     "chain": {
       "score_count": 300,
-      "score_total_seconds": 4.879025952890515,
-      "score_ms_per_sample": 16.263419842968386,
-      "score_samples_per_second": 61.4876827663253,
+      "score_total_seconds": 4.818155369721353,
+      "score_ms_per_sample": 16.060517899071176,
+      "score_samples_per_second": 62.26449273207016,
       "score_plus_span_count": 100,
-      "score_plus_span_ms_per_sample": 17.72961612790823,
-      "span_attribution_incremental_ms_per_sample": 1.4661962849398442
+      "score_plus_span_ms_per_sample": 17.668177653104067,
+      "span_attribution_incremental_ms_per_sample": 1.6076597540328912
     }
   },
   "evaluator_evidence": {
