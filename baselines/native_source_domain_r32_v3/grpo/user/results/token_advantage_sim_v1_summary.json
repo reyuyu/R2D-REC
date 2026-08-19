@@ -1,0 +1,1666 @@
+{
+  "contract_version": "gr_user_token_advantage_sim_v1",
+  "source_run_id": "GR-USER-G4-AUDIT-4GPU-20260819-181843",
+  "input_counts": {
+    "candidates": 400,
+    "groups": 100
+  },
+  "formula": {
+    "epsilon": 0.0001,
+    "task_advantage": "(reward - group_mean) / (group_population_std + epsilon)",
+    "zero_std_task_advantage": 0.0,
+    "masked_token_advantage": "min(task_advantage, -lambda_eff)",
+    "fixed_lambda_eff": "lambda",
+    "sqrt_lambda_eff": "lambda / sqrt(violation_span_token_count)",
+    "overlap": "maximum effective lambda; never sum",
+    "mass": "sum(abs(token_advantage)) by sign",
+    "penalty_negative_mass": "incremental negative mass beyond the unpenalized task advantage"
+  },
+  "normalization_audit": {
+    "epsilon": 0.0001,
+    "max_existing_group_stat_error": 0.0,
+    "population_std_consistent": true,
+    "zero_std_groups": {
+      "action": {
+        "count": 2,
+        "rescued": 0
+      },
+      "chain": {
+        "count": 0,
+        "rescued": 0
+      }
+    }
+  },
+  "schemes": [
+    {
+      "strategy": "fixed",
+      "lambda": 0.1,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.5344888718493117,
+          "negative_token_mass": 6790.88607136059,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7533821931456772,
+          "average_absolute_token_advantage_mean_shift": 0.002030420528518509,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 1,
+            "gt_50pct": 0,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.005,
+            "gt_50pct_rate": 0.0,
+            "positive_sequence_to_negative_mean_count": 0,
+            "positive_sequence_to_negative_mean_rate": 0.0
+          },
+          "total_penalty_negative_mass": 4.4,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 2.400000000000001,
+              "penalty_negative_mass_share": 0.5454545454545456
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 2.0000000000000004,
+              "penalty_negative_mass_share": 0.4545454545454546
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.7193971007394463,
+          "negative_token_mass": 21045.815319324633,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0098818465977477,
+          "average_absolute_token_advantage_mean_shift": 0.011203429721482019,
+          "completion_impact": {
+            "gt_10pct": 8,
+            "gt_25pct": 2,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.04,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 59.512095721613,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 14.108069345396629,
+              "penalty_negative_mass_share": 0.23706221692127374
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 4.000000000000002,
+              "penalty_negative_mass_share": 0.06721322701709734
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 33.004026376216025,
+              "penalty_negative_mass_share": 0.5545767793257188
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 7.599999999999989,
+              "penalty_negative_mass_share": 0.1277051313324847
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 0.7999999999999999,
+              "penalty_negative_mass_share": 0.01344264540341946
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5915770680456462,
+          "token_advantage_min": -0.1,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.011721645221112631,
+          "relative_mean_shift": 0.01942925612693907,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.1,
+                "token_advantage_mean": -0.1,
+                "token_advantage_min": -0.1,
+                "token_advantage_max": -0.1
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.480225098014779,
+          "token_advantage_min": -0.1,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.014151831658897052,
+          "relative_mean_shift": 0.028625590737493087,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.1,
+                "token_advantage_mean": -0.1,
+                "token_advantage_min": -0.1,
+                "token_advantage_max": -0.1
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6515362527513728,
+          "token_advantage_min": -0.1,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.08789897692998516,
+          "relative_mean_shift": 0.11887312559865877,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.1,
+                "token_advantage_mean": -0.1,
+                "token_advantage_min": -0.1,
+                "token_advantage_max": -0.1
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.1,
+                "token_advantage_mean": -0.1,
+                "token_advantage_min": -0.1,
+                "token_advantage_max": -0.1
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "fixed",
+      "lambda": 0.25,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.6149766767273604,
+          "negative_token_mass": 6797.48607136059,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7541143984017382,
+          "average_absolute_token_advantage_mean_shift": 0.0024497696026469927,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 0,
+            "positive_sequence_to_negative_mean_rate": 0.0
+          },
+          "total_penalty_negative_mass": 11.0,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 6.0,
+              "penalty_negative_mass_share": 0.5454545454545454
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 5.0,
+              "penalty_negative_mass_share": 0.45454545454545453
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.7819550105566002,
+          "negative_token_mass": 21139.964973599454,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0143996105937232,
+          "average_absolute_token_advantage_mean_shift": 0.013184956052417185,
+          "completion_impact": {
+            "gt_10pct": 15,
+            "gt_25pct": 4,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.075,
+            "gt_25pct_rate": 0.02,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 153.66174999642897,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 35.858069345396665,
+              "penalty_negative_mass_share": 0.23335715847457153
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 10.0,
+              "penalty_negative_mass_share": 0.06507800412420395
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 86.80368065103231,
+              "penalty_negative_mass_share": 0.5649010287403963
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 19.0,
+              "penalty_negative_mass_share": 0.1236482078359875
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 2.0,
+              "penalty_negative_mass_share": 0.01301560082484079
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5890770680456463,
+          "token_advantage_min": -0.25,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.014221645221112578,
+          "relative_mean_shift": 0.023573140317347623,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.25,
+                "token_advantage_mean": -0.25,
+                "token_advantage_min": -0.25,
+                "token_advantage_max": -0.25
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.4766536694433504,
+          "token_advantage_min": -0.25,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.01772326023032561,
+          "relative_mean_shift": 0.03584969112944697,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.25,
+                "token_advantage_mean": -0.25,
+                "token_advantage_min": -0.25,
+                "token_advantage_max": -0.25
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6358294464686504,
+          "token_advantage_min": -0.25,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.10360578321270764,
+          "relative_mean_shift": 0.14011475116942168,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.25,
+                "token_advantage_mean": -0.25,
+                "token_advantage_min": -0.25,
+                "token_advantage_max": -0.25
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.25,
+                "token_advantage_mean": -0.25,
+                "token_advantage_min": -0.25,
+                "token_advantage_max": -0.25
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "fixed",
+      "lambda": 0.5,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.7512260454011793,
+          "negative_token_mass": 6808.658519591843,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7553538719347674,
+          "average_absolute_token_advantage_mean_shift": 0.0031534749548403906,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 22.17244823125315,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 12.172448231253153,
+              "penalty_negative_mass_share": 0.5489898140384647
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 10.0,
+              "penalty_negative_mass_share": 0.4510101859615354
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.8977123240800836,
+          "negative_token_mass": 21314.17973045229,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0227592924442797,
+          "average_absolute_token_advantage_mean_shift": 0.016836465601147228,
+          "completion_impact": {
+            "gt_10pct": 18,
+            "gt_25pct": 8,
+            "gt_50pct": 4,
+            "gt_10pct_rate": 0.09,
+            "gt_25pct_rate": 0.04,
+            "gt_50pct_rate": 0.02,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 327.8765068492711,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 76.76477587799153,
+              "penalty_negative_mass_share": 0.23412710052227453
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 20.87956618746456,
+              "penalty_negative_mass_share": 0.06368119017768832
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 188.23216478381534,
+              "penalty_negative_mass_share": 0.5740946998387658
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 38.0,
+              "penalty_negative_mass_share": 0.11589729427448449
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 4.0,
+              "penalty_negative_mass_share": 0.01219971518678784
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5849104013789795,
+          "token_advantage_min": -0.5,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.01838831188777934,
+          "relative_mean_shift": 0.030479613968028858,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.5,
+                "token_advantage_mean": -0.5,
+                "token_advantage_min": -0.5,
+                "token_advantage_max": -0.5
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.4707012884909695,
+          "token_advantage_min": -0.5,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.02367564118270654,
+          "relative_mean_shift": 0.0478898584493701,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.5,
+                "token_advantage_mean": -0.5,
+                "token_advantage_min": -0.5,
+                "token_advantage_max": -0.5
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6096514359974462,
+          "token_advantage_min": -0.5,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.1297837936839118,
+          "relative_mean_shift": 0.17551746045402655,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.5,
+                "token_advantage_mean": -0.5,
+                "token_advantage_min": -0.5,
+                "token_advantage_max": -0.5
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.5,
+                "token_advantage_mean": -0.5,
+                "token_advantage_min": -0.5,
+                "token_advantage_max": -0.5
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "fixed",
+      "lambda": 1.0,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 1.0822439354908615,
+          "negative_token_mass": 6835.801986579198,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7583651733280793,
+          "average_absolute_token_advantage_mean_shift": 0.004814722596706419,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 2,
+            "positive_sequence_to_negative_mean_rate": 0.01
+          },
+          "total_penalty_negative_mass": 49.31591521860708,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 27.54982173015634,
+              "penalty_negative_mass_share": 0.5586395711817123
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 21.766093488450746,
+              "penalty_negative_mass_share": 0.4413604288182878
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 1.1773451389593383,
+          "negative_token_mass": 21735.027116845566,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0429536222556046,
+          "average_absolute_token_advantage_mean_shift": 0.02549512545321051,
+          "completion_impact": {
+            "gt_10pct": 35,
+            "gt_25pct": 9,
+            "gt_50pct": 8,
+            "gt_10pct_rate": 0.175,
+            "gt_25pct_rate": 0.045,
+            "gt_50pct_rate": 0.04,
+            "positive_sequence_to_negative_mean_count": 2,
+            "positive_sequence_to_negative_mean_rate": 0.01
+          },
+          "total_penalty_negative_mass": 748.7238932425493,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 177.4861655913557,
+              "penalty_negative_mass_share": 0.2370515582489352
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 48.45818602398399,
+              "penalty_negative_mass_share": 0.06472103596710778
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 438.7795416272106,
+              "penalty_negative_mass_share": 0.5860365157133671
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 76.0,
+              "penalty_negative_mass_share": 0.10150604339720168
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 8.0,
+              "penalty_negative_mass_share": 0.010684846673389651
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5765770680456462,
+          "token_advantage_min": -1.0,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.026721645221112644,
+          "relative_mean_shift": 0.044292561269390955,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 1.0,
+                "token_advantage_mean": -1.0,
+                "token_advantage_min": -1.0,
+                "token_advantage_max": -1.0
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.45879652658620756,
+          "token_advantage_min": -1.0,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.03558040308746846,
+          "relative_mean_shift": 0.07197019308921648,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 1.0,
+                "token_advantage_mean": -1.0,
+                "token_advantage_min": -1.0,
+                "token_advantage_max": -1.0
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.5572954150550378,
+          "token_advantage_min": -1.0,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.18213981462632023,
+          "relative_mean_shift": 0.2463228790232365,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 1.0,
+                "token_advantage_mean": -1.0,
+                "token_advantage_min": -1.0,
+                "token_advantage_max": -1.0
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 1.0,
+                "token_advantage_mean": -1.0,
+                "token_advantage_min": -1.0,
+                "token_advantage_max": -1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "sqrt",
+      "lambda": 0.1,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.510812112678297,
+          "negative_token_mass": 6788.944577108567,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7531668034038675,
+          "average_absolute_token_advantage_mean_shift": 0.0019069631621863922,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 1,
+            "gt_50pct": 0,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.005,
+            "gt_50pct_rate": 0.0,
+            "positive_sequence_to_negative_mean_count": 0,
+            "positive_sequence_to_negative_mean_rate": 0.0
+          },
+          "total_penalty_negative_mass": 2.4585057479767882,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 1.2000000000000004,
+              "penalty_negative_mass_share": 0.4881013603435879
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 1.2585057479767894,
+              "penalty_negative_mass_share": 0.5118986396564127
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.6906892881347099,
+          "negative_token_mass": 21002.61006135452,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0078086455817945,
+          "average_absolute_token_advantage_mean_shift": 0.010301861764767814,
+          "completion_impact": {
+            "gt_10pct": 6,
+            "gt_25pct": 2,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.03,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 16.306837751483968,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 3.6508583861698125,
+              "penalty_negative_mass_share": 0.22388512364008614
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 1.2649110640673522,
+              "penalty_negative_mass_share": 0.07756936589083568
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 10.11928851253878,
+              "penalty_negative_mass_share": 0.6205549271266831
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 0.8717797887081341,
+              "penalty_negative_mass_share": 0.05346099605540011
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 0.39999999999999997,
+              "penalty_negative_mass_share": 0.024529587287001664
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5920652234103353,
+          "token_advantage_min": -0.07071067811865475,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.011233489856423584,
+          "relative_mean_shift": 0.018620112407659824,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.07071067811865475,
+                "token_advantage_mean": -0.07071067811865475,
+                "token_advantage_min": -0.07071067811865475,
+                "token_advantage_max": -0.07071067811865475
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.48141557420525516,
+          "token_advantage_min": -0.05,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.012961355468420865,
+          "relative_mean_shift": 0.02621755727350846,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.05,
+                "token_advantage_mean": -0.05,
+                "token_advantage_min": -0.05,
+                "token_advantage_max": -0.05
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6586961714318248,
+          "token_advantage_min": -0.03162277660168379,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.0807390582495332,
+          "relative_mean_shift": 0.10919016975202246,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.03162277660168379,
+                "token_advantage_mean": -0.03162277660168379,
+                "token_advantage_min": -0.03162277660168379,
+                "token_advantage_max": -0.03162277660168379
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.03162277660168379,
+                "token_advantage_mean": -0.03162277660168379,
+                "token_advantage_min": -0.03162277660168379,
+                "token_advantage_max": -0.03162277660168379
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "sqrt",
+      "lambda": 0.25,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.5557847787998236,
+          "negative_token_mass": 6792.632335730532,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7535759240472141,
+          "average_absolute_token_advantage_mean_shift": 0.0021411261868167055,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 0,
+            "positive_sequence_to_negative_mean_rate": 0.0
+          },
+          "total_penalty_negative_mass": 6.146264369941971,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 3.0,
+              "penalty_negative_mass_share": 0.4881013603435877
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 3.1462643699419734,
+              "penalty_negative_mass_share": 0.5118986396564127
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.7075210163673743,
+          "negative_token_mass": 21027.941812344652,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0090241877254138,
+          "average_absolute_token_advantage_mean_shift": 0.010839907502857501,
+          "completion_impact": {
+            "gt_10pct": 8,
+            "gt_25pct": 2,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.04,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 41.638588741644064,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 9.56437150841,
+              "penalty_negative_mass_share": 0.22969970398743056
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 3.1622776601683764,
+              "penalty_negative_mass_share": 0.07594584148347187
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 25.732490101295127,
+              "penalty_negative_mass_share": 0.6179962116621703
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 2.179449471770337,
+              "penalty_negative_mass_share": 0.052342059076334664
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 1.0,
+              "penalty_negative_mass_share": 0.024016183790587228
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.590297456457369,
+          "token_advantage_min": -0.17677669529663687,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.013001256809389905,
+          "relative_mean_shift": 0.021550281019149426,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.17677669529663687,
+                "token_advantage_mean": -0.17677669529663687,
+                "token_advantage_min": -0.17677669529663687,
+                "token_advantage_max": -0.17677669529663687
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.4796298599195409,
+          "token_advantage_min": -0.125,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.014747069754135145,
+          "relative_mean_shift": 0.0298296074694854,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.125,
+                "token_advantage_mean": -0.125,
+                "token_advantage_min": -0.125,
+                "token_advantage_max": -0.125
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6537292431697802,
+          "token_advantage_min": -0.07905694150420949,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.08570598651157779,
+          "relative_mean_shift": 0.115907361552831,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.07905694150420949,
+                "token_advantage_mean": -0.07905694150420949,
+                "token_advantage_min": -0.07905694150420949,
+                "token_advantage_max": -0.07905694150420949
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.07905694150420949,
+                "token_advantage_mean": -0.07905694150420949,
+                "token_advantage_min": -0.07905694150420949,
+                "token_advantage_max": -0.07905694150420949
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "sqrt",
+      "lambda": 0.5,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.6307392223357012,
+          "negative_token_mass": 6798.778600100474,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7542577917861251,
+          "average_absolute_token_advantage_mean_shift": 0.0025313978945338917,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 0,
+            "positive_sequence_to_negative_mean_rate": 0.0
+          },
+          "total_penalty_negative_mass": 12.292528739883942,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 6.0,
+              "penalty_negative_mass_share": 0.4881013603435877
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 6.292528739883947,
+              "penalty_negative_mass_share": 0.5118986396564127
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.736949732465527,
+          "negative_token_mass": 21072.23203007238,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0111494504527754,
+          "average_absolute_token_advantage_mean_shift": 0.011786830103122346,
+          "completion_impact": {
+            "gt_10pct": 12,
+            "gt_25pct": 3,
+            "gt_50pct": 1,
+            "gt_10pct_rate": 0.06,
+            "gt_25pct_rate": 0.015,
+            "gt_50pct_rate": 0.005,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 85.92880646936433,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 19.52067367142333,
+              "penalty_negative_mass_share": 0.22717263829776244
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 6.324555320336753,
+              "penalty_negative_mass_share": 0.07360227123126174
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 53.724678534063,
+              "penalty_negative_mass_share": 0.6252231439199278
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 4.358898943540674,
+              "penalty_negative_mass_share": 0.05072686474581403
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 2.0,
+              "penalty_negative_mass_share": 0.023275081805227305
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.587351178202425,
+          "token_advantage_min": -0.35355339059327373,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.015947535064333884,
+          "relative_mean_shift": 0.026433895371632276,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.35355339059327373,
+                "token_advantage_mean": -0.35355339059327373,
+                "token_advantage_min": -0.35355339059327373,
+                "token_advantage_max": -0.35355339059327373
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.4766536694433504,
+          "token_advantage_min": -0.25,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.01772326023032561,
+          "relative_mean_shift": 0.03584969112944697,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.25,
+                "token_advantage_mean": -0.25,
+                "token_advantage_min": -0.25,
+                "token_advantage_max": -0.25
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.645451029399706,
+          "token_advantage_min": -0.15811388300841897,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.093984200281652,
+          "relative_mean_shift": 0.12710268122084506,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.15811388300841897,
+                "token_advantage_mean": -0.15811388300841897,
+                "token_advantage_min": -0.15811388300841897,
+                "token_advantage_max": -0.15811388300841897
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.15811388300841897,
+                "token_advantage_mean": -0.15811388300841897,
+                "token_advantage_min": -0.15811388300841897,
+                "token_advantage_max": -0.15811388300841897
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "strategy": "sqrt",
+      "lambda": 1.0,
+      "routes": {
+        "action": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.095,
+          "masked_token_rate": 0.00445313348539155,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.8534280728068373,
+          "average_masked_abs_token_advantage": 0.782751136617861,
+          "negative_token_mass": 6811.243577071612,
+          "positive_token_mass": 9013.865914464845,
+          "negative_positive_mass_ratio": 0.7556406587035411,
+          "average_absolute_token_advantage_mean_shift": 0.0033167315386141848,
+          "completion_impact": {
+            "gt_10pct": 3,
+            "gt_25pct": 2,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.015,
+            "gt_25pct_rate": 0.01,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 2,
+            "positive_sequence_to_negative_mean_rate": 0.01
+          },
+          "total_penalty_negative_mass": 24.757505711021032,
+          "per_kind": {
+            "duplicate_sid": {
+              "candidate_count": 8,
+              "violation_count": 10,
+              "masked_token_count": 40,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 12.172448231253153,
+              "penalty_negative_mass_share": 0.4916669867043381
+            },
+            "hallucinated_sid": {
+              "candidate_count": 13,
+              "violation_count": 16,
+              "masked_token_count": 42,
+              "average_span_length": 2.625,
+              "penalty_negative_mass": 12.585057479767894,
+              "penalty_negative_mass_share": 0.5083330132956625
+            }
+          }
+        },
+        "chain": {
+          "candidate_count": 200,
+          "masked_candidate_rate": 0.465,
+          "masked_token_rate": 0.03077772551585922,
+          "positive_masked_token_flip_rate": 1.0,
+          "average_abs_task_advantage": 0.85750928820999,
+          "average_masked_abs_token_advantage": 0.7970662023400841,
+          "negative_token_mass": 21162.70731723361,
+          "positive_token_mass": 20839.87883357559,
+          "negative_positive_mass_ratio": 1.0154909002224093,
+          "average_absolute_token_advantage_mean_shift": 0.013714781202444348,
+          "completion_impact": {
+            "gt_10pct": 16,
+            "gt_25pct": 5,
+            "gt_50pct": 2,
+            "gt_10pct_rate": 0.08,
+            "gt_25pct_rate": 0.025,
+            "gt_50pct_rate": 0.01,
+            "positive_sequence_to_negative_mean_count": 1,
+            "positive_sequence_to_negative_mean_rate": 0.005
+          },
+          "total_penalty_negative_mass": 176.40409363057336,
+          "per_kind": {
+            "action_mismatch": {
+              "candidate_count": 28,
+              "violation_count": 31,
+              "masked_token_count": 404,
+              "average_span_length": 13.03225806451613,
+              "penalty_negative_mass": 39.433277997450006,
+              "penalty_negative_mass_share": 0.2235394722756913
+            },
+            "chronology_violation": {
+              "candidate_count": 6,
+              "violation_count": 6,
+              "masked_token_count": 60,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 12.649110640673506,
+              "penalty_negative_mass_share": 0.0717053123901045
+            },
+            "date_mismatch": {
+              "candidate_count": 61,
+              "violation_count": 71,
+              "masked_token_count": 710,
+              "average_span_length": 10.0,
+              "penalty_negative_mass": 111.60390710536699,
+              "penalty_negative_mass_share": 0.6326605284970803
+            },
+            "duplicate_event": {
+              "candidate_count": 4,
+              "violation_count": 4,
+              "masked_token_count": 319,
+              "average_span_length": 79.75,
+              "penalty_negative_mass": 8.717797887081348,
+              "penalty_negative_mass_share": 0.04941947608845302
+            },
+            "excess_event": {
+              "candidate_count": 0,
+              "violation_count": 0,
+              "masked_token_count": 0,
+              "average_span_length": 0.0,
+              "penalty_negative_mass": 0,
+              "penalty_negative_mass_share": 0.0
+            },
+            "hallucinated_sid": {
+              "candidate_count": 3,
+              "violation_count": 3,
+              "masked_token_count": 12,
+              "average_span_length": 4.0,
+              "penalty_negative_mass": 4.0,
+              "penalty_negative_mass_share": 0.022675210748662255
+            }
+          }
+        }
+      },
+      "representative_samples": {
+        "high_f1_hallucination": {
+          "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9500000000000001,
+          "sequence_advantage": 0.6032987132667589,
+          "token_advantage_mean": 0.5814586216925371,
+          "token_advantage_min": -0.7071067811865475,
+          "overridden_token_count": 2,
+          "overridden_token_fraction": 0.016666666666666666,
+          "absolute_mean_shift": 0.02184009157422173,
+          "relative_mean_shift": 0.03620112407659779,
+          "span_details": {
+            "hallucinated_sid": [
+              {
+                "token_count": 2,
+                "effective_lambda": 0.7071067811865475,
+                "token_advantage_mean": -0.7071067811865475,
+                "token_advantage_min": -0.7071067811865475,
+                "token_advantage_max": -0.7071067811865475
+              }
+            ]
+          }
+        },
+        "high_f1_duplicate": {
+          "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+          "candidate_index": 0,
+          "route": "action",
+          "reward": 0.9433962264150944,
+          "sequence_advantage": 0.494376929673676,
+          "token_advantage_mean": 0.4707012884909695,
+          "token_advantage_min": -0.5,
+          "overridden_token_count": 4,
+          "overridden_token_fraction": 0.023809523809523808,
+          "absolute_mean_shift": 0.02367564118270654,
+          "relative_mean_shift": 0.0478898584493701,
+          "span_details": {
+            "duplicate_sid": [
+              {
+                "token_count": 4,
+                "effective_lambda": 0.5,
+                "token_advantage_mean": -0.5,
+                "token_advantage_min": -0.5,
+                "token_advantage_max": -0.5
+              }
+            ]
+          }
+        },
+        "high_chain_reward_mismatch": {
+          "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+          "candidate_index": 0,
+          "route": "chain",
+          "reward": 0.7266035027363844,
+          "sequence_advantage": 0.739435229681358,
+          "token_advantage_mean": 0.6288946018595574,
+          "token_advantage_min": -0.31622776601683794,
+          "overridden_token_count": 20,
+          "overridden_token_fraction": 0.10471204188481675,
+          "absolute_mean_shift": 0.11054062782180063,
+          "relative_mean_shift": 0.1494933205568735,
+          "span_details": {
+            "date_mismatch": [
+              {
+                "token_count": 10,
+                "effective_lambda": 0.31622776601683794,
+                "token_advantage_mean": -0.31622776601683794,
+                "token_advantage_min": -0.31622776601683794,
+                "token_advantage_max": -0.31622776601683794
+              },
+              {
+                "token_count": 10,
+                "effective_lambda": 0.31622776601683794,
+                "token_advantage_mean": -0.31622776601683794,
+                "token_advantage_min": -0.31622776601683794,
+                "token_advantage_max": -0.31622776601683794
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "recommendation": {
+    "strategy": "sqrt",
+    "lambda": 0.5,
+    "basis": "Balances short-span correction strength with bounded long-event mass; duplicate_event contributes about 5% of Chain penalty negative mass."
+  },
+  "integrity": {
+    "input_sha_before": {
+      "candidates.jsonl": "c3a9bbf08029c5cbe6718b0324e210eb853e4db55f2581dd5491e194478be497",
+      "groups.jsonl": "e0c2073b61132fe04b9724b64c223f15e34cd33f4c94a271e356e653a16136d3",
+      "summary.json": "76e1c52f6a7ca92896cff4441a9d9994d681c9f1c68975278968a873adc3a551"
+    },
+    "input_sha_after": {
+      "candidates.jsonl": "c3a9bbf08029c5cbe6718b0324e210eb853e4db55f2581dd5491e194478be497",
+      "groups.jsonl": "e0c2073b61132fe04b9724b64c223f15e34cd33f4c94a271e356e653a16136d3",
+      "summary.json": "76e1c52f6a7ca92896cff4441a9d9994d681c9f1c68975278968a873adc3a551"
+    },
+    "input_sha_unchanged": true,
+    "gpu_used": false,
+    "generation_used": false,
+    "training_used": false,
+    "model_loaded": false
+  }
+}

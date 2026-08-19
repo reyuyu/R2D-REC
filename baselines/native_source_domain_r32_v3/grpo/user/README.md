@@ -94,6 +94,29 @@ under the predeclared `<5%` criterion. See
 `results/rollout_audit_g4_v1_summary.json` and
 `docs/rollout_audit_g4_v1.md` for the full static report.
 
+## Token advantage offline simulation
+
+Phase 4A reads the frozen Phase 3B candidates/groups and simulates token
+advantages without generation, GPU use, model loading, or training. It compares
+fixed-token and square-root-normalized spans at lambda 0.10, 0.25, 0.50, and
+1.00. Zero-std groups retain task advantage 0 while eligible masked tokens can
+still receive local negative signal; overlapping violations use the strongest
+effective lambda and are never summed.
+
+```bash
+CUDA_VISIBLE_DEVICES='' python3 scripts/simulate_user_token_advantage.py \
+  --run-dir /data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843 \
+  --summary-output /data/GRPO_USER/results/token_advantage_sim_v1_summary.json \
+  --docs-output /data/GRPO_USER/docs/token_advantage_sim_v1.md
+```
+
+The static evidence recommends square-root normalization with initial lambda
+0.50. This preserves meaningful correction on short SID spans while keeping
+roughly 80-token duplicate events from receiving linear per-token amplification.
+See `results/token_advantage_sim_v1_summary.json` and
+`docs/token_advantage_sim_v1.md` for all eight schemes and representative
+high-reward violations.
+
 ## GPU policy
 
 Phases 1-3A are CPU-only even when GPUs are idle. Phase 3B may use only devices
