@@ -1,0 +1,3175 @@
+{
+  "contract_version": "gr_user_chain_diagnosis_v1",
+  "created_at": "2026-08-19T20:53:37.564635+00:00",
+  "inference_contract": {
+    "G": 4,
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "seed": 20260820
+  },
+  "integrity": {
+    "frozen_sha_before": {
+      "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+      "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+      "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+    },
+    "frozen_sha_after": {
+      "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+      "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+      "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+    },
+    "frozen_sha_unchanged": true,
+    "training_performed": false,
+    "optimizer_step": false,
+    "backward": false,
+    "checkpoint_modified": false,
+    "external_benchmark_run": false,
+    "checkpoint_evaluations": {
+      "C0": {
+        "label": "C0",
+        "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+        "probe_sha256": "14f31ec76a6b47e1b6a93476753d694209dccf183b45d9eb3ae335edb5c4d513",
+        "candidate_count": 160,
+        "GPU": {
+          "index": 0,
+          "uuid": "GPU-bf703d50-219b-3f54-499a-7801a38ef473",
+          "memory_used_mib": 5,
+          "memory_free_mib": 81223,
+          "utilization_percent": 0,
+          "compute_processes": []
+        },
+        "G": 4,
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "max_new_tokens": 512,
+        "requires_grad_parameter_count": 0,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksum_unchanged": true,
+        "rng_restored": true,
+        "wall_seconds": 1033.061911121942
+      },
+      "C20": {
+        "label": "C20",
+        "adapter": "/data/GRPO_USER/runs/GR-USER-PILOT150-20260820-004130/pilot150-final",
+        "probe_sha256": "14f31ec76a6b47e1b6a93476753d694209dccf183b45d9eb3ae335edb5c4d513",
+        "candidate_count": 160,
+        "GPU": {
+          "index": 1,
+          "uuid": "GPU-37d02b03-9f66-0975-b56c-896d1b817e51",
+          "memory_used_mib": 5,
+          "memory_free_mib": 81223,
+          "utilization_percent": 0,
+          "compute_processes": []
+        },
+        "G": 4,
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "max_new_tokens": 512,
+        "requires_grad_parameter_count": 0,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "33d6c7c461574eefe931dcbdaea2e305d389e2cde9a297ed3fadd49787c44f7c",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "e9f4749bcd045605edbd0c2eb49aa8dcf2eafec5ad3c2e9965e3da076b5183d8",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "b4f06708a2cb093315bd1f04242934737a8627845ae0656e5f930cb4d0bd7ece",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "beeec9890255685121f327d458980483a97579ed2dc9f093ae8e4263a6836159",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "ea05fbb991af55eb725eec0cb22f94b8a717c0b39370feadff8b04fa2e5e0ffe",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "c7cd52992a687daa2a0ca140a9282a46c288b619d12390edf2c601cb0fdef683",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "f3cd619ff698e13b310a0a99fdfebfdae1a9ce1ebe13ee7f8bb089c62813f9f0",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "77aeab46a55446a563501771187d885a75efc86d2596feb44c876151934d8fcd",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "b93d7c55f9ecf9e918ecef28d4ff2cfdf946bcf9a13d204d3645e6df84047f3f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "1cd33dd49a9b4c0852887c958ea07aa508e905c3ca8aa046dd65dceef4ba2162",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "92d5853ceadd8a94d2b17b260a9ee3fb604adf79b75b5df0aa8e1f4a9d6a6242",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "a0ccff5f52f6dc41aedc27f96f04e9b41aec021b83c5fc9a5fb355f9d164d401",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "86c3d1b6c2cfd0cae22d16fa0bfbd29930faa86d201314632727748537cbb41f",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "3c252e751e343c3c45e355ba2147cd235c4b4f90ce81a5261450982c87b8c684",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "95b94a7dafa33237c3000a553053e466737a4f60701e887365af3b8fca767ac0",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "d28d8cc4cc43d286a0ba3f94814f5ba752ac9e7934c2db694c7b06fabcbe9ca8"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "33d6c7c461574eefe931dcbdaea2e305d389e2cde9a297ed3fadd49787c44f7c",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "e9f4749bcd045605edbd0c2eb49aa8dcf2eafec5ad3c2e9965e3da076b5183d8",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "b4f06708a2cb093315bd1f04242934737a8627845ae0656e5f930cb4d0bd7ece",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "beeec9890255685121f327d458980483a97579ed2dc9f093ae8e4263a6836159",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "ea05fbb991af55eb725eec0cb22f94b8a717c0b39370feadff8b04fa2e5e0ffe",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "c7cd52992a687daa2a0ca140a9282a46c288b619d12390edf2c601cb0fdef683",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "f3cd619ff698e13b310a0a99fdfebfdae1a9ce1ebe13ee7f8bb089c62813f9f0",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "77aeab46a55446a563501771187d885a75efc86d2596feb44c876151934d8fcd",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "b93d7c55f9ecf9e918ecef28d4ff2cfdf946bcf9a13d204d3645e6df84047f3f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "1cd33dd49a9b4c0852887c958ea07aa508e905c3ca8aa046dd65dceef4ba2162",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "92d5853ceadd8a94d2b17b260a9ee3fb604adf79b75b5df0aa8e1f4a9d6a6242",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "a0ccff5f52f6dc41aedc27f96f04e9b41aec021b83c5fc9a5fb355f9d164d401",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "86c3d1b6c2cfd0cae22d16fa0bfbd29930faa86d201314632727748537cbb41f",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "3c252e751e343c3c45e355ba2147cd235c4b4f90ce81a5261450982c87b8c684",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "95b94a7dafa33237c3000a553053e466737a4f60701e887365af3b8fca767ac0",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "d28d8cc4cc43d286a0ba3f94814f5ba752ac9e7934c2db694c7b06fabcbe9ca8"
+        },
+        "lora_checksum_unchanged": true,
+        "rng_restored": true,
+        "wall_seconds": 1068.579786698334
+      },
+      "C40": {
+        "label": "C40",
+        "adapter": "/data/GRPO_USER/runs/GR-USER-PILOT300-CONT-20260820-031716/pilot300-final",
+        "probe_sha256": "14f31ec76a6b47e1b6a93476753d694209dccf183b45d9eb3ae335edb5c4d513",
+        "candidate_count": 160,
+        "GPU": {
+          "index": 2,
+          "uuid": "GPU-87490c15-a5be-fd96-0b8e-b9c491439545",
+          "memory_used_mib": 5,
+          "memory_free_mib": 81223,
+          "utilization_percent": 0,
+          "compute_processes": []
+        },
+        "G": 4,
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "max_new_tokens": 512,
+        "requires_grad_parameter_count": 0,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "88ded3a5abf7d3b4758c54f5ecbeced6308420c9c57c606403f69003861aa234",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0886e7cc99c120e3aac5c5b1c4b321e1c9b74013c4e97555b80b21594a0dda96",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "0fe230e94e088d7dc9e348d8dbcdd5943807eb8e7e87cecce8ce77f77f48ce60",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "9266a016feb6f0c64f10e37f957d658e24d68f7b90ed63681804b2651e163c28",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "12402a1bacccdff4558a96be3d9df6f524b8786d297c640c05660112d2c94a64",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "be88dcd9b4dbe7fac12175a55784ddba4034d2db35dbccf8a5858ec7d401edcd",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "93cb6a575b1b7587893ea56eadd1bc6b140ba89e0e0b93af674cf6c6c2b8ef97",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "a8229a283a84d1a9d5f4d9fcf6036eda98bcd45bc626c4d877b4bc573b322092",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "976a9cc42bb58a1f6670e7733d00b97ef42bb29c93d116a8e2282fa441909cae",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "11b8eb43e836d1e0d571a5fc1569bf414f1fedc9376ac357e7c88015a9d36476",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "6369085cc6f377b07d44d4c9e952f48922c572d62d601939aa92c64198181254",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "2220b502603b6045a8c6353af3c944e6b68868025e6b637bca0a6e54500e7673",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "e58133140ec0d209749aa072794ea8d3beb24b83bf95145ed17573e41ebfec3a",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "7e3f94509fd94eb7c884ec0f7f6b75c6090d4a8cca5c5b6c61351ccaef4bdd62",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "5ddc13dd2997411aca9b87c4ac98b89e1e3aa659f3262a0379689a9c5b14f96b",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "19cdf1389407a09acbb84a332400a8f4a9b69b7330f1d93d92d6b66fcecaeeaa"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "88ded3a5abf7d3b4758c54f5ecbeced6308420c9c57c606403f69003861aa234",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0886e7cc99c120e3aac5c5b1c4b321e1c9b74013c4e97555b80b21594a0dda96",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "0fe230e94e088d7dc9e348d8dbcdd5943807eb8e7e87cecce8ce77f77f48ce60",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "9266a016feb6f0c64f10e37f957d658e24d68f7b90ed63681804b2651e163c28",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "12402a1bacccdff4558a96be3d9df6f524b8786d297c640c05660112d2c94a64",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "be88dcd9b4dbe7fac12175a55784ddba4034d2db35dbccf8a5858ec7d401edcd",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "93cb6a575b1b7587893ea56eadd1bc6b140ba89e0e0b93af674cf6c6c2b8ef97",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "a8229a283a84d1a9d5f4d9fcf6036eda98bcd45bc626c4d877b4bc573b322092",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "976a9cc42bb58a1f6670e7733d00b97ef42bb29c93d116a8e2282fa441909cae",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "11b8eb43e836d1e0d571a5fc1569bf414f1fedc9376ac357e7c88015a9d36476",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "6369085cc6f377b07d44d4c9e952f48922c572d62d601939aa92c64198181254",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "2220b502603b6045a8c6353af3c944e6b68868025e6b637bca0a6e54500e7673",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "e58133140ec0d209749aa072794ea8d3beb24b83bf95145ed17573e41ebfec3a",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "7e3f94509fd94eb7c884ec0f7f6b75c6090d4a8cca5c5b6c61351ccaef4bdd62",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "5ddc13dd2997411aca9b87c4ac98b89e1e3aa659f3262a0379689a9c5b14f96b",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "19cdf1389407a09acbb84a332400a8f4a9b69b7330f1d93d92d6b66fcecaeeaa"
+        },
+        "lora_checksum_unchanged": true,
+        "rng_restored": true,
+        "wall_seconds": 1042.7300532292575
+      }
+    }
+  },
+  "existing_probe_8": {
+    "sample_count": 8,
+    "unchanged_epsilon": 0.01,
+    "comparisons": {
+      "C20-C0": {
+        "total_reward": {
+          "count": 8,
+          "mean": -0.03571921176837695,
+          "p25": -0.06387395289320347,
+          "p50": -0.042804438293122804,
+          "p75": -0.015579982039544776,
+          "p90": 0.033321480284218434,
+          "min": -0.12916904837249205,
+          "max": 0.08706752662004158,
+          "improved": 2,
+          "unchanged": 0,
+          "degraded": 6
+        },
+        "action_alignment": {
+          "count": 8,
+          "mean": -0.05201920351473926,
+          "p25": -0.08966836734693881,
+          "p50": -0.03676303854875285,
+          "p75": -0.023284438775510313,
+          "p90": 0.023541666666666617,
+          "min": -0.195,
+          "max": 0.1166666666666667,
+          "improved": 1,
+          "unchanged": 0,
+          "degraded": 7
+        },
+        "logic_alignment": {
+          "count": 8,
+          "mean": -0.019419220022014686,
+          "p25": -0.04843938890469967,
+          "p50": -0.032960492919417425,
+          "p75": -0.003555797412422894,
+          "p90": 0.04310129390177018,
+          "min": -0.06333809674498408,
+          "max": 0.05746838657341641,
+          "improved": 2,
+          "unchanged": 0,
+          "degraded": 6
+        }
+      },
+      "C40-C0": {
+        "total_reward": {
+          "count": 8,
+          "mean": -0.032093574841566115,
+          "p25": -0.05093458293656332,
+          "p50": -0.01645603822538283,
+          "p75": 0.005229440643790176,
+          "p90": 0.035553646800465966,
+          "min": -0.1612318624543671,
+          "max": 0.045887499366207285,
+          "improved": 2,
+          "unchanged": 2,
+          "degraded": 4
+        },
+        "action_alignment": {
+          "count": 8,
+          "mean": -0.047469529478458054,
+          "p25": -0.07731717687074831,
+          "p50": -0.01696428571428571,
+          "p75": 0.009374999999999994,
+          "p90": 0.04824999999999999,
+          "min": -0.25,
+          "max": 0.07333333333333336,
+          "improved": 2,
+          "unchanged": 1,
+          "degraded": 5
+        },
+        "logic_alignment": {
+          "count": 8,
+          "mean": -0.01671762020467417,
+          "p25": -0.03104339584003648,
+          "p50": -0.011620186178041197,
+          "p75": -0.0004931287845091753,
+          "p90": 0.020334077485588718,
+          "min": -0.07246372490873423,
+          "max": 0.02474970568743945,
+          "improved": 2,
+          "unchanged": 2,
+          "degraded": 4
+        }
+      },
+      "C40-C20": {
+        "total_reward": {
+          "count": 8,
+          "mean": 0.003625636926810838,
+          "p25": -0.03434211737486487,
+          "p50": 0.008025847207556502,
+          "p75": 0.0333846441811754,
+          "p90": 0.0724677931089748,
+          "min": -0.1127402674745871,
+          "max": 0.11956938711671106,
+          "improved": 4,
+          "unchanged": 1,
+          "degraded": 3
+        },
+        "action_alignment": {
+          "count": 8,
+          "mean": 0.0045496740362812,
+          "p25": -0.046250000000000006,
+          "p50": -0.0034325396825395926,
+          "p75": 0.032603458049886624,
+          "p90": 0.10521825396825397,
+          "min": -0.13898809523809524,
+          "max": 0.19166666666666665,
+          "improved": 4,
+          "unchanged": 0,
+          "degraded": 4
+        },
+        "logic_alignment": {
+          "count": 8,
+          "mean": 0.002701599817340517,
+          "p25": -0.016600901416396398,
+          "p50": 0.019484234097652625,
+          "p75": 0.03416583031246425,
+          "p90": 0.039717332249695605,
+          "min": -0.08649243971107887,
+          "max": 0.04747210756675552,
+          "improved": 5,
+          "unchanged": 1,
+          "degraded": 2
+        }
+      }
+    },
+    "per_sample": [
+      {
+        "sample_id": "07debd0c5d1529c3c46773b440296ea02f4d21483fe3bbad8c99224012558445",
+        "event_count": 3,
+        "prompt_token_count": 3892,
+        "checkpoints": {
+          "C0": {
+            "event_count": 3,
+            "prompt_token_count": 3892,
+            "total_reward": 0.5034021509698834,
+            "action_alignment": 0.7025736961451249,
+            "logic_alignment": 0.3042306057946419
+          },
+          "C20": {
+            "event_count": 3,
+            "prompt_token_count": 3892,
+            "total_reward": 0.46803080580048334,
+            "action_alignment": 0.676984126984127,
+            "logic_alignment": 0.25907748461683966
+          },
+          "C40": {
+            "event_count": 3,
+            "prompt_token_count": 3892,
+            "total_reward": 0.4696403094039918,
+            "action_alignment": 0.6512698412698414,
+            "logic_alignment": 0.2880107775381422
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.03537134516940005,
+            "action_alignment": -0.02558956916099786,
+            "logic_alignment": -0.045153121177802236
+          },
+          "C40-C0": {
+            "total_reward": -0.03376184156589157,
+            "action_alignment": -0.05130385487528344,
+            "logic_alignment": -0.016219828256499702
+          },
+          "C40-C20": {
+            "total_reward": 0.0016095036035084775,
+            "action_alignment": -0.02571428571428558,
+            "logic_alignment": 0.028933292921302534
+          }
+        }
+      },
+      {
+        "sample_id": "106fc278d287fba48a5ce85ce57ce35160fbea9bae772fa830c352da4cbd9b22",
+        "event_count": 4,
+        "prompt_token_count": 4882,
+        "checkpoints": {
+          "C0": {
+            "event_count": 4,
+            "prompt_token_count": 4882,
+            "total_reward": 0.4931534877098106,
+            "action_alignment": 0.7806122448979592,
+            "logic_alignment": 0.20569473052166204
+          },
+          "C20": {
+            "event_count": 4,
+            "prompt_token_count": 4882,
+            "total_reward": 0.43746972860986977,
+            "action_alignment": 0.7124433106575964,
+            "logic_alignment": 0.16249614656214326
+          },
+          "C40": {
+            "event_count": 4,
+            "prompt_token_count": 4882,
+            "total_reward": 0.4897511242869576,
+            "action_alignment": 0.7806122448979592,
+            "logic_alignment": 0.19889000367595605
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.05568375909994083,
+            "action_alignment": -0.06816893424036286,
+            "logic_alignment": -0.04319858395951878
+          },
+          "C40-C0": {
+            "total_reward": -0.003402363422852994,
+            "action_alignment": 0.0,
+            "logic_alignment": -0.006804726845705988
+          },
+          "C40-C20": {
+            "total_reward": 0.05228139567708784,
+            "action_alignment": 0.06816893424036286,
+            "logic_alignment": 0.036393857113812794
+          }
+        }
+      },
+      {
+        "sample_id": "22994b0540245d2d2b7307e3ba63dbe4bf0ea6ab044e6911b88dba4bee4de758",
+        "event_count": 3,
+        "prompt_token_count": 4705,
+        "checkpoints": {
+          "C0": {
+            "event_count": 3,
+            "prompt_token_count": 4705,
+            "total_reward": 0.41087140581442577,
+            "action_alignment": 0.5595238095238095,
+            "logic_alignment": 0.262219002105042
+          },
+          "C20": {
+            "event_count": 3,
+            "prompt_token_count": 4705,
+            "total_reward": 0.3606338743975802,
+            "action_alignment": 0.5173469387755103,
+            "logic_alignment": 0.20392081001965004
+          },
+          "C40": {
+            "event_count": 3,
+            "prompt_token_count": 4705,
+            "total_reward": 0.38771960141345146,
+            "action_alignment": 0.5380952380952382,
+            "logic_alignment": 0.23734396473166477
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.05023753141684556,
+            "action_alignment": -0.04217687074829923,
+            "logic_alignment": -0.05829819208539197
+          },
+          "C40-C0": {
+            "total_reward": -0.023151804400974307,
+            "action_alignment": -0.021428571428571352,
+            "logic_alignment": -0.024875037373377235
+          },
+          "C40-C20": {
+            "total_reward": 0.027085727015871253,
+            "action_alignment": 0.02074829931972788,
+            "logic_alignment": 0.033423154712014735
+          }
+        }
+      },
+      {
+        "sample_id": "4246eb86aea7039b498af50bcbfa1b170ff5505e1ff379d9824af64598219cd7",
+        "event_count": 5,
+        "prompt_token_count": 4648,
+        "checkpoints": {
+          "C0": {
+            "event_count": 5,
+            "prompt_token_count": 4648,
+            "total_reward": 0.3293649245995615,
+            "action_alignment": 0.5035714285714288,
+            "logic_alignment": 0.1551584206276943
+          },
+          "C20": {
+            "event_count": 5,
+            "prompt_token_count": 4648,
+            "total_reward": 0.30516246173816564,
+            "action_alignment": 0.4722222222222223,
+            "logic_alignment": 0.1381027012541089
+          },
+          "C40": {
+            "event_count": 5,
+            "prompt_token_count": 4648,
+            "total_reward": 0.31960465254977016,
+            "action_alignment": 0.4910714285714287,
+            "logic_alignment": 0.1481378765281116
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.02420246286139588,
+            "action_alignment": -0.03134920634920646,
+            "logic_alignment": -0.01705571937358541
+          },
+          "C40-C0": {
+            "total_reward": -0.009760272049791352,
+            "action_alignment": -0.012500000000000067,
+            "logic_alignment": -0.007020544099582693
+          },
+          "C40-C20": {
+            "total_reward": 0.014442190811604527,
+            "action_alignment": 0.018849206349206393,
+            "logic_alignment": 0.010035175274002717
+          }
+        }
+      },
+      {
+        "sample_id": "7389da4d5b4c87efe67a411641a75af0978690dadb2a20d802545e7293aed4f7",
+        "event_count": 4,
+        "prompt_token_count": 3611,
+        "checkpoints": {
+          "C0": {
+            "event_count": 4,
+            "prompt_token_count": 3611,
+            "total_reward": 0.4009023738765472,
+            "action_alignment": 0.5934523809523811,
+            "logic_alignment": 0.2083523668007134
+          },
+          "C20": {
+            "event_count": 4,
+            "prompt_token_count": 3611,
+            "total_reward": 0.41118983430255573,
+            "action_alignment": 0.5770833333333334,
+            "logic_alignment": 0.24529633527177805
+          },
+          "C40": {
+            "event_count": 4,
+            "prompt_token_count": 3611,
+            "total_reward": 0.29844956682796864,
+            "action_alignment": 0.43809523809523815,
+            "logic_alignment": 0.15880389556069918
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": 0.010287460426008532,
+            "action_alignment": -0.016369047619047672,
+            "logic_alignment": 0.03694396847106465
+          },
+          "C40-C0": {
+            "total_reward": -0.10245280704857856,
+            "action_alignment": -0.15535714285714292,
+            "logic_alignment": -0.049548471240014214
+          },
+          "C40-C20": {
+            "total_reward": -0.1127402674745871,
+            "action_alignment": -0.13898809523809524,
+            "logic_alignment": -0.08649243971107887
+          }
+        }
+      },
+      {
+        "sample_id": "a70e16c202bba8c2ee64772ccdbfab5ae8fdb78d222a360f2f8e6611ed14835c",
+        "event_count": 2,
+        "prompt_token_count": 4464,
+        "checkpoints": {
+          "C0": {
+            "event_count": 2,
+            "prompt_token_count": 4464,
+            "total_reward": 0.44739978206192854,
+            "action_alignment": 0.6266666666666667,
+            "logic_alignment": 0.2681328974571904
+          },
+          "C20": {
+            "event_count": 2,
+            "prompt_token_count": 4464,
+            "total_reward": 0.5344673086819701,
+            "action_alignment": 0.7433333333333334,
+            "logic_alignment": 0.3256012840306068
+          },
+          "C40": {
+            "event_count": 2,
+            "prompt_token_count": 4464,
+            "total_reward": 0.4932872814281358,
+            "action_alignment": 0.7000000000000001,
+            "logic_alignment": 0.28657456285627164
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": 0.08706752662004158,
+            "action_alignment": 0.1166666666666667,
+            "logic_alignment": 0.05746838657341641
+          },
+          "C40-C0": {
+            "total_reward": 0.045887499366207285,
+            "action_alignment": 0.07333333333333336,
+            "logic_alignment": 0.018441665399081264
+          },
+          "C40-C20": {
+            "total_reward": -0.041180027253834295,
+            "action_alignment": -0.043333333333333335,
+            "logic_alignment": -0.039026721174335144
+          }
+        }
+      },
+      {
+        "sample_id": "c628d40c60980763f80c6d39adba8891251b27c081508c5912ae4e25f7a72af0",
+        "event_count": 5,
+        "prompt_token_count": 3848,
+        "checkpoints": {
+          "C0": {
+            "event_count": 5,
+            "prompt_token_count": 3848,
+            "total_reward": 0.431061377610378,
+            "action_alignment": 0.6541666666666668,
+            "logic_alignment": 0.20795608855408915
+          },
+          "C20": {
+            "event_count": 5,
+            "prompt_token_count": 3848,
+            "total_reward": 0.3426168433373866,
+            "action_alignment": 0.5000000000000001,
+            "logic_alignment": 0.18523368667477308
+          },
+          "C40": {
+            "event_count": 5,
+            "prompt_token_count": 3848,
+            "total_reward": 0.4621862304540977,
+            "action_alignment": 0.6916666666666668,
+            "logic_alignment": 0.2327057942415286
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.08844453427299137,
+            "action_alignment": -0.15416666666666667,
+            "logic_alignment": -0.022722401879316068
+          },
+          "C40-C0": {
+            "total_reward": 0.031124852843719686,
+            "action_alignment": 0.03749999999999998,
+            "logic_alignment": 0.02474970568743945
+          },
+          "C40-C20": {
+            "total_reward": 0.11956938711671106,
+            "action_alignment": 0.19166666666666665,
+            "logic_alignment": 0.04747210756675552
+          }
+        }
+      },
+      {
+        "sample_id": "f79e223cfef0ff1cabf525010ed05fe284c789bdb8158a3deb5addfd6c7c1a61",
+        "event_count": 2,
+        "prompt_token_count": 3793,
+        "checkpoints": {
+          "C0": {
+            "event_count": 2,
+            "prompt_token_count": 3793,
+            "total_reward": 0.3384583802897701,
+            "action_alignment": 0.49000000000000005,
+            "logic_alignment": 0.18691676057954018
+          },
+          "C20": {
+            "event_count": 2,
+            "prompt_token_count": 3793,
+            "total_reward": 0.20928933191727805,
+            "action_alignment": 0.29500000000000004,
+            "logic_alignment": 0.1235786638345561
+          },
+          "C40": {
+            "event_count": 2,
+            "prompt_token_count": 3793,
+            "total_reward": 0.177226517835403,
+            "action_alignment": 0.24000000000000002,
+            "logic_alignment": 0.11445303567080595
+          }
+        },
+        "deltas": {
+          "C20-C0": {
+            "total_reward": -0.12916904837249205,
+            "action_alignment": -0.195,
+            "logic_alignment": -0.06333809674498408
+          },
+          "C40-C0": {
+            "total_reward": -0.1612318624543671,
+            "action_alignment": -0.25,
+            "logic_alignment": -0.07246372490873423
+          },
+          "C40-C20": {
+            "total_reward": -0.03206281408187506,
+            "action_alignment": -0.05500000000000002,
+            "logic_alignment": -0.009125628163750149
+          }
+        }
+      }
+    ],
+    "top_degraded": [
+      "f79e223cfef0ff1cabf525010ed05fe284c789bdb8158a3deb5addfd6c7c1a61",
+      "7389da4d5b4c87efe67a411641a75af0978690dadb2a20d802545e7293aed4f7",
+      "07debd0c5d1529c3c46773b440296ea02f4d21483fe3bbad8c99224012558445"
+    ],
+    "top_improved": [
+      "a70e16c202bba8c2ee64772ccdbfab5ae8fdb78d222a360f2f8e6611ed14835c",
+      "c628d40c60980763f80c6d39adba8891251b27c081508c5912ae4e25f7a72af0",
+      "106fc278d287fba48a5ce85ce57ce35160fbea9bae772fa830c352da4cbd9b22"
+    ],
+    "top_degraded_details": [
+      {
+        "sample_id": "f79e223cfef0ff1cabf525010ed05fe284c789bdb8158a3deb5addfd6c7c1a61",
+        "event_count": 2,
+        "prompt_token_count": 3793,
+        "gold_events": [
+          {
+            "date": "2026-01-18",
+            "action": "[商品-购买] <|prod_begin|><s_a_2570><s_b_664><s_c_2405>",
+            "logic": "问题触发与行动：首次购买明确标注“胶原蛋白肽”的内服产品，触发了对“口服美容”的初步尝试和投资。"
+          },
+          {
+            "date": "2026-01-27",
+            "action": "[视频-长播] <|video_begin|><s_a_2655><s_b_4201><s_c_4545>",
+            "logic": "寻求验证与认知强化：在购买产品后，主动观看了一个直接提及“饮用胶原蛋白肽”并展示其正面效果（减重后皮肤紧致）的案例视频。此行为并非随机娱乐，而是对自身购买决策的验证和效果期待的强化，构成了认知闭环。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "event selection/action matching changed",
+          "logic-text alignment changed",
+          "event order violation rate changed 50%->25%",
+          "completion length changed 207.2->242.5 tokens"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 3793,
+              "total_reward": 0.3384583802897701,
+              "action_alignment": 0.49000000000000005,
+              "logic_alignment": 0.18691676057954018
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.41448330394347427,
+                "action_alignment": 0.56,
+                "logic_alignment": 0.2689666078869485,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [
+                  "chronology_violation",
+                  "duplicate_event"
+                ],
+                "grounding_penalty_kinds": [
+                  "chronology_violation",
+                  "duplicate_event"
+                ],
+                "completion_token_count": 255,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：首次出现对“胶原蛋白”、“抗衰老”、“紧致”等概念的主动关注，并通过点击具体产品来验证认知。\"}, {\"date\": \"2026-01-27\", \"action\": \"[视频-长播] <|video_begin|><s_a_2655><s_b_4201><s_c_4545>\", \"logic\": \"认知深化与方法论修正：从被动点击产品转向主动观看专业博主的深度科普视频，修正了对胶原蛋白功效的认知，理解到其“吸收利用率”是关键，而不仅仅是成分本身。\"}, {\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"决策收敛：在了解了核心概念（吸收利用率）后，再次点击特定产品，表明用户在新知识的基础上对初始兴趣点进行了再次审视和比较，形成了一个完整的认知-验证-决策闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 576
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.3156099033816425,
+                "action_alignment": 0.5,
+                "logic_alignment": 0.131219806763285,
+                "predicted_event_count": 2,
+                "matched_event_count": 1,
+                "violations": [
+                  "chronology_violation"
+                ],
+                "grounding_penalty_kinds": [
+                  "chronology_violation"
+                ],
+                "completion_token_count": 185,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-27\", \"action\": \"[视频-长播] <|video_begin|><s_a_2655><s_b_4201><s_c_4545>\", \"logic\": \"认知深化与问题具象化：通过观看专业视频，对“胶原蛋白流失”这一皮肤问题有了更深层次的认知，并明确了问题的核心变量——胶原蛋白。\"}, {\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"决策收敛与行动闭环：基于前期对“胶原蛋白流失”的认知，用户立即开始寻找具体的、具有“胶原”成分的产品，将抽象的认知转化为精准的购买意向，完成了从“了解问题”到“寻找解决方案”的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 418
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.14766414141414144,
+                "action_alignment": 0.20000000000000004,
+                "logic_alignment": 0.09532828282828285,
+                "predicted_event_count": 2,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 185,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"问题触发与解决方案初探：用户开始关注具体的“高纤谷物冲饮”，表明其开始寻求通过饮食调理来改善或维护健康。\"}, {\"date\": \"2026-02-06\", \"action\": \"[商品-点击] <|prod_begin|><s_a_5136><s_b_7063><s_c_4838>\", \"logic\": \"认知升级与需求外化：用户的关注点从内在的饮食调理，跃迁至外在的“健康守护”符号，即购买代表健康或幸运的“马上有钱”吊坠。这标志着其健康焦虑从“需要吃什么”演变为“需要什么象征”。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 403
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.47607617241982225,
+                "action_alignment": 0.7000000000000001,
+                "logic_alignment": 0.2521523448396444,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 204,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：用户对“熬夜”导致的“面部暗沉”问题产生关注，并首次通过点击“熬夜救星”、“熬夜肌”等关键词的产品来寻求解决方案。\"}, {\"date\": \"2026-01-27\", \"action\": \"[视频-长播] <|video_begin|><s_a_2655><s_b_4201><s_c_4545>\", \"logic\": \"认知深化与方案收敛：从单纯的产品点击，演变为对特定护肤成分（如“发光水”、“胶原蛋白”、“虾青素”、“胜肽”）功效进行深度科普视频的学习。这表明用户不再满足于泛化概念，而是开始研究核心有效成分，实现了认知上的跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 438
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 3793,
+              "total_reward": 0.20928933191727805,
+              "action_alignment": 0.29500000000000004,
+              "logic_alignment": 0.1235786638345561
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.23256240665671007,
+                "action_alignment": 0.32000000000000006,
+                "logic_alignment": 0.14512481331342011,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [
+                  "action_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "action_mismatch"
+                ],
+                "completion_token_count": 262,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：首次出现对“胶原蛋白”、“抗衰老”、“紧致”等内服美容成分产品的关注，表明用户开始关注皮肤或身体状态的深层调理。\"}, {\"date\": \"2026-02-01\", \"action\": \"[商品-点击] <|prod_begin|><s_a_6974><s_b_1443><s_c_1570>\", \"logic\": \"兴趣深化与参数聚焦：从泛化的“胶原蛋白”概念，演进到对具体护肤成分“377”（烟酰胺）的关注，显示出对特定功效成分的筛选过程。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-购买] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"决策闭环与行动转化：最终购买了明确标注“胶原蛋白”成分的即食饮品，完成了从信息搜集到购买决策的闭环，将前期对“胶原蛋白”的模糊认知转化为实际的消费行为。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 569
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.3156099033816425,
+                "action_alignment": 0.5,
+                "logic_alignment": 0.131219806763285,
+                "predicted_event_count": 2,
+                "matched_event_count": 1,
+                "violations": [
+                  "chronology_violation"
+                ],
+                "grounding_penalty_kinds": [
+                  "chronology_violation"
+                ],
+                "completion_token_count": 176,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-27\", \"action\": \"[视频-长播] <|video_begin|><s_a_2655><s_b_4201><s_c_4545>\", \"logic\": \"认知深化与问题具象化：通过观看专业视频，对“胶原蛋白流失”这一皮肤问题有了更深层次的认知，并明确了问题的核心变量——胶原蛋白。\"}, {\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"决策收敛与行动闭环：基于前期对“胶原蛋白流失”的认知，用户立即开始寻找具体的解决方案（胶原蛋白肽饮品），完成了从“问题认知”到“产品筛选”的直接转化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 402
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.16482310792655622,
+                "action_alignment": 0.20000000000000004,
+                "logic_alignment": 0.1296462158531124,
+                "predicted_event_count": 2,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 201,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"问题触发与解决方案初探：点击“黄体酮”调理产品，表明用户已关注到特定的健康问题并开始寻找内部调理方案。\"}, {\"date\": \"2026-02-06\", \"action\": \"[商品-点击] <|prod_begin|><s_a_5136><s_b_7063><s_c_4838>\", \"logic\": \"认知升级与需求外化：在关注内调问题的第二天，用户点击了具有“能量”、“补气血”属性的饰品。这一行为表明，用户的关注点从内部调理扩展到了外部的象征性或辅助性补给，试图通过外在物品来验证或强化“补气血”的状态，形成从内到外的认知闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 428
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.12416190970420345,
+                "action_alignment": 0.16000000000000003,
+                "logic_alignment": 0.08832381940840686,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 274,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：用户对“熬夜”导致的皮肤问题产生初步认知，并开始关注相关产品（抗氧、抗老），这是一个明确的健康焦虑信号。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"问题深化与行动收敛：用户的健康焦虑从外部皮肤问题，深化到更根本的内部器官健康（熬夜伤心），行为从被动的“护肤”转变为主动的“内服调理”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_1882><s_b_5631><s_c_7674>\", \"logic\": \"认知跃迁与决策验证：在关注“养心”之后，用户的行为进一步跃迁至“养发”这一具体且可感知的生理指标上。这表明用户认知到，内服调理的效果需要通过外部（头发）表现来验证，形成了“内服调理-外部验证”的完整闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 596
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 3793,
+              "total_reward": 0.177226517835403,
+              "action_alignment": 0.24000000000000002,
+              "logic_alignment": 0.11445303567080595
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.15635767790262173,
+                "action_alignment": 0.16000000000000003,
+                "logic_alignment": 0.15271535580524342,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 252,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：首次出现对“胶原蛋白”、“抗衰老”、“紧致”等内服美容成分产品的关注，表明用户开始关注皮肤或身体状态的深层调理。\"}, {\"date\": \"2026-02-01\", \"action\": \"[商品-点击] <|prod_begin|><s_a_6974><s_b_1443><s_c_1570>\", \"logic\": \"兴趣深化与参数聚焦：从泛化的“胶原蛋白”概念，演进到对具体护肤成分“377”（烟酰胺）的关注，显示出对特定功效成分的认知深化。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"方案收敛：从皮肤外用、内服美容，最终聚焦到“胶原蛋白肽”这一具体且更具性价比的产品形态上，完成了从认知到决策意向的收敛。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 553
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.280206449668475,
+                "action_alignment": 0.4000000000000001,
+                "logic_alignment": 0.16041289933694997,
+                "predicted_event_count": 2,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 179,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-21\", \"action\": \"[商品-购买] <|prod_begin|><s_a_635><s_b_3393><s_c_7011>\", \"logic\": \"问题触发与初步尝试：购买具有“祛湿”功能的草本饮品，表明用户开始寻求对亚健康状态的外部调理方案。\"}, {\"date\": \"2026-01-24\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_664><s_c_889>\", \"logic\": \"认知深化与方案升级：在尝试了内服调理后，用户开始关注具有“抗皱紧致”、“淡化细纹”功效的外用护肤品，显示出对问题本质（可能为皮肤衰老）的认知加深，并寻求更直接的解决方案。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 394
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.14558869701726843,
+                "action_alignment": 0.23999999999999996,
+                "logic_alignment": 0.05117739403453689,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [
+                  "chronology_violation"
+                ],
+                "grounding_penalty_kinds": [
+                  "chronology_violation"
+                ],
+                "completion_token_count": 264,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"问题触发与解决方案初探：用户开始关注具体的营养补充剂（鱼油），初步聚焦于通过内服改善健康状态。\"}, {\"date\": \"2026-01-22\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_664><s_c_2405>\", \"logic\": \"认知深化与方案升级：从关注基础营养补充，演化到对特定功效（抗老、紧致）的护肤品进行点击，表明用户在寻找更直接、可见的健康改善方式。\"}, {\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"决策收敛与效果验证：用户进一步点击具有更具体、更强功效指向（抗初老、紧致）的产品，行为从“尝试”升级为“精挑细选”，并开始关注具体的功效宣称，形成了从“内调”到“外养”再到“效果验证”的清晰逻辑闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 575
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.12675324675324678,
+                "action_alignment": 0.16000000000000003,
+                "logic_alignment": 0.09350649350649354,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 275,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从内服调理到外在验证的健康焦虑闭环\", \"events\": [{\"date\": \"2026-01-26\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2570><s_b_106><s_c_1059>\", \"logic\": \"问题识别与初步探索：用户对“熬夜”导致的皮肤问题产生关注，并开始寻找解决方案，首先关注的是外在的“修护”产品。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_635><s_b_3393><s_c_889>\", \"logic\": \"方案演化与认知深化：用户兴趣从外用修护转向了内服调理，关注点变为“胶原蛋白”和“维生素C”等具体成分，试图从内部补充来改善熬夜造成的“黄皮”。\"}, {\"date\": \"2026-02-06\", \"action\": \"[商品-点击] <|prod_begin|><s_a_324><s_b_1892><s_c_739>\", \"logic\": \"决策收敛与价值确认：在探索多种调理方案后，用户的关注点最终回归到最初购买过的“胶原蛋白饮”上，这表明经过对比和思考，用户认为这是最佳或最认可的解决方案，完成了从“发现问题”到“寻找方案”再到“决策回归”的完整闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 595
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "sample_id": "7389da4d5b4c87efe67a411641a75af0978690dadb2a20d802545e7293aed4f7",
+        "event_count": 4,
+        "prompt_token_count": 3611,
+        "gold_events": [
+          {
+            "date": "2025-12-07",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_1411><s_c_5563>",
+            "logic": "初始触发：通过广告被动接触AI工具（Qwen/千问）的通用文案生成功能，形成初步认知。"
+          },
+          {
+            "date": "2025-12-18",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_5452>",
+            "logic": "认知扩展与场景关联：接触到另一款AI工具（GPT），并首次在广告中看到其应用于具体场景——“旅行规划”，为后续兴趣收敛埋下伏笔。"
+          },
+          {
+            "date": "2025-12-29",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_4879><s_c_7003>",
+            "logic": "兴趣聚焦与参数细化：兴趣点从泛化的AI能力聚焦到“旅游规划”，并增加了新的限定参数“亲子”，体现了从通用需求向个性化、具体化需求的演化。"
+          },
+          {
+            "date": "2026-01-24",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_3108>",
+            "logic": "决策收敛与工具对比：在明确“AI辅助旅游”的兴趣后，开始关注由具体应用（元宝）提供的、针对特定目的地（长白山）和季节（冬日）的深度攻略，认知从“AI能做什么”跃迁至“哪个AI工具能帮我解决具体问题”。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "event selection/action matching changed",
+          "logic-text alignment changed",
+          "date grounding violation rate changed 0%->50%"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 3611,
+              "total_reward": 0.4009023738765472,
+              "action_alignment": 0.5934523809523811,
+              "logic_alignment": 0.2083523668007134
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.4538767924249083,
+                "action_alignment": 0.6857142857142857,
+                "logic_alignment": 0.22203929913553086,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 235,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_4783>\", \"logic\": \"初始探索：首次点击泛化AI应用广告，兴趣点在于其“拍照”功能，属于对AI工具的初步认知阶段。\"}, {\"date\": \"2025-12-28\", \"action\": \"[广告-点击] <|ad_begin|><s_a_698><s_b_1411><s_c_7786>\", \"logic\": \"兴趣深化：从“拍照”扩展到“学习辅助”场景，关注点依然是AI的工具属性，但应用场景从娱乐转向教育。\"}, {\"date\": \"2026-01-28\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_7244>\", \"logic\": \"决策收敛：兴趣点从“拍照”、“写作”、“学习”等辅助性功能，聚焦到“生成图片”这一更具体、更核心的生产力工具上，完成了从发散浏览到精准定位的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 532
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.39195202695986503,
+                "action_alignment": 0.561904761904762,
+                "logic_alignment": 0.22199929201496807,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 253,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-09\", \"action\": \"[广告-点击] <|ad_begin|><s_a_3766><s_b_581><s_c_7566>\", \"logic\": \"初始触发：被动接收并点击了泛化的AI应用广告，初步建立起“AI能完成多样化任务”的认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化与筛选：从宽泛的应用广告，转向主动观看并点赞针对特定AI工具（豆包）解决具体问题（家庭关系）的视频内容，表明用户开始寻求AI工具的实用价值和解决现实问题的能力。\"}, {\"date\": \"2026-01-24\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_3108>\", \"logic\": \"兴趣收敛：在多次接触AI广告后，用户的关注点从泛化的“AI能做什么”收敛到具有特定功能和风格（卡通、个性化）的AI社交工具，完成了从概念认知到具体应用场景的演化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 577
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.18954968265126637,
+                "action_alignment": 0.2761904761904762,
+                "logic_alignment": 0.10290888911205652,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 209,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4340><s_b_2381><s_c_640>\", \"logic\": \"初始触发：被动接收到AI应用的广告，初步建立对该工具的泛化认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化：从了解AI本身，转向关注AI如何应用于具体的家庭生活场景（亲子关系），开始思考其现实价值。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-长播] <|video_begin|><s_a_2015><s_b_6234><s_c_5553>\", \"logic\": \"兴趣聚焦：在家庭关系场景下，进一步关注AI如何辅助处理“家务分工”这一具体痛点，从宏观关系探讨进入微观应用。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 507
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.5682309934701492,
+                "action_alignment": 0.8500000000000002,
+                "logic_alignment": 0.2864619869402982,
+                "predicted_event_count": 4,
+                "matched_event_count": 4,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 303,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1411><s_c_5563>\", \"logic\": \"问题触发与初步认知：首次通过广告接触到“元宝”这款AI工具，认知停留在“功能强大、可替代多款APP”等泛化、宣传性的层面。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_4783>\", \"logic\": \"认知深化：开始关注具体应用场景，如“美食创作”和“视频编辑”，认知从工具本身转向其核心功能。\"}, {\"date\": \"2025-12-28\", \"action\": \"[广告-点击] <|ad_begin|><s_a_698><s_b_1411><s_c_7786>\", \"logic\": \"决策收敛：兴趣点进一步收敛，从“工具功能”到“具体使用场景”（AI写作），并关注到“免费”、“无限次”等具体决策参数。\"}, {\"date\": \"2026-02-04\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1383><s_b_7608><s_c_2679>\", \"logic\": \"认知聚焦与参数锁定：兴趣点明确为“图像处理”，并聚焦于具体的技术维度（AI修图、照片修复），完成了从宽泛认知到具体应用领域的精准收敛。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 696
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 3611,
+              "total_reward": 0.41118983430255573,
+              "action_alignment": 0.5770833333333334,
+              "logic_alignment": 0.24529633527177805
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.4582218955391756,
+                "action_alignment": 0.6857142857142857,
+                "logic_alignment": 0.2307295053640655,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 247,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-29\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4879><s_c_7003>\", \"logic\": \"初始探索：首次点击泛用型AI助手广告，关注点在于“家庭管理”和“个人效率提升”，属于对该工具的初步认知。\"}, {\"date\": \"2025-12-30\", \"action\": \"[广告-点击] <|ad_begin|><s_a_6590><s_b_7497><s_c_7322>\", \"logic\": \"兴趣平移：在家庭管理场景之外，将AI工具的兴趣扩展到“旅游规划”，同样由广告推送触发，但应用场景开始多样化。\"}, {\"date\": \"2026-01-23\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_831>\", \"logic\": \"认知深化与收敛：从宽泛的家庭/个人场景，聚焦到“宠物养育”这一极具细分需求的垂直领域。这表明用户认知从“AI能做什么”演化为“AI在特定场景下能否解决具体问题”，是对AI应用能力的认知深化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 563
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.28546871975883015,
+                "action_alignment": 0.37142857142857144,
+                "logic_alignment": 0.19950886808908883,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 254,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-09\", \"action\": \"[广告-点击] <|ad_begin|><s_a_3766><s_b_581><s_c_7566>\", \"logic\": \"初始触发：被动接收并点击了泛化的AI应用广告，初步建立起“AI能完成多样化任务”的认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化与筛选：从宽泛的应用广告，转向主动观看并点赞针对特定AI工具（豆包）解决具体问题（家庭关系）的视频内容，表明用户开始寻求更具场景化的解决方案。\"}, {\"date\": \"2026-01-25\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_5687><s_b_1002><s_c_987>\", \"logic\": \"决策收敛：在多次接触AI工具后，用户最终选择深度转化并关注一个强调“无需下载、免费”且“功能多样（答题/写作/聊天）”的轻量化AI工具，完成了从概念认知到具体工具的决策闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 575
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.48146440141412084,
+                "action_alignment": 0.6416666666666668,
+                "logic_alignment": 0.3212621361615749,
+                "predicted_event_count": 4,
+                "matched_event_count": 4,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 292,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4340><s_b_2381><s_c_640>\", \"logic\": \"初始触发：被动接收到AI应用的广告，初步建立对该工具的泛化认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化：从了解AI本身，转向关注AI如何应用于具体的家庭生活场景（亲子关系），开始思考其现实价值。\"}, {\"date\": \"2026-01-26\", \"action\": \"[广告-点击] <|ad_begin|><s_a_3829><s_b_4134><s_c_6900>\", \"logic\": \"场景聚焦与需求收敛：兴趣从家庭关系收敛到更具体的个人健康与生活方式优化，主动寻求AI在“减肥”和“饮食”这两个明确生活场景中的解决方案。\"}, {\"date\": \"2026-01-27\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_7244>\", \"logic\": \"兴趣确认与参数化：进一步确认对AI减肥方案的兴趣，并关注到“个性化计划”、“饮食管理”、“运动建议”等具体参数，表明用户意图从“了解”转变为“尝试”。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 694
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.4196043204980963,
+                "action_alignment": 0.6095238095238097,
+                "logic_alignment": 0.22968483147238297,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 256,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1411><s_c_5563>\", \"logic\": \"问题触发与初步认知：首次通过广告接触到“元宝”这款AI工具，认知停留在“帮助制定计划、提供生活建议”等宽泛的、非垂直领域的应用场景。\"}, {\"date\": \"2026-01-15\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1411><s_c_4636>\", \"logic\": \"认知分化：再次接触同一品牌“元宝”，但关注点从泛生活建议收敛至“教育辅导”这一特定垂直场景。\"}, {\"date\": \"2026-01-25\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_1584><s_b_3518><s_c_1649>\", \"logic\": \"认知跃迁：兴趣从“辅助”转向“主导”，关注点聚焦于“家长无需付费即可使用”的核心价值，并且关注到具体的游戏化应用场景（“游戏闯关式”），表明用户对“元宝”在特定教育场景下的深度功能和体验有了更清晰的认知。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 579
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 3611,
+              "total_reward": 0.29844956682796864,
+              "action_alignment": 0.43809523809523815,
+              "logic_alignment": 0.15880389556069918
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.45466604005744804,
+                "action_alignment": 0.6857142857142857,
+                "logic_alignment": 0.22361779440061036,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 249,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-29\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4879><s_c_7003>\", \"logic\": \"初始探索：首次点击泛用型AI助手广告，关注点在于“家庭管理”和“个人效率提升”，属于对该工具的初步认知。\"}, {\"date\": \"2025-12-30\", \"action\": \"[广告-点击] <|ad_begin|><s_a_6590><s_b_7497><s_c_7322>\", \"logic\": \"兴趣平移：在家庭管理场景之外，将AI工具的兴趣扩展到“旅游规划”，同样由广告推送触发，但应用场景开始多样化。\"}, {\"date\": \"2026-01-23\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_831>\", \"logic\": \"认知深化与收敛：从宽泛的家庭/个人场景，聚焦到“宠物养育”这一极具细分需求的垂直领域。这表明用户认知已从“AI能做什么”深化为“AI能解决什么具体问题”，完成了从发散兴趣到精准需求的演化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 562
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.35411259632422315,
+                "action_alignment": 0.5047619047619049,
+                "logic_alignment": 0.20346328788654142,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 275,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-09\", \"action\": \"[广告-点击] <|ad_begin|><s_a_3766><s_b_581><s_c_7566>\", \"logic\": \"初始触发：被动接收并点击了泛化的AI应用广告，初步建立起“AI能完成多样化任务”的认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化与筛选：从宽泛的应用广告，转向主动观看并点赞针对特定AI工具（豆包）解决具体问题（家庭关系）的视频内容，表明用户开始寻求AI工具的实用价值和特定功能。\"}, {\"date\": \"2026-01-23\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_4733><s_c_831>\", \"logic\": \"认知跃迁与聚焦：在观看完关于AI解决家庭问题的视频后，用户立即点击了另一款功能更为聚焦（AI写作、文案创作）的工具广告。这表明用户已完成从“AI是个好东西”到“AI如何解决我具体问题”的认知收敛，开始主动筛选和探索更细分的AI应用场景。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 608
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.18954968265126637,
+                "action_alignment": 0.2761904761904762,
+                "logic_alignment": 0.10290888911205652,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 224,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4340><s_b_2381><s_c_640>\", \"logic\": \"初始触发：被动接收到AI应用的广告，初步建立对该工具的泛化认知。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_3766><s_b_6234><s_c_4611>\", \"logic\": \"认知深化：从了解AI本身，转向关注AI如何应用于具体的家庭生活场景（亲子关系），开始思考其现实价值。\"}, {\"date\": \"2026-01-23\", \"action\": \"[视频-长播] <|video_begin|><s_a_2015><s_b_6234><s_c_5553>\", \"logic\": \"兴趣聚焦：在家庭关系的场景下，进一步聚焦到AI在亲子沟通、情感理解等更微观、更具体层面的应用，实现了从“工具是什么”到“工具能解决什么问题”的认知收敛。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 529
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.19546994827893707,
+                "action_alignment": 0.28571428571428575,
+                "logic_alignment": 0.10522561084358838,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 264,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化AI工具认知到应用场景聚焦的探索\", \"events\": [{\"date\": \"2025-12-07\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1411><s_c_5563>\", \"logic\": \"问题触发与初步认知：首次通过广告接触到“元宝”这款AI工具，认知停留在“帮助制定计划、提供生活建议”等宽泛的、非垂直领域的应用场景。\"}, {\"date\": \"2026-01-19\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_3300><s_b_4996><s_c_6561>\", \"logic\": \"兴趣分化与聚焦：用户的兴趣点发生显著转移，从泛化的AI工具概念，收敛并聚焦于《我的世界》这一具体的、娱乐化的应用领域。这标志着用户行为从被动接收广告信息，转变为主动消费特定主题内容，体现了认知增量。\"}, {\"date\": \"2026-01-24\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_3300><s_b_4996><s_c_6561>\", \"logic\": \"认知闭环与行为固化：在次日再次关注同类视频，表明用户对“我的世界”这一主题产生了持续兴趣，完成了从被动了解到主动关注的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 602
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "sample_id": "07debd0c5d1529c3c46773b440296ea02f4d21483fe3bbad8c99224012558445",
+        "event_count": 3,
+        "prompt_token_count": 3892,
+        "gold_events": [
+          {
+            "date": "2025-12-20",
+            "action": "[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>",
+            "logic": "初始触发：被动接收并点击“游戏赚钱”类广告，兴趣点在于“小额资金”和“提现”，表现为对网赚概念的初步、泛化接触。"
+          },
+          {
+            "date": "2025-12-21",
+            "action": "[广告-点击] <|ad_begin|><s_a_1041><s_b_978><s_c_1110>",
+            "logic": "认知深化与聚焦：从对模糊的“游戏赚钱”概念，转向对核心环节“微信提现流程”的具体机制进行了解。用户不再满足于“能赚钱”的宣传，开始关注如何“安全、快速地将钱提到自己的账户”，认知增量体现在对支付工具操作细节的关注上。"
+          },
+          {
+            "date": "2025-12-23",
+            "action": "[广告-深度转化] <|ad_begin|><s_a_7261><s_b_1119><s_c_1383>",
+            "logic": "决策收敛与路径修正：在了解了提现机制后，用户的行为从点击各种未知的小游戏广告，收敛到对“百度极速版”这类知名应用收益模式的深度了解。这表明用户可能基于前期信息筛选，认为大平台应用比随机小游戏更可靠，体现了从“广撒网”到“重点考察”的行为修正。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "event selection/action matching changed",
+          "logic-text alignment changed",
+          "date grounding violation rate changed 0%->25%"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 3,
+              "prompt_token_count": 3892,
+              "total_reward": 0.5034021509698834,
+              "action_alignment": 0.7025736961451249,
+              "logic_alignment": 0.3042306057946419
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5264767190297044,
+                "action_alignment": 0.7591836734693879,
+                "logic_alignment": 0.2937697645900208,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 298,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收大量泛化的“赚钱小游戏”、“领现金”类广告，处于信息输入的早期阶段。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_1822><s_c_5115>\", \"logic\": \"兴趣聚焦：在众多广告中，开始对“福运好时光”这一特定应用产生兴趣，点击行为指向性增强。\"}, {\"date\": \"2025-12-22\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3973><s_c_4567>\", \"logic\": \"认知深化：从关注“可提现”、“赚钱”等浅层利益点，深化到关注“赚钱规则”、“提现流程”、“收益机制”等核心玩法细节。\"}, {\"date\": \"2025-12-22\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_7847><s_b_2799><s_c_7257>\", \"logic\": \"行为闭环：在对玩法机制产生认知后，发生了“深度转化”行为，这标志着用户从被动信息接收者转变为主动的潜在用户，完成了从了解到意向的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 681
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.503101887303322,
+                "action_alignment": 0.7111111111111112,
+                "logic_alignment": 0.2950926634955327,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 219,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收多种“小游戏赚钱”广告，处于信息泛化筛选阶段。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量：首次关注到具体的激励方式“合成赚取红包”，开始对收益模式产生初步区分。\"}, {\"date\": \"2025-12-26\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_4497><s_c_5621>\", \"logic\": \"决策收敛：在体验过多种玩法后，开始重点关注“任务完成获取奖励”的具体模式，并注意到更具体的激励元素（每日奖池、排行榜），认知从“能赚钱”聚焦到“如何有效赚钱”。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 519
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.45277981277981283,
+                "action_alignment": 0.6400000000000001,
+                "logic_alignment": 0.26555962555962553,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 177,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收多种“赚钱小游戏”广告，处于信息宽泛、无明确方向的筛选阶段。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量与筛选：在海量信息中，首次接触到包含“提现”、“任务奖励”、“提现记录”等明确收益要素的广告，相比前序的模糊“赚钱”概念，此广告提供了更具体的操作和收益模型，构成了关键的认知增量。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 398
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.5312501847666944,
+                "action_alignment": 0.7000000000000002,
+                "logic_alignment": 0.36250036953338854,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 244,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收并点击了多种网赚广告，兴趣点较为宽泛，涉及各类应用（如“熊猫日记”、“猪猪来财”）和玩法（如“解螺丝”）。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4405><s_b_96><s_c_4341>\", \"logic\": \"认知聚焦：用户的兴趣开始收敛，从泛化的网赚应用转向对特定平台“快手极速版”的关注，开始了解具体的激励机制。\"}, {\"date\": \"2025-12-23\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7261><s_b_1119><s_c_1383>\", \"logic\": \"对比深化：在了解了“快手极速版”的激励机制后，用户进一步点击了另一款“百度极速版”的广告，显示出正在进行平台之间的功能和收益对比研究。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 546
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 3,
+              "prompt_token_count": 3892,
+              "total_reward": 0.46803080580048334,
+              "action_alignment": 0.676984126984127,
+              "logic_alignment": 0.25907748461683966
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5037097278752187,
+                "action_alignment": 0.7111111111111112,
+                "logic_alignment": 0.2963083446393262,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 228,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收大量“赚钱小游戏”广告，处于信息泛化浏览阶段。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_6197><s_c_7806>\", \"logic\": \"认知收敛：在海量广告中，对包含“提现”、“金币积累”、“任务奖励”等明确收益机制的广告产生兴趣，开始筛选核心功能。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_2439><s_c_5308>\", \"logic\": \"决策聚焦：兴趣点进一步收敛，明确指向“消除类”这种具体游戏形式，并关注其“赚钱”和“提现”特性，完成了从被动浏览到主动了解特定收益模式的认知演化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 529
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.5331948915379915,
+                "action_alignment": 0.8,
+                "logic_alignment": 0.26638978307598293,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 285,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收多种“小游戏赚钱”广告，处于信息泛化筛选阶段。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量：接触到“红包提现”、“福利奖励”等新颖的收益模式，对不同平台的收益机制进行比较和了解。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_2439><s_c_5308>\", \"logic\": \"决策收敛：在了解多种模式后，首次明确关注到“看视频赚钱”这一具体的应用场景和变现方式，兴趣点开始聚焦。\"}, {\"date\": \"2025-12-23\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_7261><s_b_1119><s_c_1383>\", \"logic\": \"认知跃迁与行为闭环：从点击浏览广告，转变为主动进行应用内操作（深度转化），完成了从“了解”到“尝试”的认知跃迁，形成了闭环行为。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 665
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.47401381035179224,
+                "action_alignment": 0.6444444444444445,
+                "logic_alignment": 0.30358317625914005,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 267,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收各类“赚钱小游戏”广告，处于信息宽泛、无明确方向的探索期。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量与筛选：在海量信息中，首次接触到包含“提现”、“任务奖励”、“提现记录”等明确收益要素的广告，区别于前一步纯粹的“赚钱”概念，开始筛选出更具体的赚钱模式。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_2439><s_c_5308>\", \"logic\": \"决策收敛与模式聚焦：进一步接触到更具体、更聚焦的“消除类”游戏广告，其核心卖点是“消除金币获取红包”和“提现”，相较于前一步的“任务奖励”更具象化，用户兴趣点开始收敛到特定的游戏玩法和变现机制上。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 583
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.36120479343693096,
+                "action_alignment": 0.5523809523809524,
+                "logic_alignment": 0.17002863449290948,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 355,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收并点击了多种网赚广告，兴趣点较为宽泛，涉及各类应用（如“熊猫日记”、“猪猪来财”）和玩法（如“幸运之星”）。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4405><s_b_96><s_c_4341>\", \"logic\": \"认知聚焦：用户的兴趣开始收敛，从泛化的网赚应用转向对特定平台“红包”功能的关注，体现了对收益机制更深入的探索。\"}, {\"date\": \"2025-12-22\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3973><s_c_4567>\", \"logic\": \"模式探索：在“红包”模式之外，开始探索另一种具体的收益方式“红包+提现”，表明用户在寻找不同形式的、可兑现的收益路径。\"}, {\"date\": \"2025-12-26\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_4497><s_c_5621>\", \"logic\": \"认知增量与闭环：用户接触到一个包含“现金池”、“自动提现”、“限时”、“无门槛”等具体且具有激励性的新变量。这标志着其认知从单一的“红包/提现”机制升级为对更系统、更具体的“激励性平台”模式的探索，完成了从“做什么”到“如何做得更好”的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 765
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 3,
+              "prompt_token_count": 3892,
+              "total_reward": 0.4696403094039918,
+              "action_alignment": 0.6512698412698414,
+              "logic_alignment": 0.2880107775381422
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5035010567712823,
+                "action_alignment": 0.7111111111111112,
+                "logic_alignment": 0.29589100243145333,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 257,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收大量泛化的“赚钱小游戏”、“领现金”类广告，处于广泛兴趣阶段，行为模式以点击为主。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_1822><s_c_5115>\", \"logic\": \"认知收敛：在众多广告中，用户开始关注带有特定标签（如“暑假”、“学生党”、“学生”）的内容，表明其筛选标准开始从“赚钱”本身向“适用人群和场景”收窄。\"}, {\"date\": \"2025-12-22\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7847><s_b_2799><s_c_7257>\", \"logic\": \"兴趣确认与聚焦：从关注“暑假”、“学生”等场景，进一步聚焦到“苹果系统”、“不卡提现”这类更具体的平台属性和技术条件，完成了从泛兴趣到精准筛选的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 569
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.4256446788892274,
+                "action_alignment": 0.6095238095238097,
+                "logic_alignment": 0.2417655482546451,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 305,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3845><s_c_2743>\", \"logic\": \"初始探索：被动接收多种“小游戏赚钱”广告，处于信息泛化筛选阶段。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量：接触到“红包提现”、“福利奖励”等新颖的收益模式，对不同平台的收益机制进行比较和了解。\"}, {\"date\": \"2026-01-28\", \"action\": \"[广告-点击] <|ad_begin|><s_a_5632><s_b_2903><s_c_1118>\", \"logic\": \"决策收敛：在了解多种模式后，用户的关注点收敛到“游戏皮肤免费领”这一具体且可立即获得的激励，并首次关注到特定平台“花仙子”。\"}, {\"date\": \"2026-01-30\", \"action\": \"[广告-点击] <|ad_begin|><s_a_5632><s_b_4733><s_c_3603>\", \"logic\": \"行为闭环：用户继续深度关注“花仙子”平台，其行为从对“赚钱”功能的泛泛兴趣，演变为对该特定平台“签到领皮肤”、“任务解锁”等具体玩法的持续追踪，形成行为闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 689
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.4525355500003388,
+                "action_alignment": 0.6400000000000001,
+                "logic_alignment": 0.26507110000067746,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 177,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收多种“赚钱小游戏”广告，处于信息宽泛、无明确方向的探索期。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1041><s_b_4733><s_c_3921>\", \"logic\": \"认知增量与筛选：在海量信息中，首次接触到包含“提现”、“任务奖励”、“提现记录”等明确收益要素的广告，相比前序的模糊“赚钱”概念，此广告提供了更具体的操作和收益模型，构成了关键的认知增量。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 397
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.49687995195511864,
+                "action_alignment": 0.6444444444444445,
+                "logic_alignment": 0.3493154594657928,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 270,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化网赚信息筛选到聚焦特定平台收益模式的探索\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7598><s_b_665><s_c_2656>\", \"logic\": \"初始阶段：被动接收并点击了多种网赚广告，兴趣点较为宽泛，涉及各类应用（如“熊猫日记”、“猪猪来财”）和玩法（如“幸运之星”）。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4405><s_b_96><s_c_4341>\", \"logic\": \"认知聚焦：用户的兴趣开始收敛，从泛化的网赚应用转向对特定平台“支付宝”和“微信”的赚钱模式进行探索。\"}, {\"date\": \"2025-12-22\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2778><s_b_3973><s_c_4567>\", \"logic\": \"认知深化与验证：在前一步对“支付宝/微信”模式的认知基础上，进一步点击了更具“零门槛”、“秒到账”特征的同类广告，表明用户在寻找更便捷或更可信的支付方式来实现网赚目标，完成了从平台认知到具体方案筛选的演进。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 580
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "top_improved_details": [
+      {
+        "sample_id": "a70e16c202bba8c2ee64772ccdbfab5ae8fdb78d222a360f2f8e6611ed14835c",
+        "event_count": 2,
+        "prompt_token_count": 4464,
+        "gold_events": [
+          {
+            "date": "2025-12-11",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>",
+            "logic": "初始触发：通过广告被动接触到“腾讯元宝”这一AI工具，初步认知其核心功能为“提升工作效率”。"
+          },
+          {
+            "date": "2025-12-21",
+            "action": "[广告-点击] <|ad_begin|><s_a_1351><s_b_2826><s_c_7456>",
+            "logic": "认知增量与场景深化：在对该AI工具有了基础认知后，用户再次点击了同一产品的另一则广告。这次的广告内容不再是泛化的效率提升，而是聚焦于“健康管理”这一垂直且具体的应用场景（如改善姿势、营养建议），表明用户在寻求该工具更深入、更贴近个人生活的应用方式，实现了认知上的跃迁。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "event selection/action matching changed",
+          "logic-text alignment changed",
+          "date grounding violation rate changed 50%->100%",
+          "action grounding violation rate changed 0%->25%",
+          "completion length changed 260.0->232.2 tokens"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 4464,
+              "total_reward": 0.44739978206192854,
+              "action_alignment": 0.6266666666666667,
+              "logic_alignment": 0.2681328974571904
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5167407548125633,
+                "action_alignment": 0.7200000000000001,
+                "logic_alignment": 0.3134815096251266,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [
+                  "date_mismatch",
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 235,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收到关于AI工具（腾讯元宝）的广告，对AI能力的初步概念建立。\"}, {\"date\": \"2026-01-22\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_7939><s_b_6234><s_c_5209>\", \"logic\": \"认知深化与场景聚焦：接触到AI在“职场”和“情感”等具体垂直领域的应用案例，认知从泛化的“工具”聚焦到其在特定场景下的功能。\"}, {\"date\": \"2026-02-05\", \"action\": \"[广告-点击] <|ad_begin|><s_a_8113><s_b_4134><s_c_831>\", \"logic\": \"需求收敛与功能探索：在“健康饮食”这一具体应用场景下，主动关注并点击了更细分的功能（热量计算），体现了从了解AI概念到探索其解决具体生活问题能力的认知收敛。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 545
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.521819936015547,
+                "action_alignment": 0.7200000000000001,
+                "logic_alignment": 0.3236398720310939,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 249,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：通过广告被动接收到AI工具“千问”及相关“阿里云”品牌信息，形成初步认知。\"}, {\"date\": \"2026-01-02\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1258><s_c_6057>\", \"logic\": \"兴趣扩散：在后续行为中，继续关注AI工具的其他应用场景（如游戏辅助），但此时的互动仍停留在被动点击层面。\"}, {\"date\": \"2026-02-04\", \"action\": \"[广告-点击] <|ad_begin|><s_a_8113><s_b_4134><s_c_831>\", \"logic\": \"行为模式转变：用户开始对AI工具的应用场景进行主动筛选，关注点从宽泛的“工具”转向具体的“生活服务”（如健康减脂），并关注到“阿里云”与“蚂蚁阿福”的具体产品合作，表明其认知已聚焦于AI在特定领域的应用价值。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 562
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.45806742292685015,
+                "action_alignment": 0.6666666666666666,
+                "logic_alignment": 0.2494681791870337,
+                "predicted_event_count": 4,
+                "matched_event_count": 2,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 304,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收并点击关于“AI助手”应用的广告，对该概念产生初步认知。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2826><s_c_7456>\", \"logic\": \"认知深化：在一周后，再次被动点击了更具体的AI应用广告，兴趣点从泛化的“AI助手”聚焦到“健康医疗”这一具体垂直领域。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_3731><s_c_380>\", \"logic\": \"兴趣分化与探索：兴趣从“健康医疗”进一步扩展到“穿搭建议”这一全新的、非医疗的AI应用场景，开始探索其在消费领域的可能性。\"}, {\"date\": \"2025-12-21\", \"action\": \"[广告-点击] <|ad_begin|><s_a_217><s_b_6532><s_c_2543>\", \"logic\": \"决策收敛与场景关联：在密集探索多个AI应用场景后，最终关注到一个与个人生活高度相关的“家庭宠物监控”场景，表明其对AI工具在解决具体、高频生活问题上的价值有了更清晰的认知。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 707
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.29297101449275365,
+                "action_alignment": 0.4,
+                "logic_alignment": 0.18594202898550727,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 252,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"问题触发：被动接收并点击了关于“AI工具提升工作效率”的广告，初步建立了“AI能解决工作问题”的认知。\"}, {\"date\": \"2026-01-28\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_2578><s_b_631><s_c_4135>\", \"logic\": \"认知深化：从泛化的“工作效率”概念，演化为对“AI具体应用场景”的深度关注，如视频中对AI工具在交易、鉴定等复杂决策场景的探讨，认知增量明显。\"}, {\"date\": \"2026-01-28\", \"action\": \"[视频-长播] <|video_begin|><s_a_1708><s_b_2497><s_c_3026>\", \"logic\": \"兴趣泛化与验证：在短时间内连续观看多个不同题材（校园、悬疑、家庭）的视频，表明用户在深度了解AI应用场景后，开始进行更广泛的兴趣探索，验证了其对AI内容的持续关注。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 577
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 4464,
+              "total_reward": 0.5344673086819701,
+              "action_alignment": 0.7433333333333334,
+              "logic_alignment": 0.3256012840306068
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5244918229964297,
+                "action_alignment": 0.7200000000000001,
+                "logic_alignment": 0.3289836459928593,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 227,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收到关于AI工具（腾讯元宝）的泛化信息，初步建立“AI能解决问题”的认知。\"}, {\"date\": \"2026-02-04\", \"action\": \"[广告-点击] <|ad_begin|><s_a_8113><s_b_4134><s_c_831>\", \"logic\": \"认知深化：接触到AI工具在“健康管理”领域的具体应用案例，兴趣点从泛化的“工具”聚焦到“饮食规划”这一垂直场景。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-购买] <|prod_begin|><s_a_58><s_b_7388><s_c_595>\", \"logic\": \"行为转化与收敛：基于前一天对AI饮食规划功能的认知，用户在当天迅速做出购买健康食品（新疆西梅干）的决策，完成了从认知到具体行动的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 531
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.5119486935013611,
+                "action_alignment": 0.7200000000000001,
+                "logic_alignment": 0.3038973870027222,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 228,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：通过广告被动接收到AI工具“千问”及相关“阿里云”品牌信息，形成初步认知。\"}, {\"date\": \"2026-01-02\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_1258><s_c_6057>\", \"logic\": \"兴趣扩散：在后续行为中，继续关注AI工具的其他应用场景（如游戏辅助、攻略），表明对该类信息的兴趣是持续性的，而非偶然点击。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_5738><s_b_7205><s_c_3950>\", \"logic\": \"行为演化与收敛：在大量接触AI工具信息后，用户的兴趣点转向了具体的实物商品（运动鞋），完成了从对抽象工具的关注到对具体消费品的主动浏览。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 539
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.7008754932667977,
+                "action_alignment": 1.0,
+                "logic_alignment": 0.40175098653359526,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 157,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收并点击关于“AI助手”应用的广告，对该概念产生初步认知。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2826><s_c_7456>\", \"logic\": \"认知深化：在一周后，再次被动点击了更具体、更聚焦于“AI助手健康管理”应用的广告，表明用户对AI助手在生活服务领域的潜在价值有了更清晰的认知。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 372
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.40055322496329193,
+                "action_alignment": 0.5333333333333333,
+                "logic_alignment": 0.2677731165932505,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 245,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"问题触发：被动接收并点击了一款主打“文案生成”的AI工具广告，形成初步认知。\"}, {\"date\": \"2026-01-13\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_4039><s_b_7571><s_c_3026>\", \"logic\": \"认知泛化：在多次接触AI广告后，开始对以“情感故事”为核心的影视短剧内容产生深度互动，表明其对AI生成内容的兴趣已从工具本身扩展到其应用效果。\"}, {\"date\": \"2026-01-28\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_2578><s_b_631><s_c_4135>\", \"logic\": \"兴趣聚焦：从泛化的短剧内容，进一步聚焦于更具视觉冲击力的“游戏”场景视频，并产生“关注”行为，表明兴趣点从剧情内容转向了更具体、更具技术展示性的AI应用场景。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 560
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 2,
+              "prompt_token_count": 4464,
+              "total_reward": 0.4932872814281358,
+              "action_alignment": 0.7000000000000001,
+              "logic_alignment": 0.28657456285627164
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.29035106159344126,
+                "action_alignment": 0.4,
+                "logic_alignment": 0.1807021231868825,
+                "predicted_event_count": 3,
+                "matched_event_count": 1,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 238,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收到关于AI助手提升学习效率的泛化广告信息，建立初步认知。\"}, {\"date\": \"2026-01-29\", \"action\": \"[视频-长播] <|video_begin|><s_a_3766><s_b_6234><s_c_1302>\", \"logic\": \"认知跃迁与行为转化：从被动接收信息转为主动观看“用AI制作短剧”的具体应用场景视频，兴趣点从“工具本身”聚焦到“工具的实际用途”。\"}, {\"date\": \"2026-01-31\", \"action\": \"[商品-购买] <|prod_begin|><s_a_7058><s_b_3702><s_c_1905>\", \"logic\": \"需求具象化：在了解到AI可应用于创作领域后，用户开始将AI概念与实体消费（红酒）结合，可能是在搜索或浏览时，AI推荐了相关的酒品，体现了兴趣的延伸和实践。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 549
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.43066713465500783,
+                "action_alignment": 0.6000000000000002,
+                "logic_alignment": 0.2613342693100155,
+                "predicted_event_count": 4,
+                "matched_event_count": 2,
+                "violations": [
+                  "action_mismatch",
+                  "date_mismatch",
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "action_mismatch",
+                  "date_mismatch"
+                ],
+                "completion_token_count": 291,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：通过广告被动接收到AI工具“千问”及相关“学习计划”功能信息。\"}, {\"date\": \"2026-01-12\", \"action\": \"[广告-深度转化] <|ad_begin|><s_a_1351><s_b_4932><s_c_4683>\", \"logic\": \"行为深化：从泛化的“学习计划”深化为对特定功能“AI生成发型”的深度兴趣，产生了“深度转化”行为，表明需求变得更加具体。\"}, {\"date\": \"2026-01-13\", \"action\": \"[广告-点击] <|ad_begin|><s_a_2280><s_b_2485><s_c_7638>\", \"logic\": \"认知扩展：兴趣从“发型生成”拓展到更底层的“烹饪食谱生成”，体现了用户对AI工具多功能性的认知增量。\"}, {\"date\": \"2026-01-30\", \"action\": \"[广告-点击] <|ad_begin|><s_a_7331><s_b_950><s_c_7588>\", \"logic\": \"兴趣泛化与验证：在对AI工具产生明确兴趣后，开始点击其他AI应用（如手机性能优化），表明其兴趣已从单一工具扩展到对AI应用领域的整体探索。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 682
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.7008754932667977,
+                "action_alignment": 1.0,
+                "logic_alignment": 0.40175098653359526,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 157,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"初始触发：被动接收并点击关于“AI助手”应用的广告，对该概念产生初步认知。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2826><s_c_7456>\", \"logic\": \"认知深化：在一周后，再次被动点击了更具体、更聚焦于“AI助手健康管理”应用的广告，表明用户对AI助手在生活服务领域的潜在价值有了更清晰的认知。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 372
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.5512554361972967,
+                "action_alignment": 0.8,
+                "logic_alignment": 0.3025108723945933,
+                "predicted_event_count": 3,
+                "matched_event_count": 2,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 243,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从被动接收AI工具信息到主动探索其应用场景\", \"events\": [{\"date\": \"2025-12-11\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2485><s_c_5059>\", \"logic\": \"问题触发：被动接收关于AI工具（千问、元宝）能解决具体问题（旅游攻略、拍照建议）的广告信息，建立了“AI工具=解决问题”的初步认知。\"}, {\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_2826><s_c_7456>\", \"logic\": \"认知深化：在对AI工具的泛化认知基础上，接触到AI工具（蚂蚁阿福）与另一个垂直领域的应用（健康管理/健康知识），实现了应用场景的拓展。\"}, {\"date\": \"2026-01-13\", \"action\": \"[商品-购买] <|prod_begin|><s_a_1570><s_b_404><s_c_3901>\", \"logic\": \"决策收敛与行动闭环：在了解AI工具后，用户最终将注意力聚焦到“健康”这一具体问题，并采取了购买保健品的行动，完成了从认知到行动的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 566
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "sample_id": "c628d40c60980763f80c6d39adba8891251b27c081508c5912ae4e25f7a72af0",
+        "event_count": 5,
+        "prompt_token_count": 3848,
+        "gold_events": [
+          {
+            "date": "2026-02-03",
+            "action": "[视频-长播] <|video_begin|><s_a_5695><s_b_3451><s_c_853>",
+            "logic": "初始触发：被动接收关于“肺癌”重症的科普信息，开始泛化关注健康/疾病议题。"
+          },
+          {
+            "date": "2026-02-04",
+            "action": "[视频-长播] <|video_begin|><s_a_1003><s_b_6782><s_c_1935>",
+            "logic": "兴趣扩散：持续观看不同类型的癌症案例（从肺癌到乳腺癌），表明其关注点仍处于对“癌症”这一大类的宽泛了解阶段。"
+          },
+          {
+            "date": "2026-02-04",
+            "action": "[视频-长播] <|video_begin|><s_a_5695><s_b_2865><s_c_2881>",
+            "logic": "认知聚焦：兴趣点从泛化的重症癌症，首次收敛到具体的、非手术可干预的“胆囊息肉”问题，且接触到了“中医治疗”这一新变量。"
+          },
+          {
+            "date": "2026-02-05",
+            "action": "[视频-长播] <|video_begin|><s_a_5695><s_b_1740><s_c_6982>",
+            "logic": "深化认知与验证：进一步观看关于“胆囊息肉”的科普，了解到“无需过度治疗”和“饮食控制”等更具体的应对策略，认知从“治疗”深化到“管理”。"
+          },
+          {
+            "date": "2026-02-05",
+            "action": "[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>",
+            "logic": "行为转化：在建立了对“胆囊息肉”及其中医/非手术治疗的认知基础上，用户从被动信息接收（看视频）转变为主动探索解决方案（点击具体药物），完成了从知识获取到意向决策的关键一步。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "event selection/action matching changed",
+          "logic-text alignment changed"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 5,
+              "prompt_token_count": 3848,
+              "total_reward": 0.431061377610378,
+              "action_alignment": 0.6541666666666668,
+              "logic_alignment": 0.20795608855408915
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.41721814124795037,
+                "action_alignment": 0.6166666666666667,
+                "logic_alignment": 0.21776961582923404,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 238,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-03\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_1761><s_b_7877><s_c_2225>\", \"logic\": \"兴趣触发：被动接收关于“年货”、“美食”、“健康”等泛化健康信息，可能引发对身体状况的初步关注。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"问题聚焦：从泛化的健康话题，首次聚焦到“痔疮”这一具体病症，并观看相关科普视频，认知开始具体化。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"行为收敛与决策：在观看关于“萎缩性胃炎”的视频后，用户主动点击了与之相关的药品，完成了从“了解病症”到“寻找解决方案”的认知闭环，体现了明确的意图演化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 543
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.44468910306218845,
+                "action_alignment": 0.6500000000000001,
+                "logic_alignment": 0.2393782061243767,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 227,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_6234><s_c_7790>\", \"logic\": \"问题触发：通过观看消化系统疾病科普视频，接触到“糜烂性胃炎”这一具体病症概念。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化与方案探索：从了解病症转向观看具体中成药“摩罗丹”的讲解视频，认知从“是什么”演进到“如何调理”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛与行动转化：在获取了关于“摩罗丹”的信息后，立即点击了与视频内容高度相关的药品商品，形成了从知识获取到产品意向的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 524
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.45177104310165744,
+                "action_alignment": 0.7000000000000001,
+                "logic_alignment": 0.2035420862033148,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 249,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_2865><s_c_2881>\", \"logic\": \"问题触发：通过观看中医理论视频，被动接收到关于“口干口苦”及相关症状（如肝胆湿热）的调理知识，形成初步认知。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化：从中医理论转向西医药物科普，开始关注具体药品（龙胆泻肝丸）及其功效（清肝利湿），兴趣点从宏观调理转向具体成分和作用。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛：在了解理论和具体药品后，主动点击包含“龙胆泻肝丸”在内的商品，将获取的知识转化为具体的购买意向，完成了从信息吸收到决策准备的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 556
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.4105672230297156,
+                "action_alignment": 0.6500000000000001,
+                "logic_alignment": 0.171134446059431,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 233,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"兴趣触发：通过观看视频，对“结直肠癌”这一特定疾病产生初步认知和兴趣。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_6234><s_c_7609>\", \"logic\": \"认知深化：从了解疾病本身，转向关注具体的诊疗过程和检查方法（肠镜检查），认知范围从“是什么”扩展到“怎么查”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_1740><s_c_6982>\", \"logic\": \"问题聚焦：在了解检查和诊疗后，用户的关注点进一步聚焦到疾病的具体治疗手段和药物，开始关注特定药物（肝硬化胶囊）及其疗效，实现了从疾病认知到治疗方案探索的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 540
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 5,
+              "prompt_token_count": 3848,
+              "total_reward": 0.3426168433373866,
+              "action_alignment": 0.5000000000000001,
+              "logic_alignment": 0.18523368667477308
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.0,
+                "action_alignment": 0.0,
+                "logic_alignment": 0.0,
+                "predicted_event_count": 0,
+                "matched_event_count": 0,
+                "violations": [
+                  "malformed_json"
+                ],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 238,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-03\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_1761><s_b_7877><s_c_2225>\", \"logic\": \"兴趣触发：被动接收关于“年货”、“美食”、“健康”等泛化健康信息，可能引发对身体状况的初步关注。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"问题聚焦：从泛化的健康话题，首次聚焦到“痔疮”这一具体病症，并观看相关科普视频，认知开始具体化。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>, \"logic\": \"行为收敛与决策：在观看关于“萎缩性胃炎”的视频后，用户主动点击了与之相关的药品，完成了从“了解病症”到“寻找解决方案”的认知闭环，体现了明确的意图演化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 542
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.44468910306218845,
+                "action_alignment": 0.6500000000000001,
+                "logic_alignment": 0.2393782061243767,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 227,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_6234><s_c_7790>\", \"logic\": \"问题触发：通过观看消化系统疾病科普视频，接触到“糜烂性胃炎”这一具体病症概念。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化与方案探索：从了解病症转向观看具体中成药“摩罗丹”的讲解视频，认知从“是什么”演进到“如何调理”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛与行动转化：在获取了关于“摩罗丹”的信息后，立即点击了与视频内容高度相关的药品商品，形成了从知识获取到产品意向的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 524
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.4875645761767452,
+                "action_alignment": 0.7000000000000001,
+                "logic_alignment": 0.2751291523534903,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 264,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_2865><s_c_2881>\", \"logic\": \"问题触发：被动接收到关于“口苦”与“肝胆”关联的科普信息，可能触发了用户对自身类似症状的关注。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化：从泛化的“口苦”问题，进一步关联到“胆囊息肉”的具体病症，并了解到该病症与“胆囊功能”直接相关，认知从症状深入到具体病源。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛与行动转化：在接收并理解了“胆囊息肉”这一具体病源信息后，用户立即开始寻找针对性的药物（胆清胶囊），行为从被动信息接收转化为主动的、带有明确目标的商品点击，完成了认知到行动的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 576
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.43821369411061273,
+                "action_alignment": 0.6500000000000001,
+                "logic_alignment": 0.22642738822122532,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 217,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"兴趣触发：通过观看视频，对“结直肠癌”这一特定疾病产生初步认知和兴趣。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_6234><s_c_7609>\", \"logic\": \"认知深化：从了解疾病本身，转向关注具体的检查与治疗方案（如肠镜检查、治疗过程），认知增量明显。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"行为转化：基于对疾病和治疗方案的认知，开始主动搜索并点击针对性的药物（龙胆泻肝丸），完成了从信息吸收到潜在消费意图的转化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 511
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 5,
+              "prompt_token_count": 3848,
+              "total_reward": 0.4621862304540977,
+              "action_alignment": 0.6916666666666668,
+              "logic_alignment": 0.2327057942415286
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.4183486346160212,
+                "action_alignment": 0.6166666666666667,
+                "logic_alignment": 0.22003060256537565,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 242,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-03\", \"action\": \"[视频-关注/长播] <|video_begin|><s_a_1761><s_b_7877><s_c_2225>\", \"logic\": \"兴趣触发：被动接收关于“年货”、“美食”、“健康”等泛化健康信息，可能引发对身体状况的初步关注。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"问题聚焦：从泛化的健康话题，首次接触到具体的、与“胃肠”相关的专业医学内容，认知开始具体化。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"行为转化与收敛：在接收到“胃肠”健康信息后，用户行为从被动接收视频信息，演化为主动点击与“肠炎”、“腹泻”、“腹痛”等症状强相关的药物商品，实现了从认知到决策的闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 548
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.45414992403522425,
+                "action_alignment": 0.6500000000000001,
+                "logic_alignment": 0.2582998480704484,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 233,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_6234><s_c_7790>\", \"logic\": \"问题触发：通过观看消化系统疾病科普视频，接触到“糜烂性胃炎”这一具体病症概念。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化与方案探索：从了解病症转向观看具体中成药“摩罗丹”的讲解视频，认知从“是什么”演进到“如何调理”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛与行动转化：在前序视频知识的基础上，用户从被动接收信息转为主动点击具体商品，将认知转化为购买意向，实现了从“理论学习”到“产品探索”的认知闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 537
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.45446247555150415,
+                "action_alignment": 0.7000000000000001,
+                "logic_alignment": 0.20892495110300824,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 249,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_2865><s_c_2881>\", \"logic\": \"问题触发：通过观看中医理论视频，对“口干”这一具体症状产生认知，并了解到“肝火旺”是潜在原因。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_3600><s_b_3340><s_c_3098>\", \"logic\": \"认知深化与路径修正：从中医理论转向现代医学角度，了解到“胆汁反流性胃炎”是口干的另一具体病因，并获得了“龙胆泻肝丸”的具体药物治疗方案。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"行为收敛与决策闭环：在获取了明确的药物名称（龙胆泻肝丸）后，立即进行商品搜索并点击，完成了从“了解病因”到“寻找特定药物”的完整决策链。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 552
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.5217838876136411,
+                "action_alignment": 0.8000000000000002,
+                "logic_alignment": 0.24356777522728204,
+                "predicted_event_count": 4,
+                "matched_event_count": 4,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 294,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化健康科普到特定病症的药物问询\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_2012><s_b_5940><s_c_853>\", \"logic\": \"兴趣触发：通过观看视频，对“结直肠癌”这一特定疾病产生初步认知和兴趣。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_6234><s_c_7609>\", \"logic\": \"认知深化：从了解疾病本身，转向关注具体的诊疗过程和检查方法（肠镜检查），认知范围从“是什么”扩展到“怎么查”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_5695><s_b_1740><s_c_6982>\", \"logic\": \"问题聚焦：在了解检查和诊疗后，进一步关注到具体的药物治疗方案（阿司匹林肠溶片），问题开始收敛到具体的治疗手段上。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_8174><s_b_5925><s_c_1272>\", \"logic\": \"决策收敛：从被动观看视频学习知识，转为主动点击与视频中提及的“阿司匹林”强相关的商品，完成了从信息吸收到决策意向的转化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 678
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "sample_id": "106fc278d287fba48a5ce85ce57ce35160fbea9bae772fa830c352da4cbd9b22",
+        "event_count": 4,
+        "prompt_token_count": 4882,
+        "gold_events": [
+          {
+            "date": "2026-01-05",
+            "action": "[商品-购买] <|prod_begin|><s_a_7056><s_b_8002><s_c_2930>",
+            "logic": "初始触发：购买方法论层面的英语课程，表明有提升英语能力的意图，但认知尚停留在寻找“捷径”或新方法的宽泛阶段。"
+          },
+          {
+            "date": "2026-01-30",
+            "action": "[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>",
+            "logic": "认知深化与聚焦：在购买课程后，用户开始主动收藏并学习具体的、基础性的语法知识（如this/that用法），表明其从寻求方法论转向了系统化的知识点构建，是认知上的显著深化。"
+          },
+          {
+            "date": "2026-01-30",
+            "action": "[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>",
+            "logic": "知识体系扩展：紧接着，用户继续收藏关于介词（in/on/at）用法的视频，这是对基础语法知识体系的进一步补充和细化，显示出持续且连贯的学习行为。"
+          },
+          {
+            "date": "2026-02-05",
+            "action": "[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>",
+            "logic": "学习维度拓展：用户的学习兴趣从语法规则（如何组织句子）扩展到了更底层的发音规则（如何正确读出单词），标志着其学习路径从宏观构建转向微观夯实，形成了更全面的学习闭环。"
+          }
+        ],
+        "observed_attribution_signals": [
+          "date grounding violation rate changed 75%->100%"
+        ],
+        "checkpoints": {
+          "C0": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 4882,
+              "total_reward": 0.4931534877098106,
+              "action_alignment": 0.7806122448979592,
+              "logic_alignment": 0.20569473052166204
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.5258543985157832,
+                "action_alignment": 0.8163265306122449,
+                "logic_alignment": 0.23538226641932142,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 251,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"兴趣触发：开始对英语的基础语法知识产生系统性学习兴趣，通过收藏“必背句型”来建立框架。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"技能深化：在掌握句型后，进一步关注“介词”这一更具体、更细化的语法点，并收藏相关内容，体现了从宏观到微观的认知深化。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>\", \"logic\": \"学习路径修正与实践应用：在深入研究英语语法后，开始关注实用的学习方法论，即“影子跟读法”，这是将理论知识付诸实践的关键步骤，构成了从知识积累到技能实践的完整闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 564
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.4745993905035524,
+                "action_alignment": 0.7142857142857143,
+                "logic_alignment": 0.2349130667213904,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 327,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"问题触发：收藏具体的语法知识点（“there be”结构），表明用户对英语语法存在明确的、系统化的学习需求。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"兴趣拓展：在掌握基础语法后，兴趣拓展至更具挑战性的词汇主题（“动物单词”），且行为依然是收藏，体现了持续学习的动力。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"认知跃迁：从基础语法和词汇，跃迁至更高级的表达技巧（“否定句”），表明用户的学习路径已从知识积累转向技巧应用，认知增量明显。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_5511><s_c_7683>\", \"logic\": \"学习深化与工具化：收藏包含“音标”和“跟读”教学的视频，说明用户意识到发音是掌握词汇的关键，开始寻求工具性、可执行的学习方法，形成了“知识-技巧-工具”的完整闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 745
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.4764890579471224,
+                "action_alignment": 0.7755102040816326,
+                "logic_alignment": 0.17746791181261215,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 259,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"初步兴趣：通过收藏视频，表现出对基础英语词汇（天气相关）的初步学习意图，属于泛化、入门级知识获取。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"知识深化与结构化：兴趣从零散词汇转向系统性学习，开始关注时态这一核心语法结构，并采取收藏动作，表明认知深度增加。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>\", \"logic\": \"认知跃迁与技能闭环：学习内容从基础语法（时态）跃迁至更高级的听力理解技能（完形填空），并关注到“做题技巧”和“提升听力”的方法论，完成了从知识输入到技能训练的认知闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 571
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.49567110387278457,
+                "action_alignment": 0.8163265306122449,
+                "logic_alignment": 0.1750156771333242,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 238,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"兴趣触发：开始关注英语学习，行为模式从被动观看转变为收藏，表明兴趣开始沉淀。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"认知深化与聚焦：从泛化的“日常词汇”深化到更专业的“连读弱读”，并关注语音语调，显示出学习目标的明确化和专业化。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"方法论收敛：学习策略从关注发音细节，进一步聚焦到“记忆”和“复习”这类核心方法论上，完成了从“学什么”到“怎么学”的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 539
+                }
+              }
+            ]
+          },
+          "C20": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 4882,
+              "total_reward": 0.43746972860986977,
+              "action_alignment": 0.7124433106575964,
+              "logic_alignment": 0.16249614656214326
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.30771205576507976,
+                "action_alignment": 0.5079365079365079,
+                "logic_alignment": 0.10748760359365166,
+                "predicted_event_count": 2,
+                "matched_event_count": 2,
+                "violations": [],
+                "grounding_penalty_kinds": [],
+                "completion_token_count": 171,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[视频-长播] <|video_begin|><s_a_3579><s_b_1740><s_c_3501>\", \"logic\": \"兴趣触发与初步探索：首次观看“零基础开口说英语”的系统性课程，表现出对提升口语表达的初步兴趣。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"行为转化与深度学习：在观看后，迅速将“疑问句型”教学内容收藏，表明对该特定知识点的高度认可和后续学习的强烈意图，实现了从被动观看到主动巩固的认知深化。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 394
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.48229083564859077,
+                "action_alignment": 0.75,
+                "logic_alignment": 0.21458167129718153,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 319,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"问题触发：收藏具体的语法知识点（“there be”结构），表明用户对英语语法存在明确的、系统化的学习需求。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"兴趣拓展：在掌握基础语法后，兴趣拓展至更具应用性的口语表达（“如何表达‘喜欢’”），体现了从知识输入到应用表达的认知升级。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"方法论深化：学习“连读技巧”和“弱读”这类具体的发音优化方法，表明用户的学习路径已从语法规则深化到语音细节，追求更自然的英语表达。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>\", \"logic\": \"场景化应用：将所学的语法规则和发音技巧应用到“旅游场景”中，学习与他人互动的表达方法，实现了从理论到实践的应用闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 727
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.4764890579471224,
+                "action_alignment": 0.7755102040816326,
+                "logic_alignment": 0.17746791181261215,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 259,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"初步兴趣：通过收藏视频，表现出对基础英语词汇（天气相关）的初步学习意图，属于泛化、入门级知识获取。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"知识深化与结构化：兴趣从零散词汇转向系统性学习，开始关注时态这一核心语法结构，并采取收藏动作，表明认知深度增加。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>\", \"logic\": \"认知跃迁与技能闭环：学习内容从基础语法（时态）跃迁至更高级的听力理解技能（完形填空），并关注到“做题技巧”和“提升听力”的方法论，完成了从知识输入到技能训练的认知闭环。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 571
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.4833869650786863,
+                "action_alignment": 0.8163265306122449,
+                "logic_alignment": 0.1504473995451277,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 258,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"兴趣触发：开始关注日常场景化的英语学习，通过“口语表达”这一实用场景激发学习动机，并收藏了具体句型。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"认知深化与方法探索：兴趣从日常表达转向更系统的“音标”学习，关注发音规则和教学方法，体现了从“学什么”到“怎么学”的认知增量。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"技能聚焦与深化：在掌握了发音基础后，进一步聚焦于“听力理解”这一关键能力，并收藏了包含“听力练习”、“听力技巧”、“听力训练”的专项视频，形成从发音到理解的技能递进链条。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 580
+                }
+              }
+            ]
+          },
+          "C40": {
+            "means": {
+              "event_count": 4,
+              "prompt_token_count": 4882,
+              "total_reward": 0.4897511242869576,
+              "action_alignment": 0.7806122448979592,
+              "logic_alignment": 0.19889000367595605
+            },
+            "candidates": [
+              {
+                "candidate_id": 0,
+                "total_reward": 0.4615463684852465,
+                "action_alignment": 0.7142857142857143,
+                "logic_alignment": 0.2088070226847787,
+                "predicted_event_count": 4,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 313,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"兴趣触发：开始对英语的基础语法知识产生系统性学习兴趣，通过收藏具体知识点视频进行知识积累。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"技能拓展：在掌握基础语法后，兴趣拓展到听力技能，开始关注并收藏具体的听力训练方法视频，进行技能深化。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_4872>\", \"logic\": \"路径修正与深化：在听力技能基础上，进一步将学习目标聚焦到“零基础”口语能力，这是一个更具体、更具挑战性的学习路径修正，体现了认知上的跃迁。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"系统化归纳：在口语、听力等单项技能提升后，开始寻求一个更系统性的、覆盖语法规则的入门教程进行系统化学习，形成了从点状知识到线状知识的构建。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 722
+                }
+              },
+              {
+                "candidate_id": 1,
+                "total_reward": 0.5253081487740654,
+                "action_alignment": 0.8163265306122449,
+                "logic_alignment": 0.2342897669358859,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 241,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"问题触发：收藏具体的语法知识点（“there”句型），表明用户对英语语法存在明确的、系统化的学习需求。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"兴趣拓展：在掌握语法后，进一步探索实用表达，将兴趣从“知识”向“应用”延伸。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_4872>\", \"logic\": \"方法升级：在“句型”和“表达”之外，开始学习“连读技巧”和“弱读”这类更高级的语音和发音方法，表明学习路径从基础语法向更深层次的语言表达技巧演进。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 544
+                }
+              },
+              {
+                "candidate_id": 2,
+                "total_reward": 0.4751277067984163,
+                "action_alignment": 0.7755102040816326,
+                "logic_alignment": 0.17474520951520003,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 262,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"初步兴趣：通过收藏视频，表现出对基础英语词汇（天气相关）的初步学习意图，属于泛化、入门级知识获取。\"}, {\"date\": \"2026-02-04\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_3447><s_c_8085>\", \"logic\": \"知识深化与结构化：兴趣从零散词汇转向系统性学习，开始关注时态这一核心语法结构，并采取收藏动作，表明认知深度增加。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_7390><s_c_4200>\", \"logic\": \"认知跃迁与技能拓展：在掌握了基础语法后，兴趣进一步聚焦到更高级的应用技巧——听力理解。视频标题中的“零基础”表明这是在已有基础之上进行更具体、更实用的技能拓展，完成了从语法知识到实际语言运用的认知跃迁。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 588
+                }
+              },
+              {
+                "candidate_id": 3,
+                "total_reward": 0.4970222730901022,
+                "action_alignment": 0.8163265306122449,
+                "logic_alignment": 0.17771801556795955,
+                "predicted_event_count": 3,
+                "matched_event_count": 3,
+                "violations": [
+                  "date_mismatch"
+                ],
+                "grounding_penalty_kinds": [
+                  "date_mismatch"
+                ],
+                "completion_token_count": 257,
+                "completion": {
+                  "text": "{\"logic_chain\": {\"name\": \"从泛化兴趣到系统化学习的英语能力提升路径\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_4541><s_c_8085>\", \"logic\": \"兴趣触发：开始关注日常场景化的英语学习，通过“口语表达”这一实用场景激发学习动机，并收藏了具体句型。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_6557>\", \"logic\": \"认知深化与方法探索：兴趣从日常表达转向更系统的“音标”学习，关注发音规则和教学方法，认知维度从“会说话”深化到“学发音”。\"}, {\"date\": \"2026-01-31\", \"action\": \"[视频-收藏/长播] <|video_begin|><s_a_3579><s_b_6379><s_c_4872>\", \"logic\": \"路径聚焦与工具应用：基于对发音规则的认知，进一步探索“美式发音”这一特定流派，并通过对比“英式 vs 美式”来优化学习路径，实现了从知识到方法再到策略的递进。\"}]}}",
+                  "truncated": false,
+                  "original_chars": 572
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "probe_v2": {
+    "sample_count": 40,
+    "source": "real user_chain_nocot/user_chain_cot source pools; no synthetic rows",
+    "sha256": "14f31ec76a6b47e1b6a93476753d694209dccf183b45d9eb3ae335edb5c4d513",
+    "distribution": {
+      "event_count": {
+        "2": 6,
+        "3": 22,
+        "4": 10,
+        "5": 2
+      },
+      "source": {
+        "converted_cot": 8,
+        "native_nocot": 32
+      },
+      "prompt_quartile": {
+        "Q1": 10,
+        "Q2": 9,
+        "Q3": 11,
+        "Q4": 10
+      }
+    },
+    "checkpoints": {
+      "C0": {
+        "candidate_count": 160,
+        "Total": 0.4328609949506351,
+        "Action": 0.6359072893046107,
+        "Logic": 0.22981470059665948,
+        "format_valid_rate": 1.0,
+        "violations": {
+          "hallucinated_sid": 0.04375,
+          "date_mismatch": 0.3375,
+          "action_mismatch": 0.10625,
+          "duplicate_event": 0.01875,
+          "chronology_violation": 0.025,
+          "excess_event": 0.0
+        },
+        "grounding": {
+          "grounded": 0.54375,
+          "partially_grounded": 0.4375,
+          "ungrounded": 0.01875
+        },
+        "completion_tokens": {
+          "count": 160,
+          "mean": 248.0125,
+          "p25": 218.5,
+          "p50": 243.0,
+          "p75": 278.0,
+          "p90": 320.0,
+          "min": 148,
+          "max": 415
+        },
+        "truncation_rate": 0.0
+      },
+      "C20": {
+        "candidate_count": 160,
+        "Total": 0.42756763818735033,
+        "Action": 0.6300429421768708,
+        "Logic": 0.22509233419782979,
+        "format_valid_rate": 1.0,
+        "violations": {
+          "hallucinated_sid": 0.03125,
+          "date_mismatch": 0.34375,
+          "action_mismatch": 0.125,
+          "duplicate_event": 0.01875,
+          "chronology_violation": 0.0625,
+          "excess_event": 0.0
+        },
+        "grounding": {
+          "grounded": 0.54375,
+          "partially_grounded": 0.4375,
+          "ungrounded": 0.01875
+        },
+        "completion_tokens": {
+          "count": 160,
+          "mean": 245.96875,
+          "p25": 202.0,
+          "p50": 246.0,
+          "p75": 276.25,
+          "p90": 309.69999999999993,
+          "min": 148,
+          "max": 435
+        },
+        "truncation_rate": 0.0
+      },
+      "C40": {
+        "candidate_count": 160,
+        "Total": 0.43784630807321834,
+        "Action": 0.6456955782312925,
+        "Logic": 0.22999703791514423,
+        "format_valid_rate": 1.0,
+        "violations": {
+          "hallucinated_sid": 0.03125,
+          "date_mismatch": 0.31875,
+          "action_mismatch": 0.1375,
+          "duplicate_event": 0.0125,
+          "chronology_violation": 0.04375,
+          "excess_event": 0.00625
+        },
+        "grounding": {
+          "grounded": 0.55625,
+          "partially_grounded": 0.43125,
+          "ungrounded": 0.0125
+        },
+        "completion_tokens": {
+          "count": 160,
+          "mean": 251.4125,
+          "p25": 221.0,
+          "p50": 254.0,
+          "p75": 281.75,
+          "p90": 318.2,
+          "min": 148,
+          "max": 416
+        },
+        "truncation_rate": 0.0
+      }
+    },
+    "comparisons": {
+      "C20-C0": {
+        "total_reward": {
+          "count": 40,
+          "mean": -0.005293356763284829,
+          "p25": -0.03004345062908194,
+          "p50": -0.007239660774397083,
+          "p75": 0.023651682699928497,
+          "p90": 0.048639915782754325,
+          "min": -0.08197096118281894,
+          "max": 0.06898246974561384,
+          "improved": 14,
+          "unchanged": 10,
+          "degraded": 16,
+          "bootstrap_95pct_ci": [
+            -0.01745411030927473,
+            0.007288991095281446
+          ]
+        },
+        "action_alignment": {
+          "count": 40,
+          "mean": -0.0058643471277399755,
+          "p25": -0.03497023809523808,
+          "p50": -5.551115123125783e-17,
+          "p75": 0.01936507936507942,
+          "p90": 0.07006349206349204,
+          "min": -0.12142857142857144,
+          "max": 0.1133333333333334,
+          "improved": 15,
+          "unchanged": 7,
+          "degraded": 18,
+          "bootstrap_95pct_ci": [
+            -0.02307808366402115,
+            0.011705498866213153
+          ]
+        },
+        "logic_alignment": {
+          "count": 40,
+          "mean": -0.004722366398829665,
+          "p25": -0.018482628834379636,
+          "p50": -0.010351647472485265,
+          "p75": 0.0107426923825188,
+          "p90": 0.03139205078551377,
+          "min": -0.06727525569897125,
+          "max": 0.08357249135110764,
+          "improved": 11,
+          "unchanged": 9,
+          "degraded": 20,
+          "bootstrap_95pct_ci": [
+            -0.013877769775178864,
+            0.005067872059585855
+          ]
+        }
+      },
+      "C40-C0": {
+        "total_reward": {
+          "count": 40,
+          "mean": 0.004985313122583259,
+          "p25": -0.018013243817258648,
+          "p50": 0.0034922114376844116,
+          "p75": 0.024739098980548158,
+          "p90": 0.058455572897385344,
+          "min": -0.09516221353733467,
+          "max": 0.07718611006387882,
+          "improved": 18,
+          "unchanged": 7,
+          "degraded": 15,
+          "bootstrap_95pct_ci": [
+            -0.00628322812963185,
+            0.0162952965857267
+          ]
+        },
+        "action_alignment": {
+          "count": 40,
+          "mean": 0.009788288926681788,
+          "p25": -0.017495748299319755,
+          "p50": 0.004907171201814053,
+          "p75": 0.04702380952380958,
+          "p90": 0.07880952380952375,
+          "min": -0.12288359788359782,
+          "max": 0.12328042328042332,
+          "improved": 19,
+          "unchanged": 7,
+          "degraded": 14,
+          "bootstrap_95pct_ci": [
+            -0.006110471289210117,
+            0.02608308502220333
+          ]
+        },
+        "logic_alignment": {
+          "count": 40,
+          "mean": 0.00018233731848473246,
+          "p25": -0.020743919836290883,
+          "p50": 0.0002273306962207733,
+          "p75": 0.016564793038335274,
+          "p90": 0.03748493119294355,
+          "min": -0.06744082919107144,
+          "max": 0.057006586826952116,
+          "improved": 18,
+          "unchanged": 6,
+          "degraded": 16,
+          "bootstrap_95pct_ci": [
+            -0.008665175005508452,
+            0.0087819572962601
+          ]
+        }
+      },
+      "C40-C20": {
+        "total_reward": {
+          "count": 40,
+          "mean": 0.010278669885868088,
+          "p25": -0.010408100578804369,
+          "p50": 0.00705626025341477,
+          "p75": 0.036512516933674466,
+          "p90": 0.06058653096748996,
+          "min": -0.05961832823272495,
+          "max": 0.10172469563461306,
+          "improved": 18,
+          "unchanged": 12,
+          "degraded": 10,
+          "bootstrap_95pct_ci": [
+            -0.002252209605469543,
+            0.022852399703547025
+          ]
+        },
+        "action_alignment": {
+          "count": 40,
+          "mean": 0.015652636054421763,
+          "p25": -0.01765625000000004,
+          "p50": 0.01173611111111117,
+          "p75": 0.05297619047619051,
+          "p90": 0.08151190476190481,
+          "min": -0.08714285714285719,
+          "max": 0.15654761904761905,
+          "improved": 21,
+          "unchanged": 6,
+          "degraded": 13,
+          "bootstrap_95pct_ci": [
+            -0.0021958167989418026,
+            0.033688686342592505
+          ]
+        },
+        "logic_alignment": {
+          "count": 40,
+          "mean": 0.004904703717314397,
+          "p25": -0.009162163555114955,
+          "p50": 0.008382631255009695,
+          "p75": 0.02350006024599255,
+          "p90": 0.03938143405406617,
+          "min": -0.12047499028190728,
+          "max": 0.05608395501679239,
+          "improved": 20,
+          "unchanged": 10,
+          "degraded": 10,
+          "bootstrap_95pct_ci": [
+            -0.005730563717879314,
+            0.014531084264149587
+          ]
+        }
+      }
+    },
+    "primary_degradation_component": "mixed",
+    "per_sample_output": "/data/GRPO_USER/results/chain_probe_v2_per_sample.jsonl"
+  },
+  "pilot_distribution_audit": {
+    "train_3000": {
+      "count": 1500,
+      "event_count": {
+        "2": {
+          "count": 225,
+          "proportion": 0.15
+        },
+        "3": {
+          "count": 825,
+          "proportion": 0.55
+        },
+        "4": {
+          "count": 375,
+          "proportion": 0.25
+        },
+        "5": {
+          "count": 75,
+          "proportion": 0.05
+        }
+      },
+      "prompt_tokens": {
+        "count": 1500,
+        "mean": 4999.4546666666665,
+        "p25": 4065.75,
+        "p50": 4912.0,
+        "p75": 5921.0,
+        "p90": 6725.2,
+        "min": 1373,
+        "max": 8161
+      },
+      "source": {
+        "converted_cot": {
+          "count": 300,
+          "proportion": 0.2
+        },
+        "native_nocot": {
+          "count": 1200,
+          "proportion": 0.8
+        }
+      },
+      "domain_or_source_segment": {
+        "user_chain_cot": {
+          "count": 300,
+          "proportion": 0.2
+        },
+        "user_chain_nocot": {
+          "count": 1200,
+          "proportion": 0.8
+        }
+      }
+    },
+    "pilot_600": {
+      "count": 300,
+      "event_count": {
+        "2": {
+          "count": 45,
+          "proportion": 0.15
+        },
+        "3": {
+          "count": 165,
+          "proportion": 0.55
+        },
+        "4": {
+          "count": 75,
+          "proportion": 0.25
+        },
+        "5": {
+          "count": 15,
+          "proportion": 0.05
+        }
+      },
+      "prompt_tokens": {
+        "count": 300,
+        "mean": 4981.06,
+        "p25": 4071.5,
+        "p50": 4905.0,
+        "p75": 5811.0,
+        "p90": 6747.5,
+        "min": 2015,
+        "max": 8153
+      },
+      "source": {
+        "converted_cot": {
+          "count": 60,
+          "proportion": 0.2
+        },
+        "native_nocot": {
+          "count": 240,
+          "proportion": 0.8
+        }
+      },
+      "domain_or_source_segment": {
+        "user_chain_cot": {
+          "count": 60,
+          "proportion": 0.2
+        },
+        "user_chain_nocot": {
+          "count": 240,
+          "proportion": 0.8
+        }
+      },
+      "event_count_shift_vs_train": {
+        "2": {
+          "pilot_proportion": 0.15,
+          "train_proportion": 0.15,
+          "ratio_pilot_to_train": 1.0
+        },
+        "3": {
+          "pilot_proportion": 0.55,
+          "train_proportion": 0.55,
+          "ratio_pilot_to_train": 1.0
+        },
+        "4": {
+          "pilot_proportion": 0.25,
+          "train_proportion": 0.25,
+          "ratio_pilot_to_train": 1.0
+        },
+        "5": {
+          "pilot_proportion": 0.05,
+          "train_proportion": 0.05,
+          "ratio_pilot_to_train": 1.0
+        }
+      }
+    },
+    "first150": {
+      "count": 75,
+      "event_count": {
+        "2": {
+          "count": 20,
+          "proportion": 0.26666666666666666
+        },
+        "3": {
+          "count": 20,
+          "proportion": 0.26666666666666666
+        },
+        "4": {
+          "count": 20,
+          "proportion": 0.26666666666666666
+        },
+        "5": {
+          "count": 15,
+          "proportion": 0.2
+        }
+      },
+      "prompt_tokens": {
+        "count": 75,
+        "mean": 4960.213333333333,
+        "p25": 4098.5,
+        "p50": 4911,
+        "p75": 5779.5,
+        "p90": 6707.600000000002,
+        "min": 2015,
+        "max": 8153
+      },
+      "source": {
+        "converted_cot": {
+          "count": 18,
+          "proportion": 0.24
+        },
+        "native_nocot": {
+          "count": 57,
+          "proportion": 0.76
+        }
+      },
+      "domain_or_source_segment": {
+        "user_chain_cot": {
+          "count": 18,
+          "proportion": 0.24
+        },
+        "user_chain_nocot": {
+          "count": 57,
+          "proportion": 0.76
+        }
+      },
+      "event_count_shift_vs_train": {
+        "2": {
+          "pilot_proportion": 0.26666666666666666,
+          "train_proportion": 0.15,
+          "ratio_pilot_to_train": 1.777777777777778
+        },
+        "3": {
+          "pilot_proportion": 0.26666666666666666,
+          "train_proportion": 0.55,
+          "ratio_pilot_to_train": 0.4848484848484848
+        },
+        "4": {
+          "pilot_proportion": 0.26666666666666666,
+          "train_proportion": 0.25,
+          "ratio_pilot_to_train": 1.0666666666666667
+        },
+        "5": {
+          "pilot_proportion": 0.2,
+          "train_proportion": 0.05,
+          "ratio_pilot_to_train": 4.0
+        }
+      }
+    },
+    "second150": {
+      "count": 75,
+      "event_count": {
+        "2": {
+          "count": 25,
+          "proportion": 0.3333333333333333
+        },
+        "3": {
+          "count": 25,
+          "proportion": 0.3333333333333333
+        },
+        "4": {
+          "count": 25,
+          "proportion": 0.3333333333333333
+        },
+        "5": {
+          "count": 0,
+          "proportion": 0.0
+        }
+      },
+      "prompt_tokens": {
+        "count": 75,
+        "mean": 4946.613333333334,
+        "p25": 4009.5,
+        "p50": 4900,
+        "p75": 5837.0,
+        "p90": 6707.400000000001,
+        "min": 2476,
+        "max": 7996
+      },
+      "source": {
+        "converted_cot": {
+          "count": 12,
+          "proportion": 0.16
+        },
+        "native_nocot": {
+          "count": 63,
+          "proportion": 0.84
+        }
+      },
+      "domain_or_source_segment": {
+        "user_chain_cot": {
+          "count": 12,
+          "proportion": 0.16
+        },
+        "user_chain_nocot": {
+          "count": 63,
+          "proportion": 0.84
+        }
+      },
+      "event_count_shift_vs_train": {
+        "2": {
+          "pilot_proportion": 0.3333333333333333,
+          "train_proportion": 0.15,
+          "ratio_pilot_to_train": 2.2222222222222223
+        },
+        "3": {
+          "pilot_proportion": 0.3333333333333333,
+          "train_proportion": 0.55,
+          "ratio_pilot_to_train": 0.606060606060606
+        },
+        "4": {
+          "pilot_proportion": 0.3333333333333333,
+          "train_proportion": 0.25,
+          "ratio_pilot_to_train": 1.3333333333333333
+        },
+        "5": {
+          "pilot_proportion": 0.0,
+          "train_proportion": 0.05,
+          "ratio_pilot_to_train": 0.0
+        }
+      }
+    },
+    "cumulative300": {
+      "count": 150,
+      "event_count": {
+        "2": {
+          "count": 45,
+          "proportion": 0.3
+        },
+        "3": {
+          "count": 45,
+          "proportion": 0.3
+        },
+        "4": {
+          "count": 45,
+          "proportion": 0.3
+        },
+        "5": {
+          "count": 15,
+          "proportion": 0.1
+        }
+      },
+      "prompt_tokens": {
+        "count": 150,
+        "mean": 4953.413333333333,
+        "p25": 4058.25,
+        "p50": 4905.0,
+        "p75": 5798.25,
+        "p90": 6744.3,
+        "min": 2015,
+        "max": 8153
+      },
+      "source": {
+        "converted_cot": {
+          "count": 30,
+          "proportion": 0.2
+        },
+        "native_nocot": {
+          "count": 120,
+          "proportion": 0.8
+        }
+      },
+      "domain_or_source_segment": {
+        "user_chain_cot": {
+          "count": 30,
+          "proportion": 0.2
+        },
+        "user_chain_nocot": {
+          "count": 120,
+          "proportion": 0.8
+        }
+      },
+      "event_count_shift_vs_train": {
+        "2": {
+          "pilot_proportion": 0.3,
+          "train_proportion": 0.15,
+          "ratio_pilot_to_train": 2.0
+        },
+        "3": {
+          "pilot_proportion": 0.3,
+          "train_proportion": 0.55,
+          "ratio_pilot_to_train": 0.5454545454545454
+        },
+        "4": {
+          "pilot_proportion": 0.3,
+          "train_proportion": 0.25,
+          "ratio_pilot_to_train": 1.2
+        },
+        "5": {
+          "pilot_proportion": 0.1,
+          "train_proportion": 0.05,
+          "ratio_pilot_to_train": 2.0
+        }
+      }
+    }
+  },
+  "reward_constraint_conflict": {
+    "C0": {
+      "reward_thresholds": {
+        "0.6": {
+          "candidate_count": 20,
+          "date_mismatch_rate": 0.1,
+          "action_mismatch_rate": 0.05,
+          "any_local_penalty_rate": 0.15
+        },
+        "0.7": {
+          "candidate_count": 4,
+          "date_mismatch_rate": 0.0,
+          "action_mismatch_rate": 0.0,
+          "any_local_penalty_rate": 0.0
+        }
+      },
+      "action_alignment_ge_0.7_count": 59,
+      "action_alignment_ge_0.7_with_local_penalty_rate": 0.3220338983050847
+    },
+    "C20": {
+      "reward_thresholds": {
+        "0.6": {
+          "candidate_count": 17,
+          "date_mismatch_rate": 0.0,
+          "action_mismatch_rate": 0.0,
+          "any_local_penalty_rate": 0.058823529411764705
+        },
+        "0.7": {
+          "candidate_count": 4,
+          "date_mismatch_rate": 0.0,
+          "action_mismatch_rate": 0.0,
+          "any_local_penalty_rate": 0.0
+        }
+      },
+      "action_alignment_ge_0.7_count": 65,
+      "action_alignment_ge_0.7_with_local_penalty_rate": 0.36923076923076925
+    },
+    "C40": {
+      "reward_thresholds": {
+        "0.6": {
+          "candidate_count": 24,
+          "date_mismatch_rate": 0.08333333333333333,
+          "action_mismatch_rate": 0.041666666666666664,
+          "any_local_penalty_rate": 0.125
+        },
+        "0.7": {
+          "candidate_count": 5,
+          "date_mismatch_rate": 0.0,
+          "action_mismatch_rate": 0.0,
+          "any_local_penalty_rate": 0.0
+        }
+      },
+      "action_alignment_ge_0.7_count": 67,
+      "action_alignment_ge_0.7_with_local_penalty_rate": 0.31343283582089554
+    }
+  },
+  "token_local_penalty_attribution": {
+    "strategy": "sqrt",
+    "lambda": 0.5,
+    "mass_definition": "incremental negative mass beyond unpenalized task advantage",
+    "checkpoints": {
+      "C0": {
+        "action_mismatch": {
+          "candidate_count": 17,
+          "violation_count": 19,
+          "masked_token_count": 246,
+          "average_span_length": 12.947368421052632,
+          "incremental_negative_mass_proxy": 10.795159412026821
+        },
+        "chronology_violation": {
+          "candidate_count": 4,
+          "violation_count": 4,
+          "masked_token_count": 40,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 0.0
+        },
+        "date_mismatch": {
+          "candidate_count": 54,
+          "violation_count": 71,
+          "masked_token_count": 710,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 61.72523515073164
+        },
+        "duplicate_event": {
+          "candidate_count": 3,
+          "violation_count": 3,
+          "masked_token_count": 202,
+          "average_span_length": 67.33333333333333,
+          "incremental_negative_mass_proxy": 3.9686269665968896
+        },
+        "hallucinated_sid": {
+          "candidate_count": 7,
+          "violation_count": 8,
+          "masked_token_count": 32,
+          "average_span_length": 4.0,
+          "incremental_negative_mass_proxy": 3.3510250392388414
+        }
+      },
+      "C20": {
+        "action_mismatch": {
+          "candidate_count": 20,
+          "violation_count": 23,
+          "masked_token_count": 300,
+          "average_span_length": 13.043478260869565,
+          "incremental_negative_mass_proxy": 13.43702025030598
+        },
+        "chronology_violation": {
+          "candidate_count": 10,
+          "violation_count": 10,
+          "masked_token_count": 100,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 3.1622776601683795
+        },
+        "date_mismatch": {
+          "candidate_count": 55,
+          "violation_count": 69,
+          "masked_token_count": 690,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 58.50213671311488
+        },
+        "duplicate_event": {
+          "candidate_count": 3,
+          "violation_count": 4,
+          "masked_token_count": 271,
+          "average_span_length": 67.75,
+          "incremental_negative_mass_proxy": 0.0
+        },
+        "hallucinated_sid": {
+          "candidate_count": 5,
+          "violation_count": 5,
+          "masked_token_count": 20,
+          "average_span_length": 4.0,
+          "incremental_negative_mass_proxy": 0.2662237217805865
+        }
+      },
+      "C40": {
+        "action_mismatch": {
+          "candidate_count": 22,
+          "violation_count": 25,
+          "masked_token_count": 335,
+          "average_span_length": 13.4,
+          "incremental_negative_mass_proxy": 14.4007106874908
+        },
+        "chronology_violation": {
+          "candidate_count": 7,
+          "violation_count": 7,
+          "masked_token_count": 70,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 0.0
+        },
+        "date_mismatch": {
+          "candidate_count": 51,
+          "violation_count": 67,
+          "masked_token_count": 670,
+          "average_span_length": 10.0,
+          "incremental_negative_mass_proxy": 62.77891627675961
+        },
+        "duplicate_event": {
+          "candidate_count": 2,
+          "violation_count": 3,
+          "masked_token_count": 214,
+          "average_span_length": 71.33333333333333,
+          "incremental_negative_mass_proxy": 0.0
+        },
+        "excess_event": {
+          "candidate_count": 1,
+          "violation_count": 1,
+          "masked_token_count": 78,
+          "average_span_length": 78.0,
+          "incremental_negative_mass_proxy": 0.0
+        },
+        "hallucinated_sid": {
+          "candidate_count": 5,
+          "violation_count": 5,
+          "masked_token_count": 20,
+          "average_span_length": 4.0,
+          "incremental_negative_mass_proxy": 1.2084587037507672
+        }
+      }
+    }
+  },
+  "classification": "SMALL_PROBE_NOISE",
+  "figures": [
+    "/data/GRPO_USER/results/diagnosis/paired_slope_total.png",
+    "/data/GRPO_USER/results/diagnosis/action_delta_distribution.png",
+    "/data/GRPO_USER/results/diagnosis/logic_delta_distribution.png",
+    "/data/GRPO_USER/results/diagnosis/event_bucket_delta.png",
+    "/data/GRPO_USER/results/diagnosis/train_vs_pilot_event_distribution.png"
+  ]
+}

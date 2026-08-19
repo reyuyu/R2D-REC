@@ -150,3 +150,25 @@ correct SID or exact event spans in green and local penalty spans in red;
 diagnostic-only violations such as `wrong_selection_sid` remain neutral.
 `scripts/backfill_user_fixed_probe.py` can populate an older run using frozen
 checkpoints, but only as rollout-only inference on four confirmed-idle GPUs.
+
+## Chain degradation diagnosis
+
+Phase 5D performs matched, inference-only Chain diagnosis over C0, C20, and
+C40. It first analyzes the existing eight fixed Chain probes, then builds a
+40-sample held-out `probe_chain_v2.jsonl` directly from the audited native
+NoCoT and converted CoT source pools. Probe v2 has zero sample overlap with
+`train_3000`, `pilot_600`, `probe_v1`, and cumulative Pilot300; its event-count,
+source, and prompt-length strata track the real Chain training distribution.
+
+The completed diagnosis classified the original eight-sample decline as
+`SMALL_PROBE_NOISE`: on Probe v2, C40-C0 Chain Total was +0.004985 with median
++0.003492 and bootstrap 95% CI [-0.006283, +0.016295]. Of 40 matched samples,
+18 improved, 7 were approximately unchanged, and 15 degraded. The Pilot300
+Chain mix was nevertheless distribution-shifted versus train: 2-event and
+5-event samples were each represented at 2.0x, while 3-event samples were at
+0.55x.
+
+See `docs/chain_diagnosis_v1.md`, `results/chain_diagnosis_v1.json`, and
+`results/diagnosis/` for per-sample comparisons, reward/constraint conflict,
+token-local attribution, and five diagnostic figures. The runner contains no
+optimizer, backward, training, or checkpoint-save path.
