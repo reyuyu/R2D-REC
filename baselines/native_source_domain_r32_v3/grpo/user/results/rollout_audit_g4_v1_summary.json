@@ -1,0 +1,1020 @@
+{
+  "contract_version": "gr_user_rollout_audit_g4_v1",
+  "run_id": "GR-USER-G4-AUDIT-4GPU-20260819-181843",
+  "mode": "audit",
+  "run_dir": "/data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843",
+  "shard_run_dirs": [
+    "/data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843-W0",
+    "/data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843-W1",
+    "/data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843-W2",
+    "/data/GRPO_USER/runs/GR-USER-G4-AUDIT-4GPU-20260819-181843-W3"
+  ],
+  "gpu": {
+    "physical_ids": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "preflight": [
+      {
+        "index": 0,
+        "uuid": "GPU-bf703d50-219b-3f54-499a-7801a38ef473",
+        "memory_used_mib": 5,
+        "memory_free_mib": 81223,
+        "utilization_percent": 0,
+        "compute_processes": []
+      },
+      {
+        "index": 1,
+        "uuid": "GPU-37d02b03-9f66-0975-b56c-896d1b817e51",
+        "memory_used_mib": 5,
+        "memory_free_mib": 81223,
+        "utilization_percent": 0,
+        "compute_processes": []
+      },
+      {
+        "index": 2,
+        "uuid": "GPU-87490c15-a5be-fd96-0b8e-b9c491439545",
+        "memory_used_mib": 5,
+        "memory_free_mib": 81223,
+        "utilization_percent": 0,
+        "compute_processes": []
+      },
+      {
+        "index": 3,
+        "uuid": "GPU-a89268d6-a10e-7501-dcb1-4f4e038250cb",
+        "memory_used_mib": 5,
+        "memory_free_mib": 81223,
+        "utilization_percent": 0,
+        "compute_processes": []
+      }
+    ]
+  },
+  "generation": {
+    "G": 4,
+    "do_sample": true,
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "seed": 20260819,
+    "max_new_tokens": 512,
+    "stop_token_ids": [
+      151645
+    ],
+    "skip_special_tokens": false,
+    "prompt_count": 100,
+    "completion_count": 400,
+    "batch_size": 4,
+    "worker_count": 4
+  },
+  "selection": {
+    "counts": {
+      "action": 50,
+      "chain": 50
+    },
+    "strata": {
+      "action:1-5": 8,
+      "action:6-10": 10,
+      "action:11-20": 15,
+      "action:21-30": 10,
+      "action:31-40": 5,
+      "action:41+": 2,
+      "chain:2": 8,
+      "chain:3": 27,
+      "chain:4": 12,
+      "chain:5": 3
+    },
+    "prompt_tokens": {
+      "action": {
+        "count": 50,
+        "mean": 4334.72,
+        "p50": 4075,
+        "p90": 6734,
+        "min": 1302,
+        "max": 7862
+      },
+      "chain": {
+        "count": 50,
+        "mean": 4977.12,
+        "p50": 4911,
+        "p90": 6943,
+        "min": 2015,
+        "max": 8153
+      }
+    }
+  },
+  "timing": {
+    "workers": [
+      {
+        "model_load_seconds": 34.700383672490716,
+        "generation_and_scoring_seconds": 445.55976430885494
+      },
+      {
+        "model_load_seconds": 34.65937279816717,
+        "generation_and_scoring_seconds": 486.84306434355676
+      },
+      {
+        "model_load_seconds": 35.039888955652714,
+        "generation_and_scoring_seconds": 483.29637551959604
+      },
+      {
+        "model_load_seconds": 34.84763729199767,
+        "generation_and_scoring_seconds": 479.32820118498057
+      }
+    ]
+  },
+  "integrity": {
+    "worker_count": 4,
+    "lora_tensor_count_checked_per_worker": [
+      16,
+      16,
+      16,
+      16
+    ],
+    "lora_checksum_unchanged": true,
+    "requires_grad_parameter_count": 0,
+    "frozen_sha_before": {
+      "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+      "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+      "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+    },
+    "frozen_sha_after": {
+      "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+      "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+      "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+    },
+    "frozen_sha_unchanged": true,
+    "sid_special_token_decode_preserved": true,
+    "workers": [
+      {
+        "lora_tensor_count_checked": 16,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksum_unchanged": true,
+        "requires_grad_parameter_count": 0,
+        "frozen_sha_before": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_after": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_unchanged": true,
+        "sid_special_token_decode_preserved": true
+      },
+      {
+        "lora_tensor_count_checked": 16,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksum_unchanged": true,
+        "requires_grad_parameter_count": 0,
+        "frozen_sha_before": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_after": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_unchanged": true,
+        "sid_special_token_decode_preserved": true
+      },
+      {
+        "lora_tensor_count_checked": 16,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksum_unchanged": true,
+        "requires_grad_parameter_count": 0,
+        "frozen_sha_before": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_after": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_unchanged": true,
+        "sid_special_token_decode_preserved": true
+      },
+      {
+        "lora_tensor_count_checked": 16,
+        "lora_checksums_before": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksums_after": {
+          "base_model.model.model.layers.0.mlp.down_proj.lora_A.default.weight": "be8264bdb90bcb659e06c8905cb891f0fde53b0d14e29cd318eb15fe894387a3",
+          "base_model.model.model.layers.0.mlp.down_proj.lora_B.default.weight": "0d893cc677763ad211281ee8b39f3e429e3bb402006498b4d1b4500e38a93787",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_A.default.weight": "75706c621888fb1645632667e23b7e3769c08a5329b33261f464a92c38e5f030",
+          "base_model.model.model.layers.0.mlp.gate_proj.lora_B.default.weight": "64b0288829da08b004987b91222df3198faa1c6e22639a1184c372bf8285aec6",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_A.default.weight": "a2104145fc189898b0c3ac213f76cedf9d073af912fb96f646054844f9ed31c4",
+          "base_model.model.model.layers.0.mlp.up_proj.lora_B.default.weight": "6f17c476a0f5274bfab175e40fb80d773c5a2534ef09e00738b39b833a7a21b7",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_A.default.weight": "be2271bb7c7abd60a83cf0599866c000a9cae389bc20ef329481a39e98bbc3ea",
+          "base_model.model.model.layers.0.self_attn.k_proj.lora_B.default.weight": "63bb1a84a18c48247d149c21a7e4ec2cb71d5843d126148774e8694a2bda14fa",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_A.default.weight": "e8816e97ebbf3076878d5958f527b72b8eb72f66185dd0dea4d895167597a74f",
+          "base_model.model.model.layers.0.self_attn.o_proj.lora_B.default.weight": "c2791977884b89bc9b45b942445bac3ad798edf0be94aac63bd9940d7f1deddb",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_A.default.weight": "ff5d679d9bee4ac3be3393d9a8b4c7d39bf33a032131b10055d3dfad6be32866",
+          "base_model.model.model.layers.0.self_attn.q_proj.lora_B.default.weight": "1156eeb9ce499fa34b4efcc7731a0e239101bedd75005d4ddd1e39a63b5b6497",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_A.default.weight": "8444438200452f76f2b8c68a05f40822996d40dafb5a68e179a1ba937a8011da",
+          "base_model.model.model.layers.0.self_attn.v_proj.lora_B.default.weight": "d3e33e9ef4e6431921f32c818bfda68d86fc4e30642cf168ae2f94ca7890f734",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_A.default.weight": "f4c244c8bbc01b9adf6ec1493e4effd218a6e922b89bb9aa90251c2a71fe7ed3",
+          "base_model.model.model.layers.1.mlp.down_proj.lora_B.default.weight": "170c1a643d1268986a756774a9d93c3b1d6975c8685437f5d76d4f8c9ef3fe82"
+        },
+        "lora_checksum_unchanged": true,
+        "requires_grad_parameter_count": 0,
+        "frozen_sha_before": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_after": {
+          "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+          "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+          "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+        },
+        "frozen_sha_unchanged": true,
+        "sid_special_token_decode_preserved": true
+      }
+    ]
+  },
+  "action": {
+    "candidate_count": 200,
+    "f1": {
+      "count": 200,
+      "mean": 0.6251601855211955,
+      "p50": 0.6666666666666666,
+      "p90": 0.9615384615384616,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "precision_mean": 0.719127779385149,
+    "recall_mean": 0.6374736053455023,
+    "json_valid_rate": 1.0,
+    "exact_set_rate": 0.065,
+    "hallucination_candidate_rate": 0.065,
+    "duplicate_candidate_rate": 0.04,
+    "wrong_selection_candidate_rate": 0.735,
+    "completion_tokens": {
+      "count": 200,
+      "mean": 92.07,
+      "p50": 60,
+      "p90": 186,
+      "min": 12,
+      "max": 450
+    },
+    "max_new_tokens_hit_rate": 0.0,
+    "penalty_mask_fraction": {
+      "count": 200,
+      "mean": 0.005136100253451504,
+      "p50": 0.0,
+      "p90": 0.0,
+      "min": 0.0,
+      "max": 0.25
+    },
+    "violation_counts": {
+      "wrong_selection_sid": 939,
+      "duplicate_sid": 10,
+      "hallucinated_sid": 16,
+      "invalid_sid_string": 1
+    },
+    "violation_cooccurrence": {
+      "hallucinated_sid+wrong_selection_sid": 10,
+      "duplicate_sid+wrong_selection_sid": 8,
+      "duplicate_sid+hallucinated_sid": 2
+    }
+  },
+  "chain": {
+    "candidate_count": 200,
+    "total_reward": {
+      "count": 200,
+      "mean": 0.45763282026457863,
+      "p50": 0.4634985898637381,
+      "p90": 0.6216526500370381,
+      "min": 0.10810729012976206,
+      "max": 0.7635766997604487
+    },
+    "action_alignment_f1_mean": 0.6693488679310109,
+    "logic_alignment_f1_mean": 0.2459167725981465,
+    "json_valid_rate": 1.0,
+    "event_grounding": {
+      "grounded": {
+        "count": 481,
+        "rate": 0.8208191126279863
+      },
+      "partially_grounded": {
+        "count": 28,
+        "rate": 0.04778156996587031
+      },
+      "ungrounded": {
+        "count": 77,
+        "rate": 0.13139931740614336
+      }
+    },
+    "candidate_grounding": {
+      "grounded": {
+        "count": 113,
+        "rate": 0.565
+      },
+      "partially_grounded": {
+        "count": 82,
+        "rate": 0.41
+      },
+      "ungrounded": {
+        "count": 5,
+        "rate": 0.025
+      }
+    },
+    "constraint_candidate_rates": {
+      "hallucinated_sid": 0.015,
+      "date_mismatch": 0.305,
+      "action_mismatch": 0.14,
+      "duplicate_event": 0.02,
+      "chronology_violation": 0.03,
+      "excess_event": 0.0
+    },
+    "constraint_violation_counts": {
+      "hallucinated_sid": 3,
+      "date_mismatch": 71,
+      "action_mismatch": 31,
+      "duplicate_event": 4,
+      "chronology_violation": 6,
+      "excess_event": 0
+    },
+    "completion_tokens": {
+      "count": 200,
+      "mean": 244.495,
+      "p50": 243,
+      "p90": 314,
+      "min": 155,
+      "max": 453
+    },
+    "max_new_tokens_hit_rate": 0.0,
+    "penalty_mask_fraction": {
+      "count": 200,
+      "mean": 0.029829378795655802,
+      "p50": 0.0,
+      "p90": 0.07083333333333333,
+      "min": 0.0,
+      "max": 0.3412698412698413
+    },
+    "violation_cooccurrence": {
+      "action_mismatch+date_mismatch": 4,
+      "action_mismatch+duplicate_event": 2,
+      "chronology_violation+date_mismatch": 1,
+      "date_mismatch+hallucinated_sid": 1,
+      "date_mismatch+duplicate_event": 1
+    }
+  },
+  "group_variance": {
+    "action": {
+      "prompt_count": 50,
+      "zero_std_count": 2,
+      "zero_std_rate": 0.04,
+      "mean_group_std": 0.12571990372501868,
+      "median_group_std": 0.10808496053687813,
+      "by_bucket": {
+        "1-5": {
+          "prompt_count": 8,
+          "zero_std_count": 1,
+          "zero_std_rate": 0.125,
+          "mean_group_std": 0.11584395394366762,
+          "median_group_std": 0.10885045776030143
+        },
+        "11-20": {
+          "prompt_count": 15,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.1633110957673661,
+          "median_group_std": 0.15473613780100942
+        },
+        "21-30": {
+          "prompt_count": 10,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.13819823013595153,
+          "median_group_std": 0.14336446602020872
+        },
+        "31-40": {
+          "prompt_count": 5,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.09476996106444742,
+          "median_group_std": 0.08505663424041698
+        },
+        "41+": {
+          "prompt_count": 2,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.10126617328217263,
+          "median_group_std": 0.10126617328217263
+        },
+        "6-10": {
+          "prompt_count": 10,
+          "zero_std_count": 1,
+          "zero_std_rate": 0.1,
+          "mean_group_std": 0.08512126649450044,
+          "median_group_std": 0.0624530817609999
+        }
+      }
+    },
+    "chain": {
+      "prompt_count": 50,
+      "zero_std_count": 0,
+      "zero_std_rate": 0.0,
+      "mean_group_std": 0.07324932729974819,
+      "median_group_std": 0.06884642183746038,
+      "by_bucket": {
+        "2": {
+          "prompt_count": 8,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.10592681264601342,
+          "median_group_std": 0.09891669174237865
+        },
+        "3": {
+          "prompt_count": 27,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.07095057793047196,
+          "median_group_std": 0.061876907474562745
+        },
+        "4": {
+          "prompt_count": 12,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.05871375615209116,
+          "median_group_std": 0.055711099635208636
+        },
+        "5": {
+          "prompt_count": 3,
+          "zero_std_count": 0,
+          "zero_std_rate": 0.0,
+          "mean_group_std": 0.06494039529048833,
+          "median_group_std": 0.054479321132472544
+        }
+      }
+    }
+  },
+  "g4_assessment": "G4 healthy",
+  "representative_examples": {
+    "action_high_reward_hallucination": [
+      {
+        "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+        "route": "action",
+        "bucket": "11-20",
+        "candidate_index": 0,
+        "reward": 0.9500000000000001,
+        "format_valid": true,
+        "violation_kinds": [
+          "hallucinated_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 120,
+        "completion_excerpt": "[\"<|video_begin|><s_a_3801><s_b_5106><s_c_8085>\", \"<|video_begin|><s_a_6140><s_b_4932><s_c_1004>\", \"<|video_begin|><s_a_3801><s_b_5106><s_c_4647>\", \"<|video_begin|><s_a_532><s_b_5349><s_c_1034>\", \"<|video_begin|><s_a_1351><s_b_7246><s_c_1939>\", \"<|video_begin|><s_a_3801><s_b_1747><s_c_2658>\", \"<|video_begin|><s_a_3801><s_b_5106><s_c_975>\", \"<|video_begin|><s_a_6140><s_b_7246><s_c_5349>\", \"<|video_begin|><s_a_3801><s_b_7246><s_c_6361>\", \"<|video_begin|><s_a_3001><s_b_3614><s_c_1076>\", \"<|video_begin|><s_a_4487><s_b_1395><s_c_5349>\", \"<|video_begin|><s_a_3001><s_b_5349><s_c_7106>\", \"<|video_begi"
+      },
+      {
+        "sample_id": "5b2e7e603229aeeae399ec52a7c0e9f0f22f4e4f7a3f1e126a4642c57bf96a49",
+        "route": "action",
+        "bucket": "11-20",
+        "candidate_index": 3,
+        "reward": 0.9047619047619048,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "hallucinated_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 132,
+        "completion_excerpt": "[\"<|video_begin|><s_a_3801><s_b_5106><s_c_8085>\", \"<|video_begin|><s_a_6140><s_b_4932><s_c_1004>\", \"<|video_begin|><s_a_3801><s_b_5106><s_c_4647>\", \"<|video_begin|><s_a_532><s_b_5349><s_c_1034>\", \"<|video_begin|><s_a_1351><s_b_7246><s_c_1939>\", \"<|video_begin|><s_a_3801><s_b_1747><s_c_2658>\", \"<|video_begin|><s_a_3801><s_b_5106><s_c_975>\", \"<|video_begin|><s_a_6140><s_b_7246><s_c_5349>\", \"<|video_begin|><s_a_3801><s_b_7246><s_c_6361>\", \"<|video_begin|><s_a_3001><s_b_3614><s_c_1076>\", \"<|video_begin|><s_a_4487><s_b_1395><s_c_5349>\", \"<|video_begin|><s_a_3001><s_b_5349><s_c_7106>\", \"<|video_begi"
+      },
+      {
+        "sample_id": "aa423d72352a0459479688460a1e9a19614c29477fa5db34930a3748cb1eee09",
+        "route": "action",
+        "bucket": "11-20",
+        "candidate_index": 2,
+        "reward": 0.7428571428571429,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "hallucinated_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 120,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_5494><s_b_2976><s_c_5004>\", \"<|prod_begin|><s_a_7794><s_b_850><s_c_3055>\", \"<|prod_begin|><s_a_4994><s_b_4538><s_c_4877>\", \"<|prod_begin|><s_a_7526><s_b_2711><s_c_6571>\", \"<|living_begin|><s_a_1229><s_b_7878><s_c_6278>\", \"<|prod_begin|><s_a_4053><s_b_5442><s_c_1012>\", \"<|living_begin|><s_a_773><s_b_6234><s_c_932>\", \"<|prod_begin|><s_a_3850><s_b_4240><s_c_5925>\", \"<|prod_begin|><s_a_6141><s_b_3827><s_c_5845>\", \"<|living_begin|><s_a_4372><s_b_8008><s_c_5036>\", \"<|prod_begin|><s_a_4994><s_b_4782><s_c_5104>\", \"<|prod_begin|><s_a_3457><s_b_4782><s_c_334>\", \"<|ad_begin|><s_a_689"
+      },
+      {
+        "sample_id": "5c2fabad619f04fe1c1d6e6a0713f9046c03cbc3646ae366e1c8ba4c036cbaf4",
+        "route": "action",
+        "bucket": "21-30",
+        "candidate_index": 3,
+        "reward": 0.7407407407407406,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "hallucinated_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "duplicate_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 204,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_4263><s_b_5369><s_c_7588>\", \"<|prod_begin|><s_a_4556><s_b_2916><s_c_5345>\", \"<|living_begin|><s_a_901><s_b_8049><s_c_1834>\", \"<|prod_begin|><s_a_4263><s_b_2848><s_c_1541>\", \"<|living_begin|><s_a_901><s_b_8022><s_c_6557>\", \"<|prod_begin|><s_a_4727><s_b_526><s_c_7055>\", \"<|prod_begin|><s_a_4727><s_b_526><s_c_539>\", \"<|prod_begin|><s_a_5516><s_b_4106><s_c_6542>\", \"<|living_begin|><s_a_901><s_b_765><s_c_2957>\", \"<|prod_begin|><s_a_526><s_b_8087><s_c_2215>\", \"<|prod_begin|><s_a_526><s_b_1029><s_c_705>\", \"<|ad_begin|><s_a_5018><s_b_2863><s_c_1834>\", \"<|prod_begin|><s_a_526><s_b_"
+      },
+      {
+        "sample_id": "9fba78f62bde96a64ddd10849ffa3aa02b53ff91707cd0f8aeac03c5ade576e2",
+        "route": "action",
+        "bucket": "31-40",
+        "candidate_index": 3,
+        "reward": 0.7118644067796611,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "hallucinated_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 174,
+        "completion_excerpt": "[\"<|living_begin|><s_a_726><s_b_7200><s_c_6278>\", \"<|prod_begin|><s_a_513><s_b_1259><s_c_3297>\", \"<|prod_begin|><s_a_513><s_b_1206><s_c_619>\", \"<|living_begin|><s_a_5659><s_b_7342><s_c_3882>\", \"<|prod_begin|><s_a_1805><s_b_5399><s_c_2294>\", \"<|prod_begin|><s_a_1805><s_b_4782><s_c_7368>\", \"<|prod_begin|><s_a_1805><s_b_2003><s_c_1901>\", \"<|prod_begin|><s_a_1805><s_b_4516><s_c_6298>\", \"<|living_begin|><s_a_7074><s_b_451><s_c_4454>\", \"<|living_begin|><s_a_1659><s_b_2990><s_c_3026>\", \"<|prod_begin|><s_a_513><s_b_7953><s_c_3297>\", \"<|ad_begin|><s_a_5632><s_b_3727><s_c_3171>\", \"<|prod_begin|><s_a_513"
+      }
+    ],
+    "action_high_reward_duplicate": [
+      {
+        "sample_id": "37400eceb1dc973fe5cf2112de3046aee1af34cc4339a512534ff8a43eb53baf",
+        "route": "action",
+        "bucket": "21-30",
+        "candidate_index": 0,
+        "reward": 0.9433962264150944,
+        "format_valid": true,
+        "violation_kinds": [
+          "duplicate_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 168,
+        "completion_excerpt": "[\"<|ad_begin|><s_a_7246><s_b_7246><s_c_7566>\", \"<|ad_begin|><s_a_4487><s_b_1656><s_c_1070>\", \"<|ad_begin|><s_a_3001><s_b_6047><s_c_3995>\", \"<|ad_begin|><s_a_7417><s_b_7246><s_c_7676>\", \"<|ad_begin|><s_a_7417><s_b_397><s_c_6357>\", \"<|ad_begin|><s_a_7417><s_b_7246><s_c_6583>\", \"<|ad_begin|><s_a_4684><s_b_7551><s_c_6056>\", \"<|video_begin|><s_a_4487><s_b_3148><s_c_5795>\", \"<|ad_begin|><s_a_6474><s_b_7246><s_c_7003>\", \"<|video_begin|><s_a_3001><s_b_2130><s_c_5004>\", \"<|ad_begin|><s_a_7417><s_b_7261><s_c_1792>\", \"<|ad_begin|><s_a_7417><s_b_7246><s_c_7676>\", \"<|ad_begin|><s_a_7417><s_b_7342><s_c_2325"
+      },
+      {
+        "sample_id": "832085ebc58978064455eae4f29e0b7f58adebf8ad7a9a8e3412f497e1da224f",
+        "route": "action",
+        "bucket": "21-30",
+        "candidate_index": 1,
+        "reward": 0.8936170212765958,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 156,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_3201><s_b_5172><s_c_7477>\", \"<|prod_begin|><s_a_7126><s_b_6599><s_c_806>\", \"<|prod_begin|><s_a_2852><s_b_4914><s_c_4079>\", \"<|prod_begin|><s_a_1908><s_b_3335><s_c_5069>\", \"<|prod_begin|><s_a_1908><s_b_7912><s_c_3979>\", \"<|prod_begin|><s_a_647><s_b_3854><s_c_2199>\", \"<|prod_begin|><s_a_7126><s_b_2365><s_c_2852>\", \"<|prod_begin|><s_a_2852><s_b_3335><s_c_2852>\", \"<|prod_begin|><s_a_1609><s_b_2365><s_c_2852>\", \"<|prod_begin|><s_a_2774><s_b_2539><s_c_4659>\", \"<|video_begin|><s_a_5295><s_b_2539><s_c_6583>\", \"<|video_begin|><s_a_2153><s_b_2539><s_c_229>\", \"<|video_begin|><s_a_136"
+      },
+      {
+        "sample_id": "5c2fabad619f04fe1c1d6e6a0713f9046c03cbc3646ae366e1c8ba4c036cbaf4",
+        "route": "action",
+        "bucket": "21-30",
+        "candidate_index": 3,
+        "reward": 0.7407407407407406,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "hallucinated_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "duplicate_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 204,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_4263><s_b_5369><s_c_7588>\", \"<|prod_begin|><s_a_4556><s_b_2916><s_c_5345>\", \"<|living_begin|><s_a_901><s_b_8049><s_c_1834>\", \"<|prod_begin|><s_a_4263><s_b_2848><s_c_1541>\", \"<|living_begin|><s_a_901><s_b_8022><s_c_6557>\", \"<|prod_begin|><s_a_4727><s_b_526><s_c_7055>\", \"<|prod_begin|><s_a_4727><s_b_526><s_c_539>\", \"<|prod_begin|><s_a_5516><s_b_4106><s_c_6542>\", \"<|living_begin|><s_a_901><s_b_765><s_c_2957>\", \"<|prod_begin|><s_a_526><s_b_8087><s_c_2215>\", \"<|prod_begin|><s_a_526><s_b_1029><s_c_705>\", \"<|ad_begin|><s_a_5018><s_b_2863><s_c_1834>\", \"<|prod_begin|><s_a_526><s_b_"
+      },
+      {
+        "sample_id": "9fba78f62bde96a64ddd10849ffa3aa02b53ff91707cd0f8aeac03c5ade576e2",
+        "route": "action",
+        "bucket": "31-40",
+        "candidate_index": 3,
+        "reward": 0.7118644067796611,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "hallucinated_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 174,
+        "completion_excerpt": "[\"<|living_begin|><s_a_726><s_b_7200><s_c_6278>\", \"<|prod_begin|><s_a_513><s_b_1259><s_c_3297>\", \"<|prod_begin|><s_a_513><s_b_1206><s_c_619>\", \"<|living_begin|><s_a_5659><s_b_7342><s_c_3882>\", \"<|prod_begin|><s_a_1805><s_b_5399><s_c_2294>\", \"<|prod_begin|><s_a_1805><s_b_4782><s_c_7368>\", \"<|prod_begin|><s_a_1805><s_b_2003><s_c_1901>\", \"<|prod_begin|><s_a_1805><s_b_4516><s_c_6298>\", \"<|living_begin|><s_a_7074><s_b_451><s_c_4454>\", \"<|living_begin|><s_a_1659><s_b_2990><s_c_3026>\", \"<|prod_begin|><s_a_513><s_b_7953><s_c_3297>\", \"<|ad_begin|><s_a_5632><s_b_3727><s_c_3171>\", \"<|prod_begin|><s_a_513"
+      },
+      {
+        "sample_id": "5c2fabad619f04fe1c1d6e6a0713f9046c03cbc3646ae366e1c8ba4c036cbaf4",
+        "route": "action",
+        "bucket": "21-30",
+        "candidate_index": 0,
+        "reward": 0.5833333333333334,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "duplicate_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 162,
+        "completion_excerpt": "[\"<|living_begin|><s_a_4372><s_b_3795><s_c_5563>\", \"<|prod_begin|><s_a_4263><s_b_5369><s_c_7588>\", \"<|prod_begin|><s_a_4556><s_b_2916><s_c_5345>\", \"<|living_begin|><s_a_901><s_b_8049><s_c_1834>\", \"<|prod_begin|><s_a_4263><s_b_2848><s_c_1541>\", \"<|living_begin|><s_a_901><s_b_8022><s_c_6557>\", \"<|living_begin|><s_a_901><s_b_765><s_c_2957>\", \"<|prod_begin|><s_a_526><s_b_8087><s_c_2215>\", \"<|prod_begin|><s_a_526><s_b_1029><s_c_705>\", \"<|ad_begin|><s_a_5018><s_b_2863><s_c_1834>\", \"<|prod_begin|><s_a_526><s_b_3569><s_c_819>\", \"<|prod_begin|><s_a_1834><s_b_729><s_c_7185>\", \"<|prod_begin|><s_a_526><s_"
+      }
+    ],
+    "chain_high_reward_date_or_action_mismatch": [
+      {
+        "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 0,
+        "reward": 0.7266035027363844,
+        "format_valid": true,
+        "violation_kinds": [
+          "date_mismatch",
+          "date_mismatch"
+        ],
+        "candidate_grounding": "ungrounded",
+        "completion_token_count": 191,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从季节性鼻部不适到针对性护理方案的探索\", \"events\": [{\"date\": \"2025-12-24\", \"action\": \"[商品-购买] <|prod_begin|><s_a_2950><s_b_7749><s_c_5879>\", \"logic\": \"问题触发：首次购买针对“鼻炎”、“过敏”、“鼻塞”症状的成套护理产品，表明用户遇到了具体的鼻部健康问题。\"}, {\"date\": \"2025-12-27\", \"action\": \"[商品-购买] <|prod_begin|><s_a_2950><s_b_1638><s_c_6361>\", \"logic\": \"认知增量与方案升级：在购买基础护理产品后，紧接着购买了包含“苍耳子油”这一明确药用成分的产品。这表明用户可能意识到基础护理效果有限，开始寻求更具有特定功效的解决方案，认知从“缓解不适”深化至“针对特定成分的治疗”。\"}]}}"
+      },
+      {
+        "sample_id": "9c8f9b5fccb7ba236aa8d1797ae15818fce67028c4935f11b79e6b945082abdd",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 2,
+        "reward": 0.7187179081447302,
+        "format_valid": true,
+        "violation_kinds": [
+          "date_mismatch",
+          "date_mismatch"
+        ],
+        "candidate_grounding": "ungrounded",
+        "completion_token_count": 201,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从季节性鼻部不适到针对性护理方案的探索\", \"events\": [{\"date\": \"2025-12-24\", \"action\": \"[商品-购买] <|prod_begin|><s_a_2950><s_b_7749><s_c_5879>\", \"logic\": \"问题触发：购买针对“鼻塞、鼻痒”的特定鼻舒贴，表明用户正遭受季节性或非特异性鼻部不适，并采取了初步的、对症的解决方案。\"}, {\"date\": \"2025-12-27\", \"action\": \"[商品-购买] <|prod_begin|><s_a_2950><s_b_1638><s_c_6361>\", \"logic\": \"认知跃迁：在短时间内从购买单一功能产品（鼻舒贴）转变为购买成分更专业、功能更强的“舒鼻膏”（包含苍耳子油、黄芪、蜂胶等），体现了对鼻部护理的认知升级，从缓解表层症状深入到对鼻腔深层进行养护。\"}]}}"
+      },
+      {
+        "sample_id": "56ddd09a41db2129518992f6e6b4dc5d5334b72196d595266391c1fc3b8c5c2f",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 3,
+        "reward": 0.6894254557916797,
+        "format_valid": true,
+        "violation_kinds": [
+          "date_mismatch"
+        ],
+        "candidate_grounding": "partially_grounded",
+        "completion_token_count": 172,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从被动接收到主动实践的DIY兴趣激发\", \"events\": [{\"date\": \"2026-01-30\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_2585><s_b_3408><s_c_2468>\", \"logic\": \"兴趣触发：通过观看视频，首次接触到“自制生根粉”这一具体DIY项目，形成初步认知。\"}, {\"date\": \"2026-01-30\", \"action\": \"[商品-点击] <|prod_begin|><s_a_7433><s_b_4771><s_c_396>\", \"logic\": \"行为转化与深化：在观看视频的同一天，立即产生了将兴趣转化为实践的意图，开始主动搜索并点击与“生根粉制作”强相关的工具“电动打碎机”，体现了从认知到行动的快速收敛。\"}]}}"
+      },
+      {
+        "sample_id": "61022eaae6ece8f7411832802ac34fe1ee60017c2a074fce4ca66b8550f4388b",
+        "route": "chain",
+        "bucket": 3,
+        "candidate_index": 1,
+        "reward": 0.6345198317656536,
+        "format_valid": true,
+        "violation_kinds": [
+          "action_mismatch",
+          "duplicate_event"
+        ],
+        "candidate_grounding": "partially_grounded",
+        "completion_token_count": 275,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从被动接收到主动决策的取暖设备选购\", \"events\": [{\"date\": \"2026-01-21\", \"action\": \"[视频-点赞/长播] <|video_begin|><s_a_5132><s_b_5224><s_c_2242>\", \"logic\": \"问题触发与方案认知：用户被动接收到关于“创维智能取暖器”的产品介绍视频，内容明确指向“语音操控”、“节能”、“石墨烯导热”等核心卖点，构成了后续决策的初始信息输入。\"}, {\"date\": \"2026-01-22\", \"action\": \"[商品-点击] <|prod_begin|><s_a_7433><s_b_5857><s_c_5218>\", \"logic\": \"决策收敛与行动准备：在接收到产品信息的次日，用户从被动观看转为主动点击具体商品，目标与初始视频内容高度一致（取暖器、语音操控、节能），表明用户已进入购买意向的评估阶段。\"}, {\"date\": \"2026-01-22\", \"action\": \"[商品-点击] <|prod_begin|><s_a_7433><s_b_5857><s_c_5218>\", \"logic\": \"对比与最终锁定：用户对同一商品进行了两次点击，这通常是购买决策过程中的犹豫和对比行为，进一步确认了其对“创维”品牌及“语音”功能的偏好。"
+      },
+      {
+        "sample_id": "88985fea200635a1d4df3ed541507e96a9c3a9c0bdc6ebda264b6ce9bedcbc38",
+        "route": "chain",
+        "bucket": 3,
+        "candidate_index": 0,
+        "reward": 0.633023932359488,
+        "format_valid": true,
+        "violation_kinds": [
+          "date_mismatch"
+        ],
+        "candidate_grounding": "partially_grounded",
+        "completion_token_count": 254,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从被动接收到主动探索：对明朝历史的兴趣深化\", \"events\": [{\"date\": \"2025-12-20\", \"action\": \"[广告-点击] <|ad_begin|><s_a_655><s_b_6519><s_c_7404>\", \"logic\": \"初始触发：被动点击与“明朝”相关的泛娱乐化广告，表现出初步的、非特异性兴趣。\"}, {\"date\": \"2025-12-24\", \"action\": \"[广告-点击] <|ad_begin|><s_a_3738><s_b_1141><s_c_3026>\", \"logic\": \"兴趣聚焦：在短时间内，从泛历史题材转向对“明朝皇室家族斗争”这一特定历史事件的关注，兴趣点开始具象化。\"}, {\"date\": \"2025-12-29\", \"action\": \"[视频-收藏/点赞/长播] <|video_begin|><s_a_7038><s_b_7665><s_c_7925>\", \"logic\": \"认知跃迁与深度互动：从被动点击广告，演化为主动对包含“朱瞻基”（明确的明朝人物）和“宫廷斗争”情节的长视频进行高价值的“收藏/点赞”操作，表明兴趣已从浅层了解深化为对特定历史事件的深度探究。\"}]}}"
+      }
+    ],
+    "action_low_reward_valid_grounded_no_duplicate": [
+      {
+        "sample_id": "05de1ffe67a8a113b46fad8867ccd474267d1ec9b5fd5178036788bf3344ac7b",
+        "route": "action",
+        "bucket": "1-5",
+        "candidate_index": 2,
+        "reward": 0.0,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 24,
+        "completion_excerpt": "[\"<|ad_begin|><s_a_3641><s_b_978><s_c_6171>\", \"<|living_begin|><s_a_4372><s_b_7342><s_c_3676>\", \"<|prod_begin|><s_a_345><s_b_2769><s_c_535>\", \"<|video_begin|><s_a_5288><s_b_5189><s_c_3973>\"]"
+      },
+      {
+        "sample_id": "56b1345350d5bc9bb83952a06e4e479cae77a5b80c451d5f5a13cc5a019dd26e",
+        "route": "action",
+        "bucket": "11-20",
+        "candidate_index": 2,
+        "reward": 0.0,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 30,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_2568><s_b_7423><s_c_2368>\", \"<|prod_begin|><s_a_1480><s_b_7270><s_c_5755>\", \"<|prod_begin|><s_a_7160><s_b_152><s_c_7101>\", \"<|prod_begin|><s_a_7160><s_b_5974><s_c_5044>\", \"<|prod_begin|><s_a_4661><s_b_6318><s_c_4133>\"]"
+      },
+      {
+        "sample_id": "703dba95995ed9533d9ee8112df6c97db78cec21bada4d6ef5a6ecdb4f585ce1",
+        "route": "action",
+        "bucket": "11-20",
+        "candidate_index": 1,
+        "reward": 0.0,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 12,
+        "completion_excerpt": "[\"<|video_begin|><s_a_2764><s_b_7894><s_c_6341>\", \"<|prod_begin|><s_a_5547><s_b_6751><s_c_4115>\"]"
+      },
+      {
+        "sample_id": "c8622fd30302cfbe377a39c7fbb4921940480909d9cab0d15397f638fa1d944e",
+        "route": "action",
+        "bucket": "1-5",
+        "candidate_index": 0,
+        "reward": 0.0,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 18,
+        "completion_excerpt": "[\"<|ad_begin|><s_a_7038><s_b_6771><s_c_5141>\", \"<|video_begin|><s_a_1985><s_b_4181><s_c_47>\", \"<|video_begin|><s_a_4963><s_b_2906><s_c_497>\"]"
+      },
+      {
+        "sample_id": "c8622fd30302cfbe377a39c7fbb4921940480909d9cab0d15397f638fa1d944e",
+        "route": "action",
+        "bucket": "1-5",
+        "candidate_index": 1,
+        "reward": 0.0,
+        "format_valid": true,
+        "violation_kinds": [
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid",
+          "wrong_selection_sid"
+        ],
+        "candidate_grounding": null,
+        "completion_token_count": 48,
+        "completion_excerpt": "[\"<|prod_begin|><s_a_513><s_b_2789><s_c_3297>\", \"<|ad_begin|><s_a_7038><s_b_6771><s_c_5141>\", \"<|ad_begin|><s_a_1985><s_b_2549><s_c_372>\", \"<|video_begin|><s_a_4963><s_b_2906><s_c_497>\", \"<|video_begin|><s_a_5555><s_b_6771><s_c_2814>\", \"<|video_begin|><s_a_1985><s_b_4932><s_c_2568>\", \"<|video_begin|><s_a_5417><s_b_6973><s_c_7840>\", \"<|video_begin|><s_a_5417><s_b_3589><s_c_6162>\"]"
+      }
+    ],
+    "chain_low_reward_valid_grounded_no_duplicate": [
+      {
+        "sample_id": "51b7568efe276fbefd3d37169c49ec2a2e4b86fb0c788105bf75dc37b3d4a39a",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 0,
+        "reward": 0.19697486729498428,
+        "format_valid": true,
+        "violation_kinds": [],
+        "candidate_grounding": "grounded",
+        "completion_token_count": 302,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从被动接收到主动探索的游戏策略深化\", \"events\": [{\"date\": \"2026-02-02\", \"action\": \"[视频-长播] <|video_begin|><s_a_6988><s_b_6170><s_c_2067>\", \"logic\": \"问题触发：通过观看视频，首次接触到“金铲铲之战”中“海克斯大乱斗”这一具体游戏模式，并理解了其中的“海克斯”机制，产生了初步认知。\"}, {\"date\": \"2026-02-02\", \"action\": \"[视频-评论/长播] <|video_begin|><s_a_3062><s_b_4932><s_c_6919>\", \"logic\": \"认知深化与主动求证：从被动观看转为主动进行深度探索。用户开始关注“海克斯大乱斗”在不同赛季（S16）的演变，特别是新推出的“双龙引珠”海克斯机制，并开始评论和分析该机制的实际效果，体现了从“是什么”到“为什么”的认知增量。\"}, {\"date\": \"2026-02-02\", \"action\": \"[视频-长播] <|video_begin|><s_a_3062><s_b_4491><s_c_2067>\", \"logic\": \"策略收敛与应用：在理解了“双龙引珠”机制后，用户的兴趣迅速聚焦于该机制如何影响具体的游戏策略，开始观看关于“海克"
+      },
+      {
+        "sample_id": "044a0a231f27e97aa9650427590d1974058513ba798984f9cfb568549923a93a",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 2,
+        "reward": 0.20274131274131277,
+        "format_valid": true,
+        "violation_kinds": [],
+        "candidate_grounding": "grounded",
+        "completion_token_count": 217,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从泛化农业关注到具体农产品消费的转化\", \"events\": [{\"date\": \"2025-08-28\", \"action\": \"[商品-点击] <|prod_begin|><s_a_177><s_b_4246><s_c_1278>\", \"logic\": \"兴趣起点：对农业、农业机械和农耕过程产生兴趣，属于内容消费层面。\"}, {\"date\": \"2026-01-04\", \"action\": \"[商品-点击] <|prod_begin|><s_a_826><s_b_5101><s_c_4495>\", \"logic\": \"兴趣深化：将对农业的抽象兴趣转化为对具体农产品（牛肉）的关注，并首次出现“清真”这一关键限定词。\"}, {\"date\": \"2026-01-08\", \"action\": \"[商品-点击] <|prod_begin|><s_a_5422><s_b_6642><s_c_1023>\", \"logic\": \"需求确认与聚焦：在关注“清真”牛杂后，进一步将兴趣收敛到更细分的品类“牛油”，完成了从宽泛农产品到特定加工品类的认知跃迁。\"}]}}"
+      },
+      {
+        "sample_id": "bd7c7c14481e5f860b65c189a2f817ec8d9f47bcc420c604b19e9f4a547b3190",
+        "route": "chain",
+        "bucket": 3,
+        "candidate_index": 0,
+        "reward": 0.20492386211512717,
+        "format_valid": true,
+        "violation_kinds": [],
+        "candidate_grounding": "grounded",
+        "completion_token_count": 256,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从关注心血管健康泛化科普到具体化用药知识的深化过程\", \"events\": [{\"date\": \"2025-07-06\", \"action\": \"[商品-购买] <|prod_begin|><s_a_6655><s_b_5><s_c_6524>\", \"logic\": \"初始触发：基于对健康问题的初步认知，购买具有心脑血管、抗氧化功能的保健品，问题指向较为模糊。\"}, {\"date\": \"2026-01-29\", \"action\": \"[视频-长播] <|video_begin|><s_a_7149><s_b_7016><s_c_557>\", \"logic\": \"认知深化：从泛化的保健品转向对特定心血管药物（丹参滴丸、稳心颗粒）的深入了解，关注点从“预防保健”升级为“疾病管理”和“药物作用机制对比”。\"}, {\"date\": \"2026-02-05\", \"action\": \"[商品-点击] <|prod_begin|><s_a_2950><s_b_6818><s_c_3692>\", \"logic\": \"决策收敛：在了解多种丹参类药物后，用户的兴趣点收敛到更具体的、具有“双倍浓缩”、“高倍”等强功能指向的丹参产品上，完成了从宽泛概念到具体解决方案的认知跃迁。\"}]}}"
+      },
+      {
+        "sample_id": "56ddd09a41db2129518992f6e6b4dc5d5334b72196d595266391c1fc3b8c5c2f",
+        "route": "chain",
+        "bucket": 2,
+        "candidate_index": 0,
+        "reward": 0.21964149504195274,
+        "format_valid": true,
+        "violation_kinds": [],
+        "candidate_grounding": "grounded",
+        "completion_token_count": 155,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从被动接收到主动实践的DIY兴趣激发\", \"events\": [{\"date\": \"2026-02-01\", \"action\": \"[商品-点击] <|prod_begin|><s_a_3763><s_b_6454><s_c_1533>\", \"logic\": \"兴趣起点：被动浏览新奇宠物（鹦鹉），触发了对新事物的好奇心和潜在的饲养兴趣。\"}, {\"date\": \"2026-02-05\", \"action\": \"[视频-长播] <|video_begin|><s_a_4615><s_b_1740><s_c_4032>\", \"logic\": \"认知深化：从饲养兴趣延伸至对婴儿用品的关注，通过观看视频获取实用知识（如材质选择），体现了从被动消费到主动信息搜集的认知转变。\"}]}}"
+      },
+      {
+        "sample_id": "e3d2b306a5be6d7ee73aedb76d3487431ed6905fd5de7244fb929618db085946",
+        "route": "chain",
+        "bucket": 3,
+        "candidate_index": 0,
+        "reward": 0.28003332469159814,
+        "format_valid": true,
+        "violation_kinds": [],
+        "candidate_grounding": "grounded",
+        "completion_token_count": 172,
+        "completion_excerpt": "{\"logic_chain\": {\"name\": \"从泛化生理焦虑到具体化健康调理的认知收敛\", \"events\": [{\"date\": \"2026-02-04\", \"action\": \"[广告-点击] <|ad_begin|><s_a_4030><s_b_8151><s_c_2915>\", \"logic\": \"问题触发：用户被动接收到关于中老年健康与疾病预防的泛化信息，可能触发了对自身或家人的健康关注。\"}, {\"date\": \"2026-02-04\", \"action\": \"[广告-点击] <|ad_begin|><s_a_1351><s_b_6379><s_c_1572>\", \"logic\": \"认知深化与聚焦：基于初步的健康焦虑，用户从泛化的预防概念转向了更具针对性的“调理”和“辨证”的中医养生方法，体现了从被动接收信息到主动寻求具体解决方案的认知跃迁。\"}]}}"
+      }
+    ]
+  }
+}

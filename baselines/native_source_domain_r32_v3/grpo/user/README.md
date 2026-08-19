@@ -74,9 +74,28 @@ python3 scripts/audit_user_penalty_mask.py \
 The locality audit uses only real four-token SIDs from pilot history and checks
 50 examples for each of six Action/Chain violation categories.
 
+## G=4 rollout-only audit
+
+Phase 3B loads the frozen Beta baseline Epoch 2 parent in `eval()` mode with
+all parameters set to `requires_grad=False`. It performs NoCoT sampling and
+reward/mask auditing only; the runner contains no optimizer, backward, trainer,
+or checkpoint-save path.
+
+The formal audit deterministically selects 50 Action and 50 Chain prompts from
+`pilot_600.jsonl`, generates four candidates per prompt with temperature 0.9,
+top-p 0.95, seed 20260819, and `max_new_tokens=512`, then verifies LoRA tensor
+checksums and frozen-data SHA values before publishing results. Independent
+`audit-shard` workers may bind to four already-idle GPUs; CPU `aggregate` mode
+accepts only 100 unique prompts, 400 unique candidates, and 100 groups.
+
+The completed run `GR-USER-G4-AUDIT-4GPU-20260819-181843` used GPUs 0-3.
+Action and Chain zero-std rates were 4% and 0%, respectively, so G=4 is healthy
+under the predeclared `<5%` criterion. See
+`results/rollout_audit_g4_v1_summary.json` and
+`docs/rollout_audit_g4_v1.md` for the full static report.
+
 ## GPU policy
 
-Phases 1 and 2 are CPU-only even when GPUs are idle. The scripts do not import
-Torch, generate completions, initialize a trainer, or select a CUDA device.
-Future GPU work may use only devices confirmed to be unoccupied and must not
-preempt another process.
+Phases 1-3A are CPU-only even when GPUs are idle. Phase 3B may use only devices
+confirmed to be unoccupied and must not preempt another process. It generates
+audit candidates but does not train or mutate model parameters.
