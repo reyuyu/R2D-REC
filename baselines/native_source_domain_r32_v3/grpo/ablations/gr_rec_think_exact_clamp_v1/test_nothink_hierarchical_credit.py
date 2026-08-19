@@ -240,6 +240,56 @@ assert logps.grad is not None
 assert torch.equal(logps.grad == 0, expected == 0)
 
 
+# GRPO reduction is invariant to unrelated completion length.
+def token_policy_loss(completion_mask, token_advantages):
+    batch, width = completion_mask.shape
+    policy_logps = torch.nn.Parameter(torch.zeros((batch, width)))
+    trainer._get_per_token_logps_and_entropies = (
+        lambda *args, **kwargs: (policy_logps, None)
+    )
+    trainer._smoke_policy_epoch = {}
+    trainer._smoke_log = [{}]
+    inputs = {
+        "prompt_ids": torch.ones((batch, 2), dtype=torch.long),
+        "prompt_mask": torch.ones((batch, 2), dtype=torch.long),
+        "completion_ids": torch.ones((batch, width), dtype=torch.long),
+        "completion_mask": completion_mask,
+        "route_id": torch.full((batch,), ROUTE_ID["no_think"]),
+        "advantages": torch.full((batch,), 1e6),
+        "token_advantages": token_advantages,
+    }
+    loss = trainer._compute_nothink_token_loss(None, inputs)
+    loss.backward()
+    return loss.detach(), policy_logps.grad
+
+
+length_mask = torch.tensor([
+    [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+])
+length_credit = torch.zeros((2, 10))
+length_credit[0, 2] = 0.1
+length_credit[1, 7] = 0.1
+length_loss, length_grad = token_policy_loss(length_mask, length_credit)
+torch.testing.assert_close(length_grad[0, 2], length_grad[1, 7], rtol=0, atol=0)
+assert length_grad[0, 2] == -0.025  # 0.1 * route .5 / batch 2
+assert torch.equal(length_grad == 0, length_credit == 0)
+torch.testing.assert_close(length_loss, torch.tensor(-0.05), rtol=0, atol=1e-8)
+
+# A single credited token enters per-sample loss at its exact value, then the
+# unchanged NoThink route multiplier (.5) is applied.
+for value, width in ((0.015625, 4), (-0.125, 7), (0.375, 10)):
+    mask = torch.ones((1, width))
+    token_credit = torch.zeros((1, width))
+    token_credit[0, width // 2] = value
+    exact_loss, exact_grad = token_policy_loss(mask, token_credit)
+    torch.testing.assert_close(exact_loss, torch.tensor(-0.5 * value), rtol=0, atol=0)
+    torch.testing.assert_close(
+        exact_loss.abs() / 0.5, torch.tensor(abs(value)), rtol=0, atol=0
+    )
+    assert torch.equal(exact_grad == 0, token_credit == 0)
+
+
 # Branch B is gone: only exact all-zero can activate the Gold-A bridge.
 assert plan_dead_zero_bridge([0] * 8, gold, "prod") == plan_dead_zero_bridge([0] * 8, gold, "prod")
 dead_plan = plan_dead_zero_bridge([0] * 8, gold, "prod")

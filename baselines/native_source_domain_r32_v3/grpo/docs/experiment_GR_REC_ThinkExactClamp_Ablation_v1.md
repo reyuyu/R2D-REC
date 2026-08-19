@@ -75,14 +75,16 @@ debugging, but it is not consumed by the NoThink loss.
 ## Token-level PPO
 
 NoThink retains the same current/old log-probability, PPO ratio, clipping,
-completion mask, route multiplier, GRPO/BNPO reduction and gradient-accumulation
-division. The only credit-assignment substitution is:
+completion mask, route multiplier and gradient-accumulation division. Formal
+GRPO uses a credited-token sum per sample, avoiding implicit dilution by the
+number of unrelated completion tokens:
 
 ```text
-sequence_advantage.unsqueeze(1)  ->  token_advantages[B, completion_length]
+per_sample_loss = sum(clipped_PPO_loss * token_advantages * completion_mask)
 ```
 
-The old sequence-wide loss is not added, so there is no double counting.
+The old sequence-wide loss is not added, so there is no double counting. BNPO
+retains its existing token-mask normalization and is not redesigned here.
 
 ## Dead-zero bridge
 
