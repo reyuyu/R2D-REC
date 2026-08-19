@@ -143,6 +143,14 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in (
         "实验名称", "选择 D:\\model\\GRPO", "下载两个文件", "刷新列表", "删除检查点"
     ))
+    assert all(marker in html for marker in (
+        'id="smoothingSelect"', 'value="15" selected', "smoothSeriesData",
+        "grpo-monitor-smoothing-window", "setSmoothingWindow"
+    ))
+    assert all(label in html for label in ("&#26354;&#32447;&#24179;&#28369;", "15 &#28857;&#20013;&#24230;"))
+    assert "rawDiagnosticCharts" in html
+    assert "chartSeries[activeChart]" in html
+    assert "KL / Clip / Loss / latency" in html
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
