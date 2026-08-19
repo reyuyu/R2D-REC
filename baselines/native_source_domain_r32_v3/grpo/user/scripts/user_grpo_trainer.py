@@ -185,9 +185,13 @@ class UserGRPOTrainer(GRPOTrainer):
         outputs = []
         batch_size = self.forward_batch_size
         for start in range(0, input_ids.size(0), batch_size):
+            batch_attention = attention_mask[start : start + batch_size]
+            position_ids = batch_attention.long().cumsum(dim=-1) - 1
+            position_ids.masked_fill_(batch_attention == 0, 0)
             model_inputs = {
                 "input_ids": input_ids[start : start + batch_size],
-                "attention_mask": attention_mask[start : start + batch_size],
+                "attention_mask": batch_attention,
+                "position_ids": position_ids,
                 "use_cache": False,
             }
             if self._supports_logits_to_keep:

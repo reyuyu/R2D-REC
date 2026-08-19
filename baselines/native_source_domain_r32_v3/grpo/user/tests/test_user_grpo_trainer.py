@@ -30,6 +30,20 @@ class TinyCausalLM(torch.nn.Module):
         return SimpleNamespace(logits=logits)
 
 
+class PositionAwareTinyCausalLM(torch.nn.Module):
+    def __init__(self, vocab_size=19, hidden_size=8):
+        super().__init__()
+        self.embed = torch.nn.Embedding(vocab_size, hidden_size)
+        self.position = torch.nn.Embedding(32, hidden_size)
+        self.head = torch.nn.Linear(hidden_size, vocab_size, bias=False)
+
+    def forward(self, input_ids, attention_mask=None, position_ids=None, logits_to_keep=None, **kwargs):
+        logits = self.head(self.embed(input_ids) + self.position(position_ids))
+        if logits_to_keep is not None:
+            logits = logits[:, -logits_to_keep:, :]
+        return SimpleNamespace(logits=logits)
+
+
 def trainer_inputs():
     prompt_ids = torch.tensor([[1, 2, 3], [0, 4, 5]])
     prompt_mask = torch.tensor([[1, 1, 1], [0, 1, 1]])
@@ -71,6 +85,18 @@ def fake_compiler(completion, violations, tokenizer, route):
 
 
 class UserGRPOTrainerTests(unittest.TestCase):
+    def test_left_padding_does_not_change_effective_token_positions(self):
+        torch.manual_seed(5)
+        model = PositionAwareTinyCausalLM()
+        trainer = UserGRPOTrainer.for_correctness_smoke(model)
+        unpadded_ids = torch.tensor([[1, 2, 3, 4]])
+        unpadded_mask = torch.ones_like(unpadded_ids)
+        padded_ids = torch.tensor([[0, 0, 1, 2, 3, 4]])
+        padded_mask = torch.tensor([[0, 0, 1, 1, 1, 1]])
+        unpadded = trainer._get_user_per_token_logps(model, unpadded_ids, unpadded_mask, 2)
+        padded = trainer._get_user_per_token_logps(model, padded_ids, padded_mask, 2)
+        self.assertTrue(torch.equal(unpadded, padded))
+
     def test_real_trainer_no_mask_model_gradient_parity(self):
         torch.manual_seed(3)
         user_model = TinyCausalLM()
