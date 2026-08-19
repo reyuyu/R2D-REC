@@ -1,6 +1,6 @@
 # GR_REC_DSR_Simple_Ablation_v1
 
-Status: **FULL RUN IN PROGRESS**
+Status: **FULL RUN COMPLETE - ENGINEERING PASS, RESEARCH RESULT MIXED**
 
 - Parent: BATA
 - Baseline: GR_REC_v1
@@ -73,3 +73,71 @@ ends training after persisting checkpoint-200.
 - Old DSR directory SHA-256 aggregate: 3662b1b31eec73a4181e48fd3de6ef998acea00ef448ed66e0df8cd55c1baaf7
 - Production runner SHA-256: 66d5135385c0093f03023a38cc852045fa85b32cd130dece7be172eb40d98c79
 - Both hashes match the pre-deployment values.
+
+## Final CPU-only forensic audit (2026-08-19)
+
+The bounded full schedule completed normally at optimizer step 2316. No second
+run was started. The final Trainer state records epoch 1.0, train loss
+0.0004440254, LoRA delta 0.0085789816, and base delta exactly 0. The wall-clock
+runtime was 46,316 seconds (12 h 51 m 56 s).
+
+### Completion and integrity
+
+- No training process remains for this RUN_ID.
+- `metrics.jsonl` contains exactly 2316 unique steps spanning 1 through 2316,
+  with no missing or duplicate step.
+- All rows in metrics, rollouts, DSR steps, DSR metrics, compact forensic,
+  probes, and traces parse as strict JSON. There are no non-finite stored values.
+- The final fixed probe exists at step 2316; the probe schedule contains steps
+  0, every 200 through 2200, and 2316 for all four domains.
+- The log contains no OOM, Traceback, NCCL error/timeout, save error, or STOP.
+  PyTorch emitted one process-group-not-destroyed warning during otherwise
+  normal process exit; it did not affect checkpoint persistence.
+- `checkpoint-2316` contains the adapter and full Trainer recovery state.
+  Adapter config SHA-256: `3593affa880ae584d6837eceffd5c47155645db0f4e6a7f040bd3300fe71e187`.
+  Adapter model SHA-256: `6200af822dc9f24b8f6453c28e6be01dafd8165b7a53de81668d0bd0cffae67d`.
+
+### Optimization health
+
+First-200 versus last-200 policy means remained bounded: approximate KL
+0.000962 -> 0.000393, clip fraction 0.006870 -> 0.004282, ratio mean
+1.001021 -> 1.000321, and gradient norm 0.837804 -> 0.471814. Reward mean
+increased 1.056519 -> 1.407625, while zero-std ratio also increased
+0.282500 -> 0.360000. These values show stable, conservative policy updates;
+the higher zero-std rate is a signal-quality limitation rather than optimizer
+instability.
+
+### Think findings
+
+- The first-200 to last-200 training windows show Raw N 3.140 -> 2.041,
+  Grounded N 2.780 -> 1.232, and grounding coverage 0.884 -> 0.624.
+- Fixed probes confirm the direction: mean Raw N 3.8125 -> 2.1875 and mean
+  grounding coverage 0.9375 -> 0.6146 from step 0 to 2316.
+- This is material interest-count compression, but not a catastrophic collapse:
+  last-window Raw N remains above the preregistered 1.5 STOP threshold.
+- Target-domain Beam diversity improved in the training windows: D_A
+  0.743 -> 0.858 and unique valid target A 7.184 -> 8.805.
+- Think reward increased on sampled training windows (2.910 -> 3.311) but the
+  fixed-probe mean declined 3.730 -> 2.902. The reward gain therefore is not
+  accepted as robust generalization evidence.
+- Parser success reached 1.0 and closure remained 1.0 in the last window.
+  Think Beam invalid rate decreased from 0.00580 to 0.00360.
+
+### NoThink findings
+
+The last window retained perfect valid-SID rate and zero invalid candidates.
+Gold-A-or-better candidate rate improved 0.1698 -> 0.2276, wrong-domain rate
+fell 0.2024 -> 0.0009, and the fixed-probe mean reward improved 0.000 ->
+0.203. However, zero-std/all-zero group rate rose from 0.1866/0.1567 to
+0.2910/0.2910, so signal sparsity remains material. Rescue activation tracked
+the all-zero groups as designed.
+
+### Verdict
+
+The run is an engineering PASS: the schedule, isolation contract, persistence,
+monitoring, and optimizer behavior are valid. The research result is MIXED and
+does not support replacing full DSR with DSR-Simple. Removing grounding-aware
+Think objectives preserved target-domain Beam diversity but coincided with a
+large Raw N reduction, a sharper grounding-coverage reduction, and lower fixed
+Think probe reward. Treat `checkpoint-2316` as a completed ablation artifact,
+not as a promoted production winner.
