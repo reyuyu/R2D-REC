@@ -1,0 +1,357 @@
+{
+  "scope": {
+    "GR_REC_v1_probe": "fixed-probe candidate rewards; not full training coverage",
+    "DSR_Simple_training": "full saved simple_forensic primary rewards"
+  },
+  "groups": 3192,
+  "reward_levels": {
+    "GR_REC_v1_probe": {
+      "0": {
+        "current": {
+          "n": 414,
+          "mean_abs_advantage": 0.242091308927979,
+          "positive_rate": 0.03864734299516908,
+          "negative_rate": 0.3333333333333333
+        },
+        "exact_floor": {
+          "n": 414,
+          "mean_abs_advantage": 0.02368282004830918,
+          "positive_rate": 0.03864734299516908,
+          "negative_rate": 0.3333333333333333
+        }
+      },
+      "0.5": {
+        "current": {
+          "n": 66,
+          "mean_abs_advantage": 0.8292127587555289,
+          "positive_rate": 0.5606060606060606,
+          "negative_rate": 0.3787878787878788
+        },
+        "exact_floor": {
+          "n": 66,
+          "mean_abs_advantage": 0.031368371212121215,
+          "positive_rate": 0.5606060606060606,
+          "negative_rate": 0.3787878787878788
+        }
+      },
+      "2": {
+        "current": {
+          "n": 22,
+          "mean_abs_advantage": 1.5099355507334211,
+          "positive_rate": 1.0,
+          "negative_rate": 0.0
+        },
+        "exact_floor": {
+          "n": 22,
+          "mean_abs_advantage": 0.13813920454545456,
+          "positive_rate": 1.0,
+          "negative_rate": 0.0
+        }
+      },
+      "8": {
+        "current": {
+          "n": 23,
+          "mean_abs_advantage": 0.9630386928813442,
+          "positive_rate": 0.5217391304347826,
+          "negative_rate": 0.4782608695652174
+        },
+        "exact_floor": {
+          "n": 23,
+          "mean_abs_advantage": 0.18308423913043478,
+          "positive_rate": 0.5217391304347826,
+          "negative_rate": 0.0
+        }
+      },
+      ">8": {
+        "current": {
+          "n": 65,
+          "mean_abs_advantage": 0.7594269158039908,
+          "positive_rate": 0.7076923076923077,
+          "negative_rate": 0.23076923076923078
+        },
+        "exact_floor": {
+          "n": 65,
+          "mean_abs_advantage": 0.1515625,
+          "positive_rate": 1.0,
+          "negative_rate": 0.0
+        }
+      },
+      "other": {
+        "current": {
+          "n": 34,
+          "mean_abs_advantage": 0.7710922490668819,
+          "positive_rate": 0.0,
+          "negative_rate": 1.0
+        },
+        "exact_floor": {
+          "n": 34,
+          "mean_abs_advantage": 0.142578125,
+          "positive_rate": 0.0,
+          "negative_rate": 1.0
+        }
+      }
+    },
+    "DSR_Simple_training": {
+      "0": {
+        "current": {
+          "n": 10504,
+          "mean_abs_advantage": 0.352942208780306,
+          "positive_rate": 0.02560929169840061,
+          "negative_rate": 0.5416984006092918
+        },
+        "exact_floor": {
+          "n": 10504,
+          "mean_abs_advantage": 0.03011027421101485,
+          "positive_rate": 0.02560929169840061,
+          "negative_rate": 0.5416984006092918
+        }
+      },
+      "0.5": {
+        "current": {
+          "n": 3629,
+          "mean_abs_advantage": 0.8331324974077507,
+          "positive_rate": 0.6018186828327363,
+          "negative_rate": 0.21328189583907411
+        },
+        "exact_floor": {
+          "n": 3629,
+          "mean_abs_advantage": 0.049529533144461284,
+          "positive_rate": 0.6018186828327363,
+          "negative_rate": 0.21328189583907411
+        }
+      },
+      "2": {
+        "current": {
+          "n": 726,
+          "mean_abs_advantage": 0.9942242279543799,
+          "positive_rate": 0.5674931129476584,
+          "negative_rate": 0.15151515151515152
+        },
+        "exact_floor": {
+          "n": 726,
+          "mean_abs_advantage": 0.1051970342630854,
+          "positive_rate": 0.5674931129476584,
+          "negative_rate": 0.15151515151515152
+        }
+      },
+      "8": {
+        "current": {
+          "n": 833,
+          "mean_abs_advantage": 0.8249890357923515,
+          "positive_rate": 0.5258103241296519,
+          "negative_rate": 0.09603841536614646
+        },
+        "exact_floor": {
+          "n": 833,
+          "mean_abs_advantage": 0.28689131902761106,
+          "positive_rate": 0.5258103241296519,
+          "negative_rate": 0.0
+        }
+      },
+      ">8": {
+        "current": {
+          "n": 1258,
+          "mean_abs_advantage": 0.6218758418055008,
+          "positive_rate": 0.5071542130365659,
+          "negative_rate": 0.20349761526232116
+        },
+        "exact_floor": {
+          "n": 1258,
+          "mean_abs_advantage": 0.3487580000690891,
+          "positive_rate": 1.0,
+          "negative_rate": 0.0
+        }
+      },
+      "other": {
+        "current": {
+          "n": 1578,
+          "mean_abs_advantage": 0.6944476065386584,
+          "positive_rate": 0.3314321926489227,
+          "negative_rate": 0.4296577946768061
+        },
+        "exact_floor": {
+          "n": 1578,
+          "mean_abs_advantage": 0.06204428630485583,
+          "positive_rate": 0.3314321926489227,
+          "negative_rate": 0.4296577946768061
+        }
+      }
+    }
+  },
+  "patterns": {
+    "DSR_Simple_training|nothink|AB_SIGNAL": 196,
+    "DSR_Simple_training|nothink|ALL_ZERO": 440,
+    "DSR_Simple_training|nothink|A_ONLY": 707,
+    "DSR_Simple_training|nothink|MULTI_EXACT": 49,
+    "DSR_Simple_training|nothink|OTHER": 50,
+    "DSR_Simple_training|nothink|SINGLE_EXACT": 102,
+    "DSR_Simple_training|think|AB_SIGNAL": 127,
+    "DSR_Simple_training|think|ALL_ZERO": 249,
+    "DSR_Simple_training|think|A_ONLY": 362,
+    "DSR_Simple_training|think|EXACT_SATURATED": 78,
+    "DSR_Simple_training|think|MIXED_HIGH": 385,
+    "DSR_Simple_training|think|MULTI_EXACT": 80,
+    "DSR_Simple_training|think|OTHER": 225,
+    "DSR_Simple_training|think|SINGLE_EXACT": 38,
+    "GR_REC_v1_probe|nothink|AB_SIGNAL": 11,
+    "GR_REC_v1_probe|nothink|ALL_ZERO": 23,
+    "GR_REC_v1_probe|nothink|A_ONLY": 11,
+    "GR_REC_v1_probe|nothink|OTHER": 5,
+    "GR_REC_v1_probe|nothink|SINGLE_EXACT": 2,
+    "GR_REC_v1_probe|think|ALL_ZERO": 19,
+    "GR_REC_v1_probe|think|A_ONLY": 7,
+    "GR_REC_v1_probe|think|MIXED_HIGH": 18,
+    "GR_REC_v1_probe|think|MULTI_EXACT": 8
+  },
+  "prevalence": {
+    "GR_REC_v1_probe": {
+      "groups": 104,
+      "mean_gt_8": 16,
+      "all_gt_8": 7,
+      "mean_gt_8_rate": 0.15384615384615385,
+      "all_gt_8_rate": 0.0673076923076923
+    },
+    "DSR_Simple_training": {
+      "groups": 3088,
+      "mean_gt_8": 266,
+      "all_gt_8": 213,
+      "mean_gt_8_rate": 0.086139896373057,
+      "all_gt_8_rate": 0.06897668393782383
+    }
+  },
+  "strata": {
+    "source=GR_REC_v1_probe": {
+      "groups": 104,
+      "mean_gt_8": 16,
+      "all_gt_8": 7,
+      "mean_gt_8_rate": 0.15384615384615385,
+      "all_gt_8_rate": 0.0673076923076923
+    },
+    "source=GR_REC_v1_probe|route=think": {
+      "groups": 52,
+      "mean_gt_8": 16,
+      "all_gt_8": 7,
+      "mean_gt_8_rate": 0.3076923076923077,
+      "all_gt_8_rate": 0.1346153846153846
+    },
+    "source=GR_REC_v1_probe|domain=video": {
+      "groups": 26,
+      "mean_gt_8": 9,
+      "all_gt_8": 6,
+      "mean_gt_8_rate": 0.34615384615384615,
+      "all_gt_8_rate": 0.23076923076923078
+    },
+    "source=GR_REC_v1_probe|gold=5+": {
+      "groups": 26,
+      "mean_gt_8": 9,
+      "all_gt_8": 6,
+      "mean_gt_8_rate": 0.34615384615384615,
+      "all_gt_8_rate": 0.23076923076923078
+    },
+    "source=GR_REC_v1_probe|route=nothink": {
+      "groups": 52,
+      "mean_gt_8": 0,
+      "all_gt_8": 0,
+      "mean_gt_8_rate": 0.0,
+      "all_gt_8_rate": 0.0
+    },
+    "source=GR_REC_v1_probe|domain=living": {
+      "groups": 26,
+      "mean_gt_8": 0,
+      "all_gt_8": 0,
+      "mean_gt_8_rate": 0.0,
+      "all_gt_8_rate": 0.0
+    },
+    "source=GR_REC_v1_probe|gold=1-2": {
+      "groups": 78,
+      "mean_gt_8": 7,
+      "all_gt_8": 1,
+      "mean_gt_8_rate": 0.08974358974358974,
+      "all_gt_8_rate": 0.01282051282051282
+    },
+    "source=GR_REC_v1_probe|domain=prod": {
+      "groups": 26,
+      "mean_gt_8": 7,
+      "all_gt_8": 1,
+      "mean_gt_8_rate": 0.2692307692307692,
+      "all_gt_8_rate": 0.038461538461538464
+    },
+    "source=GR_REC_v1_probe|domain=ad": {
+      "groups": 26,
+      "mean_gt_8": 0,
+      "all_gt_8": 0,
+      "mean_gt_8_rate": 0.0,
+      "all_gt_8_rate": 0.0
+    },
+    "source=DSR_Simple_training": {
+      "groups": 3088,
+      "mean_gt_8": 266,
+      "all_gt_8": 213,
+      "mean_gt_8_rate": 0.086139896373057,
+      "all_gt_8_rate": 0.06897668393782383
+    },
+    "source=DSR_Simple_training|route=nothink": {
+      "groups": 1544,
+      "mean_gt_8": 0,
+      "all_gt_8": 0,
+      "mean_gt_8_rate": 0.0,
+      "all_gt_8_rate": 0.0
+    },
+    "source=DSR_Simple_training|domain=living": {
+      "groups": 378,
+      "mean_gt_8": 20,
+      "all_gt_8": 15,
+      "mean_gt_8_rate": 0.05291005291005291,
+      "all_gt_8_rate": 0.03968253968253968
+    },
+    "source=DSR_Simple_training|gold=1-2": {
+      "groups": 1482,
+      "mean_gt_8": 58,
+      "all_gt_8": 41,
+      "mean_gt_8_rate": 0.03913630229419703,
+      "all_gt_8_rate": 0.02766531713900135
+    },
+    "source=DSR_Simple_training|domain=prod": {
+      "groups": 762,
+      "mean_gt_8": 30,
+      "all_gt_8": 18,
+      "mean_gt_8_rate": 0.03937007874015748,
+      "all_gt_8_rate": 0.023622047244094488
+    },
+    "source=DSR_Simple_training|domain=ad": {
+      "groups": 852,
+      "mean_gt_8": 75,
+      "all_gt_8": 56,
+      "mean_gt_8_rate": 0.0880281690140845,
+      "all_gt_8_rate": 0.06572769953051644
+    },
+    "source=DSR_Simple_training|domain=video": {
+      "groups": 1096,
+      "mean_gt_8": 141,
+      "all_gt_8": 124,
+      "mean_gt_8_rate": 0.12864963503649635,
+      "all_gt_8_rate": 0.11313868613138686
+    },
+    "source=DSR_Simple_training|gold=5+": {
+      "groups": 1200,
+      "mean_gt_8": 168,
+      "all_gt_8": 144,
+      "mean_gt_8_rate": 0.14,
+      "all_gt_8_rate": 0.12
+    },
+    "source=DSR_Simple_training|gold=3-4": {
+      "groups": 406,
+      "mean_gt_8": 40,
+      "all_gt_8": 28,
+      "mean_gt_8_rate": 0.09852216748768473,
+      "all_gt_8_rate": 0.06896551724137931
+    },
+    "source=DSR_Simple_training|route=think": {
+      "groups": 1544,
+      "mean_gt_8": 266,
+      "all_gt_8": 213,
+      "mean_gt_8_rate": 0.172279792746114,
+      "all_gt_8_rate": 0.13795336787564766
+    }
+  }
+}
