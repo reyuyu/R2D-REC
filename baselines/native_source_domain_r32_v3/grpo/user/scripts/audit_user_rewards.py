@@ -23,9 +23,6 @@ EXPECTED_SHA = {
     "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
     "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
 }
-HALL_SID = "<|video_begin|><s_a_999999><s_b_999998><s_c_999997>"
-
-
 def read_jsonl(path: Path):
     with path.open(encoding="utf-8") as handle:
         return [json.loads(line) for line in handle]
@@ -47,7 +44,12 @@ def dump_chain(events, name="controlled audit"):
     return json.dumps({"logic_chain": {"name": name, "events": events}}, ensure_ascii=False)
 
 
-def action_variants(row):
+def choose_real_hallucination(row, real_sid_pool):
+    history = set(row["history_sids"])
+    return next(sid for sid in real_sid_pool if sid not in history)
+
+
+def action_variants(row, hallucinated_sid):
     gold = list(row["gold_sids"])
     wrong = next((sid for sid in row["history_sids"] if sid not in set(gold)), None)
     drop_count = max(1, round(len(gold) * 0.2))
@@ -55,7 +57,7 @@ def action_variants(row):
         "clean": dump_action(gold),
         "mild_drop_20pct": dump_action(gold[:-drop_count]),
         "severe_empty": "[]",
-        "hallucinated_sid": dump_action(gold + [HALL_SID]),
+        "hallucinated_sid": dump_action(gold + [hallucinated_sid]),
         "duplicate_sid": dump_action(gold + ([gold[0]] if gold else [])),
         "malformed": dump_action(gold) + " trailing",
     }
@@ -65,12 +67,12 @@ def action_variants(row):
     return output
 
 
-def chain_variants(row):
+def chain_variants(row, hallucinated_sid):
     gold = [dict(item) for item in row["gold_events"]]
     severe = [dict(item, action="完全无关动作", logic="完全无关逻辑") for item in gold]
     hall = [dict(item) for item in gold]
     if hall:
-        hall[0]["action"] += " " + HALL_SID
+        hall[0]["action"] += " " + hallucinated_sid
     wrong_date = [dict(item) for item in gold]
     if wrong_date:
         wrong_date[0]["date"] = "2099-12-31"
@@ -101,12 +103,17 @@ def chain_variants(row):
     return output
 
 
-def summarize_controlled(rows):
+def summarize_controlled(rows, real_sid_pool):
     values = defaultdict(list)
     examples = {"action": [], "chain": []}
     ordering = defaultdict(lambda: {"pass": 0, "total": 0})
     for row in rows:
-        variants = action_variants(row) if row["route"] == "action" else chain_variants(row)
+        hallucinated_sid = choose_real_hallucination(row, real_sid_pool)
+        variants = (
+            action_variants(row, hallucinated_sid)
+            if row["route"] == "action"
+            else chain_variants(row, hallucinated_sid)
+        )
         scorer = score_action if row["route"] == "action" else score_chain
         results = {}
         for name, completion in variants.items():
@@ -140,12 +147,12 @@ def summarize_controlled(rows):
     return aggregates, dict(ordering), examples
 
 
-def locality_audit(rows, tokenizer, route, perturbation, count=50):
+def locality_audit(rows, tokenizer, route, perturbation, real_sid_pool, count=50):
     selected = [row for row in rows if row["route"] == route][:count]
     records = []
     for row in selected:
         if route == "action" and perturbation == "hallucination":
-            target_value = HALL_SID
+            target_value = choose_real_hallucination(row, real_sid_pool)
             completion = dump_action(list(row["gold_sids"]) + [target_value])
             result = score_action(completion, row, tokenizer)
             target_kind = "hallucinated_sid"
@@ -156,10 +163,10 @@ def locality_audit(rows, tokenizer, route, perturbation, count=50):
             target_kind = "duplicate_sid"
         elif perturbation == "hallucination":
             events = [dict(item) for item in row["gold_events"]]
-            events[0]["action"] += " " + HALL_SID
+            target_value = choose_real_hallucination(row, real_sid_pool)
+            events[0]["action"] += " " + target_value
             completion = dump_chain(events)
             result = score_chain(completion, row, tokenizer)
-            target_value = HALL_SID
             target_kind = "hallucinated_sid"
         else:
             events = [dict(item) for item in row["gold_events"]]
@@ -280,10 +287,19 @@ def main():
     if not tokenizer.is_fast:
         raise SystemExit("parent tokenizer must expose exact offset mappings")
 
-    controlled, ordering, examples = summarize_controlled(probe + pilot)
+    real_sid_pool = sorted({sid for row in pilot + probe for sid in row["history_sids"]})
+    controlled_candidates = [choose_real_hallucination(row, real_sid_pool) for row in probe + pilot]
+    if not all(len(tokenizer.encode(sid, add_special_tokens=False)) == 4 for sid in controlled_candidates):
+        raise SystemExit("real hallucination fixture is not four tokenizer tokens")
+    controlled, ordering, examples = summarize_controlled(probe + pilot, real_sid_pool)
     result = {
         "contract_version": "gr_user_reward_v1",
         "execution": {"cpu_only": True, "generation": False, "training": False},
+        "hallucination_fixture": {
+            "source": "real pilot/probe history SID pool",
+            "synthetic_out_of_vocab_sid_used": False,
+            "all_selected_candidates_four_tokens": True,
+        },
         "evaluator_evidence": {
             "official_implementation_found": False,
             "known": "Task name and EvolutionTopicGenEvaluator class name only.",
@@ -295,12 +311,12 @@ def main():
         "real_examples": examples,
         "penalty_locality": {
             "action": {
-                "hallucination": locality_audit(pilot, tokenizer, "action", "hallucination", 50),
-                "duplicate": locality_audit(pilot, tokenizer, "action", "duplicate", 50),
+                "hallucination": locality_audit(pilot, tokenizer, "action", "hallucination", real_sid_pool, 50),
+                "duplicate": locality_audit(pilot, tokenizer, "action", "duplicate", real_sid_pool, 50),
             },
             "chain": {
-                "hallucination": locality_audit(pilot, tokenizer, "chain", "hallucination", 50),
-                "duplicate": locality_audit(pilot, tokenizer, "chain", "duplicate", 50),
+                "hallucination": locality_audit(pilot, tokenizer, "chain", "hallucination", real_sid_pool, 50),
+                "duplicate": locality_audit(pilot, tokenizer, "chain", "duplicate", real_sid_pool, 50),
             },
         },
         "tokenizer_audit": tokenizer_audit(pilot + probe, tokenizer),
@@ -325,6 +341,7 @@ def main():
     summary = {
         "contract_version": result["contract_version"],
         "execution": result["execution"],
+        "hallucination_fixture": result["hallucination_fixture"],
         "frozen_sha_unchanged": result["frozen_sha_unchanged"],
         "clean_mild_severe_ordering": ordering,
         "penalty_locality": result["penalty_locality"],

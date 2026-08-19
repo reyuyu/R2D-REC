@@ -5,6 +5,11 @@
     "generation": false,
     "training": false
   },
+  "hallucination_fixture": {
+    "source": "real pilot/probe history SID pool",
+    "synthetic_out_of_vocab_sid_used": false,
+    "all_selected_candidates_four_tokens": true
+  },
   "frozen_sha_unchanged": true,
   "clean_mild_severe_ordering": {
     "action": {
@@ -23,42 +28,42 @@
         "perturbation": "hallucination",
         "violation_kind": "hallucinated_sid",
         "all_local_span_exact": true,
-        "mean_attributed_fraction": 0.27916810382759605,
-        "max_attributed_fraction": 0.6888888888888889,
+        "mean_attributed_fraction": 0.055053717296285436,
+        "max_attributed_fraction": 0.2222222222222222,
         "examples": [
           {
             "sample_id": "2a41bc9a6279a81ca9666ccb9e5fc000b3f7a3f6006e54e17a54a2e697d8c2f8",
-            "completion_tokens": 129,
-            "attributed_tokens": 31,
-            "fraction": 0.24031007751937986,
+            "completion_tokens": 102,
+            "attributed_tokens": 4,
+            "fraction": 0.0392156862745098,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "b2439d4403498b9b2821445adae1b3f09fb3d59354e88a78e22dd1bdb6d3e168",
-            "completion_tokens": 225,
-            "attributed_tokens": 31,
-            "fraction": 0.13777777777777778,
+            "completion_tokens": 198,
+            "attributed_tokens": 4,
+            "fraction": 0.020202020202020204,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "750983013e2113cb63e65fb4550f3b935f48d0407c1f6183d8b79e7a059a8cb9",
-            "completion_tokens": 171,
-            "attributed_tokens": 31,
-            "fraction": 0.18128654970760233,
+            "completion_tokens": 144,
+            "attributed_tokens": 4,
+            "fraction": 0.027777777777777776,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "3ef3136a858c35d3213138c47d355c2fa7fb84ee8139beabe62af48861bd7efc",
-            "completion_tokens": 51,
-            "attributed_tokens": 31,
-            "fraction": 0.6078431372549019,
+            "completion_tokens": 24,
+            "attributed_tokens": 4,
+            "fraction": 0.16666666666666666,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "735b38d602c17d128e78d4a5e8ecbabb2be149b66cf3a27f95ed2bb4a4d94bdf",
-            "completion_tokens": 129,
-            "attributed_tokens": 31,
-            "fraction": 0.24031007751937986,
+            "completion_tokens": 102,
+            "attributed_tokens": 4,
+            "fraction": 0.0392156862745098,
             "only_target_occurrence_span": true
           }
         ]
@@ -115,42 +120,42 @@
         "perturbation": "hallucination",
         "violation_kind": "hallucinated_sid",
         "all_local_span_exact": true,
-        "mean_attributed_fraction": 0.11059029207508912,
-        "max_attributed_fraction": 0.1657754010695187,
+        "mean_attributed_fraction": 0.0158095168912309,
+        "max_attributed_fraction": 0.024844720496894408,
         "examples": [
           {
             "sample_id": "1fe95e566ae206419ba764047c027399b00423a7b3050f7fcee62f8ca8ccc797",
-            "completion_tokens": 266,
-            "attributed_tokens": 31,
-            "fraction": 0.11654135338345864,
+            "completion_tokens": 240,
+            "attributed_tokens": 4,
+            "fraction": 0.016666666666666666,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "3bf37511f7f88993b8f53469be3f0082aa9cf5bb0957f41bab656a88c78c0366",
-            "completion_tokens": 321,
-            "attributed_tokens": 31,
-            "fraction": 0.09657320872274143,
+            "completion_tokens": 295,
+            "attributed_tokens": 4,
+            "fraction": 0.013559322033898305,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "3105e772814df71dcc26ba92fc903110672cf60fa348519a4e7fb73ad749c2cd",
-            "completion_tokens": 300,
-            "attributed_tokens": 31,
-            "fraction": 0.10333333333333333,
+            "completion_tokens": 274,
+            "attributed_tokens": 4,
+            "fraction": 0.014598540145985401,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "340604b3cc003c43a8eec72bf0adc7393dd5f0ccdd7d5cb80769f7e13f1f0b58",
-            "completion_tokens": 356,
-            "attributed_tokens": 31,
-            "fraction": 0.08707865168539326,
+            "completion_tokens": 330,
+            "attributed_tokens": 4,
+            "fraction": 0.012121212121212121,
             "only_target_occurrence_span": true
           },
           {
             "sample_id": "a69df173801a1ec2bd9aacfc675464b8c5980d2e0477acd24ebc2a7db28ab86d",
-            "completion_tokens": 281,
-            "attributed_tokens": 31,
-            "fraction": 0.1103202846975089,
+            "completion_tokens": 255,
+            "attributed_tokens": 4,
+            "fraction": 0.01568627450980392,
             "only_target_occurrence_span": true
           }
         ]
@@ -275,21 +280,21 @@
   "cpu_benchmark": {
     "action": {
       "score_count": 300,
-      "score_total_seconds": 0.03885046485811472,
-      "score_ms_per_sample": 0.12950154952704906,
-      "score_samples_per_second": 7721.915325740017,
+      "score_total_seconds": 0.039033928886055946,
+      "score_ms_per_sample": 0.13011309628685316,
+      "score_samples_per_second": 7685.621421193107,
       "score_plus_span_count": 100,
-      "score_plus_span_ms_per_sample": 0.639543691650033,
-      "span_attribution_incremental_ms_per_sample": 0.5100421421229839
+      "score_plus_span_ms_per_sample": 0.6469449773430824,
+      "span_attribution_incremental_ms_per_sample": 0.5168318810562292
     },
     "chain": {
       "score_count": 300,
-      "score_total_seconds": 4.818155369721353,
-      "score_ms_per_sample": 16.060517899071176,
-      "score_samples_per_second": 62.26449273207016,
+      "score_total_seconds": 4.849657175131142,
+      "score_ms_per_sample": 16.16552391710381,
+      "score_samples_per_second": 61.860042713614604,
       "score_plus_span_count": 100,
-      "score_plus_span_ms_per_sample": 17.668177653104067,
-      "span_attribution_incremental_ms_per_sample": 1.6076597540328912
+      "score_plus_span_ms_per_sample": 17.695797411724925,
+      "span_attribution_incremental_ms_per_sample": 1.5302734946211167
     }
   },
   "evaluator_evidence": {

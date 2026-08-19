@@ -1,0 +1,564 @@
+{
+  "contract_version": "gr_user_penalty_mask_v1",
+  "execution": {
+    "cpu_only": true,
+    "generation": false,
+    "training": false,
+    "trainer_integration": false
+  },
+  "fixture": {
+    "real_sid_pool_size": 89497,
+    "all_real_sids_four_tokens": true,
+    "synthetic_out_of_vocab_sid_used": false
+  },
+  "frozen_sha_before": {
+    "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+    "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+  },
+  "frozen_sha_after": {
+    "train_3000.jsonl": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "pilot_600.jsonl": "1b846a0d434d529136b4d9784be3b913d7aaf3d0c8c2c87ce470ba53679a4803",
+    "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61"
+  },
+  "frozen_sha_unchanged": true,
+  "locality": {
+    "action_hallucination": {
+      "count": 50,
+      "mean_masked_tokens": 1.0,
+      "p50_masked_tokens": 1,
+      "p95_masked_tokens": 1,
+      "max_masked_tokens": 1,
+      "mean_masked_fraction": 0.013763429324071359,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "action_hallucination_c_only",
+          "sample_id": "2a41bc9a6279a81ca9666ccb9e5fc000b3f7a3f6006e54e17a54a2e697d8c2f8",
+          "token_count": 102,
+          "masked_tokens": 1,
+          "masked_fraction": 0.00980392156862745,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|prod_begin|><s_a_1938><s_b_6690><s_c_809>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4,
+          "first_invalid_component": "c"
+        },
+        {
+          "category": "action_hallucination_c_only",
+          "sample_id": "b2439d4403498b9b2821445adae1b3f09fb3d59354e88a78e22dd1bdb6d3e168",
+          "token_count": 198,
+          "masked_tokens": 1,
+          "masked_fraction": 0.005050505050505051,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|prod_begin|><s_a_5085><s_b_4916><s_c_5835>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4,
+          "first_invalid_component": "c"
+        },
+        {
+          "category": "action_hallucination_c_only",
+          "sample_id": "750983013e2113cb63e65fb4550f3b935f48d0407c1f6183d8b79e7a059a8cb9",
+          "token_count": 144,
+          "masked_tokens": 1,
+          "masked_fraction": 0.006944444444444444,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|prod_begin|><s_a_2671><s_b_7687><s_c_1940>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4,
+          "first_invalid_component": "c"
+        },
+        {
+          "category": "action_hallucination_c_only",
+          "sample_id": "3ef3136a858c35d3213138c47d355c2fa7fb84ee8139beabe62af48861bd7efc",
+          "token_count": 24,
+          "masked_tokens": 1,
+          "masked_fraction": 0.041666666666666664,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|prod_begin|><s_a_826><s_b_3915><s_c_1041>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4,
+          "first_invalid_component": "c"
+        },
+        {
+          "category": "action_hallucination_c_only",
+          "sample_id": "735b38d602c17d128e78d4a5e8ecbabb2be149b66cf3a27f95ed2bb4a4d94bdf",
+          "token_count": 102,
+          "masked_tokens": 1,
+          "masked_fraction": 0.00980392156862745,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|prod_begin|><s_a_6688><s_b_7232><s_c_4942>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4,
+          "first_invalid_component": "c"
+        }
+      ]
+    },
+    "action_duplicate": {
+      "count": 50,
+      "mean_masked_tokens": 4.0,
+      "p50_masked_tokens": 4,
+      "p95_masked_tokens": 4,
+      "max_masked_tokens": 4,
+      "mean_masked_fraction": 0.055053717296285436,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "action_duplicate",
+          "sample_id": "2a41bc9a6279a81ca9666ccb9e5fc000b3f7a3f6006e54e17a54a2e697d8c2f8",
+          "token_count": 102,
+          "masked_tokens": 4,
+          "masked_fraction": 0.0392156862745098,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_sid"
+          ],
+          "source_violation_kinds": [
+            "duplicate_sid"
+          ],
+          "duplicated_sid": "<|living_begin|><s_a_4372><s_b_2200><s_c_4252>"
+        },
+        {
+          "category": "action_duplicate",
+          "sample_id": "b2439d4403498b9b2821445adae1b3f09fb3d59354e88a78e22dd1bdb6d3e168",
+          "token_count": 198,
+          "masked_tokens": 4,
+          "masked_fraction": 0.020202020202020204,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_sid"
+          ],
+          "source_violation_kinds": [
+            "duplicate_sid"
+          ],
+          "duplicated_sid": "<|prod_begin|><s_a_1908><s_b_3319><s_c_2207>"
+        },
+        {
+          "category": "action_duplicate",
+          "sample_id": "750983013e2113cb63e65fb4550f3b935f48d0407c1f6183d8b79e7a059a8cb9",
+          "token_count": 144,
+          "masked_tokens": 4,
+          "masked_fraction": 0.027777777777777776,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_sid"
+          ],
+          "source_violation_kinds": [
+            "duplicate_sid"
+          ],
+          "duplicated_sid": "<|prod_begin|><s_a_605><s_b_5206><s_c_1099>"
+        },
+        {
+          "category": "action_duplicate",
+          "sample_id": "3ef3136a858c35d3213138c47d355c2fa7fb84ee8139beabe62af48861bd7efc",
+          "token_count": 24,
+          "masked_tokens": 4,
+          "masked_fraction": 0.16666666666666666,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_sid"
+          ],
+          "source_violation_kinds": [
+            "duplicate_sid"
+          ],
+          "duplicated_sid": "<|ad_begin|><s_a_7611><s_b_2701><s_c_3026>"
+        },
+        {
+          "category": "action_duplicate",
+          "sample_id": "735b38d602c17d128e78d4a5e8ecbabb2be149b66cf3a27f95ed2bb4a4d94bdf",
+          "token_count": 102,
+          "masked_tokens": 4,
+          "masked_fraction": 0.0392156862745098,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_sid"
+          ],
+          "source_violation_kinds": [
+            "duplicate_sid"
+          ],
+          "duplicated_sid": "<|prod_begin|><s_a_237><s_b_7891><s_c_6597>"
+        }
+      ]
+    },
+    "chain_hallucination": {
+      "count": 50,
+      "mean_masked_tokens": 4.0,
+      "p50_masked_tokens": 4,
+      "p95_masked_tokens": 4,
+      "max_masked_tokens": 4,
+      "mean_masked_fraction": 0.015299672988061114,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "chain_hallucination",
+          "sample_id": "1fe95e566ae206419ba764047c027399b00423a7b3050f7fcee62f8ca8ccc797",
+          "token_count": 248,
+          "masked_tokens": 4,
+          "masked_fraction": 0.016129032258064516,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|ad_begin|><s_a_1003><s_b_2556><s_c_3913>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4
+        },
+        {
+          "category": "chain_hallucination",
+          "sample_id": "3bf37511f7f88993b8f53469be3f0082aa9cf5bb0957f41bab656a88c78c0366",
+          "token_count": 303,
+          "masked_tokens": 4,
+          "masked_fraction": 0.013201320132013201,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|ad_begin|><s_a_1003><s_b_2556><s_c_3913>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4
+        },
+        {
+          "category": "chain_hallucination",
+          "sample_id": "3105e772814df71dcc26ba92fc903110672cf60fa348519a4e7fb73ad749c2cd",
+          "token_count": 282,
+          "masked_tokens": 4,
+          "masked_fraction": 0.014184397163120567,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|ad_begin|><s_a_1003><s_b_2556><s_c_3913>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4
+        },
+        {
+          "category": "chain_hallucination",
+          "sample_id": "340604b3cc003c43a8eec72bf0adc7393dd5f0ccdd7d5cb80769f7e13f1f0b58",
+          "token_count": 338,
+          "masked_tokens": 4,
+          "masked_fraction": 0.011834319526627219,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|ad_begin|><s_a_1003><s_b_2556><s_c_3913>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4
+        },
+        {
+          "category": "chain_hallucination",
+          "sample_id": "a69df173801a1ec2bd9aacfc675464b8c5980d2e0477acd24ebc2a7db28ab86d",
+          "token_count": 263,
+          "masked_tokens": 4,
+          "masked_fraction": 0.015209125475285171,
+          "exact_target": true,
+          "compiled_kinds": [
+            "hallucinated_sid"
+          ],
+          "source_violation_kinds": [
+            "hallucinated_sid"
+          ],
+          "candidate_sid": "<|ad_begin|><s_a_1003><s_b_2556><s_c_3913>",
+          "candidate_from_real_pool": true,
+          "candidate_token_count": 4
+        }
+      ]
+    },
+    "chain_date_mismatch": {
+      "count": 50,
+      "mean_masked_tokens": 10.0,
+      "p50_masked_tokens": 10,
+      "p95_masked_tokens": 10,
+      "max_masked_tokens": 10,
+      "mean_masked_fraction": 0.040025235360704216,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "chain_date_mismatch",
+          "sample_id": "1fe95e566ae206419ba764047c027399b00423a7b3050f7fcee62f8ca8ccc797",
+          "token_count": 237,
+          "masked_tokens": 10,
+          "masked_fraction": 0.04219409282700422,
+          "exact_target": true,
+          "compiled_kinds": [
+            "date_mismatch"
+          ],
+          "source_violation_kinds": [
+            "date_mismatch"
+          ]
+        },
+        {
+          "category": "chain_date_mismatch",
+          "sample_id": "3bf37511f7f88993b8f53469be3f0082aa9cf5bb0957f41bab656a88c78c0366",
+          "token_count": 292,
+          "masked_tokens": 10,
+          "masked_fraction": 0.03424657534246575,
+          "exact_target": true,
+          "compiled_kinds": [
+            "date_mismatch"
+          ],
+          "source_violation_kinds": [
+            "date_mismatch"
+          ]
+        },
+        {
+          "category": "chain_date_mismatch",
+          "sample_id": "3105e772814df71dcc26ba92fc903110672cf60fa348519a4e7fb73ad749c2cd",
+          "token_count": 271,
+          "masked_tokens": 10,
+          "masked_fraction": 0.03690036900369004,
+          "exact_target": true,
+          "compiled_kinds": [
+            "date_mismatch"
+          ],
+          "source_violation_kinds": [
+            "date_mismatch"
+          ]
+        },
+        {
+          "category": "chain_date_mismatch",
+          "sample_id": "340604b3cc003c43a8eec72bf0adc7393dd5f0ccdd7d5cb80769f7e13f1f0b58",
+          "token_count": 327,
+          "masked_tokens": 10,
+          "masked_fraction": 0.03058103975535168,
+          "exact_target": true,
+          "compiled_kinds": [
+            "date_mismatch"
+          ],
+          "source_violation_kinds": [
+            "date_mismatch"
+          ]
+        },
+        {
+          "category": "chain_date_mismatch",
+          "sample_id": "a69df173801a1ec2bd9aacfc675464b8c5980d2e0477acd24ebc2a7db28ab86d",
+          "token_count": 252,
+          "masked_tokens": 10,
+          "masked_fraction": 0.03968253968253968,
+          "exact_target": true,
+          "compiled_kinds": [
+            "date_mismatch"
+          ],
+          "source_violation_kinds": [
+            "date_mismatch"
+          ]
+        }
+      ]
+    },
+    "chain_action_mismatch": {
+      "count": 50,
+      "mean_masked_tokens": 11.0,
+      "p50_masked_tokens": 11,
+      "p95_masked_tokens": 11,
+      "max_masked_tokens": 11,
+      "mean_masked_fraction": 0.04400596116848124,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "chain_action_mismatch",
+          "sample_id": "1fe95e566ae206419ba764047c027399b00423a7b3050f7fcee62f8ca8ccc797",
+          "token_count": 235,
+          "masked_tokens": 11,
+          "masked_fraction": 0.04680851063829787,
+          "exact_target": true,
+          "compiled_kinds": [
+            "action_mismatch"
+          ],
+          "source_violation_kinds": [
+            "action_mismatch"
+          ],
+          "merged_action": false
+        },
+        {
+          "category": "chain_action_mismatch",
+          "sample_id": "3bf37511f7f88993b8f53469be3f0082aa9cf5bb0957f41bab656a88c78c0366",
+          "token_count": 293,
+          "masked_tokens": 11,
+          "masked_fraction": 0.03754266211604096,
+          "exact_target": true,
+          "compiled_kinds": [
+            "action_mismatch"
+          ],
+          "source_violation_kinds": [
+            "action_mismatch"
+          ],
+          "merged_action": false
+        },
+        {
+          "category": "chain_action_mismatch",
+          "sample_id": "3105e772814df71dcc26ba92fc903110672cf60fa348519a4e7fb73ad749c2cd",
+          "token_count": 272,
+          "masked_tokens": 11,
+          "masked_fraction": 0.04044117647058824,
+          "exact_target": true,
+          "compiled_kinds": [
+            "action_mismatch"
+          ],
+          "source_violation_kinds": [
+            "action_mismatch"
+          ],
+          "merged_action": false
+        },
+        {
+          "category": "chain_action_mismatch",
+          "sample_id": "340604b3cc003c43a8eec72bf0adc7393dd5f0ccdd7d5cb80769f7e13f1f0b58",
+          "token_count": 328,
+          "masked_tokens": 11,
+          "masked_fraction": 0.03353658536585366,
+          "exact_target": true,
+          "compiled_kinds": [
+            "action_mismatch"
+          ],
+          "source_violation_kinds": [
+            "action_mismatch"
+          ],
+          "merged_action": false
+        },
+        {
+          "category": "chain_action_mismatch",
+          "sample_id": "a69df173801a1ec2bd9aacfc675464b8c5980d2e0477acd24ebc2a7db28ab86d",
+          "token_count": 253,
+          "masked_tokens": 11,
+          "masked_fraction": 0.043478260869565216,
+          "exact_target": true,
+          "compiled_kinds": [
+            "action_mismatch"
+          ],
+          "source_violation_kinds": [
+            "action_mismatch"
+          ],
+          "merged_action": false
+        }
+      ]
+    },
+    "chain_duplicate": {
+      "count": 50,
+      "mean_masked_tokens": 96.62,
+      "p50_masked_tokens": 96,
+      "p95_masked_tokens": 121,
+      "max_masked_tokens": 126,
+      "mean_masked_fraction": 0.27622317197703355,
+      "exact_target_count": 50,
+      "exact_target_rate": 1.0,
+      "examples": [
+        {
+          "category": "chain_duplicate",
+          "sample_id": "1fe95e566ae206419ba764047c027399b00423a7b3050f7fcee62f8ca8ccc797",
+          "token_count": 321,
+          "masked_tokens": 84,
+          "masked_fraction": 0.2616822429906542,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_event"
+          ],
+          "source_violation_kinds": [
+            "duplicate_event"
+          ]
+        },
+        {
+          "category": "chain_duplicate",
+          "sample_id": "3bf37511f7f88993b8f53469be3f0082aa9cf5bb0957f41bab656a88c78c0366",
+          "token_count": 396,
+          "masked_tokens": 104,
+          "masked_fraction": 0.26262626262626265,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_event"
+          ],
+          "source_violation_kinds": [
+            "duplicate_event"
+          ]
+        },
+        {
+          "category": "chain_duplicate",
+          "sample_id": "3105e772814df71dcc26ba92fc903110672cf60fa348519a4e7fb73ad749c2cd",
+          "token_count": 364,
+          "masked_tokens": 93,
+          "masked_fraction": 0.2554945054945055,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_event"
+          ],
+          "source_violation_kinds": [
+            "duplicate_event"
+          ]
+        },
+        {
+          "category": "chain_duplicate",
+          "sample_id": "340604b3cc003c43a8eec72bf0adc7393dd5f0ccdd7d5cb80769f7e13f1f0b58",
+          "token_count": 421,
+          "masked_tokens": 94,
+          "masked_fraction": 0.22327790973871733,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_event"
+          ],
+          "source_violation_kinds": [
+            "duplicate_event"
+          ]
+        },
+        {
+          "category": "chain_duplicate",
+          "sample_id": "a69df173801a1ec2bd9aacfc675464b8c5980d2e0477acd24ebc2a7db28ab86d",
+          "token_count": 376,
+          "masked_tokens": 124,
+          "masked_fraction": 0.32978723404255317,
+          "exact_target": true,
+          "compiled_kinds": [
+            "duplicate_event"
+          ],
+          "source_violation_kinds": [
+            "duplicate_event"
+          ]
+        }
+      ]
+    }
+  }
+}

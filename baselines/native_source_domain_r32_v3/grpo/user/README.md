@@ -54,6 +54,26 @@ perturbations over probe and pilot data, audits 100 real SIDs with the parent
 tokenizer, checks 50 hallucination and 50 duplicate spans per route, and
 benchmarks 300 samples per route on CPU.
 
+## Penalty mask compiler
+
+Phase 3A compiles the whitelisted Phase 2 violations into per-kind and union
+token masks. It does not set penalty weights or connect to training.
+
+```bash
+python3 tests/test_user_penalty_mask.py \
+  --parent-checkpoint /data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106 \
+  -v
+
+python3 scripts/audit_user_penalty_mask.py \
+  --data-dir /data/GRPO_USER/data/gr_user_v1 \
+  --parent-checkpoint /data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106 \
+  --output /data/GRPO_USER/results/penalty_mask_audit_v1.json \
+  --summary-output /data/GRPO_USER/results/penalty_mask_audit_v1_summary.json
+```
+
+The locality audit uses only real four-token SIDs from pilot history and checks
+50 examples for each of six Action/Chain violation categories.
+
 ## GPU policy
 
 Phases 1 and 2 are CPU-only even when GPUs are idle. The scripts do not import
