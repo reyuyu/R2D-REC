@@ -59,7 +59,8 @@ check_gpus_idle
 mkdir -p /data/GRPO_USER/logs /data/GRPO_USER/staging
 LOG_PATH="/data/GRPO_USER/logs/${RUN_ID}.log"
 
-CUDA_VISIBLE_DEVICES='' /data/venvs/llamafactory-01398eb-liger081/bin/python \
+CUDA_VISIBLE_DEVICES='' PYTHONPATH=/data/GRPO_USER/scripts:/data/GRPO/scripts \
+  /data/venvs/llamafactory-01398eb-liger081/bin/python \
   "$AUDIT_RUNNER" --config "$CONFIG" --output "$PREFLIGHT_OUTPUT"
 
 export CUDA_VISIBLE_DEVICES=0,1,2,3
