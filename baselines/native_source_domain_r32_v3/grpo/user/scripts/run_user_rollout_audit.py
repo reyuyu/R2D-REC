@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import collections
-import copy
-import difflib
 import hashlib
 import json
 import math
@@ -193,75 +191,6 @@ def trim_generated_ids(token_ids, stop_ids):
         if token_id in stop_ids:
             return ids[:index], True, token_id
     return ids, False, None
-
-
-def project_compiled_mask_to_generated(compiled, generated_ids):
-    """Project text-tokenized masks onto the model's original generated tokenization."""
-    canonical_ids = list(compiled["input_ids"])
-    generated_ids = list(generated_ids)
-    if canonical_ids == generated_ids:
-        output = copy.deepcopy(compiled)
-        output["tokenization_projection"] = {"required": False, "opcodes": []}
-        return output
-
-    matcher = difflib.SequenceMatcher(a=canonical_ids, b=generated_ids, autojunk=False)
-    canonical_to_generated = {index: set() for index in range(len(canonical_ids))}
-    opcodes = []
-    for tag, old_start, old_end, new_start, new_end in matcher.get_opcodes():
-        opcodes.append([tag, old_start, old_end, new_start, new_end])
-        if tag == "equal":
-            for delta in range(old_end - old_start):
-                canonical_to_generated[old_start + delta].add(new_start + delta)
-        elif tag == "replace":
-            replacement = set(range(new_start, new_end))
-            for old_index in range(old_start, old_end):
-                canonical_to_generated[old_index].update(replacement)
-        elif tag == "delete":
-            raise RuntimeError("cannot safely project a deleted canonical token")
-
-    output = copy.deepcopy(compiled)
-    projected_per_kind = {}
-    for kind, canonical_mask in compiled["per_kind_masks"].items():
-        projected = [False] * len(generated_ids)
-        for old_index, masked in enumerate(canonical_mask):
-            if masked:
-                for new_index in canonical_to_generated[old_index]:
-                    projected[new_index] = True
-        projected_per_kind[kind] = projected
-
-    for record in output["records"]:
-        old_indices = list(record["masked_token_indices"])
-        new_indices = sorted({new for old in old_indices for new in canonical_to_generated[old]})
-        if record["included"] and old_indices and not new_indices:
-            raise RuntimeError("included violation became empty during token projection")
-        record["canonical_masked_token_indices"] = old_indices
-        record["masked_token_indices"] = new_indices
-        for span in record["token_spans"]:
-            old_span = range(span["token_start"], span["token_end"])
-            mapped = sorted({new for old in old_span for new in canonical_to_generated[old]})
-            if not mapped:
-                raise RuntimeError("violation token span became empty during projection")
-            span["canonical_token_start"] = span["token_start"]
-            span["canonical_token_end"] = span["token_end"]
-            span["token_start"] = mapped[0]
-            span["token_end"] = mapped[-1] + 1
-            span["token_ids"] = generated_ids[span["token_start"] : span["token_end"]]
-
-    penalty_mask = [
-        any(mask[index] for mask in projected_per_kind.values()) for index in range(len(generated_ids))
-    ]
-    output.update(
-        {
-            "token_count": len(generated_ids),
-            "input_ids": generated_ids,
-            "penalty_mask": penalty_mask,
-            "per_kind_masks": projected_per_kind,
-            "masked_token_count": sum(penalty_mask),
-            "masked_token_fraction": sum(penalty_mask) / len(generated_ids) if generated_ids else 0.0,
-            "tokenization_projection": {"required": True, "opcodes": opcodes},
-        }
-    )
-    return output
 
 
 def candidate_status(grounding_status):
@@ -646,6 +575,7 @@ def main():
     from user_action_reward import score_action
     from user_chain_reward import score_chain
     from user_penalty_mask import compile_penalty_mask
+    from user_generated_token_projection import project_compiled_mask_to_generated
 
     if torch.cuda.device_count() != 1:
         raise SystemExit(f"expected one visible GPU, found {torch.cuda.device_count()}")

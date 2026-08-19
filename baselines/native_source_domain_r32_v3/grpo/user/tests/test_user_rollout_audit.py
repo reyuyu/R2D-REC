@@ -1,4 +1,10 @@
-from scripts.run_user_rollout_audit import project_compiled_mask_to_generated
+import sys
+from pathlib import Path
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
+from user_generated_token_projection import project_compiled_mask_to_generated
 
 
 def _compiled(input_ids, masks, records=None):
