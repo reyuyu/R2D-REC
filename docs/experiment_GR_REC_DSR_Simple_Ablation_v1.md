@@ -141,3 +141,56 @@ Think objectives preserved target-domain Beam diversity but coincided with a
 large Raw N reduction, a sharper grounding-coverage reduction, and lower fixed
 Think probe reward. Treat `checkpoint-2316` as a completed ablation artifact,
 not as a promoted production winner.
+
+## External evaluation scores (2026-08-19)
+
+These scores were supplied after the full run completed. The fixed reporting
+order is aggregate; material video/prod/ad/living; user action/chain;
+recommendation video/prod/ad/living; and world. Component sums can differ from
+the reported aggregate by up to 0.0002 because only four decimal places were
+provided.
+
+| checkpoint | aggregate | material sum | user sum | recommendation sum | world |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| checkpoint-1000 | **1.3440** | 0.1807 | 0.2560 | **0.6722** | 0.2349 |
+| checkpoint-1500 | 1.3254 | 0.1813 | 0.2552 | 0.6535 | 0.2353 |
+| checkpoint-2316 (full epoch) | 1.3203 | **0.1829** | 0.2553 | 0.6446 | **0.2375** |
+
+### Raw scores
+
+```text
+DSR-Simple checkpoint-1000
+aggregate: 1.3440
+0.0516, 0.0357, 0.0513, 0.0421
+0.1582, 0.0978
+0.1325, 0.1734, 0.2016, 0.1647
+0.2349
+
+DSR-Simple checkpoint-1500
+aggregate: 1.3254
+0.0517, 0.0356, 0.0522, 0.0418
+0.1588, 0.0964
+0.1232, 0.1700, 0.1974, 0.1629
+0.2353
+
+DSR-Simple checkpoint-2316 (full epoch)
+aggregate: 1.3203
+0.0531, 0.0357, 0.0518, 0.0423
+0.1579, 0.0974
+0.1353, 0.1530, 0.1988, 0.1575
+0.2375
+```
+
+### Evaluation interpretation
+
+- `checkpoint-1000` is the best measured DSR-Simple checkpoint. Its aggregate
+  is 0.0186 above checkpoint-1500 and 0.0237 above the full-epoch checkpoint.
+- From checkpoint-1000 to the full epoch, material improved by 0.0022 and world
+  improved by 0.0026, while user was effectively flat (-0.0007). The
+  recommendation sum declined by 0.0276 and explains the aggregate regression.
+- Against the recorded BETA baseline aggregate 1.3313, checkpoint-1000 is
+  +0.0127, checkpoint-1500 is -0.0059, and the full epoch is -0.0110.
+- These external scores reinforce the forensic verdict: continued DSR-Simple
+  training after step 1000 did not produce a better model. Use checkpoint-1000
+  as this ablation's score-selected artifact; retain checkpoint-2316 only as
+  the completed full-schedule artifact.
