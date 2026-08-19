@@ -56,6 +56,21 @@ class UserFixedProbeTests(unittest.TestCase):
         assigned = [row["sample_id"] for part in partitions for route in part.values() for row in route]
         self.assertEqual(sorted(assigned), sorted(row["sample_id"] for row in rows))
 
+    def test_light_probe_contract_and_empty_rank_partition(self):
+        rows = [
+            {"sample_id": f"action-light-{index}", "route": "action", "bucket": index}
+            for index in range(3)
+        ] + [
+            {"sample_id": f"chain-light-{index}", "route": "chain", "bucket": index + 2}
+            for index in range(3)
+        ]
+        validate_probe_rows(rows)
+        partitions = [partition_probe_rows(rows, rank) for rank in range(4)]
+        self.assertEqual([len(item["action"]) for item in partitions], [1, 1, 1, 0])
+        self.assertEqual([len(item["chain"]) for item in partitions], [1, 1, 1, 0])
+        assigned = [row["sample_id"] for part in partitions for route in part.values() for row in route]
+        self.assertEqual(sorted(assigned), sorted(row["sample_id"] for row in rows))
+
     def test_action_only_true_positive_sid_is_green(self):
         completion = json.dumps([S1, S2])
         sample = {"gold_sids": [S1], "history_sids": [S1, S2]}

@@ -28,8 +28,9 @@ def probe_due(step: int, max_steps: int, every_steps: int) -> bool:
 def validate_probe_rows(rows: list[dict]) -> None:
     action = [row for row in rows if row.get("route") == "action"]
     chain = [row for row in rows if row.get("route") == "chain"]
-    if len(rows) != 20 or len(action) != 12 or len(chain) != 8:
-        raise ValueError("User fixed probe must contain 12 Action and 8 Chain rows")
+    counts = (len(action), len(chain))
+    if counts not in {(12, 8), (3, 3)} or len(rows) != sum(counts):
+        raise ValueError("User fixed probe must contain 12/8 or light 3/3 Action/Chain rows")
     sample_ids = [row.get("sample_id") for row in rows]
     if None in sample_ids or len(sample_ids) != len(set(sample_ids)):
         raise ValueError("User fixed probe sample IDs must be present and unique")
@@ -236,6 +237,8 @@ def evaluate_user_fixed_probe(
         model.eval()
         for route_index, route in enumerate(PROBE_ROUTES):
             local_rows = partitions[route]
+            if not local_rows:
+                continue
             route_seed = seed + 1000 * route_index + rank
             random.seed(route_seed)
             torch.manual_seed(route_seed)

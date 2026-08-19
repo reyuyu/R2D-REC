@@ -1,0 +1,75 @@
+{
+  "contract_version": "gr_user_probe_light_v1",
+  "seed": 20260820,
+  "source": "data/gr_user_v1/probe_v1.jsonl",
+  "source_sha256": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
+  "output": "data/gr_user_v1/probe_light_v1.jsonl",
+  "sha256": "3e383c81fc8662162039f2dc827887656daeda9382b519bbb6f6d9ba4724c2f3",
+  "counts": {
+    "total": 6,
+    "action": 3,
+    "chain": 3
+  },
+  "sample_ids": [
+    "314f782564be9c6bac4f8697fdaf5c5469bf815a99614e9c0f00c43e0c24ea2c",
+    "c36fedaafed9f1c97f4e5369a84927a5ebaf9619566d95ac632a5084d6c81d15",
+    "e2c1c87423efce92a5a50e46e48adcf4be395e0d94e0530726d04ef909f3aaf0",
+    "f79e223cfef0ff1cabf525010ed05fe284c789bdb8158a3deb5addfd6c7c1a61",
+    "22994b0540245d2d2b7307e3ba63dbe4bf0ea6ab044e6911b88dba4bee4de758",
+    "106fc278d287fba48a5ce85ce57ce35160fbea9bae772fa830c352da4cbd9b22"
+  ],
+  "selection_audit": {
+    "selection_uses_rewards": false,
+    "selection_fields": [
+      "route",
+      "gold_sid_count",
+      "gold_event_count",
+      "prompt_token_count",
+      "sample_id"
+    ],
+    "action_strata": [
+      "short/few Gold SID",
+      "medium",
+      "long/many Gold SID"
+    ],
+    "chain_strata": [
+      "short 2-event",
+      "middle 3-event",
+      "long 4-event"
+    ],
+    "action": [
+      {
+        "sample_id": "314f782564be9c6bac4f8697fdaf5c5469bf815a99614e9c0f00c43e0c24ea2c",
+        "gold_sid_count": 4,
+        "prompt_token_count": 2144
+      },
+      {
+        "sample_id": "c36fedaafed9f1c97f4e5369a84927a5ebaf9619566d95ac632a5084d6c81d15",
+        "gold_sid_count": 28,
+        "prompt_token_count": 3208
+      },
+      {
+        "sample_id": "e2c1c87423efce92a5a50e46e48adcf4be395e0d94e0530726d04ef909f3aaf0",
+        "gold_sid_count": 38,
+        "prompt_token_count": 3958
+      }
+    ],
+    "chain": [
+      {
+        "sample_id": "f79e223cfef0ff1cabf525010ed05fe284c789bdb8158a3deb5addfd6c7c1a61",
+        "gold_event_count": 2,
+        "prompt_token_count": 3793
+      },
+      {
+        "sample_id": "22994b0540245d2d2b7307e3ba63dbe4bf0ea6ab044e6911b88dba4bee4de758",
+        "gold_event_count": 3,
+        "prompt_token_count": 4705
+      },
+      {
+        "sample_id": "106fc278d287fba48a5ce85ce57ce35160fbea9bae772fa830c352da4cbd9b22",
+        "gold_event_count": 4,
+        "prompt_token_count": 4882
+      }
+    ]
+  }
+}

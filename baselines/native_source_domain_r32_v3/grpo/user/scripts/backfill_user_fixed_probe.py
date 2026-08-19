@@ -60,9 +60,10 @@ def main() -> None:
     parser.add_argument("--reason", required=True)
     parser.add_argument("--seed", type=int, default=20260820)
     parser.add_argument("--append", action="store_true")
+    parser.add_argument("--expected-sha", default=EXPECTED_PROBE_SHA)
     args = parser.parse_args()
 
-    if file_sha256(args.probe) != EXPECTED_PROBE_SHA:
+    if file_sha256(args.probe) != args.expected_sha:
         raise RuntimeError("frozen User fixed-probe SHA mismatch")
     rows = read_jsonl(args.probe)
     validate_probe_rows(rows)
@@ -115,12 +116,12 @@ def main() -> None:
     after = lora_checksums(model)
     if before != after:
         raise RuntimeError("LoRA checksum changed during rollout-only probe")
-    if file_sha256(args.probe) != EXPECTED_PROBE_SHA:
+    if file_sha256(args.probe) != args.expected_sha:
         raise RuntimeError("frozen User fixed-probe SHA changed during probe")
 
     if rank == 0:
-        if len(events) != 20:
-            raise RuntimeError(f"expected 20 probe groups, got {len(events)}")
+        if len(events) != len(rows):
+            raise RuntimeError(f"expected {len(rows)} probe groups, got {len(events)}")
         append_events(args.output, events, args.append)
         print(json.dumps({
             "output": str(args.output),
