@@ -151,6 +151,11 @@ with tempfile.TemporaryDirectory() as temporary:
     assert "rawDiagnosticCharts" in html
     assert "chartSeries[activeChart]" in html
     assert "KL / Clip / Loss / latency" in html
+    assert all(marker in html for marker in (
+        "REFRESH_HEAVY_INTERVAL_MS=30000", "new AbortController()",
+        "if(refreshInFlight&&!force)return", "&from_step=",
+        "renderCurrentView()", "error.name!=='AbortError'",
+    ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 

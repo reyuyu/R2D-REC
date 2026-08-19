@@ -400,6 +400,103 @@ renderProbes=function(){
 function escapeHtml(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
 async function refresh(force=false){if(!autoRefresh&&!force)return;try{if(!state.activeRun&&!(await loadRuns())){setLiveState('stale','等待实验数据');return}const requestedRun=state.activeRun,endpoints=['/api/manifest','/api/capabilities','/api/metrics','/api/rollouts','/api/ranks','/api/traces','/api/checkpoints','/api/probes','/api/dsr/metrics','/api/dsr/steps','/api/dsr/traces','/api/dsr/gate'],responses=await Promise.all(endpoints.map(url=>fetch(apiUrl(url),{cache:'no-store'})));if(responses.some(response=>!response.ok))throw new Error('接口返回异常状态');const [manifest,capabilities,metrics,rollouts,ranks,traces,checkpoints,probes,dsrMetrics,dsrSteps,dsrTraces,gate]=await Promise.all(responses.map(response=>response.json()));if(requestedRun!==state.activeRun)return;Object.assign(state,{manifest,capabilities,metrics,rollouts,ranks,traces,checkpoints,probes,dsrMetrics,dsrSteps,dsrTraces,gate});mergeDsrCandidateTraces();$('dsrTab').hidden=!capabilities.dsr;if(!capabilities.dsr&&$('dsr').classList.contains('active'))activateView('overview');lastSuccessAt=Date.now();setText('headerRun',manifest.run_id||state.activeRun);const listed=state.runs.find(run=>run.run_id===state.activeRun);if(listed&&metrics.length)listed.latest_step=metrics.at(-1).step;renderExperimentList();renderCheckpoints();if(autoRefresh)setLiveState('',`实时 · ${new Date(lastSuccessAt).toLocaleTimeString()}`);$('error').style.display='none';renderOverview();renderPerformance();renderExplorerOptions();renderProbes();if($('dsr').classList.contains('active'))renderDsr();if(activeChart)drawZoom()}catch(e){$('error').textContent=`监控数据读取失败：${e.message}`;$('error').style.display='block';if(autoRefresh)setLiveState('stale','连接异常 · 展示上次数据')}}
 function activateView(view){document.querySelectorAll('.tab,.view').forEach(element=>element.classList.remove('active'));const tab=document.querySelector(`.tab[data-view="${view}"]`);if(tab&&!tab.hidden)tab.classList.add('active');$(view).classList.add('active');renderOverview();renderPerformance();renderProbes();if(view==='dsr')renderDsr()}
+
+// Keep the 3-second heartbeat small: load history once, then request only the
+// newest step. Large diagnostic streams are refreshed only while their view is open.
+const REFRESH_HEAVY_INTERVAL_MS=30000;
+let refreshInFlight=false,refreshController=null,refreshSequence=0,lastHeavyRefreshAt=0;
+function activeView(){return document.querySelector('.view.active')?.id||'overview'}
+function latestRowStep(rows){return rows.reduce((latest,row)=>Math.max(latest,Number(row.step??-1)),-1)}
+function rowIdentity(collection,row,index){
+  const fields={
+    metrics:['step'],rollouts:['rollout_id','route'],ranks:['rollout_id','rank'],
+    traces:['rollout_id','route','group_id'],probes:['step','group_id'],
+    dsrMetrics:['step','rollout_id','route'],dsrSteps:['step','route'],
+    dsrTraces:['step','rollout_id','route','group_id']
+  }[collection]||['step'];
+  const identity=fields.map(field=>row[field]??'').join(':');
+  return identity.replaceAll(':','')?identity:`index:${index}`
+}
+function mergeRows(collection,incoming,replace=false){
+  if(replace){state[collection]=incoming;return}
+  const merged=new Map(state[collection].map((row,index)=>[rowIdentity(collection,row,index),row]));
+  incoming.forEach((row,index)=>merged.set(rowIdentity(collection,row,index),row));
+  state[collection]=[...merged.values()].sort((a,b)=>Number(a.step??a.rollout_id??0)-Number(b.step??b.rollout_id??0))
+}
+function incrementalApiUrl(path,collection,full){
+  const base=apiUrl(path),step=latestRowStep(state[collection]);
+  return full||step<0?base:`${base}&from_step=${encodeURIComponent(step)}`
+}
+function renderCurrentView(){
+  const view=activeView();
+  if(view==='overview')renderOverview();
+  else if(view==='performance')renderPerformance();
+  else if(view==='explorer')renderExplorerOptions();
+  else if(view==='probes')renderProbes();
+  else if(view==='dsr')renderDsr()
+}
+refresh=async function(force=false){
+  if(!autoRefresh&&!force)return;
+  if(refreshInFlight&&!force)return;
+  if(force&&refreshController)refreshController.abort();
+  const controller=new AbortController(),sequence=++refreshSequence;
+  refreshController=controller;refreshInFlight=true;
+  try{
+    if(!state.activeRun&&!(await loadRuns())){setLiveState('stale','\u7b49\u5f85\u5b9e\u9a8c\u6570\u636e');return}
+    const requestedRun=state.activeRun,initial=state.metrics.length===0,view=activeView();
+    const heavyDue=initial||force||Date.now()-lastHeavyRefreshAt>=REFRESH_HEAVY_INTERVAL_MS;
+    const jobs=[];
+    const add=(name,path,options={})=>jobs.push({name,path,...options});
+    if(initial||heavyDue){
+      add('manifest','/api/manifest',{object:true});add('capabilities','/api/capabilities',{object:true});
+      add('checkpoints','/api/checkpoints',{replace:true});add('gate','/api/dsr/gate',{object:true})
+    }
+    add('metrics','/api/metrics',{replace:initial,full:initial});
+    add('rollouts','/api/rollouts',{replace:initial,full:initial});
+    if(view==='performance'&&(heavyDue||!state.ranks.length)){
+      add('ranks','/api/ranks',{replace:true,full:true});
+      if(state.capabilities.dsr)add('dsrMetrics','/api/dsr/metrics',{full:!state.dsrMetrics.length})
+    }
+    if(view==='explorer'&&(heavyDue||!state.traces.length)){
+      add('traces','/api/traces',{full:!state.traces.length});
+      if(state.capabilities.dsr)add('dsrTraces','/api/dsr/traces',{full:!state.dsrTraces.length})
+    }
+    if(view==='probes'&&(heavyDue||!state.probes.length))add('probes','/api/probes',{full:!state.probes.length});
+    if(view==='dsr'){
+      add('dsrMetrics','/api/dsr/metrics',{full:!state.dsrMetrics.length});
+      add('dsrSteps','/api/dsr/steps',{full:!state.dsrSteps.length});
+      if(heavyDue||!state.dsrTraces.length)add('dsrTraces','/api/dsr/traces',{full:!state.dsrTraces.length})
+    }
+    const results=await Promise.all(jobs.map(async job=>{
+      const url=job.object||job.full?apiUrl(job.path):incrementalApiUrl(job.path,job.name,false);
+      const response=await fetch(url,{cache:'no-store',signal:controller.signal});
+      if(!response.ok)throw new Error(`${job.path} ${response.status}`);
+      return [job,await response.json()]
+    }));
+    if(sequence!==refreshSequence||requestedRun!==state.activeRun)return;
+    for(const [job,payload] of results){
+      if(job.object)state[job.name]=payload;
+      else mergeRows(job.name,payload,Boolean(job.replace))
+    }
+    if(heavyDue)lastHeavyRefreshAt=Date.now();
+    mergeDsrCandidateTraces();
+    $('dsrTab').hidden=!state.capabilities.dsr;
+    if(!state.capabilities.dsr&&activeView()==='dsr')activateView('overview');
+    const latest=state.metrics.at(-1)||{},sampleTime=latest.timestamp?new Date(latest.timestamp):null;
+    lastSuccessAt=Date.now();setText('headerRun',state.manifest.run_id||state.activeRun);
+    const listed=state.runs.find(run=>run.run_id===state.activeRun);if(listed&&latest.step!=null)listed.latest_step=latest.step;
+    renderExperimentList();if(results.some(([job])=>job.name==='checkpoints'))renderCheckpoints();
+    if(autoRefresh)setLiveState('',`\u5b9e\u65f6 \u00b7 step ${latest.step??'-'}${sampleTime&&!Number.isNaN(sampleTime.valueOf())?` \u00b7 \u6570\u636e ${sampleTime.toLocaleTimeString()}`:''}`);
+    $('error').style.display='none';renderCurrentView();if(activeChart)drawZoom()
+  }catch(error){
+    if(error.name!=='AbortError'){$('error').textContent=`\u76d1\u63a7\u6570\u636e\u8bfb\u53d6\u5931\u8d25\uff1a${error.message}`;$('error').style.display='block';if(autoRefresh)setLiveState('stale','\u8fde\u63a5\u5f02\u5e38 \u00b7 \u5c55\u793a\u4e0a\u6b21\u6570\u636e')}
+  }finally{if(sequence===refreshSequence){refreshInFlight=false;refreshController=null}}
+};
+activateView=function(view){
+  document.querySelectorAll('.tab,.view').forEach(element=>element.classList.remove('active'));
+  const tab=document.querySelector(`.tab[data-view="${view}"]`);if(tab&&!tab.hidden)tab.classList.add('active');$(view).classList.add('active');
+  renderCurrentView();refresh(true)
+};
 document.querySelectorAll('.tab').forEach(button=>button.onclick=()=>activateView(button.dataset.view));document.querySelectorAll('canvas.chart:not(.zoomed)').forEach(c=>{c.onclick=()=>openChart(c.id);c.onmousemove=showChartTooltip;c.onmouseleave=hideChartTooltip});document.querySelectorAll('.zoom-ranges button').forEach(b=>b.onclick=()=>{zoomRange=b.dataset.range;document.querySelectorAll('.zoom-ranges button').forEach(x=>x.classList.toggle('active',x===b));drawZoom()});$('closeChart').onclick=closeChart;$('chartModal').onclick=e=>{if(e.target===$('chartModal'))closeChart()};document.onkeydown=e=>{if(e.key==='Escape')closeChart()};$('trace').addEventListener('toggle',e=>{if(!e.target.matches('.beam-details'))return;const key=e.target.dataset.candidate;e.target.open?expandedBeamCandidates.add(key):expandedBeamCandidates.delete(key)},true);$('traceIndex').onclick=e=>{const button=e.target.closest('.trace-link');if(!button)return;$('rolloutSelect').value=button.dataset.rolloutId;$('routeSelect').value=button.dataset.route;expandedBeamCandidates.clear();renderTraceIndex();renderExplorer()};$('rolloutSelect').onchange=()=>{expandedBeamCandidates.clear();renderTraceIndex();renderExplorer()};$('routeSelect').onchange=()=>{expandedBeamCandidates.clear();renderExplorer()};$('probeGroupSelect').onchange=renderProbes;$('probeStepSelect').onchange=renderProbes;$('checkpointSelect').onchange=renderCheckpoints;$('chooseDownloadRoot').onclick=()=>checkpointAction(chooseDownloadRoot);$('downloadCheckpoint').onclick=()=>checkpointAction(downloadSelectedCheckpoint);$('refreshCheckpoints').onclick=()=>checkpointAction(refreshCheckpointList);$('deleteCheckpoint').onclick=()=>checkpointAction(deleteSelectedCheckpoint);$('experimentSelect').onchange=e=>selectExperiment(e.target.value);$('refreshToggle').onclick=()=>setAutoRefresh(!autoRefresh);$('refreshNow').onclick=()=>refresh(true);window.onresize=()=>{renderOverview();renderPerformance();renderProbes();if($('dsr').classList.contains('active'))renderDsr();if(activeChart)drawZoom()};attachMetricHelp();restoreDownloadRoot();loadRuns().then(()=>refresh(true)).catch(e=>{$('error').textContent=`监控数据读取失败：${e.message}`;$('error').style.display='block';setLiveState('stale','连接异常')});refreshTimer=setInterval(()=>refresh(),3000);
 $('smoothingSelect').value=String(smoothingWindow);
 $('smoothingBadge').textContent=smoothingWindow===1?'\u539f\u59cb\u66f2\u7ebf':`${smoothingWindow} \u70b9\u6ed1\u52a8\u5e73\u5747`;
