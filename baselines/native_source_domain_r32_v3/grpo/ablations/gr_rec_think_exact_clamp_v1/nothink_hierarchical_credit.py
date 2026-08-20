@@ -14,6 +14,12 @@ TEXT_DOMAIN_SPANS = {
     "ad": "广告",
     "living": "主播",
 }
+DOMAIN_DECLARATIONS = {
+    "video": "该用户最近喜欢的视频有: ",
+    "prod": "该用户最近点击了商品: ",
+    "ad": "该用户最近感兴趣的广告有: ",
+    "living": "该用户最近首次打赏了主播: ",
+}
 
 
 @dataclass(frozen=True)
@@ -47,6 +53,28 @@ class DomainTextAlignment:
         )
 
 
+@dataclass(frozen=True)
+class DomainCommitmentAlignment:
+    """Candidate-level earliest Domain commitment with direct-SID fallback."""
+
+    commitment_domain: str
+    commitment_token_position: int
+    sid_domain_token_position: int
+    sid_token_positions: tuple[int, int, int, int]
+    mode: str
+    eligible: bool = True
+    failure: str | None = None
+
+    @property
+    def hierarchy_token_positions(self) -> tuple[int, int, int, int]:
+        return (
+            self.commitment_token_position,
+            self.sid_token_positions[1],
+            self.sid_token_positions[2],
+            self.sid_token_positions[3],
+        )
+
+
 def hierarchy_state(final_sid, gold_sids: Iterable[Sequence], target_domain: str) -> HierarchyState:
     """Derive monotonic final-SID correctness flags without using scalar reward."""
     gold = {tuple(value) for value in gold_sids if value is not None and len(value) == 4}
@@ -63,18 +91,34 @@ def hierarchy_state(final_sid, gold_sids: Iterable[Sequence], target_domain: str
 
 def conditional_hierarchical_credits(
     states: Sequence[HierarchyState],
+    domain_eligible: Sequence[bool] | None = None,
 ) -> list[tuple[float, float, float, float]]:
     """Return per-candidate (Domain, A, B, C) credit for one NoThink G8."""
     if len(states) != 8:
         raise ValueError("conditional hierarchical credit requires exactly one G8")
     credits = [[0.0, 0.0, 0.0, 0.0] for _ in states]
+    if domain_eligible is None:
+        domain_eligible = [state.valid for state in states]
+    if len(domain_eligible) != len(states):
+        raise ValueError("Domain eligibility must align one-to-one with G8 states")
+    domain_indices = [
+        index for index, (state, eligible) in enumerate(zip(states, domain_eligible))
+        if state.valid and eligible
+    ]
+    domain_indicators = [float(states[index].domain_correct) for index in domain_indices]
+    if domain_indicators and len(set(domain_indicators)) > 1:
+        mean = sum(domain_indicators) / len(domain_indicators)
+        for index, indicator in zip(domain_indices, domain_indicators):
+            credits[index][0] = STAGE_INCREMENTS[0] * (indicator - mean) / HIERARCHY_SCALE
+
     stages = (
-        (lambda state: state.valid, lambda state: state.domain_correct),
         (lambda state: state.domain_correct, lambda state: state.a_correct),
         (lambda state: state.a_correct, lambda state: state.ab_correct),
         (lambda state: state.ab_correct, lambda state: state.exact),
     )
-    for column, ((eligible, correct), increment) in enumerate(zip(stages, STAGE_INCREMENTS)):
+    for column, ((eligible, correct), increment) in enumerate(
+        zip(stages, STAGE_INCREMENTS[1:]), 1
+    ):
         indices = [index for index, state in enumerate(states) if eligible(state)]
         indicators = [float(correct(states[index])) for index in indices]
         if not indicators or len(set(indicators)) == 1:
@@ -83,6 +127,67 @@ def conditional_hierarchical_credits(
         for index, indicator in zip(indices, indicators):
             credits[index][column] = increment * (indicator - mean) / HIERARCHY_SCALE
     return [tuple(row) for row in credits]
+
+
+def _subsequence_starts(
+    values: Sequence[int], pattern: Sequence[int], start: int, stop: int,
+) -> list[int]:
+    return [
+        index
+        for index in range(start, stop - len(pattern) + 1)
+        if list(values[index:index + len(pattern)]) == list(pattern)
+    ]
+
+
+def _declaration_spec(tokenizer) -> tuple[dict[str, list[int]], int]:
+    declarations = {
+        domain: [int(value) for value in tokenizer.encode(text, add_special_tokens=False)]
+        for domain, text in DOMAIN_DECLARATIONS.items()
+    }
+    sequences = list(declarations.values())
+    if any(not sequence for sequence in sequences):
+        raise RuntimeError("Domain declaration must encode to at least one token")
+    branch_index = 0
+    for column in zip(*sequences):
+        if len(set(column)) != 1:
+            break
+        branch_index += 1
+    if any(branch_index >= len(sequence) for sequence in sequences):
+        raise RuntimeError("one Domain declaration is a token-prefix of another")
+    return declarations, branch_index
+
+
+def locate_domain_commitment_token(
+    completion_ids: Sequence[int], final_sid, tokenizer,
+) -> DomainCommitmentAlignment:
+    """Prefer the standard declaration branch; otherwise use explicit SID Domain."""
+    sid_positions = find_final_sid_token_positions(completion_ids, final_sid, tokenizer)
+    sid_domain = str(final_sid[0])
+    ids = [int(value) for value in completion_ids]
+    close_ids = [int(value) for value in tokenizer.encode("</think>", add_special_tokens=False)]
+    close_starts = _subsequence_starts(ids, close_ids, 0, sid_positions[0]) if close_ids else []
+    if close_starts:
+        search_start = close_starts[-1] + len(close_ids)
+        declarations, branch_index = _declaration_spec(tokenizer)
+        matching_starts = _subsequence_starts(
+            ids, declarations[sid_domain], search_start, sid_positions[0]
+        )
+        if len(matching_starts) == 1:
+            return DomainCommitmentAlignment(
+                sid_domain,
+                matching_starts[0] + branch_index,
+                sid_positions[0],
+                sid_positions,
+                "branch",
+            )
+    return DomainCommitmentAlignment(
+        sid_domain,
+        sid_positions[0],
+        sid_positions[0],
+        sid_positions,
+        "direct_sid_fallback",
+        failure="standard_declaration_not_uniquely_matched",
+    )
 
 
 def apply_domain_text_alignment_gate(

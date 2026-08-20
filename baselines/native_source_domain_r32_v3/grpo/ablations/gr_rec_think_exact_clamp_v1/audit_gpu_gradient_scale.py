@@ -22,10 +22,9 @@ from grpo_sid import final_sid, parse_sid, q_reward
 from grpo_trl_trainer import M_NO, ROUTE_LOSS_W, build_route_dataset
 from nothink_bridge import BRIDGE_LAMBDA, require_single_token, uniform_multi_positive_ce
 from nothink_hierarchical_credit import (
-    apply_domain_text_alignment_gate,
     conditional_hierarchical_credits,
     hierarchy_state,
-    locate_text_domain_token,
+    locate_domain_commitment_token,
 )
 from run_grpo_trl_smoke import DATA
 
@@ -82,17 +81,18 @@ def hierarchical_token_advantages(batch: RolloutBatch, tokenizer) -> tuple[torch
         hierarchy_state(sid, batch.gold_sids, batch.target_domain)
         for sid in batch.predicted_sids
     ]
-    alignments = [
-        locate_text_domain_token(candidate_ids, sid, tokenizer) if sid is not None else None
-        for sid, candidate_ids in zip(batch.predicted_sids, batch.completion_ids_list)
-    ]
-    domain_text_alignment_valid = all(
-        not state.valid or (alignment is not None and alignment.valid)
-        for state, alignment in zip(states, alignments)
-    )
-    credits = apply_domain_text_alignment_gate(
-        conditional_hierarchical_credits(states), domain_text_alignment_valid
-    )
+    alignments = []
+    for sid, candidate_ids in zip(batch.predicted_sids, batch.completion_ids_list):
+        try:
+            alignment = (
+                locate_domain_commitment_token(candidate_ids, sid, tokenizer)
+                if sid is not None else None
+            )
+        except (RuntimeError, ValueError):
+            alignment = None
+        alignments.append(alignment)
+    eligibility = [alignment is not None and alignment.eligible for alignment in alignments]
+    credits = conditional_hierarchical_credits(states, domain_eligible=eligibility)
     token_advantages = torch.zeros_like(batch.completion_ids, dtype=torch.float32)
     for row, (sid, alignment, candidate_credit) in enumerate(
         zip(batch.predicted_sids, alignments, credits)
@@ -109,17 +109,28 @@ def hierarchical_token_advantages(batch: RolloutBatch, tokenizer) -> tuple[torch
                 continue
             token_advantages[row, position] = value
     diagnostics = {
-        "domain_text_alignment_valid": domain_text_alignment_valid,
-        "text_domains": [alignment.text_domain if alignment else None for alignment in alignments],
+        "domain_text_alignment_valid": all(
+            not state.valid or eligible for state, eligible in zip(states, eligibility)
+        ),
+        "domain_commitment_eligible": eligibility,
+        "domain_commitment_modes": [alignment.mode if alignment else None for alignment in alignments],
+        "text_domains": [alignment.commitment_domain if alignment else None for alignment in alignments],
         "text_domain_token_positions": [
-            alignment.text_domain_token_position if alignment else None
+            alignment.commitment_token_position if alignment else None
             for alignment in alignments
         ],
         "sid_domain_token_positions": [
             alignment.sid_domain_token_position if alignment else None
             for alignment in alignments
         ],
-        "alignment_failures": [alignment.failure if alignment else "invalid_sid" for alignment in alignments],
+        "alignment_failures": [alignment.failure if alignment else "unresolved" for alignment in alignments],
+        "eligible_count": sum(eligibility),
+        "branch_count": sum(alignment is not None and alignment.mode == "branch" for alignment in alignments),
+        "direct_sid_fallback_count": sum(
+            alignment is not None and alignment.mode == "direct_sid_fallback"
+            for alignment in alignments
+        ),
+        "unresolved_count": sum(not eligible for eligible in eligibility),
     }
     return token_advantages, credits, diagnostics
 
@@ -129,12 +140,14 @@ def legacy_text_domain_advantages(
 ) -> torch.Tensor:
     """Diagnostic-only legacy scalar advantage on matched text-Domain support."""
     token_advantages = torch.zeros_like(batch.completion_ids, dtype=torch.float32)
-    if not alignment["domain_text_alignment_valid"]:
-        return token_advantages
-    for row, (sid, position) in enumerate(
-        zip(batch.predicted_sids, alignment["text_domain_token_positions"])
+    for row, (sid, position, eligible) in enumerate(
+        zip(
+            batch.predicted_sids,
+            alignment["text_domain_token_positions"],
+            alignment["domain_commitment_eligible"],
+        )
     ):
-        if sid is not None and position is not None:
+        if sid is not None and position is not None and eligible:
             token_advantages[row, position] = legacy_scalar[row]
     return token_advantages
 

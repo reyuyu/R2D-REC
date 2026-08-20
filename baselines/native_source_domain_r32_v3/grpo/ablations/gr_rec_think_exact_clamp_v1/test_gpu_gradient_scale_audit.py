@@ -26,6 +26,10 @@ class TinyTokenizer:
         "视频": 4,
         "广告": 5,
         "主播": 6,
+        "该用户最近喜欢的视频有: ": [50, 51, 52, 53, 54, 4, 55],
+        "该用户最近点击了商品: ": [50, 51, 52, 56, 57, 3, 55],
+        "该用户最近感兴趣的广告有: ": [50, 51, 52, 58, 5, 55],
+        "该用户最近首次打赏了主播: ": [50, 51, 52, 59, 60, 61, 57, 6, 55],
         "<|prod_begin|>": 10,
         "<|video_begin|>": 20,
         "<s_a_1>": 11,
@@ -37,7 +41,8 @@ class TinyTokenizer:
     }
 
     def encode(self, text, add_special_tokens=False):
-        return [self.mapping[text]]
+        value = self.mapping[text]
+        return value if isinstance(value, list) else [value]
 
 
 class TinyAdapterModel(torch.nn.Module):
@@ -94,6 +99,7 @@ assert legacy.shape == (8,) and abs(float(legacy.mean())) < 1e-6
 hierarchical, credits, alignment = audit.hierarchical_token_advantages(batch, tokenizer)
 assert hierarchical.shape == completion_ids.shape
 assert alignment["domain_text_alignment_valid"] is True
+assert alignment["direct_sid_fallback_count"] == 8
 assert credits[0] == (0.0, -0.046875, 0.0, 0.0)
 assert credits[1] == (0.0, 0.015625, -0.125, 0.0)
 assert credits[2] == (0.0, 0.015625, 0.0625, -0.375)
@@ -132,13 +138,13 @@ assert [row[0] for row in domain_credits] == [
     -0.0078125, 0.0234375, -0.0078125, -0.0078125,
 ]
 torch.testing.assert_close(
-    domain_token_advantages[:, 1],
+    domain_token_advantages[:, 2],
     torch.tensor([row[0] for row in domain_credits]),
 )
-assert torch.count_nonzero(domain_token_advantages[:, 2]) == 0  # SID Domain serialization
+assert torch.count_nonzero(domain_token_advantages[:, :2]) == 0
 assert torch.count_nonzero(domain_token_advantages[:, 3:]) == 0
 
-# One text/SID mismatch or missing text span gates Domain for the whole G8.
+# Noun mismatch/missing does not matter: valid final SID receives candidate fallback.
 mismatch_ids = list(domain_completion_ids_list)
 mismatch_ids[1] = (2, 4, 10, 19, 29, 39)
 mismatch_tensor = torch.tensor(mismatch_ids, dtype=torch.long)
@@ -152,9 +158,9 @@ mismatch_batch = replace(
 mismatch_advantages, mismatch_credits, mismatch_alignment = audit.hierarchical_token_advantages(
     mismatch_batch, tokenizer
 )
-assert mismatch_alignment["domain_text_alignment_valid"] is False
-assert all(row[0] == 0 for row in mismatch_credits)
-assert torch.count_nonzero(mismatch_advantages[:, :3]) == 0
+assert mismatch_alignment["domain_text_alignment_valid"] is True
+assert mismatch_alignment["direct_sid_fallback_count"] == 8
+assert mismatch_credits == domain_credits
 
 missing_ids = list(domain_completion_ids_list)
 missing_ids[1] = (2, 0, 10, 19, 29, 39)
@@ -169,9 +175,9 @@ missing_batch = replace(
 missing_advantages, missing_credits, missing_alignment = audit.hierarchical_token_advantages(
     missing_batch, tokenizer
 )
-assert missing_alignment["domain_text_alignment_valid"] is False
-assert all(row[0] == 0 for row in missing_credits)
-assert torch.count_nonzero(missing_advantages[:, :3]) == 0
+assert missing_alignment["domain_text_alignment_valid"] is True
+assert missing_alignment["direct_sid_fallback_count"] == 8
+assert missing_credits == domain_credits
 
 
 # One immutable batch and one old-logp tensor feed both isolated backwards.
@@ -208,8 +214,9 @@ assert all(
 matched = audit.legacy_text_domain_advantages(
     domain_batch, audit.legacy_advantages(domain_batch.rewards, "cpu"), domain_alignment
 )
-assert torch.count_nonzero(matched[:, 1]) == 8
-assert torch.count_nonzero(matched[:, 2:]) == 0
+assert torch.count_nonzero(matched[:, 2]) == 8
+assert torch.count_nonzero(matched[:, :2]) == 0
+assert torch.count_nonzero(matched[:, 3:]) == 0
 
 
 # Bridge measurement is gated by a real all-zero reward vector and uses no

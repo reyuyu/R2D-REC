@@ -26,6 +26,7 @@ from nothink_hierarchical_credit import (
     conditional_hierarchical_credits,
     find_final_sid_token_positions,
     hierarchy_state,
+    locate_domain_commitment_token,
     locate_text_domain_token,
 )
 from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
@@ -114,20 +115,24 @@ assert hierarchy_state(("prod", 1, 11, 111), gold, "prod") == STATE_BY_REWARD[8]
 # Final SID token positions use the last contiguous exact four-token block.
 class PositionTokenizer:
     token_map = {
-        "</think>": 2,
-        "商品": 3,
-        "视频": 4,
-        "广告": 5,
-        "主播": 6,
-        "<|prod_begin|>": 10,
-        "<|video_begin|>": 20,
-        "<s_a_1>": 11,
-        "<s_b_11>": 12,
-        "<s_c_111>": 13,
+        "</think>": [2],
+        "商品": [3],
+        "视频": [4],
+        "广告": [5],
+        "主播": [6],
+        "该用户最近喜欢的视频有: ": [100, 101, 102, 104, 105, 4, 106],
+        "该用户最近点击了商品: ": [100, 101, 102, 103, 107, 3, 106],
+        "该用户最近感兴趣的广告有: ": [100, 101, 102, 108, 5, 106],
+        "该用户最近首次打赏了主播: ": [100, 101, 102, 109, 110, 111, 107, 6, 106],
+        "<|prod_begin|>": [10],
+        "<|video_begin|>": [20],
+        "<s_a_1>": [11],
+        "<s_b_11>": [12],
+        "<s_c_111>": [13],
     }
 
     def encode(self, text, add_special_tokens=False):
-        return [self.token_map[text]]
+        return self.token_map[text]
 
 
 position_tokenizer = PositionTokenizer()
@@ -159,6 +164,56 @@ missing = locate_text_domain_token(
 )
 assert missing.valid is False and missing.failure == "missing_text_domain_before_final_sid"
 
+# Formal Domain commitment uses the first declaration branch and candidate-level SID fallback.
+prod_ids = [2, 100, 101, 102, 103, 107, 3, 106, 10, 11, 12, 13]
+prod_commitment = locate_domain_commitment_token(
+    prod_ids, ("prod", 1, 11, 111), position_tokenizer
+)
+assert prod_commitment.mode == "branch"
+assert prod_commitment.commitment_token_position == 4
+assert prod_commitment.hierarchy_token_positions == (4, 9, 10, 11)
+video_ids = [2, 100, 101, 102, 104, 105, 4, 106, 20, 11, 12, 13]
+video_commitment = locate_domain_commitment_token(
+    video_ids, ("video", 1, 11, 111), position_tokenizer
+)
+assert video_commitment.mode == "branch"
+assert video_commitment.commitment_token_position == 4
+direct_ids = [2, 10, 11, 12, 13]
+direct_commitment = locate_domain_commitment_token(
+    direct_ids, ("prod", 1, 11, 111), position_tokenizer
+)
+assert direct_commitment.mode == "direct_sid_fallback"
+assert direct_commitment.commitment_token_position == 1
+mixed_commitments = [
+    locate_domain_commitment_token(
+        prod_ids if index < 7 else direct_ids,
+        ("prod", 1, 11, 111), position_tokenizer,
+    )
+    for index in range(8)
+]
+assert sum(item.mode == "branch" for item in mixed_commitments) == 7
+assert sum(item.mode == "direct_sid_fallback" for item in mixed_commitments) == 1
+assert all(item.eligible for item in mixed_commitments)
+
+# One unresolved candidate is zeroed only for Domain; eligible rows re-center on E.
+subset_states = [
+    STATE_BY_REWARD[value]
+    for value in [-0.25, 0, -0.25, -0.25, -0.25, 0, -0.25, -0.25]
+]
+subset = conditional_hierarchical_credits(
+    subset_states, domain_eligible=[False] + [True] * 7
+)
+assert subset[0][0] == 0
+assert [row[0] for row in subset[1:]] == [
+    0.022321428571428572,
+    -0.008928571428571428,
+    -0.008928571428571428,
+    -0.008928571428571428,
+    0.022321428571428572,
+    -0.008928571428571428,
+    -0.008928571428571428,
+]
+
 
 # Global G8 credits map back to the correct rank/local candidate rows.
 class RuntimeTokenizer(PositionTokenizer):
@@ -166,13 +221,13 @@ class RuntimeTokenizer(PositionTokenizer):
     eos_token_id = 0
     token_map = {
         **PositionTokenizer.token_map,
-        "<s_a_9>": 19,
-        "<s_b_9>": 29,
-        "<s_c_9>": 39,
+        "<s_a_9>": [19],
+        "<s_b_9>": [29],
+        "<s_c_9>": [39],
     }
 
     def encode(self, text, add_special_tokens=False):
-        return [self.token_map[text]] if text in self.token_map else [1, 2]
+        return self.token_map[text] if text in self.token_map else [1, 2]
 
 
 runtime_tokenizer = RuntimeTokenizer()
@@ -194,10 +249,10 @@ text_cycle = [
     "<think></think>该用户最近点击了商品: <|prod_begin|><s_a_1><s_b_11><s_c_111>",
 ]
 id_cycle = [
-    [2, 3, 10, 19, 29, 39],
-    [2, 3, 10, 11, 29, 39],
-    [2, 3, 10, 11, 12, 39],
-    [2, 3, 10, 11, 12, 13],
+    [2, 100, 101, 102, 103, 107, 3, 106, 10, 19, 29, 39],
+    [2, 100, 101, 102, 103, 107, 3, 106, 10, 11, 29, 39],
+    [2, 100, 101, 102, 103, 107, 3, 106, 10, 11, 12, 39],
+    [2, 100, 101, 102, 103, 107, 3, 106, 10, 11, 12, 13],
 ]
 runtime_inputs = [{
     "recommendation_group_id": "g0",
@@ -214,12 +269,12 @@ for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
                 "rank": rank,
                 "local_index": local_index,
                 "predicted_sid": sid,
-                "token_positions": (1, 3, 4, 5),
-                "text_domain": "prod",
-                "text_domain_token_position": 1,
-                "sid_domain_token_position": 2,
-                "domain_text_alignment_valid": True,
-                "domain_text_alignment_failure": None,
+                "token_positions": (4, 9, 10, 11),
+                "domain_commitment_eligible": True,
+                "domain_commitment_mode": "branch",
+                "domain_commitment_token_position": 4,
+                "sid_domain_token_position": 8,
+                "domain_commitment_failure": None,
                 "gold_sids": [("prod", 1, 11, 111)],
                 "target_domain": "prod",
                 "prompt": "prompt",
@@ -237,7 +292,7 @@ finally:
     trl_grpo.gather_object = original_gather
 assert runtime_trainer._nothink_bridge_runtime["token_credits"] == tuple(expected_cycle)
 assert runtime_trainer._nothink_bridge_runtime["token_positions"] == (
-    (1, 3, 4, 5),
+    (4, 9, 10, 11),
 ) * 4
 assert runtime_trainer._nothink_bridge_runtime["domain_text_alignment_valid"] is True
 
@@ -257,7 +312,7 @@ def prepare_with_global_records(records, rewards):
     return runtime_trainer._nothink_bridge_runtime
 
 
-# Formal trainer path: aligned text receives Domain +/- credit at text positions.
+# Formal trainer path: eligible commitment receives Domain +/- credit.
 domain_records = []
 domain_pattern = [False, True, False, False]
 for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
@@ -268,12 +323,12 @@ for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
                 "rank": rank,
                 "local_index": local_index,
                 "predicted_sid": ("prod" if correct else "video", 9, 9, 9),
-                "token_positions": (1, 3, 4, 5),
-                "text_domain": "prod" if correct else "video",
-                "text_domain_token_position": 1,
-                "sid_domain_token_position": 2,
-                "domain_text_alignment_valid": True,
-                "domain_text_alignment_failure": None,
+                "token_positions": (4, 9, 10, 11),
+                "domain_commitment_eligible": True,
+                "domain_commitment_mode": "branch",
+                "domain_commitment_token_position": 4,
+                "sid_domain_token_position": 8,
+                "domain_commitment_failure": None,
                 "gold_sids": [("prod", 1, 11, 111)],
                 "target_domain": "prod",
                 "prompt": "prompt",
@@ -285,19 +340,27 @@ assert [row[0] for row in aligned_runtime["token_credits"]] == [
 ]
 assert aligned_runtime["domain_text_alignment_valid"] is True
 
-# One mismatch gates the entire local G8 Domain stage; no SID fallback occurs.
+# One unresolved candidate is zeroed without suppressing eligible peers.
 mismatch_records = [dict(record) for record in domain_records]
-mismatch_records[1]["text_domain"] = "video"
-mismatch_records[1]["domain_text_alignment_valid"] = False
-mismatch_records[1]["domain_text_alignment_failure"] = "text_sid_domain_mismatch"
+mismatch_records[1]["domain_commitment_eligible"] = False
+mismatch_records[1]["domain_commitment_mode"] = None
+mismatch_records[1]["token_positions"] = None
+mismatch_records[1]["domain_commitment_failure"] = "unresolved"
 mismatch_runtime = prepare_with_global_records(mismatch_records, domain_rewards)
-assert all(row[0] == 0 for row in mismatch_runtime["token_credits"])
+assert [row[0] for row in mismatch_runtime["token_credits"]] == [
+    -0.004464285714285714,
+    0.0,
+    -0.004464285714285714,
+    -0.004464285714285714,
+]
 assert mismatch_runtime["domain_text_alignment_valid"] is False
 
-# The same gate leaves every A/B/C value exactly unchanged.
+# Candidate-level Domain eligibility leaves every A/B/C value exactly unchanged.
 mixed_mismatch_records = [dict(record) for record in global_records]
-mixed_mismatch_records[0]["domain_text_alignment_valid"] = False
-mixed_mismatch_records[0]["domain_text_alignment_failure"] = "missing_text_domain_before_final_sid"
+mixed_mismatch_records[0]["domain_commitment_eligible"] = False
+mixed_mismatch_records[0]["domain_commitment_mode"] = None
+mixed_mismatch_records[0]["token_positions"] = None
+mixed_mismatch_records[0]["domain_commitment_failure"] = "unresolved"
 mixed_runtime = prepare_with_global_records(
     mixed_mismatch_records, [0, 0.5, 2, 8] * 4
 )
@@ -463,6 +526,10 @@ def bridge_runtime(plan, global_active):
         "wrong_domain_rate": 0.0,
         "valid_sid_rate": 1.0,
         "domain_text_alignment_valid": True,
+        "domain_commitment_eligible_count": 8,
+        "domain_commitment_branch_count": 8,
+        "domain_commitment_direct_sid_fallback_count": 0,
+        "domain_commitment_unresolved_count": 0,
     }
 
 
