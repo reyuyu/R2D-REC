@@ -2,15 +2,18 @@
 
 ## Status and history
 
-**CPU IMPLEMENTATION READY / GPU VALIDATION PENDING**
+**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
 
 **GPU NOT USED / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
   A-collapse A+B teacher branches.
-- Phase 3 current: removes the A-collapse branch and replaces sequence-wide
-  NoThink credit with Conditional Hierarchical Token Credit.
+- Phase 3 `ab47d3141dc08445f6bb4deddb565b710075ff61`: removes the
+  A-collapse branch and replaces sequence-wide NoThink credit with Conditional
+  Hierarchical Token Credit.
+- Phase 4 current: adds a standalone zero-step GPU gradient audit harness; the
+  formal trainer, objectives and runner contract are unchanged.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -106,6 +109,33 @@ dead-zero bridge gating; and uniform Gold-A CE.
 Think ExactClamp regression and the baseline TRL structure suite must continue
 to pass before any future GPU validation.
 
+## Zero-step GPU gradient audit
+
+`ablations/gr_rec_think_exact_clamp_v1/audit_gpu_gradient_scale.py` compares,
+for the same real NoThink G8 rollout, old log-probabilities and model parameters:
+
+1. Legacy population-std sequence-level GRPO gradient.
+2. Current Conditional Hierarchical Token Credit gradient.
+3. Raw and `0.02`-weighted Gold-A bridge gradient, only when the generated
+   reward vector is exactly `[0]*8`.
+
+Each objective starts with `model.zero_grad(set_to_none=True)`, performs a fresh
+forward/backward, copies only `requires_grad=True` LoRA gradients to CPU for the
+global L2 norm/cosine calculation, and clears gradients again. No optimizer or
+scheduler is constructed and the harness contains no `.step()` call.
+
+The default audit is eight independently generated G8 groups and can be set
+from one to sixteen. Per-group output includes reward topology, norms, ratio,
+cosine, active hierarchy stages, credited A/B/C token counts, bridge activity,
+and the rollout fingerprint. Aggregate output includes median/mean/min/max. A
+real all-zero bridge is compared with the median nonzero hierarchical norm from
+other audited groups. Ratios outside `0.25x..4x` and bridge ratios above `20%`
+are flagged for review only; the harness never changes coefficients.
+
+The execution flag `--execute-zero-step-gpu-audit` is mandatory. Its presence
+only enables generation plus isolated forward/backward; it does not authorize
+training, checkpoint writes, or any parameter update.
+
 ## Frozen runner contract
 
 The runner is not restructured. Prefix remains `GR-REC-CLAMP-BRIDGE-V1-`,
@@ -115,6 +145,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**CPU IMPLEMENTATION READY / GPU VALIDATION PENDING**
+**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
 
 **GPU NOT USED / TRAINING NOT STARTED**

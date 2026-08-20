@@ -19,7 +19,25 @@ CUDA_VISIBLE_DEVICES='' PYTHONPATH="scripts:ablations/gr_rec_think_exact_clamp_v
   python3 ablations/gr_rec_think_exact_clamp_v1/test_think_exact_clamp.py
 CUDA_VISIBLE_DEVICES='' PYTHONPATH="scripts:ablations/gr_rec_think_exact_clamp_v1" \
   python3 ablations/gr_rec_think_exact_clamp_v1/test_nothink_hierarchical_credit.py
+CUDA_VISIBLE_DEVICES='' PYTHONPATH="scripts:ablations/gr_rec_think_exact_clamp_v1" \
+  python3 ablations/gr_rec_think_exact_clamp_v1/test_gpu_gradient_scale_audit.py
 ```
 
 The runner prefix remains `GR-REC-CLAMP-BRIDGE-V1-`, same-run resume only, with
 `--max-steps <= 1500`. GPU execution and training remain unauthorized.
+
+## Zero-step gradient audit harness
+
+`audit_gpu_gradient_scale.py` is a standalone, zero-update NoThink audit. It
+generates each real G8 once, computes old log-probabilities once, and compares
+the legacy sequence-level objective with the current hierarchical token-credit
+objective using isolated forward/backward passes over the same immutable
+rollout and model parameters. Exact real `[0]*8` groups additionally measure
+raw and lambda-weighted Gold-A bridge gradients.
+
+The harness has no optimizer or scheduler and contains no `.step()` call. It
+requires the explicit `--execute-zero-step-gpu-audit` flag, defaults to eight
+groups, accepts up to sixteen, and records only trainable LoRA gradients. Do not
+run it until GPU execution is separately authorized.
+
+**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
