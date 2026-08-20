@@ -6,6 +6,40 @@
 
 **ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
+## R2 48-step optimizer smoke (2026-08-21)
+
+Commit `e35f487be55b551f8d0b00f3cd18ce42ef470faa` fixed the detailed-monitor
+advantage tail replacement for both `deque` and `list` logs without changing
+the training formula. All three focused CPU suites and the fast commitment
+preflight passed before launch.
+
+`GR-REC-CLAMP-BRIDGE-V1-SMOKE48-R2-20260821` then ran from original 8B plus
+fresh original BATA on four A800 GPUs, with no resume, and stopped at exactly
+48 optimizer steps. It produced 32 Think G4 groups and 32 NoThink G8 groups.
+The result is `SMOKE_PASS`: loss range was
+`[-0.02894183062016964, 0.00028963969089090824]`, gradient-norm range was
+`[0.023588674142956734, 0.2531088888645172]`, and no NaN, Inf, OOM, traceback,
+or save failure occurred.
+
+Think reward mean was `2.981781005859375`; 14/32 Think groups were zero-std.
+NoThink reward mean was `0.078125`; 1/32 NoThink groups was zero-std. NoThink
+stage-active counts were Domain `22/32`, A `17/32`, B `4/32`, and C `0/32`.
+Commitment accounting was branch `252`, direct-SID fallback `4`, unresolved
+`0`, out of 256 eligible candidates. The sole zero-std NoThink group was an
+all-wrong-Domain group; no dead-zero group occurred, so the bridge correctly
+did not activate.
+
+Optimizer steps did execute. Trainable LoRA changed by
+`0.00027950378729713066` on every rank while frozen base parameters had exactly
+zero delta. The step-48 checkpoint was written only to the smoke output tree;
+no pilot, formal run, or benchmark was started.
+
+Artifact:
+
+- [`../results/optimizer_smoke48_r2_20260821.json`](../results/optimizer_smoke48_r2_20260821.json)
+
+**R2 48-STEP OPTIMIZER SMOKE PASS / STOPPED AT STEP 48**
+
 ## Phase 12: formal earliest Domain commitment credit (2026-08-21)
 
 The formal NoThink Domain stage now credits the earliest exact Domain

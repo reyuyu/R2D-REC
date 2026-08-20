@@ -1,0 +1,93 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_optimizer_smoke_r2_summary",
+  "run_id": "GR-REC-CLAMP-BRIDGE-V1-SMOKE48-R2-20260821",
+  "code_commit": "e35f487be55b551f8d0b00f3cd18ce42ef470faa",
+  "status": "SMOKE_PASS",
+  "optimizer_steps": 48,
+  "world_size": 4,
+  "think": {
+    "groups": 32,
+    "reward_mean": 2.981781005859375,
+    "zero_std_group_count": 14,
+    "zero_std_group_rate": 0.4375
+  },
+  "nothink": {
+    "groups": 32,
+    "reward_mean": 0.078125,
+    "zero_std_group_count": 1,
+    "zero_std_group_rate": 0.03125,
+    "active_group_count": {
+      "domain": 22,
+      "a": 17,
+      "b": 4
+    },
+    "active_group_rate": {
+      "domain": 0.6875,
+      "a": 0.53125,
+      "b": 0.125,
+      "c": 0.0
+    },
+    "commitment": {
+      "eligible": 256,
+      "branch": 252,
+      "direct_sid_fallback": 4,
+      "unresolved": 0
+    },
+    "zero_signal_taxonomy": {
+      "ALL_WRONG_DOMAIN_ZERO_SIGNAL": {
+        "count": 1,
+        "rate": 0.03125
+      },
+      "DEAD_ZERO_BRIDGE": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "UNIFORM_A_ONLY": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "UNIFORM_AB": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "UNIFORM_EXACT": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "OTHER_ZERO_VARIANCE": {
+        "count": 0,
+        "rate": 0.0
+      }
+    },
+    "bridge_activation_count": 0,
+    "bridge_activation_rate": 0.0,
+    "bridge_loss_range": null,
+    "weighted_bridge_contribution_range": null
+  },
+  "optimization": {
+    "loss_range": [
+      -0.02894183062016964,
+      0.00028963969089090824
+    ],
+    "grad_norm_range": [
+      0.023588674142956734,
+      0.2531088888645172
+    ],
+    "train_loss": -0.0029198999066769224,
+    "lora_delta_range": [
+      0.00027950378729713066,
+      0.00027950378729713066
+    ],
+    "base_delta_range": [
+      0.0,
+      0.0
+    ],
+    "optimizer_step_executed": true,
+    "parameter_updated": true
+  },
+  "nan_or_inf": false,
+  "oom": false,
+  "checkpoint": "/data/GRPO/outputs/smoke/GR-REC-CLAMP-BRIDGE-V1-SMOKE48-R2-20260821/checkpoint-48",
+  "training_stopped_at_step48": true,
+  "benchmark_started": false
+}
