@@ -230,6 +230,10 @@ with tempfile.TemporaryDirectory() as temporary:
         "renderRolloutCredit", "ensureExplorerAdvantages", "Sequence Advantage",
         "Token Credit", "查看完整优势详情", "优势载入中", "复算"
     ))
+    assert all(label in html for label in (
+        "历史实验奖励对比", "历史实验 1", "历史实验 2", "清空对比",
+        "updateRewardComparison", "historicalMetricCache", "当前粗实线，历史细虚线"
+    ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
@@ -302,7 +306,7 @@ with tempfile.TemporaryDirectory() as temporary:
         "latestTrace", "· 有样本",
         "/api/sample-context", "candidate trace 未落盘", "代表输入 1/",
         "captureMonitorScrollState", "restoreMonitorScrollState", "document.scrollingElement",
-        "userRefreshInFlight",
+        "userRefreshInFlight", "populateRewardCompareOptions",
     ))
     print("[PASS] User run-kind routing, fixed probes, green matches, and six dashboard views")
 

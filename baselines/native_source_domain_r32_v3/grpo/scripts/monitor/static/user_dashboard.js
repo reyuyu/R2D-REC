@@ -486,6 +486,7 @@
     const run = state.runs.find(item => item.run_id === state.activeRun);
     setText('experimentMeta', run ? `最新进度 ${run.latest_step ?? 0} / ${run.max_steps ?? '-'} · ${routeName(run.latest_route)}` : '当前类型没有可用实验');
     document.querySelectorAll('.kind-segment').forEach(button => button.classList.toggle('active', button.dataset.runKind === state.activeKind));
+    if (!isUserRun()) populateRewardCompareOptions();
   };
 
   loadRuns = async function() {
