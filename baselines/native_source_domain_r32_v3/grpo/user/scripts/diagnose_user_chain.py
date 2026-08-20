@@ -29,6 +29,7 @@ EXPECTED_FROZEN_SHA = {
     "probe_v1.jsonl": "dc86fc30776b39a715292d9f185fe1c38a56de718ae8ba865f166e50ee6f2d61",
 }
 CHECKPOINT_LABELS = ("C0", "C20", "C40")
+EVALUATION_LABELS = (*CHECKPOINT_LABELS, "Final")
 METRICS = ("total_reward", "action_alignment", "logic_alignment")
 CHAIN_KINDS = (
     "hallucinated_sid",
@@ -1149,7 +1150,7 @@ def main() -> None:
     build.add_argument("--manifest", type=Path, required=True)
 
     evaluate = subparsers.add_parser("evaluate")
-    evaluate.add_argument("--label", choices=CHECKPOINT_LABELS, required=True)
+    evaluate.add_argument("--label", choices=EVALUATION_LABELS, required=True)
     evaluate.add_argument("--base-model", type=Path, required=True)
     evaluate.add_argument("--adapter", type=Path, required=True)
     evaluate.add_argument("--probe", type=Path, required=True)

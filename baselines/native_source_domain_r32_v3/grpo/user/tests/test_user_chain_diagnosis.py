@@ -18,9 +18,27 @@ from diagnose_user_chain import (  # noqa: E402
     paired_deltas,
     quartile_for,
 )
+from finalize_user_full_epoch import readiness, validate_final_integrity  # noqa: E402
 
 
 class UserChainDiagnosisTest(unittest.TestCase):
+    def test_final_integrity_contract(self):
+        validate_final_integrity({
+            "label": "Final",
+            "candidate_count": 160,
+            "lora_checksum_unchanged": True,
+            "rng_restored": True,
+            "requires_grad_parameter_count": 0,
+        })
+        with self.assertRaises(RuntimeError):
+            validate_final_integrity({
+                "label": "Final",
+                "candidate_count": 159,
+                "lora_checksum_unchanged": True,
+                "rng_restored": True,
+                "requires_grad_parameter_count": 0,
+            })
+
     def test_largest_remainder_matches_train_chain_distribution(self):
         self.assertEqual(
             largest_remainder({"2": 225, "3": 825, "4": 375, "5": 75}, 40),
@@ -95,6 +113,27 @@ class UserChainDiagnosisTest(unittest.TestCase):
             self.assertNotIn(forbidden, source)
         self.assertIn("torch.inference_mode()", source)
         self.assertIn("model.requires_grad_(False)", source)
+
+    def test_full_epoch_readiness_requires_integrity_and_no_significant_collapse(self):
+        summary = {"integrity": {
+            "base_frozen": True,
+            "lora_updated": True,
+            "dataset_sha_unchanged": True,
+            "sample_coverage_exact": True,
+            "nan_or_inf": False,
+        }}
+        comparison = {"Final-C40": {"total_reward": {
+            "mean": -0.005,
+            "bootstrap_95pct_ci": [-0.02, 0.01],
+        }}}
+        self.assertEqual(readiness(summary, comparison), ("INTERNAL_READY_FOR_EXTERNAL_EVAL", []))
+        comparison["Final-C40"]["total_reward"] = {
+            "mean": -0.02,
+            "bootstrap_95pct_ci": [-0.03, -0.01],
+        }
+        status, failures = readiness(summary, comparison)
+        self.assertEqual(status, "INTERNAL_NOT_READY")
+        self.assertIn("significant_chain_total_collapse_vs_c40", failures)
 
 
 if __name__ == "__main__":
