@@ -40,6 +40,40 @@ Artifact:
 
 **R2 48-STEP OPTIMIZER SMOKE PASS / STOPPED AT STEP 48**
 
+## G8-anchored milestone baseline fix and 12-step smoke (2026-08-21)
+
+Commit `6c5f41254e3d8969fa9c71489c134310756ddc3c` fixes the NoThink
+baseline-scope bug. Domain/A/B/C milestone means are now computed over the
+complete G8, while token credit remains prefix-gated and Domain placement
+remains candidate-level earliest commitment with direct-SID fallback. All
+increments, scale, route multiplier, credited-token SUM reduction, bridge,
+PPO settings, and Think ExactClamp are unchanged.
+
+Exact CPU regressions A-J passed, including positive B credit for singleton AB
+success and positive B/C credit for singleton Exact success. Monitor events now
+record Domain/A/B/C stage-active booleans plus singleton B/C success-group
+booleans.
+
+The fresh four-A800 run
+`GR-REC-CLAMP-BRIDGE-V1-SMOKE12-G8BASE-20260821` completed exactly 12/12
+optimizer steps from original 8B plus fresh original BATA. It executed 8 Think
+G4 groups and 8 NoThink G8 groups. Domain/A/B/C active counts were `6/2/0/0`
+(`75%/25%/0%/0%`). No real singleton B or C group occurred in this short
+sample, so both observed singleton counts were zero; their behavior is covered
+by the exact CPU regressions.
+
+Loss range was `[-0.006651192903518677, 0.00007984426338225603]` and gradient
+norm range was `[0.07880621403455734, 0.17861153185367584]`. No NaN, Inf, OOM,
+or runtime exception occurred. Trainable LoRA delta was
+`0.000033886617558209764` on every rank and frozen base delta was exactly zero.
+The process stopped after step 12; formal 1500-step training was not started.
+
+Artifact:
+
+- [`../results/optimizer_smoke12_g8_baseline_20260821.json`](../results/optimizer_smoke12_g8_baseline_20260821.json)
+
+**G8-ANCHORED BASELINE 12-STEP SMOKE PASS / FORMAL TRAINING NOT STARTED**
+
 ## Phase 12: formal earliest Domain commitment credit (2026-08-21)
 
 The formal NoThink Domain stage now credits the earliest exact Domain
