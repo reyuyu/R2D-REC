@@ -63,8 +63,9 @@ Step 1500 的总分增量 `+0.0197` 和懂推荐合计增量 `+0.0206` 超过单
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | BETA-baseline | `1.3313` | `0.1807` | `0.2545` | `0.6594` | `0.2368` | - | 保守比较基线 |
 | GR_USER_v1 Step 240 | `1.3103` | `0.1780` | `0.2577` | `0.6375` | `0.2372` | `-0.0210` | 懂用户小幅上升，但推荐下降 `0.0219`，支持跨任务干扰 |
+| GR_USER_v1 Final 378 | `1.3146` | `0.1803` | `0.2572` | `0.6381` | `0.2390` | `-0.0167` | 相比 step240 回升 `0.0043`，推荐仍下降 `0.0213` |
 
-Step 240 的训练内固定 Probe 相比 step 40 改善，但外部总分下降。两者并不矛盾：固定 Probe 只覆盖 GR_USER 目标分布，外部评测同时检查 11 个任务；本次总分损失几乎全部来自未训练的 Recommendation。该步结果已记录在 [GR_USER full-epoch 文档](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md)；final step 378 尚无外部评测结果。
+Step 240 和 final 378 的训练内固定 Probe 均比 step 40 更好，但外部总分下降。两者并不矛盾：固定 Probe 只覆盖 GR_USER 目标分布，外部评测同时检查 11 个任务；两次外部评测的损失都集中在未训练的 Recommendation。Final 没有继续恶化，相对 step240 回升 `0.0043`，但也没有恢复推荐能力，因此完整 epoch 结果进一步支持跨任务干扰判断。详细结果见 [GR_USER full-epoch 文档](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md)。
 
 GRPO 记录入口：
 

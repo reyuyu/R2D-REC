@@ -85,4 +85,28 @@ The evaluator log started at `2026-08-20 12:22:33`, completed all 11 tasks with 
 
 The rounded group values sum to `1.3104`; the official aggregate is `1.3103` because aggregation uses unrounded metrics. The total decrease exceeds the repository's approximate `+/-0.01` single-run variation band and is concentrated in Recommendation, especially product (`0.1598 -> 0.1462`, `-0.0136`). User itself moved slightly upward (`+0.0032`), consistent in direction with the internal probe but much smaller than the internal probe improvement.
 
-This is therefore evidence of cross-task interference, not evidence that the GR_USER optimization failed on its own objective. The run used only User prompts and `beta=0.0`, so it had no explicit reference-model KL term protecting Recommendation behavior. Small LoRA movement can still change SID ranking on a different task. Step 240 is also not the final step 378; no external result for the final checkpoint is recorded here, so this result cannot establish the final checkpoint's external score.
+This is therefore evidence of cross-task interference, not evidence that the GR_USER optimization failed on its own objective. The run used only User prompts and `beta=0.0`, so it had no explicit reference-model KL term protecting Recommendation behavior. Small LoRA movement can still change SID ranking on a different task.
+
+## External evaluation: final step 378
+
+The external result reported for `full-epoch-final` took `2h40m32s` and is:
+
+```text
+aggregate:      1.3146
+material:       0.0520, 0.0351, 0.0514, 0.0418
+user:           0.1576, 0.0996
+recommendation: 0.1223, 0.1462, 0.2058, 0.1638
+world:          0.2390
+```
+
+| Group | BETA `1.3313` | Step 240 | Final 378 | Final vs BETA | Final vs Step 240 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Material | 0.1807 | 0.1780 | 0.1803 | -0.0004 | +0.0023 |
+| User | 0.2545 | 0.2577 | 0.2572 | +0.0027 | -0.0005 |
+| Recommendation | 0.6594 | 0.6375 | 0.6381 | -0.0213 | +0.0006 |
+| World | 0.2368 | 0.2372 | 0.2390 | +0.0022 | +0.0018 |
+| Aggregate | 1.3313 | 1.3103 | 1.3146 | -0.0167 | +0.0043 |
+
+The second half of training recovered `0.0043` aggregate points but did not recover Recommendation. User remained slightly above BETA, while Recommendation remained lower by `0.0213`; product stayed at `0.1462` and live decreased further to `0.1638`. This confirms that the step-240 result was not merely a bad intermediate checkpoint. It also shows no continued catastrophic drift from step 240 to final: the final result is modestly better overall, with nearly unchanged User and Recommendation group sums.
+
+The final scores and duration are user-provided in this record; unlike step 240, no evaluator log was supplied for an independent task-completion or checkpoint-identity audit.
