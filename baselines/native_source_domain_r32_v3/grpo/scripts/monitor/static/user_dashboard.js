@@ -13,12 +13,14 @@
   const recommendationRenderOverview = renderOverview;
   const recommendationRenderPerformance = renderPerformance;
   const recommendationRenderExplorer = renderExplorer;
+  const recommendationRenderExplorerOptions = renderExplorerOptions;
   const recommendationRenderTraceIndex = renderTraceIndex;
   const recommendationRenderProbes = renderProbes;
   const recommendationRenderDsr = renderDsr;
 
   state.allRuns = [];
   state.activeKind = RECOMMENDATION;
+  const userSampleContextCache = new Map();
 
   function isUserRun() {
     return state.manifest.run_kind === USER || state.capabilities.user_grpo === true;
@@ -274,6 +276,17 @@
     return points.length > 1 ? points.at(-1)[1] - points[0][1] : null;
   }
 
+  function renderUserSampleContext(selected, route) {
+    const prompt = String(selected.prompt || '当前记录没有可用输入样本');
+    const gold = route === 'chain'
+      ? JSON.stringify(selected.gold_events || [], null, 2)
+      : (selected.gold_sids || []).join('\n');
+    return `<section class="user-probe-context" aria-label="${route === 'chain' ? 'Chain' : 'Action'} 样本上下文">
+      <div class="probe-context-block"><div class="probe-context-title">输入样本</div><pre>${escapeHtml(prompt)}</pre></div>
+      <div class="probe-context-block"><div class="probe-context-title">Ground Truth · ${route === 'chain' ? 'Chain Events' : 'Action SIDs'}</div><pre>${escapeHtml(gold || '-')}</pre></div>
+    </section>`;
+  }
+
   function renderUserProbe() {
     const actionF1 = userProbePoints('action', 'action.f1_mean');
     const actionP = userProbePoints('action', 'action.precision_mean');
@@ -308,20 +321,35 @@
     if (available.some(row => String(row.step) === oldStep)) $('userProbeStep').value = oldStep;
     const selected = available.find(row => String(row.step) === $('userProbeStep').value) || available.at(-1);
     if (!selected) { $('userProbeDetail').innerHTML = '<div class="empty">没有可展示的固定 Probe 样例</div>'; return; }
+    const source = available.find(row => row.prompt) || selected;
     const score = route === 'action'
       ? `F1 ${fmt(selected.action?.f1_mean)} · P ${fmt(selected.action?.precision_mean)} · R ${fmt(selected.action?.recall_mean)}`
       : `Total ${fmt(selected.chain?.total_reward_mean)} · Action ${fmt(selected.chain?.action_alignment_mean)} · Logic ${fmt(selected.chain?.logic_alignment_mean)}`;
-    $('userProbeDetail').innerHTML = `<div class="trace-head">Step ${selected.step} · ${score}<span class="candidate-count">${selected.candidates?.length || 0}/4 candidates</span></div><div class="trace user-trace">${(selected.candidates || []).map(candidate => renderUserCandidate(candidate, route)).join('')}</div>`;
+    $('userProbeDetail').innerHTML = `<div class="trace-head">Step ${selected.step} · ${score}<span class="candidate-count">${selected.candidates?.length || 0}/4 candidates</span></div>${renderUserSampleContext({...selected, prompt: source.prompt}, route)}<div class="trace user-trace">${(selected.candidates || []).map(candidate => renderUserCandidate(candidate, route)).join('')}</div>`;
   }
 
   function renderUserTraceIndex() {
     const current = Number($('rolloutSelect').value);
     const lane = route => {
       const traces = state.traces.filter(trace => trace.route === route).sort((a, b) => a.rollout_id - b.rollout_id);
-      const links = traces.length ? traces.map(trace => `<button class="trace-link ${trace.rollout_id === current ? 'active' : ''}" type="button" data-rollout-id="${trace.rollout_id}" data-route="${route}">第 ${trace.step ?? '-'} 步 · #${trace.rollout_id} · ${trace.candidates?.length ?? 0} candidates</button>`).join('') : '<span class="trace-none">尚无记录</span>';
+      const rolloutCount = state.rollouts.filter(rollout => rollout.route === route).length;
+      const links = traces.length ? traces.map(trace => `<button class="trace-link ${trace.rollout_id === current ? 'active' : ''}" type="button" data-rollout-id="${trace.rollout_id}" data-route="${route}">第 ${trace.step ?? '-'} 步 · #${trace.rollout_id} · ${trace.candidates?.length ?? 0} candidates</button>`).join('') : `<span class="trace-none">${rolloutCount ? `${rolloutCount} 条汇总 · candidate trace 未落盘` : '尚无记录'}</span>`;
       return `<div class="trace-lane"><div class="trace-lane-title ${route === 'action' ? 'user-route-action' : 'user-route-chain'}">${routeName(route)}</div><div class="trace-links">${links}</div></div>`;
     };
     $('traceIndex').innerHTML = lane('action') + lane('chain');
+  }
+
+  function requestUserSampleContext(sampleId) {
+    const key = `${state.activeRun}:${sampleId}`;
+    if (userSampleContextCache.has(key)) return;
+    userSampleContextCache.set(key, null);
+    fetch(`${apiUrl('/api/sample-context')}&sample_id=${encodeURIComponent(sampleId)}`, {cache: 'no-store'})
+      .then(response => response.ok ? response.json() : null)
+      .then(context => {
+        userSampleContextCache.set(key, context || false);
+        if (isUserRun() && String($('rolloutSelect').value)) renderUserExplorer();
+      })
+      .catch(() => userSampleContextCache.set(key, false));
   }
 
   function renderUserExplorer() {
@@ -341,13 +369,41 @@
     $('rolloutSummary').innerHTML = stats.map(([label, value]) => `<div class="stat"><div class="label">${label}</div><div class="value small">${escapeHtml(value)}</div></div>`).join('');
     const trace = state.traces.find(row => row.rollout_id === id && (!route || row.route === route));
     if (!trace) {
-      $('trace').innerHTML = '<div class="empty">当前 rollout 没有被动 trace；训练不受影响</div>';
+      const sampleIds = Array.isArray(rollout.group_ids) ? rollout.group_ids : [];
+      const sampleId = sampleIds[0];
+      const contextKey = sampleId ? `${state.activeRun}:${sampleId}` : '';
+      const context = contextKey ? userSampleContextCache.get(contextKey) : false;
+      if (sampleId && !userSampleContextCache.has(contextKey)) requestUserSampleContext(sampleId);
+      const contextHtml = context
+        ? `<div class="trace-head">代表输入 1/${sampleIds.length} · ${escapeHtml(sampleId.slice(0, 12))}</div>${renderUserSampleContext(context, rollout.route)}`
+        : context === false
+          ? '<div class="empty">该汇总没有可恢复的输入上下文。</div>'
+          : '<div class="empty">正在读取该 rollout 的代表输入...</div>';
+      $('trace').innerHTML = `<div class="empty">该时间步保存了 rollout 汇总，但未保存 candidate trace，因此没有历史候选输出可展示。</div>${contextHtml}`;
       return;
     }
     const candidates = Array.isArray(trace.candidates) ? trace.candidates : [];
     const expected = Number(state.manifest.G || 4);
     $('trace').classList.add('user-trace');
-    $('trace').innerHTML = `<div class="trace-head">${escapeHtml(trace.group_id || '-')} · ${escapeHtml(routeName(trace.route))}<span class="candidate-count ${candidates.length === expected ? '' : 'incomplete'}">${candidates.length}/${expected} candidates</span></div>${candidates.map(candidate => renderUserCandidate(candidate, trace.route)).join('') || '<div class="empty">trace 中没有 candidate</div>'}`;
+    $('trace').innerHTML = `<div class="trace-head">${escapeHtml(trace.group_id || '-')} · ${escapeHtml(routeName(trace.route))}<span class="candidate-count ${candidates.length === expected ? '' : 'incomplete'}">${candidates.length}/${expected} candidates</span></div>${renderUserSampleContext(trace, trace.route)}${candidates.map(candidate => renderUserCandidate(candidate, trace.route)).join('') || '<div class="empty">trace 中没有 candidate</div>'}`;
+  }
+
+  function renderUserExplorerOptions() {
+    const select = $('rolloutSelect');
+    const current = select.value;
+    const traceIds = new Set(state.traces.map(trace => Number(trace.rollout_id)));
+    select.innerHTML = [...state.rollouts].reverse().map(rollout => {
+      const recorded = traceIds.has(Number(rollout.rollout_id));
+      return `<option value="${rollout.rollout_id}">#${rollout.rollout_id} · ${escapeHtml(routeName(rollout.route))} · 第 ${rollout.step} 步${recorded ? ' · 有样本' : ''}</option>`;
+    }).join('');
+    if (current && [...select.options].some(option => option.value === current)) {
+      select.value = current;
+    } else {
+      const latestTrace = [...state.traces].sort((a, b) => Number(b.rollout_id) - Number(a.rollout_id))[0];
+      if (latestTrace) select.value = String(latestTrace.rollout_id);
+    }
+    renderTraceIndex();
+    renderExplorer();
   }
 
   function configureNavigation() {
@@ -442,6 +498,7 @@
 
   renderTraceIndex = function() { isUserRun() ? renderUserTraceIndex() : recommendationRenderTraceIndex(); };
   renderExplorer = function() { isUserRun() ? renderUserExplorer() : recommendationRenderExplorer(); };
+  renderExplorerOptions = function() { isUserRun() ? renderUserExplorerOptions() : recommendationRenderExplorerOptions(); };
 
   refresh = async function(force = false) {
     if (!autoRefresh && !force) return;
