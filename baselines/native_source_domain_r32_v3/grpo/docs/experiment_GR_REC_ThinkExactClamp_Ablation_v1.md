@@ -2,9 +2,9 @@
 
 ## Status and history
 
-**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
+**G8 ZERO-STEP GPU GRADIENT AUDIT COMPLETED**
 
-**GPU NOT USED / TRAINING NOT STARTED**
+**GPU AUDIT ONLY / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
@@ -14,6 +14,8 @@
   Hierarchical Token Credit.
 - Phase 4 current: adds a standalone zero-step GPU gradient audit harness; the
   formal trainer, objectives and runner contract are unchanged.
+- Phase 5 current: records the authorized eight-group zero-step GPU audit and
+  its unchanged-parameter checksum evidence.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -136,6 +138,45 @@ The execution flag `--execute-zero-step-gpu-audit` is mandatory. Its presence
 only enables generation plus isolated forward/backward; it does not authorize
 training, checkpoint writes, or any parameter update.
 
+## G8 GPU audit result (2026-08-21)
+
+The authorized audit used one A800 (`cuda:0`), seed `20260816`, the original
+8B base and the fresh original BATA adapter. It audited eight real NoThink G8
+groups and then stopped. The first launch reached no completed group and failed
+closed on activation-memory OOM; the completed run used non-reentrant gradient
+checkpointing and shared RNG state for the old/legacy/hierarchical forwards.
+Neither run constructed an optimizer or performed a parameter update.
+
+Result artifact:
+[`../results/gpu_gradient_scale_audit_g8_seed20260816_20260821.json`](../results/gpu_gradient_scale_audit_g8_seed20260816_20260821.json)
+
+Key aggregate results:
+
+| Metric | Result |
+|---|---:|
+| Audited real G8 groups | 8 |
+| Median `hier_over_legacy` (7 defined) | `0.0` |
+| Mean `hier_over_legacy` | `0.1104712968` |
+| Median legacy/hier cosine (2 defined) | `0.3411243334` |
+| Median active hierarchical gradient norm | `0.1886301152` |
+| Real `[0]*8` groups | 0 |
+
+Six groups had no active hierarchical stage, one activated A+B, and one
+activated A only. Consequently the formal heuristic flag is
+`HIER_GRAD_TOO_SMALL_REVIEW`. This is a preflight review result, not an
+automatic coefficient change. No real `[0]*8` group appeared, so the bridge
+conclusion is `BRIDGE SCALE NOT OBSERVED`; no rewards were synthesized and the
+audit was not extended to sixteen groups.
+
+The trainable-LoRA SHA256 checksum was identical before and after:
+
+```text
+b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
+```
+
+Thus `PARAMETER CHANGE = ZERO`, `optimizer.step = NO`, and
+`scheduler.step = NO`.
+
 ## Frozen runner contract
 
 The runner is not restructured. Prefix remains `GR-REC-CLAMP-BRIDGE-V1-`,
@@ -145,6 +186,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
+**G8 ZERO-STEP GPU GRADIENT AUDIT COMPLETED**
 
-**GPU NOT USED / TRAINING NOT STARTED**
+**GPU AUDIT ONLY / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
