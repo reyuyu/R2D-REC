@@ -115,7 +115,7 @@ class MCRolloutContractTests(unittest.TestCase):
         self.assertEqual(result["candidate_count"], 2)
         self.assertEqual(result["completions"], completions)
         self.assertEqual([row["sample_id"] for row in result["expanded_rows"]], ["action-1", "action-1"])
-        self.assertEqual(tokenizer.decode_skip_special_tokens, [False, False])
+        self.assertEqual(tokenizer.decode_skip_special_tokens, [False] * 6)
         self.assertEqual(result["valid_candidate_rate"], 1.0)
         self.assertEqual(result["positive_unit_count"], 3)
         self.assertEqual(result["negative_unit_count"], 1)

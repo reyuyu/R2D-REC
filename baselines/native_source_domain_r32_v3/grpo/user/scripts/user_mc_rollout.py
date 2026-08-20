@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import copy
 from collections import Counter
 from typing import Any, Mapping, Sequence
 
 from user_marginal_credit import action_marginal_credit, chain_marginal_credit
+from user_mc_projection import project_mc_credit_units_to_generated
 from user_span_attribution import TokenSpanMapper
 
 
@@ -93,7 +95,9 @@ def prepare_mc_scored_rollout(
     normalized_ids = [_as_id_list(ids) for ids in completion_ids_list]
     completions: list[str] = []
     marginal_results: list[dict[str, Any]] = []
+    canonical_credit_units_per_candidate: list[list[dict[str, Any]]] = []
     credit_units_per_candidate: list[list[dict[str, Any]]] = []
+    projection_per_candidate: list[dict[str, Any]] = []
     type_counts: Counter[str] = Counter()
     valid_count = 0
     marginal_scorer = action_marginal_credit if route == "action" else chain_marginal_credit
@@ -103,18 +107,34 @@ def prepare_mc_scored_rollout(
         marginal_result = marginal_scorer(completion, row)
         if marginal_result["valid"]:
             mapper = TokenSpanMapper(tokenizer, completion)
-            units = (
+            canonical_units = (
                 _action_units(marginal_result, mapper)
                 if route == "action"
                 else _chain_units(marginal_result, mapper)
             )
             valid_count += 1
         else:
-            units = []
+            canonical_units = []
+        projection = project_mc_credit_units_to_generated(
+            completion,
+            canonical_units,
+            completion_ids,
+            tokenizer,
+        )
+        units = projection["projected_units"]
         type_counts.update(unit["credit_type"] for unit in units)
         completions.append(completion)
         marginal_results.append(marginal_result)
+        canonical_credit_units_per_candidate.append(copy.deepcopy(canonical_units))
         credit_units_per_candidate.append(units)
+        projection_per_candidate.append(
+            {
+                "projection_required": projection["projection_required"],
+                "opcodes": projection["opcodes"],
+                "canonical_token_count": len(projection["canonical_ids"]),
+                "generated_token_count": len(projection["generated_ids"]),
+            }
+        )
 
     candidate_count = len(expanded_rows)
     statistics = {
@@ -127,13 +147,15 @@ def prepare_mc_scored_rollout(
     return {
         "route": route,
         "K": K,
-        "token_span_space": "canonical_decoded_completion",
+        "token_span_space": "generated_completion_ids",
         "expanded_rows": expanded_rows,
         "completions": completions,
         "completion_ids_list": normalized_ids,
         "scores": marginal_results,
         "marginal_results": marginal_results,
+        "canonical_credit_units_per_candidate": canonical_credit_units_per_candidate,
         "credit_units_per_candidate": credit_units_per_candidate,
+        "projection_per_candidate": projection_per_candidate,
         "statistics": statistics,
         **statistics,
     }
