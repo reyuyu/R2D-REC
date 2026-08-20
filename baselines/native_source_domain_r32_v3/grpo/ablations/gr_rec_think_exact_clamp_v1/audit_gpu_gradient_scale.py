@@ -22,9 +22,10 @@ from grpo_sid import final_sid, parse_sid, q_reward
 from grpo_trl_trainer import M_NO, ROUTE_LOSS_W, build_route_dataset
 from nothink_bridge import BRIDGE_LAMBDA, require_single_token, uniform_multi_positive_ce
 from nothink_hierarchical_credit import (
+    apply_domain_text_alignment_gate,
     conditional_hierarchical_credits,
-    find_final_sid_token_positions,
     hierarchy_state,
+    locate_text_domain_token,
 )
 from run_grpo_trl_smoke import DATA
 
@@ -76,24 +77,51 @@ def legacy_advantages(rewards, device) -> torch.Tensor:
     return (values - values.mean()) / (values.std(correction=0) + 1e-4)
 
 
-def hierarchical_token_advantages(batch: RolloutBatch, tokenizer) -> tuple[torch.Tensor, list]:
+def hierarchical_token_advantages(batch: RolloutBatch, tokenizer) -> tuple[torch.Tensor, list, dict]:
     states = [
         hierarchy_state(sid, batch.gold_sids, batch.target_domain)
         for sid in batch.predicted_sids
     ]
-    credits = conditional_hierarchical_credits(states)
+    alignments = [
+        locate_text_domain_token(candidate_ids, sid, tokenizer) if sid is not None else None
+        for sid, candidate_ids in zip(batch.predicted_sids, batch.completion_ids_list)
+    ]
+    domain_text_alignment_valid = all(
+        not state.valid or (alignment is not None and alignment.valid)
+        for state, alignment in zip(states, alignments)
+    )
+    credits = apply_domain_text_alignment_gate(
+        conditional_hierarchical_credits(states), domain_text_alignment_valid
+    )
     token_advantages = torch.zeros_like(batch.completion_ids, dtype=torch.float32)
-    for row, (sid, candidate_ids, candidate_credit) in enumerate(
-        zip(batch.predicted_sids, batch.completion_ids_list, credits)
+    for row, (sid, alignment, candidate_credit) in enumerate(
+        zip(batch.predicted_sids, alignments, credits)
     ):
         if sid is None:
             if any(value != 0 for value in candidate_credit):
                 raise RuntimeError("invalid SID received nonzero hierarchical credit")
             continue
-        positions = find_final_sid_token_positions(candidate_ids, sid, tokenizer)
+        positions = alignment.hierarchy_token_positions
         for value, position in zip(candidate_credit, positions):
+            if position is None:
+                if value != 0:
+                    raise RuntimeError("nonzero hierarchy credit has no token position")
+                continue
             token_advantages[row, position] = value
-    return token_advantages, credits
+    diagnostics = {
+        "domain_text_alignment_valid": domain_text_alignment_valid,
+        "text_domains": [alignment.text_domain if alignment else None for alignment in alignments],
+        "text_domain_token_positions": [
+            alignment.text_domain_token_position if alignment else None
+            for alignment in alignments
+        ],
+        "sid_domain_token_positions": [
+            alignment.sid_domain_token_position if alignment else None
+            for alignment in alignments
+        ],
+        "alignment_failures": [alignment.failure if alignment else "invalid_sid" for alignment in alignments],
+    }
+    return token_advantages, credits, diagnostics
 
 
 def completion_logps(model, batch: RolloutBatch) -> torch.Tensor:
@@ -222,7 +250,7 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
         old_logps = completion_logps(model, batch).detach()
     legacy_scalar = legacy_advantages(batch.rewards, batch.input_ids.device)
     legacy_tokens = legacy_scalar.unsqueeze(1).expand_as(batch.completion_mask)
-    hierarchical_tokens, credits = hierarchical_token_advantages(batch, tokenizer)
+    hierarchical_tokens, credits, alignment = hierarchical_token_advantages(batch, tokenizer)
 
     legacy_norm, legacy_vector = isolated_gradient(
         model, parameters,
@@ -259,6 +287,7 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
             "b": sum(value != 0 for value in columns[2]),
             "c": sum(value != 0 for value in columns[3]),
         },
+        **alignment,
         "dead_zero_bridge_active": batch.rewards == (0.0,) * M_NO,
         "bridge_raw_grad_norm": None,
         "bridge_weighted_grad_norm": None,

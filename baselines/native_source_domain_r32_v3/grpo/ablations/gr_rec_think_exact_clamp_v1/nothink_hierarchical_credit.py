@@ -1,4 +1,4 @@
-"""Conditional hierarchy-state credit for NoThink final SID tokens."""
+"""Conditional hierarchy-state credit and NoThink decision-token placement."""
 
 from __future__ import annotations
 
@@ -8,6 +8,12 @@ from typing import Iterable, Sequence
 
 HIERARCHY_SCALE = 8.0
 STAGE_INCREMENTS = (0.25, 0.5, 1.5, 6.0)
+TEXT_DOMAIN_SPANS = {
+    "video": "视频",
+    "prod": "商品",
+    "ad": "广告",
+    "living": "主播",
+}
 
 
 @dataclass(frozen=True)
@@ -17,6 +23,28 @@ class HierarchyState:
     a_correct: bool
     ab_correct: bool
     exact: bool
+
+
+@dataclass(frozen=True)
+class DomainTextAlignment:
+    """Token-level alignment between the semantic domain decision and final SID."""
+
+    text_domain: str | None
+    text_domain_token_position: int | None
+    sid_domain: str
+    sid_domain_token_position: int
+    sid_token_positions: tuple[int, int, int, int]
+    valid: bool
+    failure: str | None
+
+    @property
+    def hierarchy_token_positions(self) -> tuple[int | None, int, int, int]:
+        return (
+            self.text_domain_token_position,
+            self.sid_token_positions[1],
+            self.sid_token_positions[2],
+            self.sid_token_positions[3],
+        )
 
 
 def hierarchy_state(final_sid, gold_sids: Iterable[Sequence], target_domain: str) -> HierarchyState:
@@ -57,6 +85,15 @@ def conditional_hierarchical_credits(
     return [tuple(row) for row in credits]
 
 
+def apply_domain_text_alignment_gate(
+    credits: Sequence[tuple[float, float, float, float]], alignment_valid: bool,
+) -> list[tuple[float, float, float, float]]:
+    """Disable only the Domain stage when a G8 text/SID alignment is unsafe."""
+    if alignment_valid:
+        return [tuple(row) for row in credits]
+    return [(0.0, row[1], row[2], row[3]) for row in credits]
+
+
 def find_final_sid_token_positions(
     completion_ids: Sequence[int], final_sid, tokenizer,
 ) -> tuple[int, int, int, int]:
@@ -81,3 +118,59 @@ def find_final_sid_token_positions(
         if ids[start:start + 4] == block:
             return start, start + 1, start + 2, start + 3
     raise RuntimeError("parsed final SID has no matching contiguous token block")
+
+
+def locate_text_domain_token(
+    completion_ids: Sequence[int], final_sid, tokenizer,
+) -> DomainTextAlignment:
+    """Locate the last natural-language Domain span before the final SID block.
+
+    Search is token-native and restricted to the region after the last
+    ``</think>`` and before the final contiguous Domain/A/B/C SID block.
+    Missing or mismatched text is returned as an invalid alignment; callers
+    must not fall back to the SID Domain token.
+    """
+    sid_positions = find_final_sid_token_positions(completion_ids, final_sid, tokenizer)
+    sid_domain = str(final_sid[0])
+    ids = [int(value) for value in completion_ids]
+    close_ids = [int(value) for value in tokenizer.encode("</think>", add_special_tokens=False)]
+    if not close_ids:
+        raise RuntimeError("</think> must encode to at least one token")
+    close_starts = [
+        start
+        for start in range(0, sid_positions[0] - len(close_ids) + 1)
+        if ids[start:start + len(close_ids)] == close_ids
+    ]
+    if not close_starts:
+        return DomainTextAlignment(
+            None, None, sid_domain, sid_positions[0], sid_positions,
+            False, "missing_think_close_before_final_sid",
+        )
+    search_start = close_starts[-1] + len(close_ids)
+
+    token_to_domain = {}
+    for domain, span in TEXT_DOMAIN_SPANS.items():
+        encoded = tokenizer.encode(span, add_special_tokens=False)
+        if len(encoded) != 1:
+            raise RuntimeError(f"text Domain span must encode singly: {span!r} -> {encoded}")
+        token_id = int(encoded[0])
+        if token_id in token_to_domain:
+            raise RuntimeError("text Domain spans must have distinct token ids")
+        token_to_domain[token_id] = domain
+
+    occurrences = [
+        (position, token_to_domain[token_id])
+        for position, token_id in enumerate(ids[search_start:sid_positions[0]], search_start)
+        if token_id in token_to_domain
+    ]
+    if not occurrences:
+        return DomainTextAlignment(
+            None, None, sid_domain, sid_positions[0], sid_positions,
+            False, "missing_text_domain_before_final_sid",
+        )
+    position, text_domain = occurrences[-1]
+    valid = text_domain == sid_domain
+    return DomainTextAlignment(
+        text_domain, position, sid_domain, sid_positions[0], sid_positions,
+        valid, None if valid else "text_sid_domain_mismatch",
+    )

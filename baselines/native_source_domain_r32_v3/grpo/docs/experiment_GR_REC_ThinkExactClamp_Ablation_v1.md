@@ -2,9 +2,9 @@
 
 ## Status and history
 
-**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED**
+**TEXT-DOMAIN DECISION-TOKEN PLACEMENT CPU VERIFIED**
 
-**FINGERPRINT PARITY 8/8 / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**GPU RE-AUDIT NOT RUN / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
@@ -20,8 +20,13 @@
   its unchanged-parameter checksum evidence.
 - Phase 6 `9a5bbb2c989cb0a805b641e843698fc0fe0f135e`: adds the GPU-evidenced
   Domain token-credit stage before the unchanged A/B/C stages.
-- Phase 7 current: records the strictly paired eight-group Domain-stage
-  zero-step GPU re-audit and comparison.
+- Phase 7 `1752ac7069b5b715911274339ecfe9915a71a665`: records the strictly
+  paired eight-group SID-Domain-stage zero-step GPU re-audit and comparison.
+- Phase 8 `efe7dc02ba833b9b19519e2a01eab19d8857d8f1`: audits the real NoThink
+  SFT and historical rollout Domain decision span without GPU execution.
+- Phase 9 current: moves the unchanged Domain advantage from final SID
+  `<|domain_begin|>` serialization to the preceding natural-language Domain
+  decision token; A/B/C and the dead-zero bridge remain unchanged.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -56,6 +61,13 @@ C_adv = 6 * (exact - mean(exact | ab_correct)) / 8
 Ineligible candidates receive zero for that stage. A stage with no indicator
 variance is exactly zero.
 
+The Domain formula is unchanged, but its placement is gated by token-native
+text/SID alignment. For every valid candidate, the last `视频` / `商品` / `广告` /
+`主播` token after `</think>` and before the final SID must exist and match the
+final SID domain. Any missing or mismatched valid candidate zeroes only the
+entire G8 Domain column. There is no fallback to `<|domain_begin|>`; A/B/C are
+still computed normally.
+
 For `[-.25,0,-.25,-.25,-.25,0,-.25,-.25]`, with all candidates
 valid, the two correct-domain candidates receive Domain credit `.0234375` and
 the six wrong-domain candidates receive `-.0078125`. A/B/C are all zero.
@@ -76,18 +88,27 @@ already-correct AB is not penalized at B for a wrong C. No validity stage is
 introduced. Uniform `[-.25]*8` remains the recorded
 `ALL_WRONG_DOMAIN_ZERO_SIGNAL` boundary.
 
-## Final SID token assignment
+## Decision-token assignment
 
-The implementation finds the last contiguous token block matching the parsed
-final SID:
+The implementation first finds the last contiguous token block matching the
+parsed final SID:
 
 ```text
 [domain_token, a_token, b_token, c_token]
 ```
 
-It writes Domain/A/B/C credit only to the corresponding Domain/A/B/C
-completion-token positions. Every other token has zero advantage. A parsed
-final SID without a matching contiguous block fails closed.
+It then searches `completion_ids`, not string offsets, after the last
+`</think>` and before that SID block. The final recognized natural-language
+Domain token is the Domain position. Credit placement is therefore:
+
+```text
+[text_domain_token, sid_a_token, sid_b_token, sid_c_token]
+```
+
+The final SID `<|domain_begin|>` position always has zero Domain advantage.
+Every other token also has zero advantage. A parsed final SID without a
+matching contiguous block fails closed; missing or mismatched text Domain uses
+the group-level Domain-only gate described above.
 
 The parent population-std scalar advantage is still computed and retained for
 debugging, but it is not consumed by the NoThink loss.
@@ -120,8 +141,10 @@ teacher, B query and B teacher forward are absent from current code.
 Tests cover the required mixed archetype; A-only, B-only and C-only variance;
 uniform `.5`, `2`, `8`, and `0` groups; correct-prefix invariants; hierarchy
 state derivation; global G8-to-rank row alignment; last contiguous final-SID
-matching and fail-close; token-only tensor writes; sequence-advantage exclusion;
-dead-zero bridge gating; and uniform Gold-A CE.
+matching; real-tokenizer four-domain text placement; SID-Domain zero placement;
+G8 mismatch/missing Domain gating; unchanged A/B/C values; token-only tensor
+writes; sequence-advantage exclusion; dead-zero bridge gating; and uniform
+Gold-A CE.
 
 Think ExactClamp regression and the baseline TRL structure suite must continue
 to pass before any future GPU validation.
@@ -144,7 +167,8 @@ scheduler is constructed and the harness contains no `.step()` call.
 The default audit is eight independently generated G8 groups and can be set
 from one to sixteen. Per-group output includes reward topology, norms, ratio,
 cosine, active hierarchy stages, credited Domain/A/B/C token counts, bridge activity,
-and the rollout fingerprint. Aggregate output includes median/mean/min/max. A
+text/SID alignment diagnostics, and the rollout fingerprint. Aggregate output
+includes median/mean/min/max. A
 real all-zero bridge is compared with the median nonzero hierarchical norm from
 other audited groups. Ratios outside `0.25x..4x` and bridge ratios above `20%`
 are flagged for review only; the harness never changes coefficients.
@@ -195,6 +219,10 @@ Thus `PARAMETER CHANGE = ZERO`, `optimizer.step = NO`, and
 `scheduler.step = NO`.
 
 ## Domain-stage paired G8 re-audit (2026-08-21)
+
+This section is historical evidence for the Phase 6/7 SID-Domain placement.
+The current Phase 9 harness now places Domain credit on the natural-language
+decision token. No GPU re-audit of Phase 9 has been run.
 
 The re-audit used the same one-A800 execution contract, seed `20260816`, G8
 sampling parameters, original 8B base, fresh original BATA adapter,
@@ -249,6 +277,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED**
+**TEXT-DOMAIN DECISION-TOKEN PLACEMENT CPU VERIFIED**
 
-**FINGERPRINT PARITY 8/8 / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**GPU RE-AUDIT NOT RUN / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**

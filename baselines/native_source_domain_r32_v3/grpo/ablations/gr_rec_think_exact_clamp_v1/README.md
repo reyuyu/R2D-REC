@@ -3,9 +3,15 @@
 Current experiment components:
 
 - Think G4: Centered Exact-Clamp.
-- NoThink G8: Conditional Hierarchical Token Credit on the final SID
-  Domain/A/B/C token positions.
+- NoThink G8: Conditional Hierarchical Token Credit on the sampled natural-language
+  Domain decision token followed by the final SID A/B/C token positions.
 - NoThink exact `[0]*8`: Gold-A dead-zero teacher bridge with lambda `0.02`.
+
+NoThink Domain credit is written to the last `视频` / `商品` / `广告` / `主播`
+token after `</think>` and before the final SID. The final SID
+`<|domain_begin|>` token receives zero Domain credit. If any valid G8 candidate
+is missing this text token or its text/SID domains disagree, Domain credit is
+zeroed for the entire G8 while A/B/C continue unchanged.
 
 The former `a_collapse_ab_bridge`, missing-A teacher and current-path Gold-B
 teacher were removed after commit
@@ -41,6 +47,8 @@ groups, accepts up to sixteen, and records only trainable LoRA gradients. Do not
 run it until GPU execution is separately authorized.
 
 The paired Domain-stage G8 re-audit is recorded in `../../results/` with full
-fingerprint parity and unchanged trainable-parameter checksums.
+fingerprint parity and unchanged trainable-parameter checksums. Those historical
+gradients used SID-Domain placement. The harness now uses text-Domain placement,
+but no new GPU audit has been executed.
 
-**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED / TRAINING NOT STARTED**
+**TEXT-DOMAIN PLACEMENT CPU VERIFIED / GPU RE-AUDIT NOT RUN / TRAINING NOT STARTED**

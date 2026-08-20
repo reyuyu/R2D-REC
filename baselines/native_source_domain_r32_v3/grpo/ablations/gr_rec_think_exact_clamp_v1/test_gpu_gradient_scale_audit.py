@@ -21,6 +21,11 @@ class TinyTokenizer:
     pad_token_id = 0
     eos_token_id = 0
     mapping = {
+        "</think>": 2,
+        "商品": 3,
+        "视频": 4,
+        "广告": 5,
+        "主播": 6,
         "<|prod_begin|>": 10,
         "<|video_begin|>": 20,
         "<s_a_1>": 11,
@@ -38,7 +43,7 @@ class TinyTokenizer:
 class TinyAdapterModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.lora_logits = torch.nn.Parameter(torch.zeros((8, 5, 64)))
+        self.lora_logits = torch.nn.Parameter(torch.zeros((8, 7, 64)))
         self.frozen_base = torch.nn.Parameter(torch.ones(3), requires_grad=False)
         self.input_pointers = []
 
@@ -53,10 +58,10 @@ class TinyAdapterModel(torch.nn.Module):
 
 tokenizer = TinyTokenizer()
 completion_ids_list = (
-    (10, 19, 29, 39),
-    (10, 11, 29, 39),
-    (10, 11, 12, 39),
-    (10, 11, 12, 13),
+    (2, 3, 10, 19, 29, 39),
+    (2, 3, 10, 11, 29, 39),
+    (2, 3, 10, 11, 12, 39),
+    (2, 3, 10, 11, 12, 13),
 ) * 2
 completion_ids = torch.tensor(completion_ids_list, dtype=torch.long)
 prompt_ids = (1,)
@@ -86,8 +91,9 @@ batch = audit.RolloutBatch(
 # Pure objective construction matches the formal legacy and hierarchy contracts.
 legacy = audit.legacy_advantages(batch.rewards, "cpu")
 assert legacy.shape == (8,) and abs(float(legacy.mean())) < 1e-6
-hierarchical, credits = audit.hierarchical_token_advantages(batch, tokenizer)
+hierarchical, credits, alignment = audit.hierarchical_token_advantages(batch, tokenizer)
 assert hierarchical.shape == completion_ids.shape
+assert alignment["domain_text_alignment_valid"] is True
 assert credits[0] == (0.0, -0.046875, 0.0, 0.0)
 assert credits[1] == (0.0, 0.015625, -0.125, 0.0)
 assert credits[2] == (0.0, 0.015625, 0.0625, -0.375)
@@ -95,7 +101,8 @@ assert credits[3] == (0.0, 0.015625, 0.0625, 0.375)
 
 # The audit consumes Domain/A/B/C credit and reports the Domain stage.
 domain_completion_ids_list = tuple(
-    (10, 19, 29, 39) if index in {1, 5} else (20, 19, 29, 39)
+    (2, 3, 10, 19, 29, 39) if index in {1, 5}
+    else (2, 4, 20, 19, 29, 39)
     for index in range(8)
 )
 domain_completion_ids = torch.tensor(domain_completion_ids_list, dtype=torch.long)
@@ -116,18 +123,55 @@ domain_batch = replace(
         for index in range(8)
     ),
 )
-domain_token_advantages, domain_credits = audit.hierarchical_token_advantages(
+domain_token_advantages, domain_credits, domain_alignment = audit.hierarchical_token_advantages(
     domain_batch, tokenizer
 )
+assert domain_alignment["domain_text_alignment_valid"] is True
 assert [row[0] for row in domain_credits] == [
     -0.0078125, 0.0234375, -0.0078125, -0.0078125,
     -0.0078125, 0.0234375, -0.0078125, -0.0078125,
 ]
 torch.testing.assert_close(
-    domain_token_advantages[:, 0],
+    domain_token_advantages[:, 1],
     torch.tensor([row[0] for row in domain_credits]),
 )
-assert torch.count_nonzero(domain_token_advantages[:, 1:]) == 0
+assert torch.count_nonzero(domain_token_advantages[:, 2]) == 0  # SID Domain serialization
+assert torch.count_nonzero(domain_token_advantages[:, 3:]) == 0
+
+# One text/SID mismatch or missing text span gates Domain for the whole G8.
+mismatch_ids = list(domain_completion_ids_list)
+mismatch_ids[1] = (2, 4, 10, 19, 29, 39)
+mismatch_tensor = torch.tensor(mismatch_ids, dtype=torch.long)
+mismatch_batch = replace(
+    domain_batch,
+    completion_ids_list=tuple(mismatch_ids),
+    completion_ids=mismatch_tensor,
+    input_ids=torch.cat([torch.tensor([prompt_ids] * 8), mismatch_tensor], dim=1),
+    attention_mask=torch.ones((8, 7), dtype=torch.long),
+)
+mismatch_advantages, mismatch_credits, mismatch_alignment = audit.hierarchical_token_advantages(
+    mismatch_batch, tokenizer
+)
+assert mismatch_alignment["domain_text_alignment_valid"] is False
+assert all(row[0] == 0 for row in mismatch_credits)
+assert torch.count_nonzero(mismatch_advantages[:, :3]) == 0
+
+missing_ids = list(domain_completion_ids_list)
+missing_ids[1] = (2, 0, 10, 19, 29, 39)
+missing_tensor = torch.tensor(missing_ids, dtype=torch.long)
+missing_batch = replace(
+    domain_batch,
+    completion_ids_list=tuple(missing_ids),
+    completion_ids=missing_tensor,
+    input_ids=torch.cat([torch.tensor([prompt_ids] * 8), missing_tensor], dim=1),
+    attention_mask=torch.ones((8, 7), dtype=torch.long),
+)
+missing_advantages, missing_credits, missing_alignment = audit.hierarchical_token_advantages(
+    missing_batch, tokenizer
+)
+assert missing_alignment["domain_text_alignment_valid"] is False
+assert all(row[0] == 0 for row in missing_credits)
+assert torch.count_nonzero(missing_advantages[:, :3]) == 0
 
 
 # One immutable batch and one old-logp tensor feed both isolated backwards.

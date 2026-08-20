@@ -12,9 +12,10 @@ try:
     from .think_diagnostics import interest_diagnostics
     from .think_exact_clamp import think_exact_clamp_advantages
     from .nothink_hierarchical_credit import (
+        apply_domain_text_alignment_gate,
         conditional_hierarchical_credits,
-        find_final_sid_token_positions,
         hierarchy_state,
+        locate_text_domain_token,
     )
     from .nothink_bridge import (
         BRIDGE_DEAD_A,
@@ -30,9 +31,10 @@ except ImportError:  # Direct script/PYTHONPATH entry point.
     from think_diagnostics import interest_diagnostics
     from think_exact_clamp import think_exact_clamp_advantages
     from nothink_hierarchical_credit import (
+        apply_domain_text_alignment_gate,
         conditional_hierarchical_credits,
-        find_final_sid_token_positions,
         hierarchy_state,
+        locate_text_domain_token,
     )
     from nothink_bridge import (
         BRIDGE_DEAD_A,
@@ -47,7 +49,7 @@ except ImportError:  # Direct script/PYTHONPATH entry point.
 
 
 class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
-    """Use ExactClamp for Think and final-SID token credit for NoThink."""
+    """Use ExactClamp for Think and decision-token hierarchy credit for NoThink."""
 
     bridge_lambda = BRIDGE_LAMBDA
 
@@ -85,15 +87,25 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         ):
             text = completion if isinstance(completion, str) else completion[0]["content"]
             predicted_sid = final_sid(text)
+            alignment = (
+                locate_text_domain_token(candidate_ids, predicted_sid, self.processing_class)
+                if predicted_sid is not None else None
+            )
             local_records.append({
                 "group_id": item["recommendation_group_id"],
                 "rank": self.accelerator.process_index,
                 "local_index": local_index,
                 "predicted_sid": predicted_sid,
-                "token_positions": (
-                    find_final_sid_token_positions(candidate_ids, predicted_sid, self.processing_class)
-                    if predicted_sid is not None else None
+                "token_positions": alignment.hierarchy_token_positions if alignment else None,
+                "text_domain": alignment.text_domain if alignment else None,
+                "text_domain_token_position": (
+                    alignment.text_domain_token_position if alignment else None
                 ),
+                "sid_domain_token_position": (
+                    alignment.sid_domain_token_position if alignment else None
+                ),
+                "domain_text_alignment_valid": alignment.valid if alignment else False,
+                "domain_text_alignment_failure": alignment.failure if alignment else "invalid_sid",
                 "gold_sids": [parse_sid(value) for value in item["all_gold_sids"]],
                 "target_domain": item["target_domain"],
                 "prompt": item["prompt"],
@@ -108,6 +120,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             bucket["records"].append(record)
             bucket["rewards"].append(reward)
         plans = {}
+        alignment_by_group = {}
         credits_by_candidate = {}
         for group_id, group in grouped.items():
             records = group["records"]
@@ -118,9 +131,19 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
                 hierarchy_state(record["predicted_sid"], head["gold_sids"], head["target_domain"])
                 for record in records
             ]
+            valid_records = [
+                record for record, state in zip(records, states) if state.valid
+            ]
+            domain_text_alignment_valid = all(
+                record["domain_text_alignment_valid"] for record in valid_records
+            )
             group_credits = conditional_hierarchical_credits(states)
+            group_credits = apply_domain_text_alignment_gate(
+                group_credits, domain_text_alignment_valid
+            )
             for record, credit in zip(records, group_credits):
                 credits_by_candidate[(record["rank"], record["local_index"])] = credit
+            alignment_by_group[group_id] = domain_text_alignment_valid
             plans[group_id] = plan_dead_zero_bridge(
                 group["rewards"], head["gold_sids"], head["target_domain"]
             )
@@ -137,7 +160,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         )
         self._nothink_bridge_runtime = self._build_bridge_runtime(
             inputs[0], plan, any(candidate.active for candidate in plans.values()),
-            group_weight, group["rewards"],
+            group_weight, group["rewards"], alignment_by_group[group_id],
             [record["predicted_sid"] for record in group["records"]],
             [
                 credits_by_candidate[(self.accelerator.process_index, index)]
@@ -147,7 +170,8 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         )
 
     def _build_bridge_runtime(
-        self, item, plan, global_active, ddp_group_weight, rewards, predicted_sids,
+        self, item, plan, global_active, ddp_group_weight, rewards,
+        domain_text_alignment_valid, predicted_sids,
         token_credits, token_positions,
     ):
         prompt_ids = encode_prompt(self.processing_class, item["prompt"])
@@ -172,6 +196,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             "a_target_ids": a_target_ids,
             "token_credits": tuple(token_credits),
             "token_positions": tuple(token_positions),
+            "domain_text_alignment_valid": bool(domain_text_alignment_valid),
             "rewards": tuple(rewards),
             "gold_unique_a_count": len(gold_a),
             "pred_unique_a_count": len({sid[1] for sid in predicted}),
@@ -223,6 +248,10 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
                     raise RuntimeError("nonzero hierarchy credit has no final SID token positions")
                 continue
             for credit, position in zip(credits, positions):
+                if position is None:
+                    if credit != 0:
+                        raise RuntimeError("nonzero hierarchy credit has no token position")
+                    continue
                 token_advantages[row, position] = credit
         output["token_advantages"] = token_advantages
 
@@ -298,8 +327,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         per_token_loss2 = coef_2 * token_advantages
         per_token_loss = -torch.min(per_token_loss1, per_token_loss2)
         if self.loss_type == "grpo":
-            # Hierarchical credit is sparse: sum credited Domain/A/B/C
-            # token losses without an implicit 1/completion_length dilution.
+            # Sparse text-Domain/SID-A/B/C credit uses a credited-token sum.
             per_sample_loss = (per_token_loss * completion_mask).sum(-1)
             loss = (per_sample_loss * route_multiplier(inputs["route_id"])).mean()
             loss = loss / self.current_gradient_accumulation_steps
@@ -327,7 +355,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
                     (ratio_flat - 1.0 - flat).mean()
                 ),
                 f"policy_fwb_sec_ep{policy_epoch + 1}": round(_t.time() - started, 2),
-                "credit_assignment": "conditional_hierarchical_token_credit_v1",
+                "credit_assignment": "text_domain_conditional_hierarchical_token_credit_v1",
             }
             if self._detailed_monitor:
                 entry.update({
@@ -367,6 +395,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             "exact_candidate_hit_rate": runtime["exact_candidate_hit_rate"],
             "wrong_domain_rate": runtime["wrong_domain_rate"],
             "valid_sid_rate": runtime["valid_sid_rate"],
+            "domain_text_alignment_valid": runtime["domain_text_alignment_valid"],
         }
         if self._smoke_log:
             self._smoke_log[-1].update(event)
@@ -449,6 +478,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             "exact_candidate_hit_rate": runtime["exact_candidate_hit_rate"],
             "wrong_domain_rate": runtime["wrong_domain_rate"],
             "valid_sid_rate": runtime["valid_sid_rate"],
+            "domain_text_alignment_valid": runtime["domain_text_alignment_valid"],
         }
         entry.update(event)
         self._monitor._append(

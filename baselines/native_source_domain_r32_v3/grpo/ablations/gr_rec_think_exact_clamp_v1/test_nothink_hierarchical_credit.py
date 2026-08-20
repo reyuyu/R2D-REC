@@ -22,9 +22,11 @@ from nothink_bridge import (
 )
 from nothink_hierarchical_credit import (
     HierarchyState,
+    apply_domain_text_alignment_gate,
     conditional_hierarchical_credits,
     find_final_sid_token_positions,
     hierarchy_state,
+    locate_text_domain_token,
 )
 from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
 
@@ -59,6 +61,9 @@ assert [row[0] for row in domain_only] == [
     -0.0078125, 0.0234375, -0.0078125, -0.0078125,
 ]
 assert all(row[1:] == (0.0, 0.0, 0.0) for row in domain_only)
+gated_domain_only = apply_domain_text_alignment_gate(domain_only, False)
+assert all(row[0] == 0 for row in gated_domain_only)
+assert [row[1:] for row in gated_domain_only] == [row[1:] for row in domain_only]
 
 # Each partial hierarchy isolates the first stage with variance.
 a_only = credits([0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5])
@@ -109,7 +114,13 @@ assert hierarchy_state(("prod", 1, 11, 111), gold, "prod") == STATE_BY_REWARD[8]
 # Final SID token positions use the last contiguous exact four-token block.
 class PositionTokenizer:
     token_map = {
+        "</think>": 2,
+        "商品": 3,
+        "视频": 4,
+        "广告": 5,
+        "主播": 6,
         "<|prod_begin|>": 10,
+        "<|video_begin|>": 20,
         "<s_a_1>": 11,
         "<s_b_11>": 12,
         "<s_c_111>": 13,
@@ -130,6 +141,23 @@ except RuntimeError:
     pass
 else:
     raise AssertionError("non-contiguous final SID must fail closed")
+
+# Text Domain is the final known span token after </think> and before final SID.
+alignment = locate_text_domain_token(
+    [2, 4, 3, 10, 11, 12, 13], ("prod", 1, 11, 111), position_tokenizer
+)
+assert alignment.valid is True
+assert alignment.text_domain == "prod" and alignment.text_domain_token_position == 2
+assert alignment.sid_domain_token_position == 3
+assert alignment.hierarchy_token_positions == (2, 4, 5, 6)
+mismatch = locate_text_domain_token(
+    [2, 4, 10, 11, 12, 13], ("prod", 1, 11, 111), position_tokenizer
+)
+assert mismatch.valid is False and mismatch.failure == "text_sid_domain_mismatch"
+missing = locate_text_domain_token(
+    [2, 10, 11, 12, 13], ("prod", 1, 11, 111), position_tokenizer
+)
+assert missing.valid is False and missing.failure == "missing_text_domain_before_final_sid"
 
 
 # Global G8 credits map back to the correct rank/local candidate rows.
@@ -160,16 +188,16 @@ sid_cycle = [
     ("prod", 1, 11, 111),
 ]
 text_cycle = [
-    "<|prod_begin|><s_a_9><s_b_9><s_c_9>",
-    "<|prod_begin|><s_a_1><s_b_9><s_c_9>",
-    "<|prod_begin|><s_a_1><s_b_11><s_c_9>",
-    "<|prod_begin|><s_a_1><s_b_11><s_c_111>",
+    "<think></think>该用户最近点击了商品: <|prod_begin|><s_a_9><s_b_9><s_c_9>",
+    "<think></think>该用户最近点击了商品: <|prod_begin|><s_a_1><s_b_9><s_c_9>",
+    "<think></think>该用户最近点击了商品: <|prod_begin|><s_a_1><s_b_11><s_c_9>",
+    "<think></think>该用户最近点击了商品: <|prod_begin|><s_a_1><s_b_11><s_c_111>",
 ]
 id_cycle = [
-    [10, 19, 29, 39],
-    [10, 11, 29, 39],
-    [10, 11, 12, 39],
-    [10, 11, 12, 13],
+    [2, 3, 10, 19, 29, 39],
+    [2, 3, 10, 11, 29, 39],
+    [2, 3, 10, 11, 12, 39],
+    [2, 3, 10, 11, 12, 13],
 ]
 runtime_inputs = [{
     "recommendation_group_id": "g0",
@@ -186,7 +214,12 @@ for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
                 "rank": rank,
                 "local_index": local_index,
                 "predicted_sid": sid,
-                "token_positions": (0, 1, 2, 3),
+                "token_positions": (1, 3, 4, 5),
+                "text_domain": "prod",
+                "text_domain_token_position": 1,
+                "sid_domain_token_position": 2,
+                "domain_text_alignment_valid": True,
+                "domain_text_alignment_failure": None,
                 "gold_sids": [("prod", 1, 11, 111)],
                 "target_domain": "prod",
                 "prompt": "prompt",
@@ -204,15 +237,79 @@ finally:
     trl_grpo.gather_object = original_gather
 assert runtime_trainer._nothink_bridge_runtime["token_credits"] == tuple(expected_cycle)
 assert runtime_trainer._nothink_bridge_runtime["token_positions"] == (
-    (0, 1, 2, 3),
+    (1, 3, 4, 5),
 ) * 4
+assert runtime_trainer._nothink_bridge_runtime["domain_text_alignment_valid"] is True
 
 
-# Token tensor writes only Domain/A/B/C positions and leaves all others zero.
+def prepare_with_global_records(records, rewards):
+    original = trl_grpo.gather_object
+    try:
+        trl_grpo.gather_object = lambda local: records
+        runtime_trainer._prepare_nothink_credit_and_bridge(
+            runtime_inputs,
+            text_cycle,
+            id_cycle,
+            torch.tensor(rewards, dtype=torch.float32).unsqueeze(1),
+        )
+    finally:
+        trl_grpo.gather_object = original
+    return runtime_trainer._nothink_bridge_runtime
+
+
+# Formal trainer path: aligned text receives Domain +/- credit at text positions.
+domain_records = []
+domain_pattern = [False, True, False, False]
+for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
+    for rank in ranks:
+        for local_index, correct in enumerate(domain_pattern):
+            domain_records.append({
+                "group_id": group_id,
+                "rank": rank,
+                "local_index": local_index,
+                "predicted_sid": ("prod" if correct else "video", 9, 9, 9),
+                "token_positions": (1, 3, 4, 5),
+                "text_domain": "prod" if correct else "video",
+                "text_domain_token_position": 1,
+                "sid_domain_token_position": 2,
+                "domain_text_alignment_valid": True,
+                "domain_text_alignment_failure": None,
+                "gold_sids": [("prod", 1, 11, 111)],
+                "target_domain": "prod",
+                "prompt": "prompt",
+            })
+domain_rewards = [-0.25, 0.0, -0.25, -0.25] * 4
+aligned_runtime = prepare_with_global_records(domain_records, domain_rewards)
+assert [row[0] for row in aligned_runtime["token_credits"]] == [
+    -0.0078125, 0.0234375, -0.0078125, -0.0078125,
+]
+assert aligned_runtime["domain_text_alignment_valid"] is True
+
+# One mismatch gates the entire local G8 Domain stage; no SID fallback occurs.
+mismatch_records = [dict(record) for record in domain_records]
+mismatch_records[1]["text_domain"] = "video"
+mismatch_records[1]["domain_text_alignment_valid"] = False
+mismatch_records[1]["domain_text_alignment_failure"] = "text_sid_domain_mismatch"
+mismatch_runtime = prepare_with_global_records(mismatch_records, domain_rewards)
+assert all(row[0] == 0 for row in mismatch_runtime["token_credits"])
+assert mismatch_runtime["domain_text_alignment_valid"] is False
+
+# The same gate leaves every A/B/C value exactly unchanged.
+mixed_mismatch_records = [dict(record) for record in global_records]
+mixed_mismatch_records[0]["domain_text_alignment_valid"] = False
+mixed_mismatch_records[0]["domain_text_alignment_failure"] = "missing_text_domain_before_final_sid"
+mixed_runtime = prepare_with_global_records(
+    mixed_mismatch_records, [0, 0.5, 2, 8] * 4
+)
+assert mixed_runtime["token_credits"] == tuple(expected_cycle)
+assert mixed_runtime["domain_text_alignment_valid"] is False
+
+
+# Token tensor writes only text-Domain/SID-A/B/C positions.
 trainer = object.__new__(ThinkExactClampRecGRPOTrainer)
 trainer._nothink_bridge_runtime = {
     "token_credits": (mixed[0], mixed[1]),
-    "token_positions": ((0, 1, 2, 3), (1, 2, 3, 4)),
+    "token_positions": ((1, 3, 4, 5), (1, 3, 4, 5)),
 }
 output = {
     "completion_ids": torch.ones((2, 6), dtype=torch.long),
@@ -220,9 +317,23 @@ output = {
 }
 trainer._attach_nothink_token_advantages(output)
 expected = torch.zeros((2, 6))
-expected[0, 0:4] = torch.tensor(mixed[0])
-expected[1, 1:5] = torch.tensor(mixed[1])
+expected[0, [1, 3, 4, 5]] = torch.tensor(mixed[0])
+expected[1, [1, 3, 4, 5]] = torch.tensor(mixed[1])
 torch.testing.assert_close(output["token_advantages"], expected)
+
+# Domain-only +/- credit lands on the sampled natural-language token, never SID Domain.
+trainer._nothink_bridge_runtime = {
+    "token_credits": (domain_only[0], domain_only[1]),
+    "token_positions": ((1, 3, 4, 5), (1, 3, 4, 5)),
+}
+domain_output = {
+    "completion_ids": torch.ones((2, 6), dtype=torch.long),
+    "advantages": torch.zeros(2),
+}
+trainer._attach_nothink_token_advantages(domain_output)
+assert domain_output["token_advantages"][0, 1] == domain_only[0][0]
+assert domain_output["token_advantages"][1, 1] == domain_only[1][0]
+assert torch.count_nonzero(domain_output["token_advantages"][:, 2]) == 0
 
 
 # NoThink PPO consumes token_advantages and ignores the debug sequence advantage.
@@ -351,6 +462,7 @@ def bridge_runtime(plan, global_active):
         "exact_candidate_hit_rate": 0.0,
         "wrong_domain_rate": 0.0,
         "valid_sid_rate": 1.0,
+        "domain_text_alignment_valid": True,
     }
 
 
