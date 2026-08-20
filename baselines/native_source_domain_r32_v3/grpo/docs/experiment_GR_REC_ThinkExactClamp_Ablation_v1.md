@@ -2,9 +2,9 @@
 
 ## Status and history
 
-**G8 ZERO-STEP GPU GRADIENT AUDIT COMPLETED**
+**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT RUN**
 
-**GPU AUDIT ONLY / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**PREVIOUS G8 AUDIT RECORDED / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
@@ -12,10 +12,14 @@
 - Phase 3 `ab47d3141dc08445f6bb4deddb565b710075ff61`: removes the
   A-collapse branch and replaces sequence-wide NoThink credit with Conditional
   Hierarchical Token Credit.
-- Phase 4 current: adds a standalone zero-step GPU gradient audit harness; the
+- Phase 4 `e7980753232f46e6aacfad9a8c2da293cade67ad`: adds and hardens the
+  standalone zero-step GPU gradient audit harness; the
   formal trainer, objectives and runner contract are unchanged.
-- Phase 5 current: records the authorized eight-group zero-step GPU audit and
+- Phase 5 `70b73560caba8f892a6dbbebacba8c7fe85f79b9`: records the authorized
+  eight-group zero-step GPU audit and
   its unchanged-parameter checksum evidence.
+- Phase 6 current: adds the GPU-evidenced Domain token-credit stage before the
+  unchanged A/B/C stages. This phase is CPU-tested only.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -41,6 +45,7 @@ with monotonic implication from exact down to valid.
 For one NoThink G8, fixed scale is 8:
 
 ```text
+Domain_adv = .25 * (domain_correct - mean(domain_correct | valid)) / 8
 A_adv = .5 * (a_correct - mean(a_correct | domain_correct)) / 8
 B_adv = 1.5 * (ab_correct - mean(ab_correct | a_correct)) / 8
 C_adv = 6 * (exact - mean(exact | ab_correct)) / 8
@@ -49,17 +54,25 @@ C_adv = 6 * (exact - mean(exact | ab_correct)) / 8
 Ineligible candidates receive zero for that stage. A stage with no indicator
 variance is exactly zero.
 
-For `[0,.5,2,8,0,.5,2,8]`, each repeated cycle is:
+For `[-.25,0,-.25,-.25,-.25,0,-.25,-.25]`, with all candidates
+valid, the two correct-domain candidates receive Domain credit `.0234375` and
+the six wrong-domain candidates receive `-.0078125`. A/B/C are all zero.
 
-| Reward | A credit | B credit | C credit |
-|---:|---:|---:|---:|
-| 0 | `-.046875` | 0 | 0 |
-| .5 | `.015625` | `-.125` | 0 |
-| 2 | `.015625` | `.0625` | `-.375` |
-| 8 | `.015625` | `.0625` | `.375` |
+For `[0,.5,2,8,0,.5,2,8]`, Domain is uniformly zero and each repeated
+A/B/C cycle remains:
 
-Thus an already-correct A is not penalized for a wrong suffix, and an
-already-correct AB is not penalized at B for a wrong C.
+| Reward | Domain | A credit | B credit | C credit |
+|---:|---:|---:|---:|---:|
+| 0 | 0 | `-.046875` | 0 | 0 |
+| .5 | 0 | `.015625` | `-.125` | 0 |
+| 2 | 0 | `.015625` | `.0625` | `-.375` |
+| 8 | 0 | `.015625` | `.0625` | `.375` |
+
+Thus an already-correct Domain is not penalized for an A/B/C suffix failure,
+an already-correct A is not penalized for a wrong B/C suffix, and an
+already-correct AB is not penalized at B for a wrong C. No validity stage is
+introduced. Uniform `[-.25]*8` remains the recorded
+`ALL_WRONG_DOMAIN_ZERO_SIGNAL` boundary.
 
 ## Final SID token assignment
 
@@ -70,9 +83,9 @@ final SID:
 [domain_token, a_token, b_token, c_token]
 ```
 
-It writes A/B/C credit only to the corresponding A/B/C completion-token
-positions. Every other token has zero advantage. A parsed final SID without a
-matching contiguous block fails closed.
+It writes Domain/A/B/C credit only to the corresponding Domain/A/B/C
+completion-token positions. Every other token has zero advantage. A parsed
+final SID without a matching contiguous block fails closed.
 
 The parent population-std scalar advantage is still computed and retained for
 debugging, but it is not consumed by the NoThink loss.
@@ -128,7 +141,7 @@ scheduler is constructed and the harness contains no `.step()` call.
 
 The default audit is eight independently generated G8 groups and can be set
 from one to sixteen. Per-group output includes reward topology, norms, ratio,
-cosine, active hierarchy stages, credited A/B/C token counts, bridge activity,
+cosine, active hierarchy stages, credited Domain/A/B/C token counts, bridge activity,
 and the rollout fingerprint. Aggregate output includes median/mean/min/max. A
 real all-zero bridge is compared with the median nonzero hierarchical norm from
 other audited groups. Ratios outside `0.25x..4x` and bridge ratios above `20%`
@@ -138,7 +151,7 @@ The execution flag `--execute-zero-step-gpu-audit` is mandatory. Its presence
 only enables generation plus isolated forward/backward; it does not authorize
 training, checkpoint writes, or any parameter update.
 
-## G8 GPU audit result (2026-08-21)
+## Pre-Domain G8 GPU audit result (2026-08-21)
 
 The authorized audit used one A800 (`cuda:0`), seed `20260816`, the original
 8B base and the fresh original BATA adapter. It audited eight real NoThink G8
@@ -161,8 +174,10 @@ Key aggregate results:
 | Median active hierarchical gradient norm | `0.1886301152` |
 | Real `[0]*8` groups | 0 |
 
-Six groups had no active hierarchical stage, one activated A+B, and one
-activated A only. Consequently the formal heuristic flag is
+Under the pre-Domain formula, six groups had no active hierarchical stage, one
+activated A+B, and one activated A only. Five inactive groups nevertheless had
+real `-.25` versus `0` reward variance; that evidence motivated Phase 6's
+Domain stage. The historical audit consequently reported
 `HIER_GRAD_TOO_SMALL_REVIEW`. This is a preflight review result, not an
 automatic coefficient change. No real `[0]*8` group appeared, so the bridge
 conclusion is `BRIDGE SCALE NOT OBSERVED`; no rewards were synthesized and the
@@ -186,6 +201,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**G8 ZERO-STEP GPU GRADIENT AUDIT COMPLETED**
+**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT RUN**
 
-**GPU AUDIT ONLY / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**PREVIOUS G8 AUDIT RECORDED / TRAINING NOT STARTED**

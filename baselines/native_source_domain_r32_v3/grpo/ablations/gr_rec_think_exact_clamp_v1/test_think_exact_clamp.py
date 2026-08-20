@@ -69,7 +69,7 @@ trainer._think_exact_clamp_route = "no_think"
 nothink_rewards = torch.tensor([0, 0, 0, 0.5, 0, 0, 0, 0], dtype=torch.float32)
 baseline_advantages = group_advantages_population(nothink_rewards, M_NO)
 trainer._nothink_bridge_runtime = {
-    "token_credits": ((0.0, 0.0, 0.0),) * 8,
+    "token_credits": ((0.0, 0.0, 0.0, 0.0),) * 8,
     "token_positions": (None,) * 8,
 }
 parent_output = {
@@ -95,7 +95,7 @@ for rewards in (
     parent = group_advantages_population(rewards, M_NO)
     trainer._think_exact_clamp_route = "no_think"
     trainer._nothink_bridge_runtime = {
-        "token_credits": ((0.0, 0.0, 0.0),) * 8,
+        "token_credits": ((0.0, 0.0, 0.0, 0.0),) * 8,
         "token_positions": (None,) * 8,
     }
     output = {"advantages": parent, "completion_ids": torch.ones((8, 4), dtype=torch.long)}

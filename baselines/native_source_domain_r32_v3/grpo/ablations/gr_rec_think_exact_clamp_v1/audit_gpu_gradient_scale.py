@@ -58,6 +58,8 @@ def reward_pattern(rewards) -> str:
     values = tuple(float(value) for value in rewards)
     if values == (0.0,) * M_NO:
         return "ALL_ZERO"
+    if values == (-0.25,) * M_NO:
+        return "ALL_WRONG_DOMAIN_ZERO_SIGNAL"
     if any(value >= 8.0 for value in values):
         return "EXACT_SIGNAL"
     if any(value >= 2.0 for value in values):
@@ -246,14 +248,16 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
         "hier_over_legacy": ratio,
         "legacy_hier_cosine": vector_cosine(legacy_vector, hierarchical_vector),
         "stage_active": {
-            "a": any(value != 0 for value in columns[0]),
-            "b": any(value != 0 for value in columns[1]),
-            "c": any(value != 0 for value in columns[2]),
+            "domain": any(value != 0 for value in columns[0]),
+            "a": any(value != 0 for value in columns[1]),
+            "b": any(value != 0 for value in columns[2]),
+            "c": any(value != 0 for value in columns[3]),
         },
         "credited_token_count": {
-            "a": sum(value != 0 for value in columns[0]),
-            "b": sum(value != 0 for value in columns[1]),
-            "c": sum(value != 0 for value in columns[2]),
+            "domain": sum(value != 0 for value in columns[0]),
+            "a": sum(value != 0 for value in columns[1]),
+            "b": sum(value != 0 for value in columns[2]),
+            "c": sum(value != 0 for value in columns[3]),
         },
         "dead_zero_bridge_active": batch.rewards == (0.0,) * M_NO,
         "bridge_raw_grad_norm": None,

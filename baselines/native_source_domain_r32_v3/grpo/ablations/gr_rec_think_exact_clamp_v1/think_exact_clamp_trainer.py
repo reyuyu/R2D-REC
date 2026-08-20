@@ -298,7 +298,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         per_token_loss2 = coef_2 * token_advantages
         per_token_loss = -torch.min(per_token_loss1, per_token_loss2)
         if self.loss_type == "grpo":
-            # Hierarchical credit is sparse by design: sum the credited A/B/C
+            # Hierarchical credit is sparse: sum credited Domain/A/B/C
             # token losses without an implicit 1/completion_length dilution.
             per_sample_loss = (per_token_loss * completion_mask).sum(-1)
             loss = (per_sample_loss * route_multiplier(inputs["route_id"])).mean()

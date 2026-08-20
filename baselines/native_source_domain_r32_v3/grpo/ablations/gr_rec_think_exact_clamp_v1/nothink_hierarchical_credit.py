@@ -7,7 +7,7 @@ from typing import Iterable, Sequence
 
 
 HIERARCHY_SCALE = 8.0
-STAGE_INCREMENTS = (0.5, 1.5, 6.0)
+STAGE_INCREMENTS = (0.25, 0.5, 1.5, 6.0)
 
 
 @dataclass(frozen=True)
@@ -35,12 +35,13 @@ def hierarchy_state(final_sid, gold_sids: Iterable[Sequence], target_domain: str
 
 def conditional_hierarchical_credits(
     states: Sequence[HierarchyState],
-) -> list[tuple[float, float, float]]:
-    """Return per-candidate (A, B, C) credit for exactly one NoThink G8."""
+) -> list[tuple[float, float, float, float]]:
+    """Return per-candidate (Domain, A, B, C) credit for one NoThink G8."""
     if len(states) != 8:
         raise ValueError("conditional hierarchical credit requires exactly one G8")
-    credits = [[0.0, 0.0, 0.0] for _ in states]
+    credits = [[0.0, 0.0, 0.0, 0.0] for _ in states]
     stages = (
+        (lambda state: state.valid, lambda state: state.domain_correct),
         (lambda state: state.domain_correct, lambda state: state.a_correct),
         (lambda state: state.a_correct, lambda state: state.ab_correct),
         (lambda state: state.ab_correct, lambda state: state.exact),
@@ -58,8 +59,8 @@ def conditional_hierarchical_credits(
 
 def find_final_sid_token_positions(
     completion_ids: Sequence[int], final_sid, tokenizer,
-) -> tuple[int, int, int]:
-    """Find A/B/C positions in the last exact contiguous final-SID token block."""
+) -> tuple[int, int, int, int]:
+    """Find Domain/A/B/C in the last exact contiguous final-SID token block."""
     if final_sid is None or len(final_sid) != 4:
         raise ValueError("a valid final SID is required")
     domain, a, b, c = final_sid
@@ -78,5 +79,5 @@ def find_final_sid_token_positions(
     ids = [int(value) for value in completion_ids]
     for start in range(len(ids) - 4, -1, -1):
         if ids[start:start + 4] == block:
-            return start + 1, start + 2, start + 3
+            return start, start + 1, start + 2, start + 3
     raise RuntimeError("parsed final SID has no matching contiguous token block")

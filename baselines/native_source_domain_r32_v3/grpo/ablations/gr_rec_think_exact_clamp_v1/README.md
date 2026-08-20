@@ -3,8 +3,8 @@
 Current experiment components:
 
 - Think G4: Centered Exact-Clamp.
-- NoThink G8: Conditional Hierarchical Token Credit on the final SID A/B/C
-  token positions.
+- NoThink G8: Conditional Hierarchical Token Credit on the final SID
+  Domain/A/B/C token positions.
 - NoThink exact `[0]*8`: Gold-A dead-zero teacher bridge with lambda `0.02`.
 
 The former `a_collapse_ab_bridge`, missing-A teacher and current-path Gold-B
@@ -40,4 +40,4 @@ requires the explicit `--execute-zero-step-gpu-audit` flag, defaults to eight
 groups, accepts up to sixteen, and records only trainable LoRA gradients. Do not
 run it until GPU execution is separately authorized.
 
-**GPU AUDIT HARNESS READY / EXECUTION PENDING AUTHORIZATION**
+**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT AUTHORIZED**

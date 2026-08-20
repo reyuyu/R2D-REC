@@ -30,6 +30,7 @@ from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
 
 
 STATE_BY_REWARD = {
+    -0.25: HierarchyState(True, False, False, False, False),
     0: HierarchyState(True, True, False, False, False),
     0.5: HierarchyState(True, True, True, False, False),
     2: HierarchyState(True, True, True, True, False),
@@ -44,36 +45,49 @@ def credits(rewards):
 # Required mixed archetype exact values.
 mixed = credits([0, 0.5, 2, 8, 0, 0.5, 2, 8])
 expected_cycle = [
-    (-0.046875, 0.0, 0.0),
-    (0.015625, -0.125, 0.0),
-    (0.015625, 0.0625, -0.375),
-    (0.015625, 0.0625, 0.375),
+    (0.0, -0.046875, 0.0, 0.0),
+    (0.0, 0.015625, -0.125, 0.0),
+    (0.0, 0.015625, 0.0625, -0.375),
+    (0.0, 0.015625, 0.0625, 0.375),
 ]
 assert mixed == expected_cycle * 2
 
+# GPU-observed wrong-domain/correct-domain topology receives Domain-only credit.
+domain_only = credits([-0.25, 0, -0.25, -0.25, -0.25, 0, -0.25, -0.25])
+assert [row[0] for row in domain_only] == [
+    -0.0078125, 0.0234375, -0.0078125, -0.0078125,
+    -0.0078125, 0.0234375, -0.0078125, -0.0078125,
+]
+assert all(row[1:] == (0.0, 0.0, 0.0) for row in domain_only)
+
 # Each partial hierarchy isolates the first stage with variance.
 a_only = credits([0, 0.5, 0, 0.5, 0, 0.5, 0, 0.5])
-assert [row[0] for row in a_only] == [-0.03125, 0.03125] * 4
-assert all(row[1:] == (0.0, 0.0) for row in a_only)
+assert [row[1] for row in a_only] == [-0.03125, 0.03125] * 4
+assert all((row[0], *row[2:]) == (0.0, 0.0, 0.0) for row in a_only)
 
 b_only = credits([0.5, 2, 0.5, 2, 0.5, 2, 0.5, 2])
-assert [row[0] for row in b_only] == [0.0] * 8
-assert [row[1] for row in b_only] == [-0.09375, 0.09375] * 4
-assert all(row[2] == 0.0 for row in b_only)
+assert all(row[:2] == (0.0, 0.0) for row in b_only)
+assert [row[2] for row in b_only] == [-0.09375, 0.09375] * 4
+assert all(row[3] == 0.0 for row in b_only)
 
 c_only = credits([2, 8, 2, 8, 2, 8, 2, 8])
-assert all(row[:2] == (0.0, 0.0) for row in c_only)
-assert [row[2] for row in c_only] == [-0.375, 0.375] * 4
+assert all(row[:3] == (0.0, 0.0, 0.0) for row in c_only)
+assert [row[3] for row in c_only] == [-0.375, 0.375] * 4
 
 for reward in (0.5, 2, 8, 0):
-    assert credits([reward] * 8) == [(0.0, 0.0, 0.0)] * 8
+    assert credits([reward] * 8) == [(0.0, 0.0, 0.0, 0.0)] * 8
+assert credits([-0.25] * 8) == [(0.0, 0.0, 0.0, 0.0)] * 8
 
 # Correct prefix invariants: suffix failure never makes the prefix credit negative.
 for reward, row in zip([0, 0.5, 2, 8] * 2, mixed):
+    assert row[0] == 0
     if reward >= 0.5:
-        assert row[0] >= 0
-    if reward >= 2:
         assert row[1] >= 0
+    if reward >= 2:
+        assert row[2] >= 0
+for reward, row in zip([-0.25, 0] * 4, credits([-0.25, 0] * 4)):
+    if reward == 0:
+        assert row[0] >= 0
 
 try:
     conditional_hierarchical_credits([STATE_BY_REWARD[0]] * 7)
@@ -109,7 +123,7 @@ position_tokenizer = PositionTokenizer()
 candidate_ids = [10, 11, 12, 13, 99, 10, 11, 12, 13, 100]
 assert find_final_sid_token_positions(
     candidate_ids, ("prod", 1, 11, 111), position_tokenizer
-) == (6, 7, 8)
+) == (5, 6, 7, 8)
 try:
     find_final_sid_token_positions([10, 11, 99, 12, 13], ("prod", 1, 11, 111), position_tokenizer)
 except RuntimeError:
@@ -172,7 +186,7 @@ for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
                 "rank": rank,
                 "local_index": local_index,
                 "predicted_sid": sid,
-                "token_positions": (1, 2, 3),
+                "token_positions": (0, 1, 2, 3),
                 "gold_sids": [("prod", 1, 11, 111)],
                 "target_domain": "prod",
                 "prompt": "prompt",
@@ -189,14 +203,16 @@ try:
 finally:
     trl_grpo.gather_object = original_gather
 assert runtime_trainer._nothink_bridge_runtime["token_credits"] == tuple(expected_cycle)
-assert runtime_trainer._nothink_bridge_runtime["token_positions"] == ((1, 2, 3),) * 4
+assert runtime_trainer._nothink_bridge_runtime["token_positions"] == (
+    (0, 1, 2, 3),
+) * 4
 
 
-# Token tensor writes only A/B/C positions and leaves every other token at zero.
+# Token tensor writes only Domain/A/B/C positions and leaves all others zero.
 trainer = object.__new__(ThinkExactClampRecGRPOTrainer)
 trainer._nothink_bridge_runtime = {
     "token_credits": (mixed[0], mixed[1]),
-    "token_positions": ((1, 2, 3), (2, 3, 4)),
+    "token_positions": ((0, 1, 2, 3), (1, 2, 3, 4)),
 }
 output = {
     "completion_ids": torch.ones((2, 6), dtype=torch.long),
@@ -204,8 +220,8 @@ output = {
 }
 trainer._attach_nothink_token_advantages(output)
 expected = torch.zeros((2, 6))
-expected[0, 1:4] = torch.tensor(mixed[0])
-expected[1, 2:5] = torch.tensor(mixed[1])
+expected[0, 0:4] = torch.tensor(mixed[0])
+expected[1, 1:5] = torch.tensor(mixed[1])
 torch.testing.assert_close(output["token_advantages"], expected)
 
 
