@@ -226,6 +226,10 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in (
         "实验名称", "选择 D:\\model\\GRPO", "下载两个文件", "刷新列表", "删除检查点"
     ))
+    assert all(label in html for label in (
+        "renderRolloutCredit", "ensureExplorerAdvantages", "Sequence Advantage",
+        "Token Credit", "查看完整优势详情", "优势载入中", "复算"
+    ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
