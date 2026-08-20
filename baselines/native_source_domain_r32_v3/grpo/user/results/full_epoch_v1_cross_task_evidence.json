@@ -1,0 +1,80 @@
+{
+  "run_id": "GR-USER-FULL-EPOCH-20260820-052019",
+  "parent": "BETA-baseline checkpoint-1106",
+  "objective": {
+    "routes": ["user_action", "user_chain"],
+    "prompt_counts": {"action": 1500, "chain": 1500},
+    "G": 4,
+    "learning_rate": 1e-6,
+    "ppo_epsilon": 0.2,
+    "reference_beta": 0.0,
+    "penalty_strategy": "sqrt",
+    "penalty_lambda": 0.5
+  },
+  "external_group_scores": {
+    "beta": {"aggregate": 1.3313, "material": 0.1807, "user": 0.2545, "recommendation": 0.6594, "world": 0.2368},
+    "step240": {"aggregate": 1.3103, "material": 0.1780, "user": 0.2577, "recommendation": 0.6375, "world": 0.2372},
+    "final378": {"aggregate": 1.3146, "material": 0.1803, "user": 0.2572, "recommendation": 0.6381, "world": 0.2390}
+  },
+  "final_delta_vs_beta": {
+    "aggregate": -0.0167,
+    "material": -0.0004,
+    "user": 0.0027,
+    "recommendation": -0.0213,
+    "world": 0.0022
+  },
+  "fixed_probe": {
+    "sample_count": 6,
+    "composition": {"action": 3, "chain": 3},
+    "step40": {"action_f1": 0.606597, "chain_total": 0.404108, "chain_action": 0.590907, "chain_logic": 0.217310},
+    "step240": {"action_f1": 0.646640, "chain_total": 0.422061, "chain_action": 0.618764, "chain_logic": 0.225358},
+    "step378": {"action_f1": 0.655567, "chain_total": 0.437132, "chain_action": 0.629048, "chain_logic": 0.245216}
+  },
+  "matched_chain_probe_final_vs_c0": {
+    "sample_count": 40,
+    "G": 4,
+    "total_delta": 0.016401,
+    "total_bootstrap_95pct_ci": [0.001667, 0.030570],
+    "action_delta": 0.031135,
+    "action_bootstrap_95pct_ci": [0.010172, 0.051805],
+    "logic_delta": 0.001667,
+    "logic_bootstrap_95pct_ci": [-0.009326, 0.012385]
+  },
+  "training_health": {
+    "grad_norm_mean": 0.421535,
+    "grad_norm_max": 0.985408,
+    "clip_fraction_mean": 0.0,
+    "clip_fraction_max": 0.0,
+    "reward_std": 0.091934,
+    "zero_std_ratio": 0.016667,
+    "masked_token_rate": 0.022703,
+    "nan_or_inf": false,
+    "base_delta": 0.0
+  },
+  "parameter_audit": {
+    "beta_to_final_relative_l2": 0.0035952,
+    "beta_to_final_cosine": 0.9999935374,
+    "step40_to_final_relative_l2": 0.00322306,
+    "step40_to_final_cosine": 0.9999948061,
+    "step40_to_final_delta_l2": 0.22761942,
+    "max_abs_delta": 0.000219267,
+    "note": "Weight-space distance is not output-space KL."
+  },
+  "step240_log_audit": {
+    "sha256": "097041c669cb26a7035cc2634739b006263b33654e38a9f0e6b405442f36e828",
+    "line_count": 55058,
+    "evaluator_version": "v3.1",
+    "failed_tasks": 0,
+    "result_reported": true,
+    "model_path_in_log": "/tmp/eval_model/merged",
+    "checkpoint_hash_present": false,
+    "tokenizer_regex_warning_present": true
+  },
+  "evidence_judgment": {
+    "cross_task_interference": "supported",
+    "user_objective_failed": "not_supported",
+    "broad_catastrophic_forgetting": "not_supported",
+    "evaluation_noise_fully_explains_result": "evidence_insufficient_and_unlikely_alone",
+    "merge_or_tokenizer_issue": "evidence_insufficient"
+  }
+}

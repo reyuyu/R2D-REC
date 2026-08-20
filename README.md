@@ -67,6 +67,8 @@ Step 1500 的总分增量 `+0.0197` 和懂推荐合计增量 `+0.0206` 超过单
 
 Step 240 和 final 378 的训练内固定 Probe 均比 step 40 更好，但外部总分下降。两者并不矛盾：固定 Probe 只覆盖 GR_USER 目标分布，外部评测同时检查 11 个任务；两次外部评测的损失都集中在未训练的 Recommendation。Final 没有继续恶化，相对 step240 回升 `0.0043`，但也没有恢复推荐能力，因此完整 epoch 结果进一步支持跨任务干扰判断。详细结果见 [GR_USER full-epoch 文档](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md)。
 
+供独立复核的完整证据、假设分级和网页版 GPT 提示词见 [GR_USER 外部分数回退证据包](./baselines/native_source_domain_r32_v3/grpo/user/docs/gr_user_v1_external_regression_evidence.md)。
+
 GRPO 记录入口：
 
 - [GR_REC_v1：动机、冻结合同、训练完成记录、问题侧证据与完整分项](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)
