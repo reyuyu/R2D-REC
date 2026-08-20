@@ -69,6 +69,8 @@ Step 240 和 final 378 的训练内固定 Probe 均比 step 40 更好，但外�
 
 供独立复核的完整证据、假设分级和网页版 GPT 提示词见 [GR_USER 外部分数回退证据包](./baselines/native_source_domain_r32_v3/grpo/user/docs/gr_user_v1_external_regression_evidence.md)。
 
+Recommendation Gold 相对 History 的纯 CPU 任务结构审计见 [Recommendation History-vs-Novel Audit](./baselines/native_source_domain_r32_v3/grpo/user/docs/recommendation_history_novel_audit_v1.md)。
+
 GRPO 记录入口：
 
 - [GR_REC_v1：动机、冻结合同、训练完成记录、问题侧证据与完整分项](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)
