@@ -15,6 +15,8 @@ sys.path.insert(0, str(GRPO_ROOT / "scripts"))
 from audit_think_counterfactual import summarize
 from grpo_trl_trainer import M_NO, M_THINK, RecGRPOTrainer, group_advantages_population
 from run_think_exact_clamp_train import (
+    FORMAL_CHECKPOINT_STEPS,
+    FormalCheckpointCallback,
     MAX_EXPERIMENT_STEPS,
     RUN_ID_PREFIX,
     _ManifestWriter,
@@ -226,7 +228,22 @@ assert manifest["initialization"] == "fresh original BATA adapter"
 assert manifest["nothink_bridge"]["lambda"] == 0.02
 assert manifest["nothink_bridge"]["branches"] == ["dead_zero_a_bridge"]
 assert manifest["advantage"]["nothink"] == "conditional_hierarchical_token_credit_v1"
-assert manifest["future_checkpoints"] == [600, 800, 1000, 1200, 1400, 1500]
+assert manifest["future_checkpoints"] == [250, 600, 750, 800, 1000, 1200, 1400, 1500]
+
+
+class SaveControl:
+    should_save = False
+
+
+callback = FormalCheckpointCallback()
+for step in (249, 251, 500, 1499):
+    control = SaveControl()
+    callback.on_step_end(None, type("State", (), {"global_step": step})(), control)
+    assert control.should_save is False
+for step in FORMAL_CHECKPOINT_STEPS:
+    control = SaveControl()
+    callback.on_step_end(None, type("State", (), {"global_step": step})(), control)
+    assert control.should_save is True
 same_run = validate_experiment_args([
     "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500",
     "--resume-from-checkpoint",

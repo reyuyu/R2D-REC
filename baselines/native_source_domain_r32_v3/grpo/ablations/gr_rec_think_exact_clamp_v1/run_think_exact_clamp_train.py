@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from transformers import TrainerCallback
+
 GRPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(GRPO_ROOT / "scripts"))
 
@@ -18,6 +20,16 @@ except ImportError:  # Direct script entry point.
 
 RUN_ID_PREFIX = "GR-REC-CLAMP-BRIDGE-V1-"
 MAX_EXPERIMENT_STEPS = 1500
+FORMAL_CHECKPOINT_STEPS = (250, 600, 750, 800, 1000, 1200, 1400, 1500)
+
+
+class FormalCheckpointCallback(TrainerCallback):
+    """Request saves only at the experiment's approved checkpoint steps."""
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if int(state.global_step) in FORMAL_CHECKPOINT_STEPS:
+            control.should_save = True
+        return control
 
 
 class _ManifestWriter:
@@ -45,7 +57,7 @@ class _ManifestWriter:
             "teacher_forward": "one A-query row per active optimizer step; no generation",
         }
         payload["formal_max_steps"] = MAX_EXPERIMENT_STEPS
-        payload["future_checkpoints"] = [600, 800, 1000, 1200, 1400, 1500]
+        payload["future_checkpoints"] = list(FORMAL_CHECKPOINT_STEPS)
         payload["gpu_gradient_audit"] = "required before training"
         payload["initialization"] = "fresh original BATA adapter"
         payload["resume_scope"] = "same run-id only"
@@ -73,7 +85,12 @@ def main(argv=None):
     def think_exact_clamp_monitor(*args, **kwargs):
         return _ManifestWriter(original_monitor_factory(*args, **kwargs))
 
-    baseline_runner.RecGRPOTrainer = ThinkExactClampRecGRPOTrainer
+    def trainer_factory(*args, **kwargs):
+        trainer = ThinkExactClampRecGRPOTrainer(*args, **kwargs)
+        trainer.add_callback(FormalCheckpointCallback())
+        return trainer
+
+    baseline_runner.RecGRPOTrainer = trainer_factory
     baseline_runner.monitor_from_env = think_exact_clamp_monitor
     return baseline_runner.main(argv)
 
