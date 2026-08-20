@@ -46,6 +46,19 @@ except ImportError:  # Direct script/PYTHONPATH entry point.
     )
 
 
+def replace_log_tail(log, replacement):
+    """Replace the final log values without assuming slice assignment support."""
+    replacement = list(replacement)
+    count = len(replacement)
+    if len(log) < count:
+        raise RuntimeError(
+            f"advantage log has {len(log)} values, cannot replace final {count}"
+        )
+    for _ in range(count):
+        log.pop()
+    log.extend(replacement)
+
+
 class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
     """Use ExactClamp for Think and decision-token hierarchy credit for NoThink."""
 
@@ -239,8 +252,8 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         output["advantages"] = global_advantages[start:stop]
 
         if self._detailed_monitor:
-            self._logs["advantages"][-global_advantages.numel():] = (
-                self._think_exact_clamp_advantages_list
+            replace_log_tail(
+                self._logs["advantages"], self._think_exact_clamp_advantages_list
             )
         if self._parity_audit and self._parity_log:
             self._parity_log[-1]["advantages"] = self._think_exact_clamp_advantages_list[start:stop]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 import inspect
 import sys
 from pathlib import Path
@@ -21,7 +22,19 @@ from run_think_exact_clamp_train import (
 )
 from think_diagnostics import interest_diagnostics
 from think_exact_clamp import think_exact_clamp_advantages
-from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
+from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer, replace_log_tail
+
+
+for log in (deque([1, 2, 3, 4]), [1, 2, 3, 4]):
+    replace_log_tail(log, [8, 9])
+    assert list(log) == [1, 2, 8, 9]
+
+try:
+    replace_log_tail(deque([1]), [8, 9])
+except RuntimeError:
+    pass
+else:
+    raise AssertionError("advantage log tail replacement must fail closed")
 
 
 ARCHETYPES = [
