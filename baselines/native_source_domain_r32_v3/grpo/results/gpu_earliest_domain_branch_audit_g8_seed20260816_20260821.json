@@ -1,0 +1,2264 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_gpu_earliest_domain_branch_audit",
+  "created_at": "2026-08-20T19:14:20.036771+00:00",
+  "zero_update": true,
+  "diagnostic_only": true,
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+  "groups_requested": 8,
+  "seed": 20260816,
+  "trainable_parameter_checksum_before": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+  "trainable_parameter_checksum_after": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+  "parameter_change": false,
+  "template_result": "/data/GRPO/work/monitor-refresh-source/baselines/native_source_domain_r32_v3/grpo/results/earliest_domain_branch_tokenizer_audit_20260821.json",
+  "groups": [
+    {
+      "group_id": "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+      "rollout_fingerprint": "f6885c7ec834a52e425609c7ccb64f3c159ee785b7e0cbdef57ab56fcac00001",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25
+      ],
+      "domain_only": true,
+      "branch_alignment_valid": false,
+      "valid_branch_candidate_count": 7,
+      "branch_hier_grad_norm": 0.0,
+      "legacy_branch_grad_norm": 0.0,
+      "legacy_branch_hier_cosine": null,
+      "domain_advantages": [
+        -0.0078125,
+        0.0234375,
+        -0.0078125,
+        -0.0078125,
+        -0.0078125,
+        0.0234375,
+        -0.0078125,
+        -0.0078125
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "living",
+            "sid_domain": "living",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 104181,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 104181,
+            "token_position": 7,
+            "old_logp": -1.8717339038848877,
+            "old_probability": 0.15385665774574755
+          },
+          "text_domain_noun": {
+            "token_id": 107206,
+            "token_position": 11,
+            "old_logp": -5.340433563105762e-05,
+            "old_probability": 0.999946597090355
+          },
+          "sid_domain": {
+            "token_id": 176249,
+            "token_position": 14,
+            "old_logp": -1.3232143828645349e-05,
+            "old_probability": 0.9999867679437158
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": false,
+            "declaration_domain": null,
+            "sid_domain": "prod",
+            "declaration_start": null,
+            "branch_position": null,
+            "branch_token_id": null,
+            "failure": "missing_exact_declaration_template"
+          },
+          "earliest_branch": {
+            "token_id": null,
+            "token_position": null,
+            "old_logp": null,
+            "old_probability": null
+          },
+          "text_domain_noun": {
+            "token_id": null,
+            "token_position": null,
+            "old_logp": null,
+            "old_probability": null
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 4,
+            "old_logp": -3.7733328342437744,
+            "old_probability": 0.02297536246786889
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.228390097618103,
+            "old_probability": 0.2927635191810852
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -7.86750388215296e-05,
+            "old_probability": 0.9999213280559782
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.2943928241729736,
+            "old_probability": 0.2740642189918953
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -8.797258487902582e-05,
+            "old_probability": 0.9999120312845954
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.3116079568862915,
+            "old_probability": 0.26938654599337736
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -0.000105375460407231,
+            "old_probability": 0.9998946300913916
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.5635793805122375,
+            "old_probability": 0.569168144050553
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -2.3841855067985307e-07,
+            "old_probability": 0.9999997615814777
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -9.464769391342998e-05,
+            "old_probability": 0.9999053567850382
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.3135788440704346,
+            "old_probability": 0.2688561383607939
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -7.795983401592821e-05,
+            "old_probability": 0.999922043204773
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.2259241342544556,
+            "old_probability": 0.29348635416960295
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -8.594620157964528e-05,
+            "old_probability": 0.9999140574916894
+          }
+        }
+      ],
+      "audit_index": 0
+    },
+    {
+      "group_id": "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+      "rollout_fingerprint": "4ac38511978974f9f5d894b3536911d33dfdbb29d5938e9a6eb261bd49f67a19",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "domain_only": true,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": 0.14756540954113007,
+      "legacy_branch_grad_norm": 10.903166770935059,
+      "legacy_branch_hier_cosine": 0.9999475657129515,
+      "domain_advantages": [
+        -0.0078125,
+        -0.0078125,
+        -0.0078125,
+        -0.0078125,
+        0.0234375,
+        -0.0078125,
+        0.0234375,
+        -0.0078125
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.4621195793151855,
+            "old_probability": 0.23174455283148124
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -1.1920928244535389e-07,
+            "old_probability": 0.9999998807907247
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -6.079655122448457e-06,
+            "old_probability": 0.9999939203633587
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.4603880643844604,
+            "old_probability": 0.23214616958718554
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -1.1920928244535389e-07,
+            "old_probability": 0.9999998807907247
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -7.033323527139146e-06,
+            "old_probability": 0.9999929667012066
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -4.029819011688232,
+            "old_probability": 0.017777547190762934
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -4.6491513785440475e-06,
+            "old_probability": 0.9999953508594287
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -6.031808152329177e-05,
+            "old_probability": 0.9999396837375756
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.4621363878250122,
+            "old_probability": 0.23174065758362444
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -1.1920928244535389e-07,
+            "old_probability": 0.9999998807907247
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -5.125986263010418e-06,
+            "old_probability": 0.9999948740268748
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "living",
+            "sid_domain": "living",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 104181,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 104181,
+            "token_position": 7,
+            "old_logp": -1.160895586013794,
+            "old_probability": 0.3132055527255725
+          },
+          "text_domain_noun": {
+            "token_id": 107206,
+            "token_position": 11,
+            "old_logp": -2.276871418871451e-05,
+            "old_probability": 0.9999772315450165
+          },
+          "sid_domain": {
+            "token_id": 176249,
+            "token_position": 14,
+            "old_logp": -8.106198947643861e-06,
+            "old_probability": 0.9999918938339075
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.7798151969909668,
+            "old_probability": 0.4584907339437298
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -4.172316494077677e-06,
+            "old_probability": 0.9999958276922101
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "living",
+            "sid_domain": "living",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 104181,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 104181,
+            "token_position": 7,
+            "old_logp": -1.3694552183151245,
+            "old_probability": 0.2542454300850443
+          },
+          "text_domain_noun": {
+            "token_id": 107206,
+            "token_position": 11,
+            "old_logp": -2.5510462364763953e-05,
+            "old_probability": 0.9999744898630243
+          },
+          "sid_domain": {
+            "token_id": 176249,
+            "token_position": 14,
+            "old_logp": -2.253030106658116e-05,
+            "old_probability": 0.9999774699527387
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.4641180038452148,
+            "old_probability": 0.23128189128347307
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -3.576278118089249e-07,
+            "old_probability": 0.9999996423722521
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -5.8412379075889476e-06,
+            "old_probability": 0.9999941587791524
+          }
+        }
+      ],
+      "audit_index": 1
+    },
+    {
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "rollout_fingerprint": "9da9613dd5e5de7dff0ef796c04625261b68a8ba8b3158991b310cfe82cf5747",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "domain_only": false,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": null,
+      "legacy_branch_grad_norm": null,
+      "legacy_branch_hier_cosine": null,
+      "domain_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.15344904363155365,
+            "old_probability": 0.8577444706285361
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -1.0371154530730564e-05,
+            "old_probability": 0.9999896288992495
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.3841830625315197e-06,
+            "old_probability": 0.9999976158197796
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.19277054071426392,
+            "old_probability": 0.8246711808907893
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -8.106198947643861e-06,
+            "old_probability": 0.9999918938339075
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -3.099436753473128e-06,
+            "old_probability": 0.9999969005680498
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.1532374620437622,
+            "old_probability": 0.8579259727661291
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -8.106198947643861e-06,
+            "old_probability": 0.9999918938339075
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.145764938177308e-06,
+            "old_probability": 0.999997854237364
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.14879582822322845,
+            "old_probability": 0.8617450409549152
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -5.006777428206988e-06,
+            "old_probability": 0.9999949932351057
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.145764938177308e-06,
+            "old_probability": 0.999997854237364
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.16726675629615784,
+            "old_probability": 0.8459739123677067
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -1.3232143828645349e-05,
+            "old_probability": 0.9999867679437158
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.9802276912960224e-06,
+            "old_probability": 0.9999970197767496
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.1725364625453949,
+            "old_probability": 0.8415276040138914
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -6.318072337307967e-06,
+            "old_probability": 0.9999936819476216
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -3.099436753473128e-06,
+            "old_probability": 0.9999969005680498
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.17780150473117828,
+            "old_probability": 0.837108569089119
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -6.437280717364047e-06,
+            "old_probability": 0.9999935627400018
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -3.3378546504536644e-06,
+            "old_probability": 0.9999966621509202
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.15325668454170227,
+            "old_probability": 0.8579094814443876
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -1.0371154530730564e-05,
+            "old_probability": 0.9999896288992495
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -3.814689989667386e-06,
+            "old_probability": 0.9999961853172863
+          }
+        }
+      ],
+      "audit_index": 2
+    },
+    {
+      "group_id": "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8",
+      "rollout_fingerprint": "03f46012f978008513483457806c0e3b3fd2ec13cf1aee2eb702540cc97d02a5",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "domain_only": true,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": 0.15643112361431122,
+      "legacy_branch_grad_norm": 11.568782806396484,
+      "legacy_branch_hier_cosine": 0.9999520884030049,
+      "domain_advantages": [
+        -0.0078125,
+        -0.0078125,
+        -0.0078125,
+        -0.0078125,
+        0.0234375,
+        -0.0078125,
+        0.0234375,
+        -0.0078125
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.4021146595478058,
+            "old_probability": 0.668904045057869
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -3.6954811548639555e-06,
+            "old_probability": 0.9999963045256735
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -9.536697689327411e-06,
+            "old_probability": 0.9999904633477849
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.4444044530391693,
+            "old_probability": 0.6412060306474535
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -7.867782187531702e-06,
+            "old_probability": 0.9999921322487634
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.1086402082582936e-05,
+            "old_probability": 0.9999889136593714
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.40210214257240295,
+            "old_probability": 0.6689124177657483
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -3.6954811548639555e-06,
+            "old_probability": 0.9999963045256735
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.1324817933200393e-05,
+            "old_probability": 0.9999886752461923
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.3654378056526184,
+            "old_probability": 0.693892794180139
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -1.4305104514278355e-06,
+            "old_probability": 0.9999985694905718
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.4305012882687151e-05,
+            "old_probability": 0.9999856950894335
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.239636778831482,
+            "old_probability": 0.2894893475043271
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -5.23315102327615e-05,
+            "old_probability": 0.9999476698590368
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.3654125928878784,
+            "old_probability": 0.6939102893564635
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -8.344646857949556e-07,
+            "old_probability": 0.9999991655356624
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.2278481335670222e-05,
+            "old_probability": 0.9999877215940446
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": 0.0234375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.1532328128814697,
+            "old_probability": 0.31561479476866144
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -5.8887653722194955e-05,
+            "old_probability": 0.9999411140801217
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": -0.0078125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.40449967980384827,
+            "old_probability": 0.6673105963201528
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -4.768360213347478e-06,
+            "old_probability": 0.9999952316511552
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.0132738680113107e-05,
+            "old_probability": 0.9999898673126559
+          }
+        }
+      ],
+      "audit_index": 3
+    },
+    {
+      "group_id": "5312b41c5a6b8ac1fdbe5a0211cbfaf002533367a177c86d9595bbab0ca19090",
+      "rollout_fingerprint": "d43b2153ed422ad743b2fb92081bcbef0265d4f6afd2d1daa55701d0ce51a0be",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        0.0,
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "domain_only": true,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": 0.25355055928230286,
+      "legacy_branch_grad_norm": 16.746679306030273,
+      "legacy_branch_hier_cosine": 0.9999832190121607,
+      "domain_advantages": [
+        -0.01953125,
+        0.01171875,
+        -0.01953125,
+        0.01171875,
+        0.01171875,
+        0.01171875,
+        -0.01953125,
+        0.01171875
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.8485000729560852,
+            "old_probability": 0.42805650419963137
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.9550132492440753e-05,
+            "old_probability": 0.9999804500586101
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.7158300280570984,
+            "old_probability": 0.48878623708523045
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -1.2516897186287679e-05,
+            "old_probability": 0.9999874831811497
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -0.0002743821241892874,
+            "old_probability": 0.9997256555151431
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.8503363132476807,
+            "old_probability": 0.42727121081387126
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.7881233361549675e-05,
+            "old_probability": 0.9999821189265068
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.7187998294830322,
+            "old_probability": 0.48733679236815963
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -5.006777428206988e-06,
+            "old_probability": 0.9999949932351057
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -0.0002261144545627758,
+            "old_probability": 0.9997739111073838
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.6039049625396729,
+            "old_probability": 0.5466727261133892
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -4.887569048150908e-06,
+            "old_probability": 0.999995112442896
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -0.00024780540843494236,
+            "old_probability": 0.9997522252927893
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.7154829502105713,
+            "old_probability": 0.4889559134035524
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -8.821448318485636e-06,
+            "old_probability": 0.9999911785905904
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -0.00024232311989180744,
+            "old_probability": 0.999757706237984
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.8462755680084229,
+            "old_probability": 0.42900977789903283
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.9788545614574105e-05,
+            "old_probability": 0.9999802116501774
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "prod",
+            "sid_domain": "prod",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 72651,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 72651,
+            "token_position": 7,
+            "old_logp": -0.7212746739387512,
+            "old_probability": 0.48613220081269465
+          },
+          "text_domain_noun": {
+            "token_id": 45943,
+            "token_position": 9,
+            "old_logp": -6.9141146923357155e-06,
+            "old_probability": 0.9999930859092101
+          },
+          "sid_domain": {
+            "token_id": 176247,
+            "token_position": 12,
+            "old_logp": -0.00019703354337252676,
+            "old_probability": 0.9998029858664612
+          }
+        }
+      ],
+      "audit_index": 4
+    },
+    {
+      "group_id": "5ea4740a4656ed1e8e8f7981641afed8ced421efcf5672a4502270b8ac043631",
+      "rollout_fingerprint": "eb0237e5f319662591fc1d36fa816be2cbe5b42a0c4e80c5d8b4f6e4dd280571",
+      "rewards": [
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "domain_only": true,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": 0.0794868990778923,
+      "legacy_branch_grad_norm": 7.678315162658691,
+      "legacy_branch_hier_cosine": 0.9999198160333955,
+      "domain_advantages": [
+        0.02734375,
+        -0.00390625,
+        -0.00390625,
+        -0.00390625,
+        -0.00390625,
+        -0.00390625,
+        -0.00390625,
+        -0.00390625
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": 0.02734375,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -1.847797155380249,
+            "old_probability": 0.15758391713834274
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -1.1920928244535389e-07,
+            "old_probability": 0.9999998807907247
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -9.536697689327411e-06,
+            "old_probability": 0.9999904633477849
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.2512122392654419,
+            "old_probability": 0.7778572621842863
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -6.794906312279636e-06,
+            "old_probability": 0.999993205116773
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.27798664569854736,
+            "old_probability": 0.7573069347519066
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -7.510157047363464e-06,
+            "old_probability": 0.9999924898711537
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.22476404905319214,
+            "old_probability": 0.7987046516468196
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -5.483612312673358e-06,
+            "old_probability": 0.9999945164027223
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.25306811928749084,
+            "old_probability": 0.7764149911863252
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -6.318072337307967e-06,
+            "old_probability": 0.9999936819476216
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.27797380089759827,
+            "old_probability": 0.7573166622712147
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -6.318072337307967e-06,
+            "old_probability": 0.9999936819476216
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.2552049160003662,
+            "old_probability": 0.7747577214401814
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -4.887569048150908e-06,
+            "old_probability": 0.999995112442896
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": -0.00390625,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.27797290682792664,
+            "old_probability": 0.757317339365377
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -6.318072337307967e-06,
+            "old_probability": 0.9999936819476216
+          }
+        }
+      ],
+      "audit_index": 5
+    },
+    {
+      "group_id": "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+      "rollout_fingerprint": "cb83c0940768fcdbd144a63075b6c072c58c6eeff2201cfbe1ae4cfca40a89a9",
+      "rewards": [
+        0.0,
+        0.5,
+        0.0,
+        0.5,
+        0.5,
+        8.0,
+        0.0,
+        0.5
+      ],
+      "domain_only": false,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": null,
+      "legacy_branch_grad_norm": null,
+      "legacy_branch_hier_cosine": null,
+      "domain_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.02466665394604206,
+            "old_probability": 0.9756350819329346
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.6689286894688848e-06,
+            "old_probability": 0.9999983310727032
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.01948501728475094,
+            "old_probability": 0.9807035886812047
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.0265558760002023e-06,
+            "old_probability": 0.9999979734461775
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.019483497366309166,
+            "old_probability": 0.9807050792718078
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.7881377516459906e-06,
+            "old_probability": 0.9999982118638471
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.0192519910633564,
+            "old_probability": 0.980932144961552
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.7881377516459906e-06,
+            "old_probability": 0.9999982118638471
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.019564161077141762,
+            "old_probability": 0.9806259751513402
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.4305104514278355e-06,
+            "old_probability": 0.9999985694905718
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.019395343959331512,
+            "old_probability": 0.9807915355764388
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.7881377516459906e-06,
+            "old_probability": 0.9999982118638471
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.024657117202878,
+            "old_probability": 0.9756443863584997
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -2.264974000354414e-06,
+            "old_probability": 0.9999977350285647
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": 0.0,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -0.019346002489328384,
+            "old_probability": 0.9808399304664984
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": 0.0,
+            "old_probability": 1.0
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -1.7881377516459906e-06,
+            "old_probability": 0.9999982118638471
+          }
+        }
+      ],
+      "audit_index": 6
+    },
+    {
+      "group_id": "dea6a49f8f2209c89897a1dfd297db748f89f0011487d3f0039c5e74adfbb201",
+      "rollout_fingerprint": "af7ba0e445081f703ac92816e16f1bbda30de63b6e4aee7c2710de3e26d1274f",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        0.0,
+        0.5,
+        0.0,
+        0.5
+      ],
+      "domain_only": false,
+      "branch_alignment_valid": true,
+      "valid_branch_candidate_count": 8,
+      "branch_hier_grad_norm": null,
+      "legacy_branch_grad_norm": null,
+      "legacy_branch_hier_cosine": null,
+      "domain_advantages": [
+        -0.01953125,
+        0.01171875,
+        -0.01953125,
+        -0.01953125,
+        0.01171875,
+        0.01171875,
+        0.01171875,
+        0.01171875
+      ],
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.5373339653015137,
+            "old_probability": 0.21495341144227562
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -0.03804141283035278,
+            "old_probability": 0.9626730730490257
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -0.00020132421923335642,
+            "old_probability": 0.9997986960451274
+          }
+        },
+        {
+          "candidate_index": 1,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -0.2855570614337921,
+            "old_probability": 0.7515954528405456
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -2.0265558760002023e-06,
+            "old_probability": 0.9999979734461775
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -2.9802276912960224e-06,
+            "old_probability": 0.9999970197767496
+          }
+        },
+        {
+          "candidate_index": 2,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.5348848104476929,
+            "old_probability": 0.21548051084380604
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -0.03804141283035278,
+            "old_probability": 0.9626730730490257
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -0.00015639036428183317,
+            "old_probability": 0.9998436218640537
+          }
+        },
+        {
+          "candidate_index": 3,
+          "domain_advantage": -0.01953125,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "video",
+            "sid_domain": "video",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 99729,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 99729,
+            "token_position": 7,
+            "old_logp": -1.634157657623291,
+            "old_probability": 0.19511665712571052
+          },
+          "text_domain_noun": {
+            "token_id": 87140,
+            "token_position": 9,
+            "old_logp": -0.029750416055321693,
+            "old_probability": 0.9706877714009485
+          },
+          "sid_domain": {
+            "token_id": 176245,
+            "token_position": 13,
+            "old_logp": -0.00015662873920518905,
+            "old_probability": 0.9998433835264354
+          }
+        },
+        {
+          "candidate_index": 4,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -0.26642996072769165,
+            "old_probability": 0.7661096596102301
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -9.536738616588991e-07,
+            "old_probability": 0.9999990463265931
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -3.576272320060525e-06,
+            "old_probability": 0.9999964237340748
+          }
+        },
+        {
+          "candidate_index": 5,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -0.26000937819480896,
+            "old_probability": 0.7710443547654939
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -9.536738616588991e-07,
+            "old_probability": 0.9999990463265931
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -4.529942543740617e-06,
+            "old_probability": 0.9999954700677164
+          }
+        },
+        {
+          "candidate_index": 6,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -0.29096588492393494,
+            "old_probability": 0.7475411800073051
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -1.5497195136049413e-06,
+            "old_probability": 0.9999984502816872
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -2.9802276912960224e-06,
+            "old_probability": 0.9999970197767496
+          }
+        },
+        {
+          "candidate_index": 7,
+          "domain_advantage": 0.01171875,
+          "branch_alignment": {
+            "valid": true,
+            "declaration_domain": "ad",
+            "sid_domain": "ad",
+            "declaration_start": 4,
+            "branch_position": 7,
+            "branch_token_id": 112429,
+            "failure": null
+          },
+          "earliest_branch": {
+            "token_id": 112429,
+            "token_position": 7,
+            "old_logp": -0.29086536169052124,
+            "old_probability": 0.7476163290408779
+          },
+          "text_domain_noun": {
+            "token_id": 101927,
+            "token_position": 8,
+            "old_logp": -4.172316494077677e-06,
+            "old_probability": 0.9999958276922101
+          },
+          "sid_domain": {
+            "token_id": 176251,
+            "token_position": 12,
+            "old_logp": -3.3378546504536644e-06,
+            "old_probability": 0.9999966621509202
+          }
+        }
+      ],
+      "audit_index": 7
+    }
+  ]
+}

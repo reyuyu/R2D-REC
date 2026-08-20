@@ -2,7 +2,7 @@
 
 ## Status and history
 
-**TEXT-DOMAIN DECISION-TOKEN PLACEMENT GPU PAIRED AUDITED**
+**EARLIEST DOMAIN BRANCH POINT GPU PAIRED DIAGNOSTIC COMPLETE**
 
 **ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
@@ -29,6 +29,8 @@
   decision token; A/B/C and the dead-zero bridge remain unchanged.
 - Phase 10 current: records the strictly paired Text-Domain zero-step GPU
   re-audit, including matched-support diagnostics and unchanged-parameter proof.
+- Phase 11 current: adds and records the diagnostic-only earliest Domain branch
+  point tokenizer and paired zero-step GPU audit. Formal placement is unchanged.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -333,6 +335,69 @@ b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
 No optimizer or scheduler step occurred, no parameter changed, no checkpoint
 was written, and no smoke, pilot, or formal training was started.
 
+## Earliest Domain branch-point paired audit (2026-08-21)
+
+The real tokenizer gives the following complete declaration sequences:
+
+| Domain | Declaration token ids |
+|---|---|
+| video | `75882 20002 104044 99729 9370 87140 18830 25 220` |
+| prod | `75882 20002 104044 72651 34187 45943 25 220` |
+| ad | `75882 20002 104044 112429 101927 18830 25 220` |
+| living | `75882 20002 104044 104181 75437 100541 34187 107206 25 220` |
+
+Their longest common token prefix is `[75882, 20002, 104044]`, decoded as
+`[该, 用户, 最近]`. The first divergent declaration-token index is `3`:
+video `喜欢/99729`, prod `点击/72651`, ad `感兴趣的/112429`, and living
+`首次/104181`. Candidate alignment requires one exact full declaration between
+the final `</think>` and final contiguous SID, with declaration and SID domains
+equal. There is no substring or SID fallback.
+
+Artifacts:
+
+- [`../results/earliest_domain_branch_tokenizer_audit_20260821.json`](../results/earliest_domain_branch_tokenizer_audit_20260821.json)
+- [`../results/gpu_earliest_domain_branch_audit_g8_seed20260816_20260821.json`](../results/gpu_earliest_domain_branch_audit_g8_seed20260816_20260821.json)
+- [`../results/gpu_earliest_domain_branch_paired_comparison_g8_seed20260816_20260821.json`](../results/gpu_earliest_domain_branch_paired_comparison_g8_seed20260816_20260821.json)
+
+The completed audit used physical GPU 1, original 8B plus fresh original BATA,
+seed `20260816`, and the same eight immutable G8 rollouts. Fingerprint and
+reward parity are both `8/8`. An initial pre-result harness attempt was stopped
+after one group when a reference-field adapter bug prevented Domain-only
+gradient execution; it wrote no result JSON and the corrected CPU test proves
+the expected historical indices `[0,1,3,4,5]` before the completed run.
+
+Across the five historical Domain-only groups, 39 defined branch probabilities
+have median `0.4584907`, mean `0.4633573`, and range
+`0.0177775..0.7987047`. The same candidates' noun probabilities have median
+`0.99999988`; SID probability median is `0.99998623`. The branch is therefore
+materially less saturated.
+
+| Group | Alignment | SID norm | Noun norm | Branch norm | Branch / legacy | Matched cosine |
+|---:|:---:|---:|---:|---:|---:|---:|
+| 0 | false (7/8) | `0.366774` | `0` | `0` | `0` | n/a |
+| 1 | true | `8.13352e-6` | `2.10854e-5` | `0.147565` | `0.186797` | `0.999948` |
+| 3 | true | `1.83335e-5` | `6.21136e-6` | `0.156431` | `0.0308641` | `0.999952` |
+| 4 | true | `6.36818e-5` | `8.39188e-6` | `0.253551` | `0.218065` | `0.999983` |
+| 5 | true | `2.08502e-6` | `1.12524e-7` | `0.0794869` | `0.104419` | `0.999920` |
+
+Groups 1/3/4/5 provide strong evidence that the earliest branch point recovers
+real LoRA gradient with the expected matched-support direction. Group 0 still
+contains one direct-SID candidate with no exact declaration; the conservative
+group gate therefore disables all branch credit and does not improve over the
+noun placement for that group. Because only four of five Domain-only groups
+have reliable full-G8 alignment, the required three-way verdict is
+`BRANCH_POINT_AMBIGUOUS`, not a formal placement recommendation.
+
+The trainable-LoRA checksum is identical before and after:
+
+```text
+b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
+```
+
+No optimizer/scheduler step, parameter update, checkpoint, smoke, pilot, or
+formal training occurred. Formal Domain placement and all coefficients remain
+unchanged.
+
 ## Frozen runner contract
 
 The runner is not restructured. Prefix remains `GR-REC-CLAMP-BRIDGE-V1-`,
@@ -342,6 +407,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**TEXT-DOMAIN DECISION-TOKEN PLACEMENT GPU PAIRED AUDITED**
+**EARLIEST DOMAIN BRANCH POINT GPU PAIRED DIAGNOSTIC COMPLETE**
 
 **ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
