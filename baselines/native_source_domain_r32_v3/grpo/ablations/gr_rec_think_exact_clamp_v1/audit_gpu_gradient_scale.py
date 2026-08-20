@@ -124,6 +124,46 @@ def hierarchical_token_advantages(batch: RolloutBatch, tokenizer) -> tuple[torch
     return token_advantages, credits, diagnostics
 
 
+def legacy_text_domain_advantages(
+    batch: RolloutBatch, legacy_scalar: torch.Tensor, alignment: dict,
+) -> torch.Tensor:
+    """Diagnostic-only legacy scalar advantage on matched text-Domain support."""
+    token_advantages = torch.zeros_like(batch.completion_ids, dtype=torch.float32)
+    if not alignment["domain_text_alignment_valid"]:
+        return token_advantages
+    for row, (sid, position) in enumerate(
+        zip(batch.predicted_sids, alignment["text_domain_token_positions"])
+    ):
+        if sid is not None and position is not None:
+            token_advantages[row, position] = legacy_scalar[row]
+    return token_advantages
+
+
+def sampled_domain_diagnostics(
+    batch: RolloutBatch, old_logps: torch.Tensor, credits: list, alignment: dict,
+) -> list[dict]:
+    records = []
+    for row, sid in enumerate(batch.predicted_sids):
+        text_position = alignment["text_domain_token_positions"][row]
+        sid_position = alignment["sid_domain_token_positions"][row]
+        text_logp = float(old_logps[row, text_position]) if text_position is not None else None
+        sid_logp = float(old_logps[row, sid_position]) if sid_position is not None else None
+        records.append({
+            "candidate_index": row,
+            "text_domain": alignment["text_domains"][row],
+            "sid_domain": sid[0] if sid is not None else None,
+            "text_domain_token_position": text_position,
+            "sid_domain_token_position": sid_position,
+            "text_domain_old_logp": text_logp,
+            "text_domain_old_probability": math.exp(text_logp) if text_logp is not None else None,
+            "sid_domain_old_logp": sid_logp,
+            "sid_domain_old_probability": math.exp(sid_logp) if sid_logp is not None else None,
+            "domain_advantage": credits[row][0],
+            "alignment_failure": alignment["alignment_failures"][row],
+        })
+    return records
+
+
 def completion_logps(model, batch: RolloutBatch) -> torch.Tensor:
     width = batch.completion_ids.size(1)
     output = model(
@@ -251,6 +291,11 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
     legacy_scalar = legacy_advantages(batch.rewards, batch.input_ids.device)
     legacy_tokens = legacy_scalar.unsqueeze(1).expand_as(batch.completion_mask)
     hierarchical_tokens, credits, alignment = hierarchical_token_advantages(batch, tokenizer)
+    columns = list(zip(*credits))
+    domain_only = (
+        any(value != 0 for value in columns[0])
+        and not any(value != 0 for column in columns[1:] for value in column)
+    )
 
     legacy_norm, legacy_vector = isolated_gradient(
         model, parameters,
@@ -264,8 +309,21 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
             model, batch, old_logps, hierarchical_tokens, "hierarchical_sum"
         ), shared_rng_state, batch.input_ids.device,
     )
+    legacy_text_norm = None
+    legacy_text_hier_cosine = None
+    if domain_only:
+        legacy_text_tokens = legacy_text_domain_advantages(batch, legacy_scalar, alignment)
+        legacy_text_norm, legacy_text_vector = isolated_gradient(
+            model, parameters,
+            lambda: clipped_policy_loss(
+                model, batch, old_logps, legacy_text_tokens, "hierarchical_sum"
+            ), shared_rng_state, batch.input_ids.device,
+        )
+        legacy_text_hier_cosine = vector_cosine(
+            legacy_text_vector, hierarchical_vector
+        )
+        del legacy_text_vector
     ratio = hierarchical_norm / legacy_norm if legacy_norm > 0 else None
-    columns = list(zip(*credits))
     result = {
         "group_id": batch.group_id,
         "rollout_fingerprint": batch.fingerprint,
@@ -275,6 +333,9 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
         "hier_grad_norm": hierarchical_norm,
         "hier_over_legacy": ratio,
         "legacy_hier_cosine": vector_cosine(legacy_vector, hierarchical_vector),
+        "legacy_text_domain_grad_norm": legacy_text_norm,
+        "legacy_text_domain_hier_cosine": legacy_text_hier_cosine,
+        "hierarchical_credits": [list(row) for row in credits],
         "stage_active": {
             "domain": any(value != 0 for value in columns[0]),
             "a": any(value != 0 for value in columns[1]),
@@ -288,6 +349,9 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
             "c": sum(value != 0 for value in columns[3]),
         },
         **alignment,
+        "candidate_domain_diagnostics": sampled_domain_diagnostics(
+            batch, old_logps, credits, alignment
+        ),
         "dead_zero_bridge_active": batch.rewards == (0.0,) * M_NO,
         "bridge_raw_grad_norm": None,
         "bridge_weighted_grad_norm": None,
@@ -342,6 +406,12 @@ def summarize(records: list[dict]) -> dict:
         "hier_grad_norm": numeric_summary(r["hier_grad_norm"] for r in records),
         "hier_over_legacy": ratio_summary,
         "legacy_hier_cosine": numeric_summary(r["legacy_hier_cosine"] for r in records),
+        "legacy_text_domain_grad_norm": numeric_summary(
+            r["legacy_text_domain_grad_norm"] for r in records
+        ),
+        "legacy_text_domain_hier_cosine": numeric_summary(
+            r["legacy_text_domain_hier_cosine"] for r in records
+        ),
         "median_active_hier_grad_norm": median_active_hier,
         "bridge_weighted_over_median_active_hier": bridge_summary,
         "flags": flags,
@@ -398,6 +468,114 @@ def make_rollout_batch(record, model, tokenizer, device, max_new_tokens) -> Roll
     )
 
 
+def pairing_status(index: int, batch: RolloutBatch, reference_group: dict) -> dict:
+    checks = {
+        "group_id": batch.group_id == reference_group.get("group_id"),
+        "rollout_fingerprint": batch.fingerprint == reference_group.get("rollout_fingerprint"),
+        "rewards": list(batch.rewards) == reference_group.get("rewards"),
+    }
+    return {"audit_index": index, **checks, "valid": all(checks.values())}
+
+
+def build_paired_comparison(reference: dict, current: dict, parity: list[dict]) -> dict:
+    groups = []
+    domain_only_indices = []
+    for index, (old, new) in enumerate(zip(reference["groups"], current["groups"])):
+        old_norm = old["hier_grad_norm"]
+        new_norm = new["hier_grad_norm"]
+        old_stage = old["stage_active"]
+        old_count = old["credited_token_count"]
+        abc_stage_parity = all(old_stage[key] == new["stage_active"][key] for key in "abc")
+        abc_count_parity = all(old_count[key] == new["credited_token_count"][key] for key in "abc")
+        old_domain_only = old_stage["domain"] and not any(old_stage[key] for key in "abc")
+        if old_domain_only:
+            domain_only_indices.append(index)
+        groups.append({
+            "audit_index": index,
+            "group_id": new["group_id"],
+            "rollout_fingerprint": new["rollout_fingerprint"],
+            "rewards": new["rewards"],
+            "legacy_grad_norm": new["legacy_grad_norm"],
+            "old_sid_domain_hier_grad_norm": old_norm,
+            "new_text_domain_hier_grad_norm": new_norm,
+            "new_text_hier_over_legacy": (
+                new_norm / new["legacy_grad_norm"] if new["legacy_grad_norm"] > 0 else None
+            ),
+            "new_text_hier_over_old_sid_hier": new_norm / old_norm if old_norm > 0 else None,
+            "legacy_full_text_hier_cosine": new["legacy_hier_cosine"],
+            "legacy_text_domain_grad_norm": new["legacy_text_domain_grad_norm"],
+            "legacy_text_domain_hier_cosine": new["legacy_text_domain_hier_cosine"],
+            "old_stage_active": old_stage,
+            "new_stage_active": new["stage_active"],
+            "old_credited_token_count": old_count,
+            "new_credited_token_count": new["credited_token_count"],
+            "abc_stage_parity": abc_stage_parity,
+            "abc_credited_count_parity": abc_count_parity,
+            "abc_credits_reconstructed_from_immutable_rollout": [
+                row[1:] for row in new["hierarchical_credits"]
+            ],
+            "domain_text_alignment_valid": new["domain_text_alignment_valid"],
+            "candidate_domain_diagnostics": new["candidate_domain_diagnostics"],
+        })
+
+    domain_groups = [groups[index] for index in domain_only_indices]
+    candidates = [
+        candidate
+        for group in domain_groups
+        for candidate in group["candidate_domain_diagnostics"]
+    ]
+    return {
+        "type": "gr_rec_think_exact_clamp_v1_text_domain_paired_audit",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "paired_audit_valid": all(item["valid"] for item in parity),
+        "reference_type": reference.get("type"),
+        "reference_created_at": reference.get("created_at"),
+        "current_created_at": current.get("created_at"),
+        "parity": parity,
+        "domain_only_indices": domain_only_indices,
+        "summary": {
+            "group_count": len(groups),
+            "fingerprint_parity_count": sum(item["rollout_fingerprint"] for item in parity),
+            "reward_parity_count": sum(item["rewards"] for item in parity),
+            "alignment_valid_group_count": sum(
+                group["domain_text_alignment_valid"] for group in groups
+            ),
+            "domain_only_old_sid_hier_grad_norm": numeric_summary(
+                group["old_sid_domain_hier_grad_norm"] for group in domain_groups
+            ),
+            "domain_only_new_text_hier_grad_norm": numeric_summary(
+                group["new_text_domain_hier_grad_norm"] for group in domain_groups
+            ),
+            "domain_only_new_over_old": numeric_summary(
+                group["new_text_hier_over_old_sid_hier"] for group in domain_groups
+            ),
+            "domain_only_new_over_legacy": numeric_summary(
+                group["new_text_hier_over_legacy"] for group in domain_groups
+            ),
+            "domain_only_matched_support_cosine": numeric_summary(
+                group["legacy_text_domain_hier_cosine"] for group in domain_groups
+            ),
+            "domain_only_text_probability": numeric_summary(
+                item["text_domain_old_probability"] for item in candidates
+            ),
+            "domain_only_sid_probability": numeric_summary(
+                item["sid_domain_old_probability"] for item in candidates
+            ),
+            "group_6_7_abc_parity": all(
+                groups[index]["abc_stage_parity"]
+                and groups[index]["abc_credited_count_parity"]
+                for index in (6, 7)
+            ),
+        },
+        "checksum": {
+            "before": current["trainable_parameter_checksum_before"],
+            "after": current["trainable_parameter_checksum_after"],
+            "parameter_change": current["parameter_change"],
+        },
+        "groups": groups,
+    }
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Zero-update NoThink GPU gradient audit")
     parser.add_argument("--execute-zero-step-gpu-audit", action="store_true")
@@ -406,11 +584,15 @@ def parse_args(argv=None):
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--max-new-tokens", type=int, default=128)
     parser.add_argument("--output", default="gpu_gradient_scale_audit.json")
+    parser.add_argument("--paired-reference")
+    parser.add_argument("--paired-output")
     args = parser.parse_args(argv)
     if not args.execute_zero_step_gpu_audit:
         parser.error("explicit --execute-zero-step-gpu-audit authorization flag is required")
     if not 1 <= args.groups <= 16:
         parser.error("--groups must be in [1, 16]")
+    if bool(args.paired_reference) != bool(args.paired_output):
+        parser.error("--paired-reference and --paired-output must be provided together")
     return args
 
 
@@ -418,6 +600,15 @@ def main(argv=None):
     args = parse_args(argv)
     if not args.device.startswith("cuda") or not torch.cuda.is_available():
         raise RuntimeError("this harness requires an explicitly authorized CUDA device")
+    paired_reference = None
+    if args.paired_reference:
+        paired_reference = json.loads(Path(args.paired_reference).read_text(encoding="utf-8"))
+        reference_groups = paired_reference.get("groups", [])
+        if len(reference_groups) != args.groups:
+            raise RuntimeError(
+                "paired reference group count does not match --groups: "
+                f"{len(reference_groups)} != {args.groups}"
+            )
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     model, tokenizer, _template = load_model(args.device)
@@ -439,10 +630,37 @@ def main(argv=None):
     if len(records) != args.groups:
         raise RuntimeError("NoThink audit dataset selection did not match --groups")
     group_results = []
+    parity = []
     for index, record in enumerate(records):
         batch = make_rollout_batch(
             record, model, tokenizer, args.device, args.max_new_tokens
         )
+        if paired_reference is not None:
+            status = pairing_status(index, batch, paired_reference["groups"][index])
+            parity.append(status)
+            if not status["valid"]:
+                model.zero_grad(set_to_none=True)
+                checksum_after_invalid_pair = trainable_parameter_checksum(parameters)
+                invalid_payload = {
+                    "type": "gr_rec_think_exact_clamp_v1_text_domain_paired_audit",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "paired_audit_valid": False,
+                    "flags": ["PAIRED_AUDIT_INVALID"],
+                    "parity": parity,
+                    "failed_audit_index": index,
+                    "checksum": {
+                        "before": parameter_checksum_before,
+                        "after": checksum_after_invalid_pair,
+                        "parameter_change": (
+                            parameter_checksum_before != checksum_after_invalid_pair
+                        ),
+                    },
+                }
+                Path(args.paired_output).write_text(
+                    json.dumps(invalid_payload, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                raise RuntimeError("PAIRED_AUDIT_INVALID")
         result = audit_rollout(model, tokenizer, parameters, batch)
         result["audit_index"] = index
         group_results.append(result)
@@ -457,7 +675,9 @@ def main(argv=None):
         "zero_update": True,
         "model_mode": "eval_generation_train_gradient_with_shared_rng",
         "activation_memory_mode": "non_reentrant_gradient_checkpointing",
-        "gradient_forward_rng": "shared_old_legacy_hier",
+        "gradient_forward_rng": "shared_old_legacy_hier_matched_text",
+        "domain_credit_placement": "natural_language_domain_decision_token",
+        "matched_support_objective": "diagnostic_only_legacy_text_domain",
         "base": BASE,
         "adapter": ADAPTER,
         "seed": args.seed,
@@ -473,6 +693,18 @@ def main(argv=None):
     Path(args.output).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    if paired_reference is not None:
+        paired_payload = build_paired_comparison(paired_reference, payload, parity)
+        paired_payload["reference_path"] = str(Path(args.paired_reference).resolve())
+        paired_payload["current_path"] = str(Path(args.output).resolve())
+        if not paired_payload["paired_audit_valid"]:
+            paired_payload["flags"] = ["PAIRED_AUDIT_INVALID"]
+        Path(args.paired_output).write_text(
+            json.dumps(paired_payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        if not paired_payload["paired_audit_valid"]:
+            raise RuntimeError("PAIRED_AUDIT_INVALID")
     print(json.dumps(payload["summary"], ensure_ascii=False, indent=2))
     model.zero_grad(set_to_none=True)
     if parameter_change:

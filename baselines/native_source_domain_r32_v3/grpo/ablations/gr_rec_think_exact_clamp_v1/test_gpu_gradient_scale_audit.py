@@ -198,6 +198,18 @@ assert domain_result["stage_active"] == {
 assert domain_result["credited_token_count"] == {
     "domain": 8, "a": 0, "b": 0, "c": 0,
 }
+assert domain_result["legacy_text_domain_grad_norm"] > 0
+assert domain_result["legacy_text_domain_hier_cosine"] > 0.999999
+assert all(
+    abs(item["text_domain_old_probability"] - 1 / 64) < 1e-8
+    and abs(item["sid_domain_old_probability"] - 1 / 64) < 1e-8
+    for item in domain_result["candidate_domain_diagnostics"]
+)
+matched = audit.legacy_text_domain_advantages(
+    domain_batch, audit.legacy_advantages(domain_batch.rewards, "cpu"), domain_alignment
+)
+assert torch.count_nonzero(matched[:, 1]) == 8
+assert torch.count_nonzero(matched[:, 2:]) == 0
 
 
 # Bridge measurement is gated by a real all-zero reward vector and uses no
@@ -262,6 +274,53 @@ assert audit.reward_pattern([0, 0.5] * 4) == "A_ONLY"
 assert audit.reward_pattern([0.5, 2] * 4) == "AB_SIGNAL"
 assert audit.reward_pattern([2, 8] * 4) == "EXACT_SIGNAL"
 assert audit.reward_pattern([-1, -0.25] * 4) == "MIXED"
+
+
+# Paired comparison accepts only exact group/fingerprint/reward matches and
+# preserves old SID-Domain values alongside the new Text-Domain diagnostics.
+reference_groups = []
+current_groups = []
+parity = []
+for index in range(8):
+    old = {
+        **domain_result,
+        "group_id": f"group-{index}",
+        "rollout_fingerprint": f"fingerprint-{index}",
+        "hier_grad_norm": 0.5 + index,
+    }
+    new = {
+        **domain_result,
+        "group_id": f"group-{index}",
+        "rollout_fingerprint": f"fingerprint-{index}",
+        "hier_grad_norm": 1.0 + index,
+    }
+    reference_groups.append(old)
+    current_groups.append(new)
+    fake_batch = replace(
+        domain_batch,
+        group_id=old["group_id"],
+        rewards=tuple(old["rewards"]),
+        completion_ids_list=((index,),) * 8,
+    )
+    old["rollout_fingerprint"] = fake_batch.fingerprint
+    new["rollout_fingerprint"] = fake_batch.fingerprint
+    parity.append(audit.pairing_status(index, fake_batch, old))
+assert all(item["valid"] for item in parity)
+bad_reference = {**reference_groups[0], "rewards": [99.0] * 8}
+assert audit.pairing_status(0, fake_batch, bad_reference)["valid"] is False
+comparison = audit.build_paired_comparison(
+    {"groups": reference_groups},
+    {
+        "groups": current_groups,
+        "trainable_parameter_checksum_before": "same",
+        "trainable_parameter_checksum_after": "same",
+        "parameter_change": False,
+    },
+    parity,
+)
+assert comparison["paired_audit_valid"] is True
+assert comparison["summary"]["fingerprint_parity_count"] == 8
+assert comparison["summary"]["group_6_7_abc_parity"] is True
 
 
 # Structural safety: the harness contains no call whose attribute is `step`.

@@ -2,9 +2,9 @@
 
 ## Status and history
 
-**TEXT-DOMAIN DECISION-TOKEN PLACEMENT CPU VERIFIED**
+**TEXT-DOMAIN DECISION-TOKEN PLACEMENT GPU PAIRED AUDITED**
 
-**GPU RE-AUDIT NOT RUN / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
@@ -24,9 +24,11 @@
   paired eight-group SID-Domain-stage zero-step GPU re-audit and comparison.
 - Phase 8 `efe7dc02ba833b9b19519e2a01eab19d8857d8f1`: audits the real NoThink
   SFT and historical rollout Domain decision span without GPU execution.
-- Phase 9 current: moves the unchanged Domain advantage from final SID
+- Phase 9 `40d0a447699e1e36547365545400a260ba085d05`: moves the unchanged Domain advantage from final SID
   `<|domain_begin|>` serialization to the preceding natural-language Domain
   decision token; A/B/C and the dead-zero bridge remain unchanged.
+- Phase 10 current: records the strictly paired Text-Domain zero-step GPU
+  re-audit, including matched-support diagnostics and unchanged-parameter proof.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -156,7 +158,9 @@ for the same real NoThink G8 rollout, old log-probabilities and model parameters
 
 1. Legacy population-std sequence-level GRPO gradient.
 2. Current Conditional Hierarchical Token Credit gradient.
-3. Raw and `0.02`-weighted Gold-A bridge gradient, only when the generated
+3. For Domain-only groups, diagnostic-only legacy population-std advantage on
+   exactly the natural-language Domain-token support.
+4. Raw and `0.02`-weighted Gold-A bridge gradient, only when the generated
    reward vector is exactly `[0]*8`.
 
 Each objective starts with `model.zero_grad(set_to_none=True)`, performs a fresh
@@ -221,8 +225,8 @@ Thus `PARAMETER CHANGE = ZERO`, `optimizer.step = NO`, and
 ## Domain-stage paired G8 re-audit (2026-08-21)
 
 This section is historical evidence for the Phase 6/7 SID-Domain placement.
-The current Phase 9 harness now places Domain credit on the natural-language
-decision token. No GPU re-audit of Phase 9 has been run.
+The Phase 9/10 result below supersedes its placement conclusion while retaining
+this artifact as the immutable paired reference.
 
 The re-audit used the same one-A800 execution contract, seed `20260816`, G8
 sampling parameters, original 8B base, fresh original BATA adapter,
@@ -268,6 +272,67 @@ b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
 No optimizer or scheduler step occurred, no parameter changed, and no training
 or checkpoint write was started.
 
+## Text-Domain paired G8 re-audit (2026-08-21)
+
+The authorized Phase 10 audit reused GPU 0, seed `20260816`, eight real NoThink
+G8 groups, temperature/top-p `1.0`, the original 8B base, fresh original BATA
+adapter, and the historical per-group generation/backward RNG order. All eight
+`group_id`, rollout fingerprint and reward-vector triples matched the saved
+SID-Domain audit exactly. Therefore `paired_audit_valid=true`.
+
+Artifacts:
+
+- [`../results/gpu_gradient_scale_audit_text_domain_g8_seed20260816_20260821.json`](../results/gpu_gradient_scale_audit_text_domain_g8_seed20260816_20260821.json)
+- [`../results/gpu_gradient_scale_audit_text_domain_paired_comparison_g8_seed20260816_20260821.json`](../results/gpu_gradient_scale_audit_text_domain_paired_comparison_g8_seed20260816_20260821.json)
+
+Domain-only comparison:
+
+| Group | Alignment | Legacy norm | Old SID-Domain norm | New Text-Domain norm | New / legacy | New / old | Matched-support cosine |
+|---:|:---:|---:|---:|---:|---:|---:|---:|
+| 0 | false | `4.5559769` | `0.36677423` | `0` | `0` | `0` | n/a |
+| 1 | true | `0.78997797` | `8.13352e-6` | `2.10854e-5` | `2.66912e-5` | `2.59241` | `1.01047` |
+| 3 | true | `5.0683770` | `1.83335e-5` | `6.21136e-6` | `1.22551e-6` | `0.338799` | `1.01155` |
+| 4 | true | `1.1627312` | `6.36818e-5` | `8.39188e-6` | `7.21739e-6` | `0.131778` | `1.01358` |
+| 5 | true | `0.76123321` | `2.08502e-6` | `1.12524e-7` | `1.47818e-7` | `0.0539679` | `1.00857` |
+
+Group 0 contains one real candidate with no natural-language Domain token
+before its final SID. The formal group gate therefore disables Domain credit
+for the whole G8; no fallback or synthetic alignment was used. Alignment is
+valid for the other seven groups.
+
+The proposed desaturation hypothesis is not supported. Across the 39 defined
+Text-Domain observations in the five historical Domain-only groups, probability
+has median `0.9999998808`, mean `0.9999956964`, and range
+`0.9999465971..1.0`. The corresponding SID-Domain aggregate is distorted by
+Group 0's malformed candidate (`0.02297536`); for aligned Domain-only Groups
+1/3/4/5, both positions remain overwhelmingly saturated. Only Group 1's new
+gradient is larger than its old SID-Domain gradient. Groups 3/4/5 are smaller,
+and the median new/old ratio over all five Domain-only groups is `0.1317783`.
+The audit retains `HIER_GRAD_TOO_SMALL_REVIEW`; no coefficient was changed.
+
+For aligned pure `-.25/0` groups, the diagnostic legacy-on-Text-Domain and
+hierarchical Text-Domain gradients are analytically positive scalar multiples.
+Measured BF16 cosine values are `1.0086..1.0136`; values slightly above the
+mathematical bound are reduction-rounding error and mean approximately `+1`,
+not super-alignment. Group 0 has no defined matched-support comparison because
+its formal Domain stage is gated off.
+
+Groups 6/7 preserve A/B/C stage activation and credited-token counts exactly:
+Group 6 remains A+B with counts `8/5/0`, and Group 7 remains A-only with counts
+`5/0/0`. Group 6's total hierarchical norm is also stable
+(`0.28579360 -> 0.28578994`). Group 7 retains A credit but also has a valid
+Domain stage, so moving Domain support legitimately changes its combined norm
+(`0.09160201 -> 0.11375201`); this is not an A/B/C formula change.
+
+The trainable-LoRA checksum was identical before and after:
+
+```text
+b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
+```
+
+No optimizer or scheduler step occurred, no parameter changed, no checkpoint
+was written, and no smoke, pilot, or formal training was started.
+
 ## Frozen runner contract
 
 The runner is not restructured. Prefix remains `GR-REC-CLAMP-BRIDGE-V1-`,
@@ -277,6 +342,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**TEXT-DOMAIN DECISION-TOKEN PLACEMENT CPU VERIFIED**
+**TEXT-DOMAIN DECISION-TOKEN PLACEMENT GPU PAIRED AUDITED**
 
-**GPU RE-AUDIT NOT RUN / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
+**ZERO PARAMETER UPDATE / TRAINING NOT STARTED**

@@ -1,0 +1,1722 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_text_domain_paired_audit",
+  "created_at": "2026-08-20T18:51:12.779274+00:00",
+  "paired_audit_valid": true,
+  "reference_type": "gr_rec_think_exact_clamp_v1_gpu_gradient_scale_audit",
+  "reference_created_at": "2026-08-20T17:30:22.782711+00:00",
+  "current_created_at": "2026-08-20T18:51:12.472899+00:00",
+  "parity": [
+    {
+      "audit_index": 0,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 1,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 2,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 3,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 4,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 5,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 6,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    },
+    {
+      "audit_index": 7,
+      "group_id": true,
+      "rollout_fingerprint": true,
+      "rewards": true,
+      "valid": true
+    }
+  ],
+  "domain_only_indices": [
+    0,
+    1,
+    3,
+    4,
+    5
+  ],
+  "summary": {
+    "group_count": 8,
+    "fingerprint_parity_count": 8,
+    "reward_parity_count": 8,
+    "alignment_valid_group_count": 7,
+    "domain_only_old_sid_hier_grad_norm": {
+      "n": 5,
+      "median": 1.8333494153921492e-05,
+      "mean": 0.07337329301180943,
+      "min": 2.085016149067087e-06,
+      "max": 0.36677423119544983
+    },
+    "domain_only_new_text_hier_grad_norm": {
+      "n": 5,
+      "median": 6.211360414454248e-06,
+      "mean": 7.160240316750333e-06,
+      "min": 0.0,
+      "max": 2.1085434127599e-05
+    },
+    "domain_only_new_over_old": {
+      "n": 5,
+      "median": 0.13177828221286475,
+      "mean": 0.6233915448872186,
+      "min": 0.0,
+      "max": 2.592413016991364
+    },
+    "domain_only_new_over_legacy": {
+      "n": 5,
+      "median": 1.2255125867819025e-06,
+      "mean": 7.056377964356334e-06,
+      "min": 0.0,
+      "max": 2.669116733463456e-05
+    },
+    "domain_only_matched_support_cosine": {
+      "n": 4,
+      "median": 1.0110111236572266,
+      "mean": 1.0110436081886292,
+      "min": 1.0085734128952026,
+      "max": 1.0135787725448608
+    },
+    "domain_only_text_probability": {
+      "n": 39,
+      "median": 0.9999998807907247,
+      "mean": 0.9999956963541258,
+      "min": 0.999946597090355,
+      "max": 1.0
+    },
+    "domain_only_sid_probability": {
+      "n": 40,
+      "median": 0.9999862315165746,
+      "mean": 0.9755208647569992,
+      "min": 0.02297536246786889,
+      "max": 0.9999958276922101
+    },
+    "group_6_7_abc_parity": true
+  },
+  "checksum": {
+    "before": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+    "after": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+    "parameter_change": false
+  },
+  "groups": [
+    {
+      "audit_index": 0,
+      "group_id": "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+      "rollout_fingerprint": "f6885c7ec834a52e425609c7ccb64f3c159ee785b7e0cbdef57ab56fcac00001",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25
+      ],
+      "legacy_grad_norm": 4.555976867675781,
+      "old_sid_domain_hier_grad_norm": 0.36677423119544983,
+      "new_text_domain_hier_grad_norm": 0.0,
+      "new_text_hier_over_legacy": 0.0,
+      "new_text_hier_over_old_sid_hier": 0.0,
+      "legacy_full_text_hier_cosine": null,
+      "legacy_text_domain_grad_norm": null,
+      "legacy_text_domain_hier_cosine": null,
+      "old_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": false,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 0,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": false,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "living",
+          "sid_domain": "living",
+          "text_domain_token_position": 11,
+          "sid_domain_token_position": 14,
+          "text_domain_old_logp": -5.340433563105762e-05,
+          "text_domain_old_probability": 0.999946597090355,
+          "sid_domain_old_logp": -1.3232143828645349e-05,
+          "sid_domain_old_probability": 0.9999867679437158,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": null,
+          "sid_domain": "prod",
+          "text_domain_token_position": null,
+          "sid_domain_token_position": 4,
+          "text_domain_old_logp": null,
+          "text_domain_old_probability": null,
+          "sid_domain_old_logp": -3.7733328342437744,
+          "sid_domain_old_probability": 0.02297536246786889,
+          "domain_advantage": 0.0,
+          "alignment_failure": "missing_text_domain_before_final_sid"
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -7.86750388215296e-05,
+          "sid_domain_old_probability": 0.9999213280559782,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -8.797258487902582e-05,
+          "sid_domain_old_probability": 0.9999120312845954,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -0.000105375460407231,
+          "sid_domain_old_probability": 0.9998946300913916,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -2.3841855067985307e-07,
+          "text_domain_old_probability": 0.9999997615814777,
+          "sid_domain_old_logp": -9.464769391342998e-05,
+          "sid_domain_old_probability": 0.9999053567850382,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -7.795983401592821e-05,
+          "sid_domain_old_probability": 0.999922043204773,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -8.594620157964528e-05,
+          "sid_domain_old_probability": 0.9999140574916894,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 1,
+      "group_id": "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+      "rollout_fingerprint": "4ac38511978974f9f5d894b3536911d33dfdbb29d5938e9a6eb261bd49f67a19",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "legacy_grad_norm": 0.7899779677391052,
+      "old_sid_domain_hier_grad_norm": 8.133516530506313e-06,
+      "new_text_domain_hier_grad_norm": 2.1085434127599e-05,
+      "new_text_hier_over_legacy": 2.669116733463456e-05,
+      "new_text_hier_over_old_sid_hier": 2.592413016991364,
+      "legacy_full_text_hier_cosine": -0.00643959641456604,
+      "legacy_text_domain_grad_norm": 0.001557899289764464,
+      "legacy_text_domain_hier_cosine": 1.010473370552063,
+      "old_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.1920928244535389e-07,
+          "text_domain_old_probability": 0.9999998807907247,
+          "sid_domain_old_logp": -6.079655122448457e-06,
+          "sid_domain_old_probability": 0.9999939203633587,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.1920928244535389e-07,
+          "text_domain_old_probability": 0.9999998807907247,
+          "sid_domain_old_logp": -7.033323527139146e-06,
+          "sid_domain_old_probability": 0.9999929667012066,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -4.6491513785440475e-06,
+          "text_domain_old_probability": 0.9999953508594287,
+          "sid_domain_old_logp": -6.031808152329177e-05,
+          "sid_domain_old_probability": 0.9999396837375756,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.1920928244535389e-07,
+          "text_domain_old_probability": 0.9999998807907247,
+          "sid_domain_old_logp": -5.125986263010418e-06,
+          "sid_domain_old_probability": 0.9999948740268748,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "living",
+          "sid_domain": "living",
+          "text_domain_token_position": 11,
+          "sid_domain_token_position": 14,
+          "text_domain_old_logp": -2.276871418871451e-05,
+          "text_domain_old_probability": 0.9999772315450165,
+          "sid_domain_old_logp": -8.106198947643861e-06,
+          "sid_domain_old_probability": 0.9999918938339075,
+          "domain_advantage": 0.0234375,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -4.172316494077677e-06,
+          "sid_domain_old_probability": 0.9999958276922101,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "living",
+          "sid_domain": "living",
+          "text_domain_token_position": 11,
+          "sid_domain_token_position": 14,
+          "text_domain_old_logp": -2.5510462364763953e-05,
+          "text_domain_old_probability": 0.9999744898630243,
+          "sid_domain_old_logp": -2.253030106658116e-05,
+          "sid_domain_old_probability": 0.9999774699527387,
+          "domain_advantage": 0.0234375,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -3.576278118089249e-07,
+          "text_domain_old_probability": 0.9999996423722521,
+          "sid_domain_old_logp": -5.8412379075889476e-06,
+          "sid_domain_old_probability": 0.9999941587791524,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 2,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "rollout_fingerprint": "9da9613dd5e5de7dff0ef796c04625261b68a8ba8b3158991b310cfe82cf5747",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "legacy_grad_norm": 0.0,
+      "old_sid_domain_hier_grad_norm": 0.0,
+      "new_text_domain_hier_grad_norm": 0.0,
+      "new_text_hier_over_legacy": null,
+      "new_text_hier_over_old_sid_hier": null,
+      "legacy_full_text_hier_cosine": null,
+      "legacy_text_domain_grad_norm": null,
+      "legacy_text_domain_hier_cosine": null,
+      "old_stage_active": {
+        "domain": false,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": false,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 0,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 0,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -1.0371154530730564e-05,
+          "text_domain_old_probability": 0.9999896288992495,
+          "sid_domain_old_logp": -2.3841830625315197e-06,
+          "sid_domain_old_probability": 0.9999976158197796,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -8.106198947643861e-06,
+          "text_domain_old_probability": 0.9999918938339075,
+          "sid_domain_old_logp": -3.099436753473128e-06,
+          "sid_domain_old_probability": 0.9999969005680498,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -8.106198947643861e-06,
+          "text_domain_old_probability": 0.9999918938339075,
+          "sid_domain_old_logp": -2.145764938177308e-06,
+          "sid_domain_old_probability": 0.999997854237364,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -5.006777428206988e-06,
+          "text_domain_old_probability": 0.9999949932351057,
+          "sid_domain_old_logp": -2.145764938177308e-06,
+          "sid_domain_old_probability": 0.999997854237364,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -1.3232143828645349e-05,
+          "text_domain_old_probability": 0.9999867679437158,
+          "sid_domain_old_logp": -2.9802276912960224e-06,
+          "sid_domain_old_probability": 0.9999970197767496,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -6.318072337307967e-06,
+          "text_domain_old_probability": 0.9999936819476216,
+          "sid_domain_old_logp": -3.099436753473128e-06,
+          "sid_domain_old_probability": 0.9999969005680498,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -6.437280717364047e-06,
+          "text_domain_old_probability": 0.9999935627400018,
+          "sid_domain_old_logp": -3.3378546504536644e-06,
+          "sid_domain_old_probability": 0.9999966621509202,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -1.0371154530730564e-05,
+          "text_domain_old_probability": 0.9999896288992495,
+          "sid_domain_old_logp": -3.814689989667386e-06,
+          "sid_domain_old_probability": 0.9999961853172863,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 3,
+      "group_id": "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8",
+      "rollout_fingerprint": "03f46012f978008513483457806c0e3b3fd2ec13cf1aee2eb702540cc97d02a5",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "legacy_grad_norm": 5.068377494812012,
+      "old_sid_domain_hier_grad_norm": 1.8333494153921492e-05,
+      "new_text_domain_hier_grad_norm": 6.211360414454248e-06,
+      "new_text_hier_over_legacy": 1.2255125867819025e-06,
+      "new_text_hier_over_old_sid_hier": 0.3387985052006931,
+      "legacy_full_text_hier_cosine": 0.026427770033478737,
+      "legacy_text_domain_grad_norm": 0.00045851594768464565,
+      "legacy_text_domain_hier_cosine": 1.0115488767623901,
+      "old_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -3.6954811548639555e-06,
+          "text_domain_old_probability": 0.9999963045256735,
+          "sid_domain_old_logp": -9.536697689327411e-06,
+          "sid_domain_old_probability": 0.9999904633477849,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -7.867782187531702e-06,
+          "text_domain_old_probability": 0.9999921322487634,
+          "sid_domain_old_logp": -1.1086402082582936e-05,
+          "sid_domain_old_probability": 0.9999889136593714,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -3.6954811548639555e-06,
+          "text_domain_old_probability": 0.9999963045256735,
+          "sid_domain_old_logp": -1.1324817933200393e-05,
+          "sid_domain_old_probability": 0.9999886752461923,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -1.4305104514278355e-06,
+          "text_domain_old_probability": 0.9999985694905718,
+          "sid_domain_old_logp": -1.4305012882687151e-05,
+          "sid_domain_old_probability": 0.9999856950894335,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -5.23315102327615e-05,
+          "sid_domain_old_probability": 0.9999476698590368,
+          "domain_advantage": 0.0234375,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -8.344646857949556e-07,
+          "text_domain_old_probability": 0.9999991655356624,
+          "sid_domain_old_logp": -1.2278481335670222e-05,
+          "sid_domain_old_probability": 0.9999877215940446,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -5.8887653722194955e-05,
+          "sid_domain_old_probability": 0.9999411140801217,
+          "domain_advantage": 0.0234375,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -4.768360213347478e-06,
+          "text_domain_old_probability": 0.9999952316511552,
+          "sid_domain_old_logp": -1.0132738680113107e-05,
+          "sid_domain_old_probability": 0.9999898673126559,
+          "domain_advantage": -0.0078125,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 4,
+      "group_id": "5312b41c5a6b8ac1fdbe5a0211cbfaf002533367a177c86d9595bbab0ca19090",
+      "rollout_fingerprint": "d43b2153ed422ad743b2fb92081bcbef0265d4f6afd2d1daa55701d0ce51a0be",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        0.0,
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "legacy_grad_norm": 1.1627306938171387,
+      "old_sid_domain_hier_grad_norm": 6.368183676386252e-05,
+      "new_text_domain_hier_grad_norm": 8.391883056901861e-06,
+      "new_text_hier_over_legacy": 7.217391870298079e-06,
+      "new_text_hier_over_old_sid_hier": 0.13177828221286475,
+      "legacy_full_text_hier_cosine": -0.005066441837698221,
+      "legacy_text_domain_grad_norm": 0.0005546032334677875,
+      "legacy_text_domain_hier_cosine": 1.0135787725448608,
+      "old_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.9550132492440753e-05,
+          "sid_domain_old_probability": 0.9999804500586101,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.2516897186287679e-05,
+          "text_domain_old_probability": 0.9999874831811497,
+          "sid_domain_old_logp": -0.0002743821241892874,
+          "sid_domain_old_probability": 0.9997256555151431,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.7881233361549675e-05,
+          "sid_domain_old_probability": 0.9999821189265068,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -5.006777428206988e-06,
+          "text_domain_old_probability": 0.9999949932351057,
+          "sid_domain_old_logp": -0.0002261144545627758,
+          "sid_domain_old_probability": 0.9997739111073838,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -4.887569048150908e-06,
+          "text_domain_old_probability": 0.999995112442896,
+          "sid_domain_old_logp": -0.00024780540843494236,
+          "sid_domain_old_probability": 0.9997522252927893,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -8.821448318485636e-06,
+          "text_domain_old_probability": 0.9999911785905904,
+          "sid_domain_old_logp": -0.00024232311989180744,
+          "sid_domain_old_probability": 0.999757706237984,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.9788545614574105e-05,
+          "sid_domain_old_probability": 0.9999802116501774,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "prod",
+          "sid_domain": "prod",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -6.9141146923357155e-06,
+          "text_domain_old_probability": 0.9999930859092101,
+          "sid_domain_old_logp": -0.00019703354337252676,
+          "sid_domain_old_probability": 0.9998029858664612,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 5,
+      "group_id": "5ea4740a4656ed1e8e8f7981641afed8ced421efcf5672a4502270b8ac043631",
+      "rollout_fingerprint": "eb0237e5f319662591fc1d36fa816be2cbe5b42a0c4e80c5d8b4f6e4dd280571",
+      "rewards": [
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "legacy_grad_norm": 0.7612331509590149,
+      "old_sid_domain_hier_grad_norm": 2.085016149067087e-06,
+      "new_text_domain_hier_grad_norm": 1.1252398479655312e-07,
+      "new_text_hier_over_legacy": 1.4781803006712652e-07,
+      "new_text_hier_over_old_sid_hier": 0.053967920031171214,
+      "legacy_full_text_hier_cosine": -0.02970946580171585,
+      "legacy_text_domain_grad_norm": 1.0865758667932823e-05,
+      "legacy_text_domain_hier_cosine": 1.0085734128952026,
+      "old_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": true,
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 8,
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.1920928244535389e-07,
+          "text_domain_old_probability": 0.9999998807907247,
+          "sid_domain_old_logp": -9.536697689327411e-06,
+          "sid_domain_old_probability": 0.9999904633477849,
+          "domain_advantage": 0.02734375,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -6.794906312279636e-06,
+          "sid_domain_old_probability": 0.999993205116773,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -7.510157047363464e-06,
+          "sid_domain_old_probability": 0.9999924898711537,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -5.483612312673358e-06,
+          "sid_domain_old_probability": 0.9999945164027223,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -6.318072337307967e-06,
+          "sid_domain_old_probability": 0.9999936819476216,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -6.318072337307967e-06,
+          "sid_domain_old_probability": 0.9999936819476216,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -4.887569048150908e-06,
+          "sid_domain_old_probability": 0.999995112442896,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -6.318072337307967e-06,
+          "sid_domain_old_probability": 0.9999936819476216,
+          "domain_advantage": -0.00390625,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 6,
+      "group_id": "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+      "rollout_fingerprint": "cb83c0940768fcdbd144a63075b6c072c58c6eeff2201cfbe1ae4cfca40a89a9",
+      "rewards": [
+        0.0,
+        0.5,
+        0.0,
+        0.5,
+        0.5,
+        8.0,
+        0.0,
+        0.5
+      ],
+      "legacy_grad_norm": 0.42531701922416687,
+      "old_sid_domain_hier_grad_norm": 0.28579360246658325,
+      "new_text_domain_hier_grad_norm": 0.28578993678092957,
+      "new_text_hier_over_legacy": 0.6719456872481785,
+      "new_text_hier_over_old_sid_hier": 0.9999871736609146,
+      "legacy_full_text_hier_cosine": 0.5215215086936951,
+      "legacy_text_domain_grad_norm": null,
+      "legacy_text_domain_hier_cosine": null,
+      "old_stage_active": {
+        "domain": false,
+        "a": true,
+        "b": true,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": false,
+        "a": true,
+        "b": true,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 0,
+        "a": 8,
+        "b": 5,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 0,
+        "a": 8,
+        "b": 5,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          -0.0390625,
+          0.0,
+          0.0
+        ],
+        [
+          0.0234375,
+          -0.037500000000000006,
+          0.0
+        ],
+        [
+          -0.0390625,
+          0.0,
+          0.0
+        ],
+        [
+          0.0234375,
+          -0.037500000000000006,
+          0.0
+        ],
+        [
+          0.0234375,
+          -0.037500000000000006,
+          0.0
+        ],
+        [
+          0.0234375,
+          0.15000000000000002,
+          0.0
+        ],
+        [
+          -0.0390625,
+          0.0,
+          0.0
+        ],
+        [
+          0.0234375,
+          -0.037500000000000006,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.6689286894688848e-06,
+          "sid_domain_old_probability": 0.9999983310727032,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -2.0265558760002023e-06,
+          "sid_domain_old_probability": 0.9999979734461775,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.7881377516459906e-06,
+          "sid_domain_old_probability": 0.9999982118638471,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.7881377516459906e-06,
+          "sid_domain_old_probability": 0.9999982118638471,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.4305104514278355e-06,
+          "sid_domain_old_probability": 0.9999985694905718,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.7881377516459906e-06,
+          "sid_domain_old_probability": 0.9999982118638471,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -2.264974000354414e-06,
+          "sid_domain_old_probability": 0.9999977350285647,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": 0.0,
+          "text_domain_old_probability": 1.0,
+          "sid_domain_old_logp": -1.7881377516459906e-06,
+          "sid_domain_old_probability": 0.9999982118638471,
+          "domain_advantage": 0.0,
+          "alignment_failure": null
+        }
+      ]
+    },
+    {
+      "audit_index": 7,
+      "group_id": "dea6a49f8f2209c89897a1dfd297db748f89f0011487d3f0039c5e74adfbb201",
+      "rollout_fingerprint": "af7ba0e445081f703ac92816e16f1bbda30de63b6e4aee7c2710de3e26d1274f",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        0.0,
+        0.5,
+        0.0,
+        0.5
+      ],
+      "legacy_grad_norm": 0.9009912610054016,
+      "old_sid_domain_hier_grad_norm": 0.09160200506448746,
+      "new_text_domain_hier_grad_norm": 0.11375198513269424,
+      "new_text_hier_over_legacy": 0.12625204045348923,
+      "new_text_hier_over_old_sid_hier": 1.241806716486318,
+      "legacy_full_text_hier_cosine": 0.29702720046043396,
+      "legacy_text_domain_grad_norm": null,
+      "legacy_text_domain_hier_cosine": null,
+      "old_stage_active": {
+        "domain": true,
+        "a": true,
+        "b": false,
+        "c": false
+      },
+      "new_stage_active": {
+        "domain": true,
+        "a": true,
+        "b": false,
+        "c": false
+      },
+      "old_credited_token_count": {
+        "domain": 8,
+        "a": 5,
+        "b": 0,
+        "c": 0
+      },
+      "new_credited_token_count": {
+        "domain": 8,
+        "a": 5,
+        "b": 0,
+        "c": 0
+      },
+      "abc_stage_parity": true,
+      "abc_credited_count_parity": true,
+      "abc_credits_reconstructed_from_immutable_rollout": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          -0.025,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          -0.025,
+          0.0,
+          0.0
+        ],
+        [
+          0.0375,
+          0.0,
+          0.0
+        ],
+        [
+          -0.025,
+          0.0,
+          0.0
+        ],
+        [
+          0.0375,
+          0.0,
+          0.0
+        ]
+      ],
+      "domain_text_alignment_valid": true,
+      "candidate_domain_diagnostics": [
+        {
+          "candidate_index": 0,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -0.03804141283035278,
+          "text_domain_old_probability": 0.9626730730490257,
+          "sid_domain_old_logp": -0.00020132421923335642,
+          "sid_domain_old_probability": 0.9997986960451274,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 1,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -2.0265558760002023e-06,
+          "text_domain_old_probability": 0.9999979734461775,
+          "sid_domain_old_logp": -2.9802276912960224e-06,
+          "sid_domain_old_probability": 0.9999970197767496,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 2,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -0.03804141283035278,
+          "text_domain_old_probability": 0.9626730730490257,
+          "sid_domain_old_logp": -0.00015639036428183317,
+          "sid_domain_old_probability": 0.9998436218640537,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 3,
+          "text_domain": "video",
+          "sid_domain": "video",
+          "text_domain_token_position": 9,
+          "sid_domain_token_position": 13,
+          "text_domain_old_logp": -0.029750416055321693,
+          "text_domain_old_probability": 0.9706877714009485,
+          "sid_domain_old_logp": -0.00015662873920518905,
+          "sid_domain_old_probability": 0.9998433835264354,
+          "domain_advantage": -0.01953125,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 4,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -9.536738616588991e-07,
+          "text_domain_old_probability": 0.9999990463265931,
+          "sid_domain_old_logp": -3.576272320060525e-06,
+          "sid_domain_old_probability": 0.9999964237340748,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 5,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -9.536738616588991e-07,
+          "text_domain_old_probability": 0.9999990463265931,
+          "sid_domain_old_logp": -4.529942543740617e-06,
+          "sid_domain_old_probability": 0.9999954700677164,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 6,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -1.5497195136049413e-06,
+          "text_domain_old_probability": 0.9999984502816872,
+          "sid_domain_old_logp": -2.9802276912960224e-06,
+          "sid_domain_old_probability": 0.9999970197767496,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        },
+        {
+          "candidate_index": 7,
+          "text_domain": "ad",
+          "sid_domain": "ad",
+          "text_domain_token_position": 8,
+          "sid_domain_token_position": 12,
+          "text_domain_old_logp": -4.172316494077677e-06,
+          "text_domain_old_probability": 0.9999958276922101,
+          "sid_domain_old_logp": -3.3378546504536644e-06,
+          "sid_domain_old_probability": 0.9999966621509202,
+          "domain_advantage": 0.01171875,
+          "alignment_failure": null
+        }
+      ]
+    }
+  ],
+  "reference_path": "/data/GRPO/work/monitor-refresh-source/baselines/native_source_domain_r32_v3/grpo/results/gpu_gradient_scale_audit_domain_g8_seed20260816_20260821.json",
+  "current_path": "/data/GRPO/work/monitor-refresh-source/baselines/native_source_domain_r32_v3/grpo/results/gpu_gradient_scale_audit_text_domain_g8_seed20260816_20260821.json"
+}
