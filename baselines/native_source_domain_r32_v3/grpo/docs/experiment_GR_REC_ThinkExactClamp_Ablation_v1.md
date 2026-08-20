@@ -2,9 +2,9 @@
 
 ## Status and history
 
-**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT RUN**
+**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED**
 
-**PREVIOUS G8 AUDIT RECORDED / TRAINING NOT STARTED**
+**FINGERPRINT PARITY 8/8 / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
@@ -18,8 +18,10 @@
 - Phase 5 `70b73560caba8f892a6dbbebacba8c7fe85f79b9`: records the authorized
   eight-group zero-step GPU audit and
   its unchanged-parameter checksum evidence.
-- Phase 6 current: adds the GPU-evidenced Domain token-credit stage before the
-  unchanged A/B/C stages. This phase is CPU-tested only.
+- Phase 6 `9a5bbb2c989cb0a805b641e843698fc0fe0f135e`: adds the GPU-evidenced
+  Domain token-credit stage before the unchanged A/B/C stages.
+- Phase 7 current: records the strictly paired eight-group Domain-stage
+  zero-step GPU re-audit and comparison.
 
 The branch remains `ablation/gr-rec-think-exact-clamp-v1`. Initialization remains
 the fresh original BATA adapter; Git phases are code history, not checkpoint
@@ -192,6 +194,52 @@ b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
 Thus `PARAMETER CHANGE = ZERO`, `optimizer.step = NO`, and
 `scheduler.step = NO`.
 
+## Domain-stage paired G8 re-audit (2026-08-21)
+
+The re-audit used the same one-A800 execution contract, seed `20260816`, G8
+sampling parameters, original 8B base, fresh original BATA adapter,
+non-reentrant gradient checkpointing and shared forward RNG as the pre-Domain
+audit. All eight `group_id`, rollout fingerprint and reward-vector triples
+matched exactly, so `paired_audit_valid=true` and Domain-stage attribution is
+valid.
+
+Artifacts:
+
+- [`../results/gpu_gradient_scale_audit_domain_g8_seed20260816_20260821.json`](../results/gpu_gradient_scale_audit_domain_g8_seed20260816_20260821.json)
+- [`../results/gpu_gradient_scale_audit_domain_paired_comparison_g8_seed20260816_20260821.json`](../results/gpu_gradient_scale_audit_domain_paired_comparison_g8_seed20260816_20260821.json)
+
+| Metric | Pre-Domain | Domain stage |
+|---|---:|---:|
+| Active hierarchical groups | 2 | 7 |
+| Median `hier_over_legacy` (7 defined) | `0.0` | `0.00005477798` |
+| Mean `hier_over_legacy` | `0.1104712968` | `0.1220513189` |
+| Median legacy/hier cosine | `0.3411243334` (2 defined) | `0.02377167344` (7 defined) |
+| Median active hierarchical gradient norm | `0.1886301152` | `0.00006368184` |
+
+Groups 0/1/3/4/5 are Domain-only: all changed from zero hierarchical gradient
+to positive gradient, with new norms `0.3667742312`, `0.000008133517`,
+`0.000018333494`, `0.000063681837`, and `0.000002085016`. The corresponding
+`hier_over_legacy` values are `0.08060434529`, `0.0000102956524`,
+`0.0000036167795`, `0.0000547779839`, and `0.00000273857159`. Their cosines are
+`0.6929594874`, `0.02377167344`, `0.00457752822`, `-0.005322964862`, and
+`-0.01470425259`. The large spread is recorded without changing coefficients.
+
+Group 2 (`[-.25]*8`) remains all-stage zero. Group 6 retains A+B activity and
+has Domain off. Group 7 retains A activity and also activates Domain because
+its paired rewards contain both `-.25` and correct-domain values; an expectation
+that Group 7 Domain would be zero would contradict the formal Domain formula.
+No real `[0]*8` appeared, so `BRIDGE SCALE NOT OBSERVED` remains the only valid
+bridge conclusion.
+
+The new audit's trainable-LoRA checksum is identical before and after:
+
+```text
+b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad
+```
+
+No optimizer or scheduler step occurred, no parameter changed, and no training
+or checkpoint write was started.
+
 ## Frozen runner contract
 
 The runner is not restructured. Prefix remains `GR-REC-CLAMP-BRIDGE-V1-`,
@@ -201,6 +249,6 @@ hyperparameters, sampling and Beam32 contracts remain unchanged.
 
 ## Final status
 
-**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT RUN**
+**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED**
 
-**PREVIOUS G8 AUDIT RECORDED / TRAINING NOT STARTED**
+**FINGERPRINT PARITY 8/8 / ZERO PARAMETER UPDATE / TRAINING NOT STARTED**

@@ -40,4 +40,7 @@ requires the explicit `--execute-zero-step-gpu-audit` flag, defaults to eight
 groups, accepts up to sixteen, and records only trainable LoRA gradients. Do not
 run it until GPU execution is separately authorized.
 
-**DOMAIN-STAGE CPU IMPLEMENTATION READY / GPU RE-AUDIT NOT AUTHORIZED**
+The paired Domain-stage G8 re-audit is recorded in `../../results/` with full
+fingerprint parity and unchanged trainable-parameter checksums.
+
+**DOMAIN-STAGE PAIRED G8 ZERO-STEP GPU AUDIT COMPLETED / TRAINING NOT STARTED**
