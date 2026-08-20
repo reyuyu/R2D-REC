@@ -111,14 +111,68 @@ class MCUnitCreditObjectiveTests(unittest.TestCase):
         loss.backward()
         self.assertTrue(torch.equal(logps.grad, torch.zeros_like(logps)))
 
-    def test_nonzero_unit_overlap_fails_closed(self):
-        logps = torch.zeros((1, 4), dtype=torch.float64)
-        with self.assertRaisesRegex(MCObjectiveError, "overlap"):
-            mc_unit_credit_loss(
-                logps,
-                [[unit(0.5, [0, 1]), unit(-0.2, [1, 2])]],
-                torch.ones_like(logps),
-            )
+    def test_same_sign_overlap_gradients_add_algebraically(self):
+        logps = torch.zeros((1, 3), dtype=torch.float64, requires_grad=True)
+        loss, metadata = mc_unit_credit_loss(
+            logps,
+            [[unit(0.4, [0, 1]), unit(0.2, [1, 2])]],
+            torch.ones_like(logps),
+        )
+        loss.backward()
+        expected = torch.tensor([[-0.2, -0.3, -0.1]], dtype=torch.float64)
+        self.assertTrue(torch.allclose(logps.grad, expected, rtol=0.0, atol=1e-15))
+        self.assertEqual(metadata["active_token_count"], 3)
+        self.assertEqual(metadata["active_token_assignment_count"], 4)
+        self.assertEqual(metadata["overlap_token_count"], 1)
+        self.assertEqual(metadata["same_sign_overlap_token_count"], 1)
+        self.assertEqual(metadata["mixed_sign_overlap_token_count"], 0)
+        self.assertEqual(metadata["max_active_units_per_token"], 2)
+        record = metadata["overlap_records"][0]
+        self.assertEqual(record["candidate_index"], 0)
+        self.assertEqual(record["token_index"], 1)
+        self.assertEqual(record["unit_indices"], [0, 1])
+        self.assertEqual(record["deltas"], [0.4, 0.2])
+        self.assertEqual(record["per_unit_logp_coefficients"], [-0.2, -0.1])
+        self.assertAlmostEqual(record["net_logp_coefficient"], -0.3, 15)
+
+    def test_mixed_sign_overlap_gradients_partially_cancel(self):
+        logps = torch.zeros((1, 3), dtype=torch.float64, requires_grad=True)
+        loss, metadata = mc_unit_credit_loss(
+            logps,
+            [[unit(0.4, [0, 1]), unit(-0.2, [1, 2])]],
+            torch.ones_like(logps),
+        )
+        loss.backward()
+        expected = torch.tensor([[-0.2, -0.1, 0.1]], dtype=torch.float64)
+        self.assertTrue(torch.allclose(logps.grad, expected, rtol=0.0, atol=1e-15))
+        self.assertEqual(metadata["same_sign_overlap_token_count"], 0)
+        self.assertEqual(metadata["mixed_sign_overlap_token_count"], 1)
+        self.assertAlmostEqual(
+            metadata["overlap_records"][0]["net_logp_coefficient"], -0.1, 15
+        )
+
+    def test_mixed_sign_overlap_exact_cancellation_is_natural(self):
+        logps = torch.zeros((1, 3), dtype=torch.float64, requires_grad=True)
+        loss, metadata = mc_unit_credit_loss(
+            logps,
+            [[unit(0.4, [0, 1]), unit(-0.4, [1, 2])]],
+            torch.ones_like(logps),
+        )
+        loss.backward()
+        self.assertEqual(float(logps.grad[0, 1]), 0.0)
+        self.assertEqual(
+            metadata["overlap_records"][0]["net_logp_coefficient"], 0.0
+        )
+
+    def test_overlap_loss_equals_independent_unit_sum(self):
+        logps = torch.tensor([[-2.0, -3.0, -5.0]], dtype=torch.float64)
+        units = [unit(0.4, [0, 1]), unit(-0.2, [1, 2])]
+        loss, metadata = mc_unit_credit_loss(
+            logps, [units], torch.ones_like(logps)
+        )
+        expected = -0.4 * logps[0, [0, 1]].mean() + 0.2 * logps[0, [1, 2]].mean()
+        self.assertEqual(float(loss), float(expected))
+        self.assertEqual(float(metadata["candidate_losses"][0]), float(expected))
 
     def test_index_and_completion_mask_safety_checks(self):
         logps = torch.zeros((1, 4), dtype=torch.float64)
@@ -151,6 +205,11 @@ class MCUnitCreditObjectiveTests(unittest.TestCase):
         self.assertAlmostEqual(metadata["negative_credit_mass"], 0.2)
         self.assertEqual(metadata["active_unit_count"], 2)
         self.assertEqual(metadata["active_token_count"], 3)
+        self.assertEqual(metadata["active_token_assignment_count"], 3)
+        self.assertEqual(metadata["overlap_token_count"], 0)
+        self.assertEqual(metadata["same_sign_overlap_token_count"], 0)
+        self.assertEqual(metadata["mixed_sign_overlap_token_count"], 0)
+        self.assertEqual(metadata["max_active_units_per_token"], 1)
 
 
 if __name__ == "__main__":

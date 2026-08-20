@@ -468,6 +468,14 @@ def run_active_route(
         "grad_norm": result["grad_norm"],
         "active_unit_count": result["active_unit_count"],
         "active_token_count": result["active_token_count"],
+        "overlap_token_count": int(metadata["overlap_token_count"]),
+        "same_sign_overlap_token_count": int(
+            metadata["same_sign_overlap_token_count"]
+        ),
+        "mixed_sign_overlap_token_count": int(
+            metadata["mixed_sign_overlap_token_count"]
+        ),
+        "max_active_units_per_token": int(metadata["max_active_units_per_token"]),
         "positive_unit_count": int(metadata["positive_unit_count"]),
         "negative_unit_count": int(metadata["negative_unit_count"]),
         "positive_credit_mass": float(metadata["positive_credit_mass"]),
