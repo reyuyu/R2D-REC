@@ -73,6 +73,22 @@ def mc_optimizer_step(
     if not bool(torch.isfinite(per_token_logps).all()):
         raise MCTrainStepError("completion log probability is NaN or Inf")
 
+    active_unit_count = int(objective_metadata["active_unit_count"])
+    active_token_count = int(objective_metadata["active_token_count"])
+    if active_unit_count == 0:
+        return {
+            "loss": float(loss.detach()),
+            "grad_norm": 0.0,
+            "finite": True,
+            "objective_metadata": objective_metadata,
+            "active_unit_count": active_unit_count,
+            "active_token_count": active_token_count,
+            "skipped_update": True,
+            "optimizer_step_performed": False,
+            "parameter_delta_l2": 0.0,
+            "parameter_delta_max_abs": 0.0,
+        }
+
     loss.backward()
     grad_norm = _gradient_norm(parameters)
     optimizer.step()
@@ -84,6 +100,10 @@ def mc_optimizer_step(
         "grad_norm": grad_norm,
         "finite": True,
         "objective_metadata": objective_metadata,
+        "active_unit_count": active_unit_count,
+        "active_token_count": active_token_count,
+        "skipped_update": False,
+        "optimizer_step_performed": True,
         "parameter_delta_l2": parameter_delta_l2,
         "parameter_delta_max_abs": parameter_delta_max_abs,
     }

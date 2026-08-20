@@ -1,3 +1,4 @@
+import copy
 import sys
 import unittest
 from pathlib import Path
@@ -84,6 +85,30 @@ def target_probability(model, inputs, token_index=1):
     return float(logps[0, token_index].exp())
 
 
+def assert_nested_equal(test_case, before, after):
+    test_case.assertIs(type(before), type(after))
+    if torch.is_tensor(before):
+        test_case.assertTrue(torch.equal(before, after))
+    elif isinstance(before, dict):
+        test_case.assertEqual(before.keys(), after.keys())
+        for key in before:
+            assert_nested_equal(test_case, before[key], after[key])
+    elif isinstance(before, (list, tuple)):
+        test_case.assertEqual(len(before), len(after))
+        for before_item, after_item in zip(before, after):
+            assert_nested_equal(test_case, before_item, after_item)
+    else:
+        test_case.assertEqual(before, after)
+
+
+def adamw_steps(optimizer):
+    return sorted(
+        float(state["step"])
+        for state in optimizer.state.values()
+        if "step" in state
+    )
+
+
 class MCOptimizerStepTests(unittest.TestCase):
     def setUp(self):
         torch.manual_seed(20260821)
@@ -121,6 +146,10 @@ class MCOptimizerStepTests(unittest.TestCase):
         self.assertEqual(result["grad_norm"], 0.0)
         self.assertEqual(result["parameter_delta_l2"], 0.0)
         self.assertEqual(result["parameter_delta_max_abs"], 0.0)
+        self.assertTrue(result["skipped_update"])
+        self.assertFalse(result["optimizer_step_performed"])
+        self.assertEqual(result["active_unit_count"], 0)
+        self.assertTrue(all(parameter.grad is None for parameter in model.parameters()))
 
     def test_empty_candidate_changes_no_parameters(self):
         model = TinyCausalLM()
@@ -134,6 +163,86 @@ class MCOptimizerStepTests(unittest.TestCase):
         self.assertEqual(result["grad_norm"], 0.0)
         self.assertEqual(result["parameter_delta_l2"], 0.0)
         self.assertEqual(result["parameter_delta_max_abs"], 0.0)
+        self.assertTrue(result["skipped_update"])
+        self.assertFalse(result["optimizer_step_performed"])
+        self.assertEqual(result["active_unit_count"], 0)
+        self.assertTrue(all(parameter.grad is None for parameter in model.parameters()))
+
+    def test_adamw_zero_credit_preserves_initialized_state_and_step(self):
+        model = TinyCausalLM()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.0)
+        mc_optimizer_step(model, optimizer, batch(), [[unit(0.5)]])
+        parameters_before = [parameter.detach().clone() for parameter in model.parameters()]
+        state_before = copy.deepcopy(optimizer.state_dict())
+        steps_before = adamw_steps(optimizer)
+
+        result = mc_optimizer_step(model, optimizer, batch(), [[unit(0.0)]])
+
+        self.assertEqual(result["parameter_delta_l2"], 0.0)
+        self.assertEqual(result["parameter_delta_max_abs"], 0.0)
+        self.assertTrue(result["skipped_update"])
+        for initial, parameter in zip(parameters_before, model.parameters()):
+            self.assertTrue(torch.equal(initial, parameter))
+        assert_nested_equal(self, state_before, optimizer.state_dict())
+        self.assertEqual(steps_before, adamw_steps(optimizer))
+
+    def test_adamw_empty_credit_preserves_initialized_state_and_step(self):
+        model = TinyCausalLM()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.0)
+        mc_optimizer_step(model, optimizer, batch(), [[unit(0.5)]])
+        parameters_before = [parameter.detach().clone() for parameter in model.parameters()]
+        state_before = copy.deepcopy(optimizer.state_dict())
+        steps_before = adamw_steps(optimizer)
+
+        result = mc_optimizer_step(model, optimizer, batch(), [[]])
+
+        self.assertEqual(result["parameter_delta_l2"], 0.0)
+        self.assertEqual(result["parameter_delta_max_abs"], 0.0)
+        self.assertTrue(result["skipped_update"])
+        for initial, parameter in zip(parameters_before, model.parameters()):
+            self.assertTrue(torch.equal(initial, parameter))
+        assert_nested_equal(self, state_before, optimizer.state_dict())
+        self.assertEqual(steps_before, adamw_steps(optimizer))
+
+    def test_adamw_active_credit_creates_state_and_updates_parameters(self):
+        model = TinyCausalLM()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.0)
+        result = mc_optimizer_step(model, optimizer, batch(), [[unit(0.5)]])
+        self.assertFalse(result["skipped_update"])
+        self.assertTrue(result["optimizer_step_performed"])
+        self.assertEqual(result["active_unit_count"], 1)
+        self.assertEqual(result["active_token_count"], 1)
+        self.assertGreater(result["parameter_delta_l2"], 0.0)
+        self.assertTrue(optimizer.state)
+        self.assertTrue(all(step == 1.0 for step in adamw_steps(optimizer)))
+
+    def test_all_empty_k2_skips_and_mixed_k2_updates(self):
+        inputs = batch(
+            prompt_ids=torch.tensor([[1, 2], [1, 2]]),
+            completion_ids=torch.tensor([[3, 4, 5], [6, 7, 8]]),
+        )
+        empty_model = TinyCausalLM()
+        empty_result = mc_optimizer_step(
+            empty_model,
+            torch.optim.AdamW(empty_model.parameters(), lr=1e-3, weight_decay=0.0),
+            inputs,
+            [[], []],
+        )
+        self.assertTrue(empty_result["skipped_update"])
+        self.assertEqual(empty_result["active_unit_count"], 0)
+
+        mixed_model = TinyCausalLM()
+        mixed_optimizer = torch.optim.AdamW(
+            mixed_model.parameters(), lr=1e-3, weight_decay=0.0
+        )
+        mixed_result = mc_optimizer_step(
+            mixed_model, mixed_optimizer, inputs, [[], [unit(0.5)]]
+        )
+        self.assertFalse(mixed_result["skipped_update"])
+        self.assertTrue(mixed_result["optimizer_step_performed"])
+        self.assertEqual(mixed_result["active_unit_count"], 1)
+        self.assertGreater(mixed_result["parameter_delta_l2"], 0.0)
+        self.assertTrue(all(step == 1.0 for step in adamw_steps(mixed_optimizer)))
 
     def test_k2_candidate_losses_are_meaned_without_normalization(self):
         model = TinyCausalLM()
