@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import math
 from typing import Any, Mapping, Sequence
 
@@ -39,37 +40,71 @@ def get_mc_completion_logps(
     completion_ids: torch.Tensor,
     completion_mask: torch.Tensor,
     temperature: float = MC_TEMPERATURE,
+    forward_batch_size: int = 1,
 ) -> torch.Tensor:
     """Return causal log-probabilities for each completion token."""
 
     _validate_policy_inputs(prompt_ids, prompt_mask, completion_ids, completion_mask)
     if not math.isfinite(float(temperature)) or temperature <= 0.0:
         raise ValueError("temperature must be finite and positive")
+    if not isinstance(forward_batch_size, int) or isinstance(forward_batch_size, bool):
+        raise ValueError("forward_batch_size must be a positive integer")
+    if forward_batch_size <= 0:
+        raise ValueError("forward_batch_size must be a positive integer")
 
     input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
     attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
-    position_ids = attention_mask.long().cumsum(dim=-1) - 1
-    position_ids.masked_fill_(attention_mask == 0, 0)
-    outputs = model(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        position_ids=position_ids,
-        use_cache=False,
-    )
-    logits = outputs.logits
-    if logits.ndim != 3 or logits.shape[:2] != input_ids.shape:
-        raise ValueError("model must return full [B,P+T,V] logits")
-
     completion_length = completion_ids.size(1)
-    shifted_completion_logits = logits[:, :-1, :][:, -completion_length:, :]
-    log_probs = torch.log_softmax(shifted_completion_logits / temperature, dim=-1)
-    return torch.gather(log_probs, 2, completion_ids.unsqueeze(-1)).squeeze(-1)
+    keep_count = completion_length + 1
+    forward_parameters = inspect.signature(model.forward).parameters
+    supports_logits_to_keep = "logits_to_keep" in forward_parameters or any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in forward_parameters.values()
+    )
+    output_chunks = []
+    for start in range(0, input_ids.size(0), forward_batch_size):
+        stop = min(start + forward_batch_size, input_ids.size(0))
+        chunk_ids = input_ids[start:stop]
+        chunk_attention = attention_mask[start:stop]
+        position_ids = chunk_attention.long().cumsum(dim=-1) - 1
+        position_ids.masked_fill_(chunk_attention == 0, 0)
+        model_inputs = {
+            "input_ids": chunk_ids,
+            "attention_mask": chunk_attention,
+            "position_ids": position_ids,
+            "use_cache": False,
+        }
+        if supports_logits_to_keep:
+            model_inputs["logits_to_keep"] = keep_count
+        logits = model(**model_inputs).logits
+        expected_length = keep_count if supports_logits_to_keep else chunk_ids.size(1)
+        if (
+            logits.ndim != 3
+            or logits.size(0) != chunk_ids.size(0)
+            or logits.size(1) != expected_length
+        ):
+            mode = "kept" if supports_logits_to_keep else "full"
+            raise ValueError(
+                f"model must return {mode} [B,{expected_length},V] logits"
+            )
+
+        shifted_completion_logits = logits[:, :-1, :][:, -completion_length:, :]
+        log_probs = torch.log_softmax(
+            shifted_completion_logits / temperature, dim=-1
+        )
+        chunk_targets = completion_ids[start:stop]
+        output_chunks.append(
+            torch.gather(log_probs, 2, chunk_targets.unsqueeze(-1)).squeeze(-1)
+        )
+    return torch.cat(output_chunks, dim=0)
 
 
 def compute_mc_model_loss(
     model: torch.nn.Module,
     batch: Mapping[str, torch.Tensor],
     credit_units_per_candidate: Sequence[Sequence[Mapping[str, Any]]],
+    *,
+    forward_batch_size: int = 1,
 ) -> tuple[torch.Tensor, dict[str, Any], torch.Tensor]:
     """Bridge model logits to the existing pure MC unit-credit objective."""
 
@@ -80,6 +115,7 @@ def compute_mc_model_loss(
         batch["completion_ids"],
         batch["completion_mask"],
         temperature=MC_TEMPERATURE,
+        forward_batch_size=forward_batch_size,
     )
     loss, metadata = mc_unit_credit_loss(
         per_token_logps,
