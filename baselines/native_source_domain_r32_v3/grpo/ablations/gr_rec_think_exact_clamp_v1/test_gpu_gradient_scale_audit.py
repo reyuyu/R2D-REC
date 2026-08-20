@@ -97,7 +97,12 @@ assert credits[3] == (0.015625, 0.0625, 0.375)
 model = TinyAdapterModel()
 parameters = audit.trainable_parameters(model)
 assert [name for name, _parameter in parameters] == ["lora_logits"]
+checksum_before = audit.trainable_parameter_checksum(parameters)
+with torch.no_grad():
+    model.frozen_base.add_(1)
+assert audit.trainable_parameter_checksum(parameters) == checksum_before
 result = audit.audit_rollout(model, tokenizer, parameters, batch)
+assert audit.trainable_parameter_checksum(parameters) == checksum_before
 assert result["rollout_fingerprint"] == batch.fingerprint
 assert result["legacy_grad_norm"] > 0 and result["hier_grad_norm"] > 0
 assert result["hier_over_legacy"] > 0

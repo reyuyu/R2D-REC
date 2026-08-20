@@ -136,6 +136,18 @@ def trainable_parameters(model):
     return parameters
 
 
+def trainable_parameter_checksum(parameters) -> str:
+    digest = hashlib.sha256()
+    for name, parameter in parameters:
+        digest.update(name.encode("utf-8"))
+        digest.update(str(parameter.dtype).encode("ascii"))
+        digest.update(json.dumps(list(parameter.shape)).encode("ascii"))
+        raw = parameter.detach().contiguous().view(torch.uint8).cpu().numpy()
+        digest.update(memoryview(raw))
+        del raw
+    return digest.hexdigest()
+
+
 def copy_trainable_gradient(parameters) -> torch.Tensor:
     parts = []
     for _name, parameter in parameters:
@@ -146,8 +158,25 @@ def copy_trainable_gradient(parameters) -> torch.Tensor:
     return torch.cat(parts)
 
 
-def isolated_gradient(model, parameters, objective) -> tuple[float, torch.Tensor]:
+def capture_rng_state(device) -> tuple[torch.Tensor, torch.Tensor | None]:
+    cpu_state = torch.random.get_rng_state()
+    cuda_state = torch.cuda.get_rng_state(device) if torch.device(device).type == "cuda" else None
+    return cpu_state, cuda_state
+
+
+def restore_rng_state(state, device) -> None:
+    cpu_state, cuda_state = state
+    torch.random.set_rng_state(cpu_state)
+    if cuda_state is not None:
+        torch.cuda.set_rng_state(cuda_state, device)
+
+
+def isolated_gradient(
+    model, parameters, objective, rng_state=None, device=None,
+) -> tuple[float, torch.Tensor]:
     model.zero_grad(set_to_none=True)
+    if rng_state is not None:
+        restore_rng_state(rng_state, device)
     loss = objective()
     if not torch.isfinite(loss):
         raise RuntimeError("non-finite audit objective")
@@ -186,6 +215,7 @@ def dead_zero_bridge_loss(model, batch: RolloutBatch, tokenizer) -> torch.Tensor
 
 
 def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
+    shared_rng_state = capture_rng_state(batch.input_ids.device)
     with torch.no_grad():
         old_logps = completion_logps(model, batch).detach()
     legacy_scalar = legacy_advantages(batch.rewards, batch.input_ids.device)
@@ -196,13 +226,13 @@ def audit_rollout(model, tokenizer, parameters, batch: RolloutBatch) -> dict:
         model, parameters,
         lambda: clipped_policy_loss(
             model, batch, old_logps, legacy_tokens, "legacy_mean"
-        ),
+        ), shared_rng_state, batch.input_ids.device,
     )
     hierarchical_norm, hierarchical_vector = isolated_gradient(
         model, parameters,
         lambda: clipped_policy_loss(
             model, batch, old_logps, hierarchical_tokens, "hierarchical_sum"
-        ),
+        ), shared_rng_state, batch.input_ids.device,
     )
     ratio = hierarchical_norm / legacy_norm if legacy_norm > 0 else None
     columns = list(zip(*credits))
@@ -287,11 +317,16 @@ def summarize(records: list[dict]) -> dict:
 
 def make_rollout_batch(record, model, tokenizer, device, max_new_tokens) -> RolloutBatch:
     prompt_ids = tuple(encode_prompt(tokenizer, record["prompt"]))
-    texts, completion_ids = generate_batch(
-        model, tokenizer, [list(prompt_ids)], max_new_tokens=max_new_tokens,
-        do_sample=True, temperature=1.0, top_p=1.0, num_beams=1,
-        num_return_sequences=M_NO, return_ids=True,
-    )
+    was_training = model.training
+    model.eval()
+    try:
+        texts, completion_ids = generate_batch(
+            model, tokenizer, [list(prompt_ids)], max_new_tokens=max_new_tokens,
+            do_sample=True, temperature=1.0, top_p=1.0, num_beams=1,
+            num_return_sequences=M_NO, return_ids=True,
+        )
+    finally:
+        model.train(was_training)
     if len(completion_ids) != M_NO or any(not ids for ids in completion_ids):
         raise RuntimeError("generation did not produce one complete G8")
     predicted = tuple(final_sid(text) for text in texts)
@@ -353,13 +388,18 @@ def main(argv=None):
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
     model, tokenizer, _template = load_model(args.device)
-    model.eval()
+    model.gradient_checkpointing_enable(
+        gradient_checkpointing_kwargs={"use_reentrant": False}
+    )
+    model.config.use_cache = False
+    model.train()
     for name, parameter in model.named_parameters():
         parameter.requires_grad_("lora" in name.lower())
     parameters = trainable_parameters(model)
     unexpected = [name for name, _parameter in parameters if "lora" not in name.lower()]
     if unexpected:
         raise RuntimeError(f"non-LoRA trainable parameters found: {unexpected[:5]}")
+    parameter_checksum_before = trainable_parameter_checksum(parameters)
 
     dataset = build_route_dataset(DATA, n_groups=args.groups, seed=args.seed, chunk=8)
     records = [record for record in dataset if record["route"] == "no_think"]
@@ -375,16 +415,24 @@ def main(argv=None):
         group_results.append(result)
         print(json.dumps(result, ensure_ascii=False), flush=True)
 
+    model.zero_grad(set_to_none=True)
+    parameter_checksum_after = trainable_parameter_checksum(parameters)
+    parameter_change = parameter_checksum_before != parameter_checksum_after
     payload = {
         "type": "gr_rec_think_exact_clamp_v1_gpu_gradient_scale_audit",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "zero_update": True,
-        "model_mode": "eval_with_gradients",
+        "model_mode": "eval_generation_train_gradient_with_shared_rng",
+        "activation_memory_mode": "non_reentrant_gradient_checkpointing",
+        "gradient_forward_rng": "shared_old_legacy_hier",
         "base": BASE,
         "adapter": ADAPTER,
         "seed": args.seed,
         "trainable_parameter_count": sum(value.numel() for _name, value in parameters),
         "trainable_tensor_count": len(parameters),
+        "trainable_parameter_checksum_before": parameter_checksum_before,
+        "trainable_parameter_checksum_after": parameter_checksum_after,
+        "parameter_change": parameter_change,
         "bridge_lambda": BRIDGE_LAMBDA,
         "summary": summarize(group_results),
         "groups": group_results,
@@ -394,6 +442,8 @@ def main(argv=None):
     )
     print(json.dumps(payload["summary"], ensure_ascii=False, indent=2))
     model.zero_grad(set_to_none=True)
+    if parameter_change:
+        raise RuntimeError("trainable parameters changed during zero-step audit")
     return payload
 
 
