@@ -609,6 +609,7 @@
   };
 
   buildUserShell();
+  attachChartControls();
   chartLabels.userLossChart = ['Loss', 'Grad Norm'];
   chartLabels.userRewardChart = ['Action F1', 'Chain Reward'];
   chartLabels.userAdvantageChart = ['Sequence mean', 'Sequence std', 'Token mean', 'Token std'];
