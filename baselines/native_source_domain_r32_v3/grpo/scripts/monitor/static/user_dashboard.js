@@ -17,6 +17,8 @@
   const recommendationRenderTraceIndex = renderTraceIndex;
   const recommendationRenderProbes = renderProbes;
   const recommendationRenderDsr = renderDsr;
+  const recommendationRefresh = refresh;
+  const recommendationActivateView = activateView;
 
   state.allRuns = [];
   state.activeKind = RECOMMENDATION;
@@ -64,7 +66,7 @@
   }
 
   function isUserRun() {
-    return state.manifest.run_kind === USER || state.capabilities.user_grpo === true;
+    return state.activeKind === USER || state.manifest.run_kind === USER || state.capabilities.user_grpo === true;
   }
 
   function buildUserShell() {
@@ -546,6 +548,7 @@
   renderExplorerOptions = function() { isUserRun() ? renderUserExplorerOptions() : recommendationRenderExplorerOptions(); };
 
   refresh = async function(force = false) {
+    if (!isUserRun()) return recommendationRefresh(force);
     if (!autoRefresh && !force) return;
     if (userRefreshInFlight) return;
     userRefreshInFlight = true;
@@ -590,6 +593,7 @@
   };
 
   activateView = function(view) {
+    if (!isUserRun()) return recommendationActivateView(view);
     document.querySelectorAll('.tab,.view').forEach(element => element.classList.remove('active'));
     const tab = document.querySelector(`.tab[data-view="${view}"]`);
     if (tab && !tab.hidden) tab.classList.add('active');

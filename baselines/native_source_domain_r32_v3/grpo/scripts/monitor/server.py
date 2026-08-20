@@ -13,6 +13,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+try:
+    from .advantage_adapter import reconstruct_groups
+except ImportError:  # Direct execution: python monitor/server.py
+    from advantage_adapter import reconstruct_groups
+
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 RECOMMENDATION_RUN_KIND = "recommendation_grpo"
@@ -432,6 +437,40 @@ def create_app(
         rows = queried_rows(rows, from_step, to_step, route, rollout_id)
         enrich_source_fields(rows, source_rows(selected_run(run_id), "train"))
         return rows
+    @app.get("/api/advantages")
+    def advantages(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        route: str | None = None,
+        rollout_id: int | None = None,
+        group_id: str | None = None,
+        limit: int = Query(default=40, ge=1, le=200),
+    ):
+        """Reconstruct display-only credit from immutable trace rows."""
+        rows = []
+        trace_dir = selected_run(run_id) / "traces"
+        for path in sorted(trace_dir.glob("*.jsonl")):
+            rows.extend(read_jsonl(path))
+        for path in sorted(trace_dir.glob("*.json")):
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+                rows.extend(value if isinstance(value, list) else [value])
+            except (OSError, json.JSONDecodeError):
+                continue
+        rows = queried_rows(rows, from_step, to_step, route, rollout_id)
+        if group_id is not None:
+            rows = [row for row in rows if row.get("group_id") == group_id]
+        rows = rows[-limit:]
+        enrich_source_fields(rows, source_rows(selected_run(run_id), "train"))
+        return {
+            "read_only": True,
+            "provenance": {
+                "captured": "训练时直接落盘",
+                "reconstructed": "由已落盘数据只读复算，非训练时直接采集",
+            },
+            "groups": reconstruct_groups(rows),
+        }
 
     @app.get("/api/probes")
     def probes(
