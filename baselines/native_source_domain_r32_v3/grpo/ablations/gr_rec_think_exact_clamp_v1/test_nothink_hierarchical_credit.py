@@ -49,10 +49,30 @@ def credits(rewards):
 mixed = credits([0, 0.5, 2, 8, 0, 0.5, 2, 8])
 expected_cycle = [
     (0.0, -0.046875, 0.0, 0.0),
-    (0.0, 0.015625, -0.125, 0.0),
-    (0.0, 0.015625, 0.0625, -0.375),
-    (0.0, 0.015625, 0.0625, 0.375),
+    (0.0, 0.015625, -0.09375, 0.0),
+    (0.0, 0.015625, 0.09375, -0.1875),
+    (0.0, 0.015625, 0.09375, 0.5625),
 ]
+assert mixed == expected_cycle * 2
+
+# G8-anchored milestone regression A-J.
+test_a = credits([0] * 7 + [0.5])
+assert [row[1] for row in test_a] == [-0.0078125] * 7 + [0.0546875]
+test_b = credits([0] * 7 + [2])
+assert test_b[-1] == (0.0, 0.0546875, 0.1640625, 0.0)
+test_c = credits([0] * 7 + [8])
+assert test_c[-1] == (0.0, 0.0546875, 0.1640625, 0.65625)
+test_d = credits([0] * 6 + [2, 2])
+assert test_d[-2:] == [(0.0, 0.046875, 0.140625, 0.0)] * 2
+test_e = credits([0.5] * 7 + [2])
+assert [row[1] for row in test_e] == [0.0] * 8
+assert [row[2] for row in test_e] == [-0.0234375] * 7 + [0.1640625]
+test_f = credits([2] * 7 + [8])
+assert all(row[1:3] == (0.0, 0.0) for row in test_f)
+assert [row[3] for row in test_f] == [-0.09375] * 7 + [0.65625]
+assert credits([8] * 8) == [(0.0, 0.0, 0.0, 0.0)] * 8
+assert credits([0] * 8) == [(0.0, 0.0, 0.0, 0.0)] * 8
+assert credits([-0.25] * 8) == [(0.0, 0.0, 0.0, 0.0)] * 8
 assert mixed == expected_cycle * 2
 
 # GPU-observed wrong-domain/correct-domain topology receives Domain-only credit.
@@ -205,13 +225,13 @@ subset = conditional_hierarchical_credits(
 )
 assert subset[0][0] == 0
 assert [row[0] for row in subset[1:]] == [
-    0.022321428571428572,
-    -0.008928571428571428,
-    -0.008928571428571428,
-    -0.008928571428571428,
-    0.022321428571428572,
-    -0.008928571428571428,
-    -0.008928571428571428,
+    0.0234375,
+    -0.0078125,
+    -0.0078125,
+    -0.0078125,
+    0.0234375,
+    -0.0078125,
+    -0.0078125,
 ]
 
 
@@ -295,6 +315,11 @@ assert runtime_trainer._nothink_bridge_runtime["token_positions"] == (
     (4, 9, 10, 11),
 ) * 4
 assert runtime_trainer._nothink_bridge_runtime["domain_text_alignment_valid"] is True
+assert runtime_trainer._nothink_bridge_runtime["stage_active"] == (
+    False, True, True, True,
+)
+assert runtime_trainer._nothink_bridge_runtime["b_singleton_success_group"] is False
+assert runtime_trainer._nothink_bridge_runtime["c_singleton_success_group"] is False
 
 
 def prepare_with_global_records(records, rewards):
@@ -310,6 +335,37 @@ def prepare_with_global_records(records, rewards):
     finally:
         trl_grpo.gather_object = original
     return runtime_trainer._nothink_bridge_runtime
+
+
+# A single Exact candidate activates both B/C and is counted as singleton success.
+singleton_records = []
+singleton_rewards = []
+for group_id, ranks in (("g0", (0, 1)), ("g1", (2, 3))):
+    for rank in ranks:
+        for local_index in range(4):
+            exact = rank in (0, 2) and local_index == 3
+            singleton_records.append({
+                "group_id": group_id,
+                "rank": rank,
+                "local_index": local_index,
+                "predicted_sid": (
+                    ("prod", 1, 11, 111) if exact else ("prod", 9, 9, 9)
+                ),
+                "token_positions": (4, 9, 10, 11),
+                "domain_commitment_eligible": True,
+                "domain_commitment_mode": "branch",
+                "domain_commitment_token_position": 4,
+                "sid_domain_token_position": 8,
+                "domain_commitment_failure": None,
+                "gold_sids": [("prod", 1, 11, 111)],
+                "target_domain": "prod",
+                "prompt": "prompt",
+            })
+            singleton_rewards.append(8.0 if exact else 0.0)
+singleton_runtime = prepare_with_global_records(singleton_records, singleton_rewards)
+assert singleton_runtime["stage_active"] == (False, True, True, True)
+assert singleton_runtime["b_singleton_success_group"] is True
+assert singleton_runtime["c_singleton_success_group"] is True
 
 
 # Formal trainer path: eligible commitment receives Domain +/- credit.
@@ -348,10 +404,10 @@ mismatch_records[1]["token_positions"] = None
 mismatch_records[1]["domain_commitment_failure"] = "unresolved"
 mismatch_runtime = prepare_with_global_records(mismatch_records, domain_rewards)
 assert [row[0] for row in mismatch_runtime["token_credits"]] == [
-    -0.004464285714285714,
+    -0.0078125,
     0.0,
-    -0.004464285714285714,
-    -0.004464285714285714,
+    -0.0078125,
+    -0.0078125,
 ]
 assert mismatch_runtime["domain_text_alignment_valid"] is False
 
@@ -468,7 +524,7 @@ torch.testing.assert_close(length_loss, torch.tensor(-0.05), rtol=0, atol=1e-8)
 
 # A single credited token enters per-sample loss at its exact value, then the
 # unchanged NoThink route multiplier (.5) is applied.
-for value, width in ((0.015625, 4), (-0.125, 7), (0.375, 10)):
+for value, width in ((0.015625, 4), (-0.09375, 7), (0.5625, 10)):
     mask = torch.ones((1, width))
     token_credit = torch.zeros((1, width))
     token_credit[0, width // 2] = value
@@ -526,6 +582,9 @@ def bridge_runtime(plan, global_active):
         "wrong_domain_rate": 0.0,
         "valid_sid_rate": 1.0,
         "domain_text_alignment_valid": True,
+        "stage_active": (False, False, False, False),
+        "b_singleton_success_group": False,
+        "c_singleton_success_group": False,
         "domain_commitment_eligible_count": 8,
         "domain_commitment_branch_count": 8,
         "domain_commitment_direct_sid_fallback_count": 0,

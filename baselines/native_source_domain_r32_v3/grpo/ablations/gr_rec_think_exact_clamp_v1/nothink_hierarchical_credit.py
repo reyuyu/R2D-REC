@@ -101,15 +101,15 @@ def conditional_hierarchical_credits(
         domain_eligible = [state.valid for state in states]
     if len(domain_eligible) != len(states):
         raise ValueError("Domain eligibility must align one-to-one with G8 states")
-    domain_indices = [
-        index for index, (state, eligible) in enumerate(zip(states, domain_eligible))
-        if state.valid and eligible
-    ]
-    domain_indicators = [float(states[index].domain_correct) for index in domain_indices]
-    if domain_indicators and len(set(domain_indicators)) > 1:
-        mean = sum(domain_indicators) / len(domain_indicators)
-        for index, indicator in zip(domain_indices, domain_indicators):
-            credits[index][0] = STAGE_INCREMENTS[0] * (indicator - mean) / HIERARCHY_SCALE
+    domain_indicators = [float(state.domain_correct) for state in states]
+    domain_mean = sum(domain_indicators) / len(states)
+    for index, (state, eligible) in enumerate(zip(states, domain_eligible)):
+        if state.valid and eligible:
+            credits[index][0] = (
+                STAGE_INCREMENTS[0]
+                * (domain_indicators[index] - domain_mean)
+                / HIERARCHY_SCALE
+            )
 
     stages = (
         (lambda state: state.domain_correct, lambda state: state.a_correct),
@@ -119,13 +119,13 @@ def conditional_hierarchical_credits(
     for column, ((eligible, correct), increment) in enumerate(
         zip(stages, STAGE_INCREMENTS[1:]), 1
     ):
-        indices = [index for index, state in enumerate(states) if eligible(state)]
-        indicators = [float(correct(states[index])) for index in indices]
-        if not indicators or len(set(indicators)) == 1:
-            continue
-        mean = sum(indicators) / len(indicators)
-        for index, indicator in zip(indices, indicators):
-            credits[index][column] = increment * (indicator - mean) / HIERARCHY_SCALE
+        indicators = [float(correct(state)) for state in states]
+        mean = sum(indicators) / len(states)
+        for index, state in enumerate(states):
+            if eligible(state):
+                credits[index][column] = (
+                    increment * (indicators[index] - mean) / HIERARCHY_SCALE
+                )
     return [tuple(row) for row in credits]
 
 

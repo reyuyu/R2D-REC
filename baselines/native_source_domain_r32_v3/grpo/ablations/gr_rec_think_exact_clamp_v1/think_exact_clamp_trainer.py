@@ -137,6 +137,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             bucket["rewards"].append(reward)
         plans = {}
         commitment_by_group = {}
+        hierarchy_by_group = {}
         credits_by_candidate = {}
         for group_id, group in grouped.items():
             records = group["records"]
@@ -154,6 +155,14 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             group_credits = conditional_hierarchical_credits(
                 states, domain_eligible=eligibility
             )
+            hierarchy_by_group[group_id] = {
+                "stage_active": tuple(
+                    any(credit[column] != 0 for credit in group_credits)
+                    for column in range(4)
+                ),
+                "b_success_count": sum(state.ab_correct for state in states),
+                "c_success_count": sum(state.exact for state in states),
+            }
             for record, credit in zip(records, group_credits):
                 credits_by_candidate[(record["rank"], record["local_index"])] = credit
             commitment_by_group[group_id] = {
@@ -184,6 +193,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
         self._nothink_bridge_runtime = self._build_bridge_runtime(
             inputs[0], plan, any(candidate.active for candidate in plans.values()),
             group_weight, group["rewards"], commitment_by_group[group_id],
+            hierarchy_by_group[group_id],
             [record["predicted_sid"] for record in group["records"]],
             [
                 credits_by_candidate[(self.accelerator.process_index, index)]
@@ -194,7 +204,7 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
 
     def _build_bridge_runtime(
         self, item, plan, global_active, ddp_group_weight, rewards,
-        domain_commitment_summary, predicted_sids,
+        domain_commitment_summary, hierarchy_summary, predicted_sids,
         token_credits, token_positions,
     ):
         prompt_ids = encode_prompt(self.processing_class, item["prompt"])
@@ -226,6 +236,9 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             ),
             "domain_commitment_unresolved_count": domain_commitment_summary["unresolved_count"],
             "domain_text_alignment_valid": domain_commitment_summary["unresolved_count"] == 0,
+            "stage_active": hierarchy_summary["stage_active"],
+            "b_singleton_success_group": hierarchy_summary["b_success_count"] == 1,
+            "c_singleton_success_group": hierarchy_summary["c_success_count"] == 1,
             "rewards": tuple(rewards),
             "gold_unique_a_count": len(gold_a),
             "pred_unique_a_count": len({sid[1] for sid in predicted}),
@@ -431,6 +444,12 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
                 runtime["domain_commitment_direct_sid_fallback_count"]
             ),
             "domain_commitment_unresolved_count": runtime["domain_commitment_unresolved_count"],
+            "domain_stage_active": runtime["stage_active"][0],
+            "a_stage_active": runtime["stage_active"][1],
+            "b_stage_active": runtime["stage_active"][2],
+            "c_stage_active": runtime["stage_active"][3],
+            "b_singleton_success_group": runtime["b_singleton_success_group"],
+            "c_singleton_success_group": runtime["c_singleton_success_group"],
         }
         if self._smoke_log:
             self._smoke_log[-1].update(event)
@@ -514,6 +533,12 @@ class ThinkExactClampRecGRPOTrainer(RecGRPOTrainer):
             "wrong_domain_rate": runtime["wrong_domain_rate"],
             "valid_sid_rate": runtime["valid_sid_rate"],
             "domain_text_alignment_valid": runtime["domain_text_alignment_valid"],
+            "domain_stage_active": runtime["stage_active"][0],
+            "a_stage_active": runtime["stage_active"][1],
+            "b_stage_active": runtime["stage_active"][2],
+            "c_stage_active": runtime["stage_active"][3],
+            "b_singleton_success_group": runtime["b_singleton_success_group"],
+            "c_singleton_success_group": runtime["c_singleton_success_group"],
         }
         entry.update(event)
         self._monitor._append(

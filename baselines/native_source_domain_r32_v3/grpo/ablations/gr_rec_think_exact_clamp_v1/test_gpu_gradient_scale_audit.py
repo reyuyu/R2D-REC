@@ -101,9 +101,9 @@ assert hierarchical.shape == completion_ids.shape
 assert alignment["domain_text_alignment_valid"] is True
 assert alignment["direct_sid_fallback_count"] == 8
 assert credits[0] == (0.0, -0.046875, 0.0, 0.0)
-assert credits[1] == (0.0, 0.015625, -0.125, 0.0)
-assert credits[2] == (0.0, 0.015625, 0.0625, -0.375)
-assert credits[3] == (0.0, 0.015625, 0.0625, 0.375)
+assert credits[1] == (0.0, 0.015625, -0.09375, 0.0)
+assert credits[2] == (0.0, 0.015625, 0.09375, -0.1875)
+assert credits[3] == (0.0, 0.015625, 0.09375, 0.5625)
 
 # The audit consumes Domain/A/B/C credit and reports the Domain stage.
 domain_completion_ids_list = tuple(
