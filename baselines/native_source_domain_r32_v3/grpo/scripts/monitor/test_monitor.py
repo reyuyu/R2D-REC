@@ -297,6 +297,8 @@ with tempfile.TemporaryDirectory() as temporary:
         "renderUserSampleContext(trace, trace.route)",
         "latestTrace", "· 有样本",
         "/api/sample-context", "candidate trace 未落盘", "代表输入 1/",
+        "captureMonitorScrollState", "restoreMonitorScrollState", "document.scrollingElement",
+        "userRefreshInFlight",
     ))
     print("[PASS] User run-kind routing, fixed probes, green matches, and six dashboard views")
 

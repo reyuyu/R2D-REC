@@ -21,6 +21,47 @@
   state.allRuns = [];
   state.activeKind = RECOMMENDATION;
   const userSampleContextCache = new Map();
+  let userRefreshInFlight = false;
+  const monitorScrollableSelectors = [
+    '#trace .probe-context-block pre',
+    '#userProbeDetail .probe-context-block pre',
+    '#trace .candidate .text',
+    '#userProbeDetail .candidate .text',
+    '#trace .beam-details[open] .beam-grid',
+    '#traceIndex .trace-links',
+  ];
+
+  function captureMonitorScrollState() {
+    const root = document.scrollingElement;
+    return {
+      pageTop: root?.scrollTop || 0,
+      pageLeft: root?.scrollLeft || 0,
+      containers: monitorScrollableSelectors.map(selector => ({
+        selector,
+        positions: [...document.querySelectorAll(selector)].map(element => ({
+          top: element.scrollTop,
+          left: element.scrollLeft,
+        })),
+      })),
+    };
+  }
+
+  function restoreMonitorScrollState(snapshot) {
+    if (!snapshot) return;
+    for (const group of snapshot.containers) {
+      [...document.querySelectorAll(group.selector)].forEach((element, index) => {
+        const position = group.positions[index];
+        if (!position) return;
+        element.scrollTop = position.top;
+        element.scrollLeft = position.left;
+      });
+    }
+    const root = document.scrollingElement;
+    if (root) {
+      root.scrollTop = snapshot.pageTop;
+      root.scrollLeft = snapshot.pageLeft;
+    }
+  }
 
   function isUserRun() {
     return state.manifest.run_kind === USER || state.capabilities.user_grpo === true;
@@ -347,7 +388,11 @@
       .then(response => response.ok ? response.json() : null)
       .then(context => {
         userSampleContextCache.set(key, context || false);
-        if (isUserRun() && String($('rolloutSelect').value)) renderUserExplorer();
+        if (isUserRun() && String($('rolloutSelect').value)) {
+          const scrollState = captureMonitorScrollState();
+          renderUserExplorer();
+          restoreMonitorScrollState(scrollState);
+        }
       })
       .catch(() => userSampleContextCache.set(key, false));
   }
@@ -502,6 +547,9 @@
 
   refresh = async function(force = false) {
     if (!autoRefresh && !force) return;
+    if (userRefreshInFlight) return;
+    userRefreshInFlight = true;
+    let scrollState = null;
     try {
       if (!state.activeRun && !(await loadRuns())) { setLiveState('stale', '等待实验数据'); return; }
       const requestedRun = state.activeRun;
@@ -510,6 +558,7 @@
       if (responses.some(response => !response.ok)) throw new Error('接口返回异常状态');
       const [manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate] = await Promise.all(responses.map(response => response.json()));
       if (requestedRun !== state.activeRun) return;
+      scrollState = captureMonitorScrollState();
       Object.assign(state, {manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate});
       if (typeof mergeDsrCandidateTraces === 'function') mergeDsrCandidateTraces();
       state.activeKind = manifest.run_kind === USER ? USER : RECOMMENDATION;
@@ -534,6 +583,9 @@
       $('error').textContent = `监控数据读取失败：${error.message}`;
       $('error').style.display = 'block';
       if (autoRefresh) setLiveState('stale', '连接异常 · 展示上次数据');
+    } finally {
+      restoreMonitorScrollState(scrollState);
+      userRefreshInFlight = false;
     }
   };
 
