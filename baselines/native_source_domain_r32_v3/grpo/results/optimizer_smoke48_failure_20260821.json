@@ -1,0 +1,73 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_optimizer_smoke_summary",
+  "run_id": "GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821",
+  "code_commit": "6bd86f0f7962f12c73fbee67b1edc6c084c210d2",
+  "status": "SMOKE_FAIL",
+  "requested_optimizer_steps": 48,
+  "completed_optimizer_steps": 0,
+  "world_size": 4,
+  "initialization": {
+    "base": "/data/models/onereason-8b-pretrain-competition",
+    "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+    "resume_from_checkpoint": null
+  },
+  "observed": {
+    "think_groups": 4,
+    "nothink_groups": 0,
+    "think_reward_mean": 3.0625,
+    "think_reward_distribution": {
+      "0": 8,
+      "0.5": 2,
+      "8": 6
+    },
+    "think_zero_std_group_count": 2,
+    "think_zero_std_group_rate": 0.5,
+    "think_exact_clamp_count": 0,
+    "think_completion_length_mean": 759.5,
+    "think_completion_length_min": 574,
+    "think_completion_length_max": 945,
+    "think_invalid_count": 0,
+    "think_invalid_rate": 0.0,
+    "nothink_reward_mean": null,
+    "nothink_zero_std_group_rate": null,
+    "domain_active_group_rate": null,
+    "a_active_group_rate": null,
+    "b_active_group_rate": null,
+    "c_active_group_rate": null,
+    "domain_commitment_branch_count": 0,
+    "domain_commitment_direct_sid_fallback_count": 0,
+    "domain_commitment_unresolved_count": 0,
+    "domain_commitment_eligible_count": 0,
+    "zero_signal_taxonomy": {
+      "ALL_WRONG_DOMAIN_ZERO_SIGNAL": {"count": 0, "rate": null},
+      "DEAD_ZERO_BRIDGE": {"count": 0, "rate": null},
+      "UNIFORM_A_ONLY": {"count": 0, "rate": null},
+      "UNIFORM_AB": {"count": 0, "rate": null},
+      "UNIFORM_EXACT": {"count": 0, "rate": null},
+      "OTHER_ZERO_VARIANCE": {"count": 0, "rate": null}
+    },
+    "bridge_activation_count": 0,
+    "bridge_activation_rate": null,
+    "bridge_loss_range": null,
+    "weighted_bridge_contribution_range": null,
+    "loss_range": null,
+    "grad_norm_range": null
+  },
+  "failure": {
+    "phase": "first Think rollout, before loss/backward/optimizer step",
+    "exception": "TypeError: sequence index must be integer, not 'slice'",
+    "location": "think_exact_clamp_trainer.py:242",
+    "cause": "slice assignment into the current TRL advantages log deque",
+    "nan_or_inf": false,
+    "oom": false,
+    "parameter_update": false,
+    "checkpoint_written": false
+  },
+  "artifacts": {
+    "log": "/data/GRPO/logs/GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821.log",
+    "monitor": "/data/GRPO/runs/GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821"
+  },
+  "training_stopped": true,
+  "benchmark_started": false,
+  "automatic_retry_started": false
+}

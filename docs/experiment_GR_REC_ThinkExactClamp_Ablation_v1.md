@@ -51,6 +51,45 @@ before and after. Result: **FAST_PREFLIGHT_PASS**.
 No optimizer/scheduler step, parameter update, checkpoint, smoke, pilot, or
 formal training occurred.
 
+## 4x A800 optimizer smoke attempt (2026-08-21)
+
+Run `GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821` was launched from commit
+`6bd86f0f7962f12c73fbee67b1edc6c084c210d2` on four A800 GPUs with the
+original 8B base and fresh original BATA adapter. The bounded contract was 48
+optimizer steps, `num_iterations=2`, `lr=1e-6`, the frozen `T,T,N,N,N,N`
+route schedule, and a single permitted checkpoint at step 48.
+
+The attempt stopped at `0/48` with **SMOKE_FAIL** during the first Think
+rollout, before loss, backward, optimizer step, or parameter update. All four
+ranks raised:
+
+```text
+TypeError: sequence index must be integer, not 'slice'
+think_exact_clamp_trainer.py:242
+```
+
+The immediate cause is slice assignment into the current TRL advantages log
+container, which is a `deque`. This is a training-chain compatibility defect,
+not a reward/loss numerical failure. Per the smoke stop contract, no automatic
+fix or retry was attempted.
+
+The pre-failure monitor captured four real Think G4 groups (16 candidates):
+reward mean `3.0625`, reward distribution `{0: 8, 0.5: 2, 8: 6}`, zero-std
+group rate `2/4 = 50%`, invalid rate `0/16`, and completion length
+`574..945` (mean `759.5`). ExactClamp high-quality negative clamp count was
+zero. No NoThink rollout was reached, so Domain/A/B/C activity, commitment
+counts, zero-signal taxonomy, bridge activation, loss, and grad norm are not
+observed rather than zero-rate conclusions.
+
+There was no NaN/Inf, OOM, checkpoint, optimizer update, benchmark, or formal
+training. Logs remain at
+`/data/GRPO/logs/GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821.log`; monitor data
+remain at `/data/GRPO/runs/GR-REC-CLAMP-BRIDGE-V1-SMOKE48-20260821`.
+
+Structured summary:
+
+- [`../baselines/native_source_domain_r32_v3/grpo/results/optimizer_smoke48_failure_20260821.json`](../baselines/native_source_domain_r32_v3/grpo/results/optimizer_smoke48_failure_20260821.json)
+
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
   A-collapse A+B teacher branches.
