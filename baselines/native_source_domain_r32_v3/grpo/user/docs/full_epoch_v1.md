@@ -4,7 +4,7 @@
 - Resume: step 40 / 300 prompts
 - Final: step 378 / 3000 unique prompts
 - Final checkpoint: `/data/GRPO_USER/runs/GR-USER-FULL-EPOCH-20260820-052019/full-epoch-final`
-- Internal status: **PENDING_FINAL_CHAIN_PROBE_V2**
+- Internal status: **INTERNAL_READY_FOR_EXTERNAL_EVAL**
 
 ## Runtime
 
@@ -60,3 +60,29 @@ Matched inference-only probe: 40 Chain samples, G=4 (160 candidates).
 | Final-C40 | logic_alignment | 0.001485 | [-0.009031, 0.011490] |
 
 Internal status: `INTERNAL_READY_FOR_EXTERNAL_EVAL`.
+
+## External evaluation: step 240
+
+The external v3.1 evaluator result reported for `checkpoint-step240` is:
+
+```text
+aggregate:      1.3103
+material:       0.0504, 0.0357, 0.0500, 0.0419
+user:           0.1583, 0.0994
+recommendation: 0.1195, 0.1462, 0.2044, 0.1674
+world:          0.2372
+```
+
+The evaluator log started at `2026-08-20 12:22:33`, completed all 11 tasks with zero failed tasks, wrote both result files, and successfully reported the result. It evaluated a merged model at `/tmp/eval_model/merged`; the log contains no source checkpoint path or model hash, so the step-240 attribution is supplied by the evaluation submission rather than independently proven by the log.
+
+| Group | BETA `1.3313` | Step 240 | Delta |
+| --- | ---: | ---: | ---: |
+| Material | 0.1807 | 0.1780 | -0.0027 |
+| User | 0.2545 | 0.2577 | +0.0032 |
+| Recommendation | 0.6594 | 0.6375 | -0.0219 |
+| World | 0.2368 | 0.2372 | +0.0004 |
+| Aggregate | 1.3313 | 1.3103 | -0.0210 |
+
+The rounded group values sum to `1.3104`; the official aggregate is `1.3103` because aggregation uses unrounded metrics. The total decrease exceeds the repository's approximate `+/-0.01` single-run variation band and is concentrated in Recommendation, especially product (`0.1598 -> 0.1462`, `-0.0136`). User itself moved slightly upward (`+0.0032`), consistent in direction with the internal probe but much smaller than the internal probe improvement.
+
+This is therefore evidence of cross-task interference, not evidence that the GR_USER optimization failed on its own objective. The run used only User prompts and `beta=0.0`, so it had no explicit reference-model KL term protecting Recommendation behavior. Small LoRA movement can still change SID ranking on a different task. Step 240 is also not the final step 378; no external result for the final checkpoint is recorded here, so this result cannot establish the final checkpoint's external score.

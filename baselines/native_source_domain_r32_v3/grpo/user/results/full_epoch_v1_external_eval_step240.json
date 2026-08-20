@@ -1,0 +1,38 @@
+{
+  "run_id": "GR-USER-FULL-EPOCH-20260820-052019",
+  "checkpoint": "checkpoint-step240",
+  "checkpoint_attribution": "user_provided; evaluator log only identifies /tmp/eval_model/merged",
+  "evaluator_version": "v3.1",
+  "evaluation_started_at": "2026-08-20T12:22:33",
+  "evaluation_completed_at": "2026-08-20T15:00:00",
+  "evaluation_complete": true,
+  "failed_tasks": 0,
+  "aggregate": 1.3103,
+  "scores": {
+    "material": [0.0504, 0.0357, 0.0500, 0.0419],
+    "user": [0.1583, 0.0994],
+    "recommendation": [0.1195, 0.1462, 0.2044, 0.1674],
+    "world": [0.2372]
+  },
+  "group_sums_from_rounded_scores": {
+    "material": 0.1780,
+    "user": 0.2577,
+    "recommendation": 0.6375,
+    "world": 0.2372
+  },
+  "beta_reference": {
+    "aggregate": 1.3313,
+    "material": [0.0519, 0.0363, 0.0503, 0.0422],
+    "user": [0.1573, 0.0972],
+    "recommendation": [0.1223, 0.1598, 0.2072, 0.1701],
+    "world": [0.2368]
+  },
+  "delta_vs_beta": {
+    "aggregate": -0.0210,
+    "material_sum": -0.0027,
+    "user_sum": 0.0032,
+    "recommendation_sum": -0.0219,
+    "world": 0.0004
+  },
+  "interpretation": "User improved slightly, while the aggregate decrease was concentrated in Recommendation, especially product. This supports cross-task interference at step 240."
+}
