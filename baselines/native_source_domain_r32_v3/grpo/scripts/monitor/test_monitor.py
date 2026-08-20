@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import tempfile
 from pathlib import Path
@@ -75,23 +76,73 @@ with tempfile.TemporaryDirectory() as temporary:
     assert client.get("/").status_code == 200
     print("[PASS] FastAPI endpoints and query filters")
 
+    probe_source = root / "probe_light_v1.jsonl"
+    source_row = {
+        "sample_id": "probe-a",
+        "prompt": "history input /no_think",
+        "history_sids": ["sid-a"],
+        "gold_events": [{"date": "2026-01-01", "action": "watch", "logic": "interest"}],
+    }
+    probe_source.write_text(json.dumps(source_row) + "\n", encoding="utf-8")
+    source_sha = hashlib.sha256(probe_source.read_bytes()).hexdigest()
+    manifest_path = rank0.run_dir / "manifest.json"
+    source_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    source_manifest["fixed_probe"] = {"dataset": str(probe_source), "sha256": source_sha, "enabled": True}
+    train_source = root / "train_3000.jsonl"
+    train_sample_id = "a" * 64
+    train_row = {
+        "sample_id": train_sample_id,
+        "prompt": "training history input /no_think",
+        "gold_sids": ["sid-gold"],
+        "history_sids": ["sid-history"],
+        "private_field": "must-not-leak",
+    }
+    train_source.write_text(json.dumps(train_row) + "\n", encoding="utf-8")
+    source_manifest["dataset"] = str(train_source)
+    source_manifest["dataset_sha"] = {
+        train_source.name: hashlib.sha256(train_source.read_bytes()).hexdigest()
+    }
+    manifest_path.write_text(json.dumps(source_manifest), encoding="utf-8")
+    rank0.write_probe({"step": 10, "group_id": "probe-a", "think": {"reward_mean": 1.0}})
+    rank0.write_trace({"rollout_id": 4, "step": 3, "route": "action", "group_id": train_sample_id, "candidates": []})
+    enriched_rows = client.get("/api/probes?group_id=probe-a").json()
+    enriched = enriched_rows[0]
+    assert enriched["prompt"] == source_row["prompt"]
+    assert enriched["history_sids"] == source_row["history_sids"]
+    assert enriched["gold_events"] == source_row["gold_events"]
+    assert sum(row.get("prompt") == source_row["prompt"] for row in enriched_rows) == 1
+    enriched_trace = client.get("/api/traces?rollout_id=4").json()[0]
+    assert enriched_trace["prompt"] == train_row["prompt"]
+    assert enriched_trace["gold_sids"] == train_row["gold_sids"]
+    assert "private_field" not in enriched_trace
+    context_response = client.get(f"/api/sample-context?sample_id={train_sample_id}")
+    assert context_response.status_code == 200
+    assert context_response.json()["prompt"] == train_row["prompt"]
+    assert "private_field" not in context_response.json()
+    assert client.get("/api/sample-context?sample_id=../private").status_code == 404
+    source_manifest["fixed_probe"]["sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(source_manifest), encoding="utf-8")
+    assert "prompt" not in client.get("/api/probes?group_id=probe-a").json()[0]
+    print("[PASS] Probe and rollout source enrichment is SHA-gated and field-limited")
+
     isolated = MonitorWriter(True, root, "isolated-run", rank=0)
-    assert isolated.write_manifest({"seed": 99, "max_steps": 120, "fixed_probe": None})
-    assert isolated.write_step({"step": 17, "loss": 9.9})
     outputs = root / "_outputs"
+    user_outputs = root / "_user_runs"
+    assert isolated.write_manifest({"seed": 99, "max_steps": 120, "fixed_probe": None, "output_dir": str(user_outputs / "isolated-run")})
+    assert isolated.write_step({"step": 17, "loss": 9.9})
     checkpoint = outputs / "isolated-run" / "checkpoint-17"
     checkpoint.mkdir(parents=True)
     (checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
     (checkpoint / "adapter_model.safetensors").write_bytes(b"safe-adapter")
     (checkpoint / "optimizer.pt").write_bytes(b"private-training-state")
-    multi_client = TestClient(create_app(runs_dir=root, outputs_dir=outputs))
+    multi_client = TestClient(create_app(runs_dir=root, outputs_dir=outputs, user_runs_dir=user_outputs))
     runs = multi_client.get("/api/runs").json()
     assert {item["run_id"] for item in runs} >= {"writer-test", "isolated-run"}
     assert multi_client.get("/api/manifest?run_id=writer-test").json()["seed"] == 7
     assert multi_client.get("/api/manifest?run_id=isolated-run").json()["seed"] == 99
     assert [row["step"] for row in multi_client.get("/api/metrics?run_id=isolated-run").json()] == [17]
     assert all(row["step"] != 17 for row in multi_client.get("/api/metrics?run_id=writer-test").json())
-    assert len(multi_client.get("/api/probes?run_id=writer-test").json()) == 1
+    assert len(multi_client.get("/api/probes?run_id=writer-test").json()) == 2
     assert multi_client.get("/api/probes?run_id=isolated-run").json() == []
     assert multi_client.get("/api/capabilities?run_id=isolated-run").json()["probes"] is False
     assert multi_client.get("/api/metrics").status_code == 400
@@ -116,6 +167,37 @@ with tempfile.TemporaryDirectory() as temporary:
     assert multi_client.delete(
         "/api/checkpoints/checkpoint-17?run_id=isolated-run&confirm=checkpoint-17"
     ).status_code == 404
+
+    formal_checkpoint = user_outputs / "isolated-run" / "checkpoint-step80"
+    formal_checkpoint.mkdir(parents=True)
+    (formal_checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (formal_checkpoint / "adapter_model.safetensors").write_bytes(b"formal-safe-adapter")
+    formal_checkpoints = multi_client.get("/api/checkpoints?run_id=isolated-run").json()
+    assert formal_checkpoints == [{
+        "checkpoint": "checkpoint-step80",
+        "step": 80,
+        "files": {
+            "adapter_config.json": len(b'{"r":32}'),
+            "adapter_model.safetensors": len(b"formal-safe-adapter"),
+        },
+    }]
+    formal_download = multi_client.get(
+        "/api/checkpoints/checkpoint-step80/download?run_id=isolated-run&file=adapter_model.safetensors"
+    )
+    assert formal_download.status_code == 200 and formal_download.content == b"formal-safe-adapter"
+
+    final_checkpoint = user_outputs / "isolated-run" / "full-epoch-final"
+    final_checkpoint.mkdir(parents=True)
+    (final_checkpoint / "metadata.json").write_text('{"global_optimizer_step":378}', encoding="utf-8")
+    (final_checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (final_checkpoint / "adapter_model.safetensors").write_bytes(b"final-safe-adapter")
+    final_checkpoints = multi_client.get("/api/checkpoints?run_id=isolated-run").json()
+    assert [item["checkpoint"] for item in final_checkpoints] == ["checkpoint-step80", "full-epoch-final"]
+    assert final_checkpoints[-1]["step"] == 378
+    final_download = multi_client.get(
+        "/api/checkpoints/full-epoch-final/download?run_id=isolated-run&file=adapter_model.safetensors"
+    )
+    assert final_download.status_code == 200 and final_download.content == b"final-safe-adapter"
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 
     demo_dir = Path(generate(str(root), "demo"))
@@ -177,12 +259,16 @@ with tempfile.TemporaryDirectory() as temporary:
     user_metrics = parse_every_line(user_demo_dir / "metrics.jsonl")
     user_rollouts = parse_every_line(user_demo_dir / "rollouts.jsonl")
     user_traces = parse_every_line(user_demo_dir / "traces/traces.jsonl")
+    user_probes = parse_every_line(user_demo_dir / "probes.jsonl")
     assert user_manifest["run_kind"] == "user_grpo" and user_manifest["demo"] is True
     assert user_manifest["G"] == 4 and user_manifest["token_penalty"]["lambda"] == 0.5
     assert len(user_metrics) == 40 and {row["route"] for row in user_metrics} == {"action", "chain"}
     assert len(user_rollouts) == 8 and {row["route"] for row in user_rollouts} == {"action", "chain"}
     assert len(user_traces) == 8 and all(len(row["candidates"]) == 4 for row in user_traces)
     assert any(candidate.get("masked_spans") for row in user_traces for candidate in row["candidates"])
+    assert len(user_probes) == 60 and {row["step"] for row in user_probes} == {0, 20, 40}
+    assert {row["route"] for row in user_probes} == {"action", "chain"}
+    assert any(candidate.get("match_spans") for row in user_probes for candidate in row["candidates"])
 
     with (user_demo_dir / "metrics.jsonl").open("a", encoding="utf-8") as handle:
         handle.write('{"type":"step","step":41')
@@ -196,6 +282,7 @@ with tempfile.TemporaryDirectory() as temporary:
     assert user_client.get("/api/runs?run_kind=unknown").status_code == 400
     assert user_client.get("/api/manifest?run_id=demo").json()["run_kind"] == "recommendation_grpo"
     assert user_client.get("/api/capabilities?run_id=demo-user-grpo").json()["user_grpo"] is True
+    assert user_client.get("/api/capabilities?run_id=demo-user-grpo").json()["probes"] is True
     assert user_client.get("/api/capabilities?run_id=demo").json()["user_grpo"] is False
     assert len(user_client.get("/api/metrics?run_id=demo-user-grpo").json()) == 40
     assert user_client.get("/static/user_dashboard.js").status_code == 200
@@ -204,8 +291,15 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in user_js for label in (
         "懂推荐 GRPO", "懂用户 GRPO", "Action Set-F1", "Chain Alignment",
         "Token Advantage", "Rollout 样本", "wrong_selection_candidate_rate",
-        "stageRunKind", "切换实验中",
+        "stageRunKind", "切换实验中", "Prob / 固定探针", "match-mark",
+        "userProbeActionChart",
+        "输入样本", "Ground Truth ·", "selected.prompt", "selected.gold_events",
+        "renderUserSampleContext(trace, trace.route)",
+        "latestTrace", "· 有样本",
+        "/api/sample-context", "candidate trace 未落盘", "代表输入 1/",
+        "captureMonitorScrollState", "restoreMonitorScrollState", "document.scrollingElement",
+        "userRefreshInFlight",
     ))
-    print("[PASS] User run-kind routing, 40-step demo, optional fields, malformed tail, and five dashboard views")
+    print("[PASS] User run-kind routing, fixed probes, green matches, and six dashboard views")
 
 print("ALL MONITOR CPU TESTS PASSED")
