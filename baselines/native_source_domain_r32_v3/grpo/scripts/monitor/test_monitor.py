@@ -69,7 +69,7 @@ with tempfile.TemporaryDirectory() as temporary:
         group_id = hashlib.sha256(f"validation-{index}".encode()).hexdigest()
         sid = f"<|{domain}_begin|><s_a_{index + 1}><s_b_2><s_c_3>"
         validation_rows.append({
-            "instruction": f"旧提示\n历史 {index}/{domain}/think", "input": "",
+            "instruction": f"旧提示\n历史 {sid}/{domain}/think", "input": "",
             "source_segment": "recommendation_cot",
             "aux_metadata_json": json.dumps({
                 "recommendation_group_id": group_id,
@@ -89,6 +89,7 @@ with tempfile.TemporaryDirectory() as temporary:
     }), encoding="utf-8")
     eval_pool = load_validation_pool(eval_validation, eval_leakage, eval_train)
     assert len(eval_pool) == 4 and len(build_cohort(eval_pool, 4, 20260822)) == 4
+    assert all(len(row["history_sids"]) == 1 for row in eval_pool)
     assert route_prompt(eval_pool[0]["base_prompt"], eval_pool[0]["domain"], "think").endswith("/think")
     assert wilson_interval(3, 4)[0] < 0.75 < wilson_interval(3, 4)[1]
     evaluator_source = (Path(__file__).parent.parent / "checkpoint_eval.py").read_text(encoding="utf-8")

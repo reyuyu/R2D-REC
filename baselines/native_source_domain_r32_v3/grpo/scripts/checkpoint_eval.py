@@ -51,6 +51,18 @@ def parse_sid(value: str) -> tuple[str, int, int, int] | None:
     )
 
 
+def extract_sids(value: str) -> set[tuple[str, int, int, int]]:
+    return {
+        (
+            match.group("domain"),
+            int(match.group(2)),
+            int(match.group(3)),
+            int(match.group(4)),
+        )
+        for match in SID_RE.finditer(str(value))
+    }
+
+
 def _base_prompt(row: dict[str, Any]) -> str:
     prompt = str(row.get("instruction") or "")
     if row.get("input"):
@@ -91,10 +103,11 @@ def load_validation_pool(
             if isinstance(group_id, str) and re.fullmatch(r"[0-9a-f]{64}", group_id):
                 grouped[group_id].append((row, metadata))
 
-    train_ids = {
-        json.loads(line)["recommendation_group_id"]
-        for line in train_path.open(encoding="utf-8") if line.strip()
-    }
+    with train_path.open(encoding="utf-8") as handle:
+        train_ids = {
+            json.loads(line)["recommendation_group_id"]
+            for line in handle if line.strip()
+        }
     if train_ids.intersection(grouped):
         raise RuntimeError("validation group IDs overlap the GRPO training dataset")
 
@@ -110,11 +123,13 @@ def load_validation_pool(
         domains = {sid[0] for sid in parsed if sid is not None}
         if len(prompts) != 1 or len(domains) != 1 or not gold_values:
             continue
+        base_prompt = next(iter(prompts))
         result.append({
             "group_id": group_id,
             "domain": next(iter(domains)),
-            "base_prompt": next(iter(prompts)),
+            "base_prompt": base_prompt,
             "gold_sids": sorted(gold_values),
+            "history_sids": sorted(extract_sids(base_prompt)),
         })
     return result
 
@@ -188,23 +203,73 @@ def atomic_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
-def _route_outcome(predicted: list[tuple[str, int, int, int] | None], gold: set[tuple]) -> dict[str, Any]:
+def _rate(numerator: int, denominator: int) -> float | None:
+    return numerator / denominator if denominator else None
+
+
+def _route_outcome(
+    predicted: list[tuple[str, int, int, int] | None],
+    gold: set[tuple],
+    history: set[tuple[str, int, int, int]],
+) -> dict[str, Any]:
     valid = [sid for sid in predicted if sid is not None]
     exact = any(sid in gold for sid in valid)
     ab = any(any(sid[:3] == target[:3] for target in gold) for sid in valid)
     a = any(any(sid[:2] == target[:2] for target in gold) for sid in valid)
-    return {"hit": exact, "ab_hit": ab, "a_hit": a, "invalid_count": len(predicted) - len(valid)}
+    history_count = sum(sid in history for sid in valid)
+    novel_count = len(valid) - history_count
+    unique_valid = set(valid)
+    unique_history_count = len(unique_valid.intersection(history))
+    unique_novel_count = len(unique_valid) - unique_history_count
+    return {
+        "hit": exact,
+        "ab_hit": ab,
+        "a_hit": a,
+        "invalid_count": len(predicted) - len(valid),
+        "valid_prediction_count": len(valid),
+        "history_copy_prediction_count": history_count,
+        "novel_prediction_count": novel_count,
+        "history_copy_rate": _rate(history_count, len(valid)),
+        "novel_prediction_rate": _rate(novel_count, len(valid)),
+        "unique_valid_sid_count": len(unique_valid),
+        "unique_history_copy_sid_count": unique_history_count,
+        "unique_novel_sid_count": unique_novel_count,
+        "unique_history_copy_rate": _rate(unique_history_count, len(unique_valid)),
+        "unique_novel_rate": _rate(unique_novel_count, len(unique_valid)),
+    }
 
 
 def _aggregate(rows: list[dict[str, Any]], route: str) -> dict[str, Any]:
     total = len(rows)
     hits = sum(bool(row[route]["hit"]) for row in rows)
+    valid_prediction_count = sum(int(row[route]["valid_prediction_count"]) for row in rows)
+    history_copy_prediction_count = sum(
+        int(row[route]["history_copy_prediction_count"]) for row in rows
+    )
+    novel_prediction_count = sum(int(row[route]["novel_prediction_count"]) for row in rows)
+    unique_valid_sid_count = sum(int(row[route]["unique_valid_sid_count"]) for row in rows)
+    unique_history_copy_sid_count = sum(
+        int(row[route]["unique_history_copy_sid_count"]) for row in rows
+    )
+    unique_novel_sid_count = sum(int(row[route]["unique_novel_sid_count"]) for row in rows)
     result = {
         "n": total, "hits": hits, "hit_rate": hits / total if total else None,
         "hit_rate_ci95": wilson_interval(hits, total),
         "ab_hit_rate": sum(bool(row[route]["ab_hit"]) for row in rows) / total if total else None,
         "a_hit_rate": sum(bool(row[route]["a_hit"]) for row in rows) / total if total else None,
         "invalid_rate": sum(int(row[route]["invalid_count"]) for row in rows) / (32 * total) if total else None,
+        "valid_prediction_count": valid_prediction_count,
+        "history_copy_prediction_count": history_copy_prediction_count,
+        "novel_prediction_count": novel_prediction_count,
+        "history_copy_rate": _rate(history_copy_prediction_count, valid_prediction_count),
+        "novel_prediction_rate": _rate(novel_prediction_count, valid_prediction_count),
+        "unique_valid_sid_count": unique_valid_sid_count,
+        "unique_history_copy_sid_count": unique_history_copy_sid_count,
+        "unique_novel_sid_count": unique_novel_sid_count,
+        "unique_history_copy_rate": _rate(
+            unique_history_copy_sid_count, unique_valid_sid_count
+        ),
+        "unique_novel_rate": _rate(unique_novel_sid_count, unique_valid_sid_count),
     }
     if route == "think":
         result["closure_rate"] = sum(bool(row[route]["closed"]) for row in rows) / total if total else None
@@ -277,6 +342,7 @@ def run_evaluation(args: argparse.Namespace) -> None:
             sample = cohort[cohort_index]
             gold = {parse_sid(value) for value in sample["gold_sids"]}
             gold.discard(None)
+            history = {tuple(sid) for sid in sample["history_sids"]}
             sample_started = time.time()
 
             think_prompt = route_prompt(sample["base_prompt"], sample["domain"], "think")
@@ -308,8 +374,9 @@ def run_evaluation(args: argparse.Namespace) -> None:
             local_rows.append({
                 "cohort_index": cohort_index, "group_id": sample["group_id"], "domain": sample["domain"],
                 "gold_sids": sample["gold_sids"],
-                "think": {**_route_outcome(think_sids, gold), "closed": closed},
-                "no_think": _route_outcome(no_sids, gold),
+                "history_sid_count": len(history),
+                "think": {**_route_outcome(think_sids, gold, history), "closed": closed},
+                "no_think": _route_outcome(no_sids, gold, history),
                 "wall_sec": time.time() - sample_started,
             })
             atomic_json(output / f"rank{rank}-progress.json", {
