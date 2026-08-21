@@ -6,6 +6,7 @@ import sys
 import json
 from pathlib import Path
 
+import numpy as np
 import torch
 from transformers import TrainerCallback
 import transformers.trainer as transformers_trainer
@@ -124,6 +125,12 @@ def allow_trusted_same_run_resume(args):
         # The checkpoint was generated locally by this exact run. Transformers 5.x
         # otherwise blocks all optimizer restores on the installed torch 2.5.
         transformers_trainer.check_torch_load_is_safe = lambda: None
+        torch.serialization.add_safe_globals([
+            np._core.multiarray._reconstruct,
+            np.ndarray,
+            np.dtype,
+            type(np.dtype(np.uint32)),
+        ])
         print(
             "trusted same-run optimizer restore enabled for torch " + torch.__version__,
             flush=True,
