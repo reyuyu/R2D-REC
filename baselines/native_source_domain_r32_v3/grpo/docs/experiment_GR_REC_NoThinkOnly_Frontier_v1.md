@@ -7,9 +7,11 @@
 - Branch: `ablation/gr-rec-nothink-only-frontier-v1`
 - Isolated developer-machine worktree: `/data/GRPO-frontier-v1`
 - Completed phases: CPU implementation, historical forensic, paired zero-update
-  GPU audit, and bounded Smoke24
-- GPU used: yes, only for the authorized zero-update audit and Smoke24
-- Full Frontier training started: no
+  GPU audit, bounded Smoke24, and formal full-epoch training
+- Formal launch commit: `3b0e434f8a603fac882a1e7485fd14d5dee2c551`
+- Formal run: `GR-REC-NOTHINK-ONLY-FRONTIER-G8BASE-E1-20260822`
+- GPU used: yes, for the authorized audit, Smoke24, and formal training
+- Full Frontier training: completed at 1,544/1,544 optimizer steps
 - External benchmark started: no
 
 ## Research change
@@ -190,3 +192,45 @@ training or algorithm parameter.
 
 Structured result:
 `results/gr_rec_nothink_frontier_v1_smoke24_20260822.json`
+
+## Formal full epoch (2026-08-22)
+
+Run `GR-REC-NOTHINK-ONLY-FRONTIER-G8BASE-E1-20260822` started from Fresh
+original BATA at launch commit
+`3b0e434f8a603fac882a1e7485fd14d5dee2c551`. It completed 1,544/1,544
+optimizer steps from 772 stochastic rollouts: 1,544 real NoThink G8 groups and
+12,352 candidates. All required checkpoints (250/500/666/750/1000/1250/1544)
+were saved outside `/data`.
+
+Full-epoch loss averaged `0.07141`, gradient norm `0.57673`, approximate KL
+`0.000269`, and clip fraction `0.001858`. No non-finite metric, OOM,
+runtime exception, or checkpoint failure occurred. The final adapter changed
+from Fresh BATA (LoRA L2 `0.98008`, max absolute delta `0.0014143`);
+the checkpoint is adapter-only and the frozen base delta is zero by contract.
+
+Strict-format violations were 53/12,352 (`0.4291%`). Frontier exposure was
+Domain 507, A 9,137, B 2,221, and C 305 candidates. The Gold-A bridge activated
+in 415/1,544 groups. The 197 rollouts with C-frontier had maximum-gradient mean
+`1.1555` and median `1.0220`, versus `0.4030` and `0.3574` for the
+575 without C-frontier. The maximum remained finite at `3.1950`.
+
+The on-policy reward mean was `0.15888` over steps 1-250, `0.25488` over
+647-896, and `0.15425` over 1295-1544. Zero-std ratio rose from `0.148`
+early to `0.348` late. These unmatched training batches show a less diverse
+late signal; they are not a held-out performance curve.
+
+The four-group NoThink fixed probe was noisy and non-monotonic (mean reward
+`0.0000` at step 0, `0.4375` at 600, and `0.1719` at 1544). More
+importantly, the untrained Think route's fixed-probe mean reward declined from
+`3.7305` to `0.7891`; mean exact count declined from `1.75` to
+`0.25`, and mean invalid Beam32 count rose from `0` to `11`. This is
+material shared-adapter cross-route interference, not a Think optimizer update.
+
+Engineering acceptance passes, but efficacy and checkpoint selection remain
+unresolved until a separately authorized held-out external benchmark. No
+external benchmark was started.
+
+Structured result:
+`results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.json`
+Narrative report:
+`results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.md`

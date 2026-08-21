@@ -1,0 +1,1297 @@
+{
+  "experiment": "GR_REC_NoThinkOnly_Frontier_v1",
+  "phase": "4xA800 formal full epoch",
+  "generated_at": "2026-08-21T22:48:06.099062+00:00",
+  "run_id": "GR-REC-NOTHINK-ONLY-FRONTIER-G8BASE-E1-20260822",
+  "launch_commit": "3b0e434f8a603fac882a1e7485fd14d5dee2c551",
+  "initialization": "fresh original BATA adapter",
+  "completed_steps": 1544,
+  "expected_steps": 1544,
+  "rollout_count": 772,
+  "g8_group_count": 1544,
+  "candidate_count": 12352,
+  "checkpoints": [
+    250,
+    500,
+    666,
+    750,
+    1000,
+    1250,
+    1544
+  ],
+  "train_runtime_sec": 7014.319826841354,
+  "train_loss": 0.07140948264220237,
+  "metrics": {
+    "full": {
+      "steps": [
+        1,
+        1544
+      ],
+      "loss": {
+        "n": 1544,
+        "min": -0.036865234375,
+        "max": 0.19527199864387512,
+        "mean": 0.07140948264220237,
+        "median": 0.06660208851099014
+      },
+      "grad_norm": {
+        "n": 1544,
+        "min": 0.14068478345870972,
+        "max": 3.1950180530548096,
+        "mean": 0.5767249925921001,
+        "median": 0.40155667066574097
+      },
+      "approx_kl": {
+        "n": 1544,
+        "min": 0.0,
+        "max": 0.011009545996785164,
+        "mean": 0.0002692375935496129,
+        "median": 1.3474155821313616e-05
+      },
+      "clip_fraction": {
+        "n": 1544,
+        "min": 0.0,
+        "max": 0.0694444477558136,
+        "mean": 0.0018575007501275428,
+        "median": 0.0
+      },
+      "reward_mean": {
+        "n": 1544,
+        "min": -0.359375,
+        "max": 3.03125,
+        "mean": 0.20828610751295337,
+        "median": 0.125
+      },
+      "reward_std": {
+        "n": 1544,
+        "min": 0.0,
+        "max": 2.995028018951416,
+        "mean": 0.375968972746997,
+        "median": 0.20371046662330627
+      },
+      "zero_std_ratio": {
+        "n": 1544,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.2713730569948187,
+        "median": 0.0
+      }
+    },
+    "early": {
+      "steps": [
+        1,
+        250
+      ],
+      "loss": {
+        "n": 250,
+        "min": -0.03437633067369461,
+        "max": 0.19527199864387512,
+        "mean": 0.04994784294813871,
+        "median": 0.041259765625
+      },
+      "grad_norm": {
+        "n": 250,
+        "min": 0.1979924440383911,
+        "max": 3.0678837299346924,
+        "mean": 0.5905118048787117,
+        "median": 0.43455401062965393
+      },
+      "approx_kl": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.008012143895030022,
+        "mean": 0.00032512981558102184,
+        "median": 3.5014909371966496e-05
+      },
+      "clip_fraction": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.0533333346247673,
+        "mean": 0.002377463813871145,
+        "median": 0.0
+      },
+      "reward_mean": {
+        "n": 250,
+        "min": -0.34375,
+        "max": 2.546875,
+        "mean": 0.158875,
+        "median": 0.078125
+      },
+      "reward_std": {
+        "n": 250,
+        "min": 0.0,
+        "max": 2.014580011367798,
+        "mean": 0.3931189831793308,
+        "median": 0.19855782389640808
+      },
+      "zero_std_ratio": {
+        "n": 250,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.148,
+        "median": 0.0
+      }
+    },
+    "middle": {
+      "steps": [
+        647,
+        896
+      ],
+      "loss": {
+        "n": 250,
+        "min": -0.036865234375,
+        "max": 0.1766294240951538,
+        "mean": 0.07862787169590592,
+        "median": 0.08296499401330948
+      },
+      "grad_norm": {
+        "n": 250,
+        "min": 0.15472672879695892,
+        "max": 3.034895658493042,
+        "mean": 0.6359506852626801,
+        "median": 0.4218713194131851
+      },
+      "approx_kl": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.004175312351435423,
+        "mean": 0.00023858859708707314,
+        "median": 1.8718488718150184e-05
+      },
+      "clip_fraction": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.0555555559694767,
+        "mean": 0.0015079240128397942,
+        "median": 0.0
+      },
+      "reward_mean": {
+        "n": 250,
+        "min": -0.0625,
+        "max": 2.03125,
+        "mean": 0.254875,
+        "median": 0.125
+      },
+      "reward_std": {
+        "n": 250,
+        "min": 0.0,
+        "max": 2.991020679473877,
+        "mean": 0.4246560143232346,
+        "median": 0.20371046662330627
+      },
+      "zero_std_ratio": {
+        "n": 250,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.34,
+        "median": 0.5
+      }
+    },
+    "late": {
+      "steps": [
+        1295,
+        1544
+      ],
+      "loss": {
+        "n": 250,
+        "min": 0.00521012581884861,
+        "max": 0.17148080468177795,
+        "mean": 0.0811980851329863,
+        "median": 0.0868111103773117
+      },
+      "grad_norm": {
+        "n": 250,
+        "min": 0.15887388586997986,
+        "max": 2.427584648132324,
+        "mean": 0.486285894036293,
+        "median": 0.33818916976451874
+      },
+      "approx_kl": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.011009545996785164,
+        "mean": 0.0003088665450413828,
+        "median": 1.5150536455621477e-05
+      },
+      "clip_fraction": {
+        "n": 250,
+        "min": 0.0,
+        "max": 0.03846153989434242,
+        "mean": 0.001613027933984995,
+        "median": 0.0
+      },
+      "reward_mean": {
+        "n": 250,
+        "min": -0.265625,
+        "max": 1.0,
+        "mean": 0.15425,
+        "median": 0.09375
+      },
+      "reward_std": {
+        "n": 250,
+        "min": 0.0,
+        "max": 1.7320507764816284,
+        "mean": 0.2953848866224289,
+        "median": 0.16535945236682892
+      },
+      "zero_std_ratio": {
+        "n": 250,
+        "min": 0.0,
+        "max": 1.0,
+        "mean": 0.348,
+        "median": 0.5
+      }
+    }
+  },
+  "reward_level_candidate_counts": {
+    "-1.0": 53,
+    "-0.25": 507,
+    "0.0": 9137,
+    "0.5": 2221,
+    "2.0": 305,
+    "8.0": 129
+  },
+  "format": {
+    "violation_candidate_count": 53,
+    "violation_candidate_rate": 0.00429080310880829,
+    "reason_counts": {
+      "nonempty_think": 0,
+      "unexpected_prose_before_sid": 44,
+      "invalid_sid": 9,
+      "malformed_template": 0,
+      "other": 0
+    }
+  },
+  "frontier_candidate_counts": {
+    "domain": 507,
+    "a": 9137,
+    "b": 2221,
+    "c": 305
+  },
+  "frontier_candidate_rates": {
+    "domain": 0.04104598445595855,
+    "a": 0.7397182642487047,
+    "b": 0.1798089378238342,
+    "c": 0.02469235751295337
+  },
+  "positive_stage_active_group_counts": {
+    "domain": 232,
+    "a": 1038,
+    "b": 287,
+    "c": 96
+  },
+  "zero_signal_taxonomy_counts": {
+    "MIXED_FRONTIER": 1093,
+    "UNIFORM_A_FAILURE_FRONTIER": 415,
+    "FORMAT_VIOLATION_PRESENT": 32,
+    "UNIFORM_B_FAILURE_FRONTIER": 1,
+    "ALL_WRONG_DOMAIN_FRONTIER": 3
+  },
+  "c_frontier_vs_grad": {
+    "with_c_frontier": {
+      "n": 197,
+      "min": 0.2337043583393097,
+      "max": 3.1950180530548096,
+      "mean": 1.155475082585049,
+      "median": 1.0219649076461792
+    },
+    "without_c_frontier": {
+      "n": 575,
+      "min": 0.15159037709236145,
+      "max": 1.515953540802002,
+      "mean": 0.40301706676897797,
+      "median": 0.3574117422103882
+    },
+    "max_c_frontier_candidates_in_rollout": 6
+  },
+  "bridge": {
+    "active_group_count": 415,
+    "active_group_rate": 0.26878238341968913,
+    "weighted_loss": {
+      "n": 3088,
+      "min": 0.0,
+      "max": 0.23195065557956696,
+      "mean": 0.031084151499436618,
+      "median": 0.0
+    },
+    "lambda": 0.02
+  },
+  "fixed_probe": [
+    {
+      "step": 0,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 8.796875,
+          "mean": 3.73046875,
+          "median": 3.0625
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.4641016151377544,
+          "mean": 1.017964366720567,
+          "median": 0.3038779258722566
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.0,
+          "mean": 1.75,
+          "median": 1.5
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.0,
+          "mean": 0.5,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.0,
+          "mean": 2.5,
+          "median": 0.5
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": -0.21875,
+          "max": 0.5,
+          "mean": 0.0,
+          "median": -0.140625
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.08267972847076846,
+          "max": 0.6123724356957945,
+          "mean": 0.22149626702759656,
+          "median": 0.09546645197191164
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 200,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.53125,
+          "mean": 3.4609375,
+          "median": 2.15625
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.063461424696929,
+          "mean": 1.4706275502565196,
+          "median": 0.9095243881645745
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 5.0,
+          "mean": 1.75,
+          "median": 1.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.25,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 8.0,
+          "mean": 2.75,
+          "median": 1.5
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": -0.21875,
+          "max": 0.96875,
+          "mean": 0.359375,
+          "median": 0.34375
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.658822283925723,
+          "mean": 0.8823992564259744,
+          "median": 0.4353873708890871
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 400,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 8.40625,
+          "mean": 3.2109375,
+          "median": 2.21875
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.063461424696929,
+          "mean": 1.0778044439107597,
+          "median": 0.12387817547305482
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.0,
+          "mean": 1.5,
+          "median": 1.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 10.0,
+          "mean": 3.5,
+          "median": 2.0
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": -0.09375,
+          "max": 1.0,
+          "mean": 0.2890625,
+          "median": 0.125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.6457513110645907,
+          "mean": 0.7541955101583931,
+          "median": 0.18551536478449088
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 600,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 7.125,
+          "mean": 2.8125,
+          "median": 2.0625
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.0,
+          "mean": 1.6224557589700652,
+          "median": 1.2449115179401307
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.0,
+          "mean": 1.25,
+          "median": 1.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.0,
+          "mean": 0.5,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 11.0,
+          "mean": 3.0,
+          "median": 0.5
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.4375,
+          "median": 0.375
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.6457513110645907,
+          "mean": 0.8998014453283834,
+          "median": 0.47672723512447135
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 800,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 6.875,
+          "mean": 1.78125,
+          "median": 0.125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.599203603991038,
+          "mean": 0.7123009009977594,
+          "median": 0.125
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.0,
+          "mean": 0.75,
+          "median": 0.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.25,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.0,
+          "mean": 2.75,
+          "median": 1.0
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 5.0,
+          "mean": 1.25,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.375,
+          "mean": 0.109375,
+          "median": 0.03125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.649519052838329,
+          "mean": 0.20371962744496647,
+          "median": 0.08267972847076846
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 1000,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 8.390625,
+          "mean": 3.14453125,
+          "median": 2.09375
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.063461424696929,
+          "mean": 1.0767577673778257,
+          "median": 0.12178482240718667
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 4.0,
+          "mean": 1.5,
+          "median": 1.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.0,
+          "mean": 2.75,
+          "median": 1.0
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.0,
+          "mean": 2.5,
+          "median": 0.5
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.25,
+          "mean": 0.078125,
+          "median": 0.03125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.25,
+          "mean": 0.10383986423538423,
+          "median": 0.08267972847076846
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 1200,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 10.2890625,
+          "mean": 2.603515625,
+          "median": 0.0625
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 1.86761239935345,
+          "mean": 0.5210296875748899,
+          "median": 0.10825317547305482
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 6.0,
+          "mean": 1.5,
+          "median": 0.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 9.0,
+          "mean": 2.5,
+          "median": 0.5
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 34.0,
+          "mean": 8.5,
+          "median": 0.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.9375,
+          "mean": 0.234375,
+          "median": 0.0
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.8454843286542927,
+          "mean": 0.21137108216357317,
+          "median": 0.0
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 1400,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 6.28125,
+          "mean": 1.5703125,
+          "median": 0.0
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.6264813783473366,
+          "mean": 0.9066203445868342,
+          "median": 0.0
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.0,
+          "mean": 0.75,
+          "median": 0.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 6.0,
+          "mean": 1.5,
+          "median": 0.0
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 32.0,
+          "mean": 10.5,
+          "median": 5.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.1875,
+          "mean": 0.0625,
+          "median": 0.03125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.24206145913796356,
+          "mean": 0.10185522901987512,
+          "median": 0.08267972847076846
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    },
+    {
+      "step": 1544,
+      "group_count": 4,
+      "think": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.15625,
+          "mean": 0.7890625,
+          "median": 0.0
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.1366968593569893,
+          "mean": 0.7841742148392473,
+          "median": 0.0
+        },
+        "closure_rate": {
+          "n": 4,
+          "min": 1.0,
+          "max": 1.0,
+          "mean": 1.0,
+          "median": 1.0
+        },
+        "exact_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.25,
+          "median": 0.0
+        },
+        "ab_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 2.0,
+          "mean": 0.5,
+          "median": 0.0
+        },
+        "a_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 3.0,
+          "mean": 0.75,
+          "median": 0.0
+        },
+        "invalid_count": {
+          "n": 4,
+          "min": 0.0,
+          "max": 32.0,
+          "mean": 11.0,
+          "median": 6.0
+        }
+      },
+      "nothink": {
+        "reward_mean": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.625,
+          "mean": 0.171875,
+          "median": 0.03125
+        },
+        "reward_std": {
+          "n": 4,
+          "min": 0.0,
+          "max": 0.81967981553775,
+          "mean": 0.24625981811982173,
+          "median": 0.08267972847076846
+        },
+        "closure_rate": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "exact_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "ab_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "a_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        },
+        "invalid_count": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null
+        }
+      }
+    }
+  ],
+  "parameter_evidence": {
+    "lora_delta": {
+      "tensor_count": 504,
+      "element_count": 87293952,
+      "l2": 0.9807925148467963,
+      "max_abs": 0.0014142615254968405,
+      "changed": true
+    },
+    "base_delta": 0.0,
+    "checkpoint_keys_are_adapter_only": true,
+    "base_delta_evidence": "base frozen; optimizer LoRA-only; checkpoint adapter-only"
+  },
+  "safety": {
+    "nonfinite_metrics": [],
+    "log_errors": {
+      "nan_or_inf": false,
+      "oom": false,
+      "runtime_exception": false,
+      "checkpoint_error": false
+    },
+    "pass": true
+  }
+}
