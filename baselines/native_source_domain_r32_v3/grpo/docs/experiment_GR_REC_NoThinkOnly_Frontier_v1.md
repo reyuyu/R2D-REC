@@ -95,3 +95,35 @@ length invariance at 10/100/500 tokens, strict prefix gating, `[0]*8` bridge
 activation, route guards, frozen runner parameters, parent/base/adapter
 contracts, and manifest semantics. No model is loaded and no training entry
 point is invoked during these tests.
+
+## Historical forensic (2026-08-22)
+
+Phase A replayed the exact Frontier implementation over immutable NoThink traces
+from the completed joint Clamp/Bridge run and the available recent trace sample
+from the stopped Hier-only run. It analyzed 652 real G8 groups and 5,216 real
+candidates without loading a model or modifying either run directory.
+
+The available trace population contains 95 format violations (1.8213%): 37
+`nonempty_think`, 51 `unexpected_prose_before_sid`, 6 `malformed_template`, and
+1 `invalid_sid`. Candidate-level Frontier exposure is Domain 153/5,216
+(2.9333%), A 3,405/5,216 (65.2799%), B 1,217/5,216 (23.3321%), and C 191/5,216
+(3.6618%). Group-level exposure is Domain 66/652 (10.1227%), A 612/652
+(93.8650%), B 399/652 (61.1963%), and C 110/652 (16.8712%).
+
+C Frontier is not the dominant population-wide event, but two real groups have
+7/8 C-frontier candidates. Both are fixed in the paired-audit selection so the
+future zero-update audit can decompose C-only gradients explicitly. The result
+also fixes format-violation, wrong-domain-heavy, A-heavy, B-heavy, mixed,
+exact-containing, and dead-zero/bridge cases, for ten real audit groups total.
+
+Structured result:
+`results/gr_rec_nothink_frontier_v1_historical_forensic_20260822.json`
+
+Coverage limitation: the joint run retained 620 complete NoThink G8 traces;
+the stopped Hier run retained only its configured recent 32-G8 trace sample.
+These statistics describe all available immutable candidate traces, not all
+1,297 optimizer steps of the stopped Hier run.
+
+Phase B has not started. The required Hier final checkpoint-1544 does not exist
+because that run was explicitly stopped at step 1297; no checkpoint substitution
+or automatic restart is permitted.
