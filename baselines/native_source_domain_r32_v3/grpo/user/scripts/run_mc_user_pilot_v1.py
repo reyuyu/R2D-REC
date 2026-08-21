@@ -229,13 +229,11 @@ def assert_only_lora_trainable(model: torch.nn.Module) -> None:
         raise MCPilotError("a base parameter became trainable")
 
 
-def assert_gpu_process_owned(
+def _selected_gpu_processes(
     gpu_id: int,
     *,
-    current_pid: int | None = None,
     run_command: Callable[..., Any] = subprocess.run,
-) -> None:
-    current_pid = os.getpid() if current_pid is None else current_pid
+) -> tuple[str, list[dict[str, Any]]]:
     gpu_rows = run_command(
         ["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader,nounits"],
         check=True,
@@ -258,15 +256,57 @@ def assert_gpu_process_owned(
         text=True,
         capture_output=True,
     ).stdout
-    foreign = []
+    selected = []
     for line in process_rows.splitlines():
         if not line.strip():
             continue
         uuid, pid, process_name, used = [part.strip() for part in line.split(",", 3)]
-        if uuid == uuid_by_index[gpu_id] and int(pid) != current_pid:
-            foreign.append({"pid": int(pid), "process_name": process_name, "used": used})
-    if foreign:
-        raise MCPilotError(f"GPU {gpu_id} acquired a foreign compute process")
+        if uuid == uuid_by_index[gpu_id]:
+            selected.append(
+                {
+                    "nvidia_host_pid": int(pid),
+                    "process_name": process_name,
+                    "used_memory_mib": int(used),
+                }
+            )
+    return uuid_by_index[gpu_id], selected
+
+
+def claim_gpu_process_ownership(
+    gpu_id: int,
+    *,
+    run_command: Callable[..., Any] = subprocess.run,
+) -> dict[str, Any]:
+    gpu_uuid, processes = _selected_gpu_processes(
+        gpu_id, run_command=run_command
+    )
+    if not processes:
+        raise MCPilotError("GPU_OWNER_NOT_VISIBLE")
+    if len(processes) != 1:
+        raise MCPilotError("GPU_FOREIGN_PROCESS_AFTER_LOAD")
+    return {"gpu_id": gpu_id, "gpu_uuid": gpu_uuid, **processes[0]}
+
+
+def assert_gpu_process_owned(
+    gpu_id: int,
+    *,
+    claimed_gpu_uuid: str,
+    claimed_host_pid: int,
+    run_command: Callable[..., Any] = subprocess.run,
+) -> None:
+    gpu_uuid, processes = _selected_gpu_processes(
+        gpu_id, run_command=run_command
+    )
+    if gpu_uuid != claimed_gpu_uuid:
+        raise MCPilotError("GPU_OWNERSHIP_CHANGED")
+    process_ids = {int(process["nvidia_host_pid"]) for process in processes}
+    if not process_ids:
+        raise MCPilotError("GPU_OWNER_DISAPPEARED")
+    if process_ids == {claimed_host_pid} and len(processes) == 1:
+        return
+    if claimed_host_pid not in process_ids:
+        raise MCPilotError("GPU_OWNERSHIP_CHANGED")
+    raise MCPilotError("GPU_FOREIGN_PROCESS_AFTER_LOAD")
 
 
 def candidate_record(
@@ -456,6 +496,14 @@ def execute_pilot(
     _, lora_tensor_count = parameter_sha256(model, lora=True)
     if len(trainable) != 504 or lora_tensor_count != 504:
         raise MCPilotError("BETA LoRA structure is not the frozen 504-tensor contract")
+    gpu_owner_claim = claim_gpu_process_ownership(args.gpu_id)
+    runtime_metadata = {
+        "gpu_owner_claim": gpu_owner_claim,
+        "container_pid": {"value": os.getpid(), "diagnostic_only": True},
+    }
+    runtime_manifest = dict(preflight["manifest"])
+    runtime_manifest["runtime"] = runtime_metadata
+    _write_json(Path(preflight["run_dir"]) / "manifest.json", runtime_manifest)
     optimizer = torch.optim.AdamW(
         [parameter for _, parameter in trainable],
         lr=LEARNING_RATE,
@@ -469,7 +517,11 @@ def execute_pilot(
         if file_sha256(args.train_data) != TRAIN_SHA256:
             raise MCPilotError("frozen train_3000 SHA changed during pilot")
         assert_only_lora_trainable(model)
-        assert_gpu_process_owned(args.gpu_id)
+        assert_gpu_process_owned(
+            args.gpu_id,
+            claimed_gpu_uuid=gpu_owner_claim["gpu_uuid"],
+            claimed_host_pid=gpu_owner_claim["nvidia_host_pid"],
+        )
         route = str(row["route"])
         set_generation_mode(model)
         torch.cuda.empty_cache()
@@ -506,7 +558,11 @@ def execute_pilot(
         training_wall = time.perf_counter() - training_started
         training_peak = torch.cuda.max_memory_allocated(device) / (1024 * 1024)
         assert_only_lora_trainable(model)
-        assert_gpu_process_owned(args.gpu_id)
+        assert_gpu_process_owned(
+            args.gpu_id,
+            claimed_gpu_uuid=gpu_owner_claim["gpu_uuid"],
+            claimed_host_pid=gpu_owner_claim["nvidia_host_pid"],
+        )
         if not bool(update["finite"]) or not math.isfinite(float(update["loss"])) or not math.isfinite(float(update["grad_norm"])):
             raise MCPilotError("non-finite pilot loss or gradient")
         metadata = update["objective_metadata"]
@@ -554,6 +610,7 @@ def execute_pilot(
                 "trainable_tensor_count": len(trainable),
                 "lora_tensor_count": lora_tensor_count,
                 "base_hash_unchanged": True,
+                **runtime_metadata,
             }
         )
         _write_json(run_dir / "summary.json", summary)
@@ -564,6 +621,7 @@ def execute_pilot(
             "run_id": preflight["manifest"]["run_id"],
             "error": f"{type(exc).__name__}: {exc}",
             "wall_seconds": time.perf_counter() - started,
+            **runtime_metadata,
         }
         _write_json(run_dir / "summary.json", stopped)
         raise

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import torch
 
@@ -20,6 +20,7 @@ from run_mc_user_pilot_v1 import (  # noqa: E402
     assert_gpu_process_owned,
     build_manifest,
     candidate_record,
+    claim_gpu_process_ownership,
     run_cli,
     run_prompt_loop,
     run_preflight,
@@ -256,20 +257,97 @@ class SafetyGateTests(unittest.TestCase):
         self.assertEqual(output["status"], "PASS")
         execute.assert_called_once()
 
-    def test_foreign_gpu_process_is_rejected(self):
-        responses = [
-            SimpleNamespace(stdout="0, GPU-0\n"),
-            SimpleNamespace(stdout="GPU-0, 222, python, 100\n"),
+    @staticmethod
+    def gpu_responses(selected_processes=(), other_processes=()):
+        process_lines = [
+            f"GPU-0, {pid}, {name}, {used}"
+            for pid, name, used in selected_processes
+        ] + [
+            f"GPU-1, {pid}, {name}, {used}"
+            for pid, name, used in other_processes
         ]
-        with self.assertRaisesRegex(RuntimeError, "foreign"):
-            assert_gpu_process_owned(0, current_pid=111, run_command=Mock(side_effect=responses))
+        return [
+            SimpleNamespace(stdout="0, GPU-0\n1, GPU-1\n"),
+            SimpleNamespace(stdout="\n".join(process_lines) + ("\n" if process_lines else "")),
+        ]
 
-    def test_own_gpu_process_is_allowed(self):
-        responses = [
-            SimpleNamespace(stdout="0, GPU-0\n"),
-            SimpleNamespace(stdout="GPU-0, 111, python, 100\n"),
-        ]
-        assert_gpu_process_owned(0, current_pid=111, run_command=Mock(side_effect=responses))
+    def test_namespace_mismatch_claim_and_assert_pass(self):
+        with patch("run_mc_user_pilot_v1.os.getpid", return_value=123):
+            claim = claim_gpu_process_ownership(
+                0,
+                run_command=Mock(
+                    side_effect=self.gpu_responses([(45678, "python", 16000)])
+                ),
+            )
+        self.assertEqual(claim["nvidia_host_pid"], 45678)
+        assert_gpu_process_owned(
+            0,
+            claimed_gpu_uuid=claim["gpu_uuid"],
+            claimed_host_pid=claim["nvidia_host_pid"],
+            run_command=Mock(
+                side_effect=self.gpu_responses([(45678, "python", 16000)])
+            ),
+        )
+
+    def test_claim_requires_one_visible_process(self):
+        with self.assertRaisesRegex(RuntimeError, "GPU_OWNER_NOT_VISIBLE"):
+            claim_gpu_process_ownership(
+                0, run_command=Mock(side_effect=self.gpu_responses())
+            )
+        with self.assertRaisesRegex(RuntimeError, "GPU_FOREIGN_PROCESS_AFTER_LOAD"):
+            claim_gpu_process_ownership(
+                0,
+                run_command=Mock(
+                    side_effect=self.gpu_responses(
+                        [(45678, "python", 16000), (99999, "python", 100)]
+                    )
+                ),
+            )
+
+    def test_assert_rejects_second_process(self):
+        with self.assertRaisesRegex(RuntimeError, "GPU_FOREIGN_PROCESS_AFTER_LOAD"):
+            assert_gpu_process_owned(
+                0,
+                claimed_gpu_uuid="GPU-0",
+                claimed_host_pid=45678,
+                run_command=Mock(
+                    side_effect=self.gpu_responses(
+                        [(45678, "python", 16000), (99999, "python", 100)]
+                    )
+                ),
+            )
+
+    def test_assert_rejects_owner_disappearance(self):
+        with self.assertRaisesRegex(RuntimeError, "GPU_OWNER_DISAPPEARED"):
+            assert_gpu_process_owned(
+                0,
+                claimed_gpu_uuid="GPU-0",
+                claimed_host_pid=45678,
+                run_command=Mock(side_effect=self.gpu_responses()),
+            )
+
+    def test_assert_rejects_pid_replacement(self):
+        with self.assertRaisesRegex(RuntimeError, "GPU_OWNERSHIP_CHANGED"):
+            assert_gpu_process_owned(
+                0,
+                claimed_gpu_uuid="GPU-0",
+                claimed_host_pid=45678,
+                run_command=Mock(
+                    side_effect=self.gpu_responses([(88888, "python", 16000)])
+                ),
+            )
+
+    def test_other_gpu_process_is_ignored(self):
+        assert_gpu_process_owned(
+            0,
+            claimed_gpu_uuid="GPU-0",
+            claimed_host_pid=45678,
+            run_command=Mock(
+                side_effect=self.gpu_responses(
+                    [(45678, "python", 16000)], [(99999, "python", 50000)]
+                )
+            ),
+        )
 
     def test_initial_busy_gpu_blocks_preflight(self):
         args = SimpleNamespace(
@@ -303,6 +381,20 @@ class SafetyGateTests(unittest.TestCase):
         )
         for term in forbidden:
             self.assertNotIn(term, source)
+
+    def test_execute_claims_after_lora_validation_before_adamw(self):
+        source = (SCRIPTS_DIR / "run_mc_user_pilot_v1.py").read_text(encoding="utf-8")
+        execute = source.split("def execute_pilot(", 1)[1]
+        positions = [
+            execute.index("model = model_loader(args)"),
+            execute.index("assert_only_lora_trainable(model)"),
+            execute.index("gpu_owner_claim = claim_gpu_process_ownership"),
+            execute.index("optimizer = torch.optim.AdamW"),
+        ]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn('"gpu_owner_claim": gpu_owner_claim', execute)
+        self.assertIn('"diagnostic_only": True', execute)
+        self.assertNotIn("current_pid", source)
 
 
 if __name__ == "__main__":
