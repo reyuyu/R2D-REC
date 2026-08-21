@@ -90,6 +90,13 @@ python monitor/server.py \
   --port 8765
 ```
 
+When the monitor is copied outside the repository, it discovers the formal
+GRPO source under `${GRPO_WORK_ROOT:-/data/GRPO/work}` so the read-only
+advantage view can reconstruct the exact training credit. Set
+`GRPO_FORMAL_SOURCE_ROOT=/path/to/grpo` to select an explicit source tree.
+Reconstructed fields are labeled `复算`; captured rollout fields remain
+labeled `实采`.
+
 Open `http://127.0.0.1:8765`.
 
 The User demo is synthetic CPU-only UI data and is labeled `DEMO` throughout

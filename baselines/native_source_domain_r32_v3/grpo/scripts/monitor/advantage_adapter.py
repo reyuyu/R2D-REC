@@ -18,12 +18,29 @@ _TOKENIZER = None
 _TOKENIZER_LOCK = Lock()
 
 
+def _formal_source_roots() -> list[Path]:
+    """Locate formal code from both source-tree and standalone deployments."""
+    roots = []
+    configured = os.environ.get("GRPO_FORMAL_SOURCE_ROOT")
+    if configured:
+        roots.append(Path(configured))
+    roots.append(Path(__file__).resolve().parents[2])
+
+    work_root = Path(os.environ.get("GRPO_WORK_ROOT", "/data/GRPO/work"))
+    if work_root.is_dir():
+        roots.extend(sorted(work_root.glob("*/baselines/native_source_domain_r32_v3/grpo")))
+
+    unique = []
+    for root in roots:
+        resolved = root.expanduser().resolve()
+        if resolved not in unique:
+            unique.append(resolved)
+    return unique
+
+
 @lru_cache(maxsize=1)
 def _formal() -> dict[str, Any]:
-    configured = os.environ.get("GRPO_FORMAL_SOURCE_ROOT")
-    roots = [Path(configured)] if configured else []
-    roots.append(Path(__file__).resolve().parents[2])
-    for root in roots:
+    for root in _formal_source_roots():
         ablation = root / "ablations" / "gr_rec_think_exact_clamp_v1"
         if not (ablation / "nothink_hierarchical_credit.py").is_file():
             continue

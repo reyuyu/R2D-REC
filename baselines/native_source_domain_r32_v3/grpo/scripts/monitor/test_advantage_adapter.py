@@ -7,10 +7,20 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 try:
-    from .advantage_adapter import formal_available, reconstruct_nothink_group, reconstruct_think_group
+    from .advantage_adapter import (
+        _formal_source_roots,
+        formal_available,
+        reconstruct_nothink_group,
+        reconstruct_think_group,
+    )
     from .server import create_app
 except ImportError:
-    from advantage_adapter import formal_available, reconstruct_nothink_group, reconstruct_think_group
+    from advantage_adapter import (
+        _formal_source_roots,
+        formal_available,
+        reconstruct_nothink_group,
+        reconstruct_think_group,
+    )
     from server import create_app
 
 
@@ -61,6 +71,12 @@ def no_think(pattern: list[float]) -> dict:
 
 def assert_close(actual: float | None, expected: float) -> None:
     assert actual is not None and math.isclose(actual, expected, abs_tol=1e-12)
+
+
+def test_formal_source_root_discovery() -> None:
+    roots = _formal_source_roots()
+    assert roots
+    assert len(roots) == len(set(roots))
 
 
 def test_think_exact_clamp_display_contract() -> None:
@@ -148,6 +164,7 @@ def test_read_only_api_and_legacy_run() -> None:
 
 
 if __name__ == "__main__":
+    test_formal_source_root_discovery()
     test_think_exact_clamp_display_contract()
     test_nothink_singleton_credit_patterns()
     test_zero_bridge_and_gated_are_distinct()

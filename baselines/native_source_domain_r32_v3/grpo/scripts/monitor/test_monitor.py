@@ -275,6 +275,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert all(label in html for label in (
         "function rolloutKey(row)", "function selectedExplorerRollout()",
         "function selectedExplorerTrace()", "data-rollout-key", "data-trace-key",
+        "latestTraceKey=rolloutKey(latestTrace)", "每 20 个 rollout 保存一次被动 trace",
+        "explorerSelectionTouched", "button.dataset.rolloutKey",
+        "selectedExplorerTraceKey=button.dataset.traceKey",
         "from_step=${encodeURIComponent(trace.step)}", "to_step=${encodeURIComponent(trace.step)}",
         "Number(item.step)===Number(trace.step)", "rollouts:['step','rollout_id','route']",
         "traces:['step','rollout_id','route','group_id']",
