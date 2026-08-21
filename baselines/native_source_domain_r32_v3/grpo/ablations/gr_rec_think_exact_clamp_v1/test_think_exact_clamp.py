@@ -207,14 +207,14 @@ assert event["high_quality_negative_rate"] == 0
 assert event["distinct_exact_gold_sids_covered_across_g4"] == 1
 assert event["candidates"][0]["coverage"] == 0.5
 
-# Runner enforces fresh BATA, prefix, and the bounded future plan.
+# Runner enforces fresh BATA, prefix, and the bounded full-epoch plan.
 valid = validate_experiment_args([
-    "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500"
+    "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "2316"
 ])
-assert valid.max_steps == 1500 and valid.resume_from_checkpoint is None
+assert valid.max_steps == 2316 and valid.resume_from_checkpoint is None
 assert valid.seed == 20260816 and valid.probe_seed == 20260818
 assert valid.lr == 1e-6 and valid.probe_groups == 0
-assert MAX_EXPERIMENT_STEPS == 1500
+assert MAX_EXPERIMENT_STEPS == 2316
 
 
 class ManifestSink:
@@ -228,7 +228,9 @@ assert manifest["initialization"] == "fresh original BATA adapter"
 assert manifest["nothink_bridge"]["lambda"] == 0.02
 assert manifest["nothink_bridge"]["branches"] == ["dead_zero_a_bridge"]
 assert manifest["advantage"]["nothink"] == "conditional_hierarchical_token_credit_v1"
-assert manifest["future_checkpoints"] == [250, 600, 750, 800, 1000, 1200, 1400, 1500]
+assert manifest["future_checkpoints"] == [
+    250, 600, 750, 800, 1000, 1200, 1400, 1500, 1750, 2000, 2250, 2316
+]
 
 
 class SaveControl:
@@ -236,7 +238,7 @@ class SaveControl:
 
 
 callback = FormalCheckpointCallback()
-for step in (249, 251, 500, 1499):
+for step in (249, 251, 500, 1499, 1749, 1999, 2249, 2315):
     control = SaveControl()
     callback.on_step_end(None, type("State", (), {"global_step": step})(), control)
     assert control.should_save is False
@@ -245,15 +247,15 @@ for step in FORMAL_CHECKPOINT_STEPS:
     callback.on_step_end(None, type("State", (), {"global_step": step})(), control)
     assert control.should_save is True
 same_run = validate_experiment_args([
-    "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1500",
+    "--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "2316",
     "--resume-from-checkpoint",
     "/data/GRPO/outputs/formal/" + RUN_ID_PREFIX + "TEST/checkpoint-200",
 ])
 assert same_run.resume_from_checkpoint.endswith("checkpoint-200")
 for argv in (
-    ["--run-id", "wrong", "--max-steps", "1500"],
+    ["--run-id", "wrong", "--max-steps", "2316"],
     ["--run-id", RUN_ID_PREFIX + "TEST"],
-    ["--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "1501"],
+    ["--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "2317"],
     ["--run-id", RUN_ID_PREFIX + "TEST", "--max-steps", "100",
      "--resume-from-checkpoint", "/data/GRPO/outputs/formal/OTHER/checkpoint-100"],
 ):

@@ -19,8 +19,21 @@ except ImportError:  # Direct script entry point.
 
 
 RUN_ID_PREFIX = "GR-REC-CLAMP-BRIDGE-V1-"
-MAX_EXPERIMENT_STEPS = 1500
-FORMAL_CHECKPOINT_STEPS = (250, 600, 750, 800, 1000, 1200, 1400, 1500)
+MAX_EXPERIMENT_STEPS = 2316
+FORMAL_CHECKPOINT_STEPS = (
+    250,
+    600,
+    750,
+    800,
+    1000,
+    1200,
+    1400,
+    1500,
+    1750,
+    2000,
+    2250,
+    2316,
+)
 
 
 class FormalCheckpointCallback(TrainerCallback):

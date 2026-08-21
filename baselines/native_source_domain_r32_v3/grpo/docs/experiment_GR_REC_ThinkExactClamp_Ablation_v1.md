@@ -64,6 +64,26 @@ contract before any model-selection or final-effectiveness claim.
 
 **FORMAL 1500-STEP RUN COMPLETE / CPU-ONLY FORENSIC COMPLETE**
 
+## Authorized full-epoch continuation
+
+After reviewing the 1500-step result, the experiment owner explicitly
+authorized a same-run continuation from `checkpoint-1500` to the sampler's
+original full-epoch boundary at optimizer step `2316`.
+
+This phase changes only the bounded execution plan:
+
+- same run ID, base model, fresh-original-BATA lineage, optimizer, scheduler,
+  RNG state, seed, route schedule, sampling contract, and monitor files;
+- resume strictly from the same run's `checkpoint-1500`;
+- `max_steps: 1500 -> 2316`;
+- additional checkpoints at `1750/2000/2250/2316`;
+- checkpoint retention `8 -> 12` so the eight completed checkpoints are not
+  removed while the four continuation checkpoints are written.
+
+Think Exact-Clamp, NoThink hierarchical credit, bridge lambda, reward, loss,
+route multiplier, and all hierarchy coefficients remain unchanged. This is a
+continuation of the same experiment, not a fresh run or a new ablation.
+
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
   A-collapse A+B teacher branches.
