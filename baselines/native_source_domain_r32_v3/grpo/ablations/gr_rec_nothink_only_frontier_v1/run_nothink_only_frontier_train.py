@@ -23,6 +23,7 @@ from frontier_trainer import NoThinkOnlyFrontierTrainer
 
 RUN_ID_PREFIX = "GR-REC-NOTHINK-ONLY-FRONTIER-G8BASE-E1-"
 FORMAL_RUN_ID = RUN_ID_PREFIX + "20260822"
+SMOKE_RUN_ID = "GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822"
 EXPECTED_BASE = parent_runner.EXPECTED_BASE
 EXPECTED_ADAPTER = parent_runner.EXPECTED_ADAPTER
 REQUESTED_CHECKPOINT_STEPS = parent_runner.REQUESTED_CHECKPOINT_STEPS
@@ -94,8 +95,15 @@ class _ManifestWriter:
 
 def validate_experiment_args(argv=None):
     args = baseline_runner.build_arg_parser().parse_args(argv)
-    if not args.run_id.startswith(RUN_ID_PREFIX):
-        raise ValueError(f"--run-id must start with {RUN_ID_PREFIX!r}")
+    if not (
+        args.run_id.startswith(RUN_ID_PREFIX)
+        or args.run_id == SMOKE_RUN_ID
+    ):
+        raise ValueError(
+            f"--run-id must start with {RUN_ID_PREFIX!r} or equal {SMOKE_RUN_ID!r}"
+        )
+    if args.run_id == SMOKE_RUN_ID and args.max_steps != 24:
+        raise ValueError("the authorized Smoke24 run requires --max-steps 24")
     if str(Path(BASE)) != EXPECTED_BASE or str(Path(ADAPTER)) != EXPECTED_ADAPTER:
         raise RuntimeError("base/adapter constants do not match fresh original BATA")
     if args.resume_from_checkpoint is not None:

@@ -8,7 +8,7 @@ import torch
 from frontier_trainer import NoThinkOnlyFrontierTrainer
 from grpo_trl_trainer import ROUTE_ID, ROUTE_LOSS_W
 from run_nothink_only_frontier_train import (
-    EXPECTED_ADAPTER, EXPECTED_BASE, FORMAL_RUN_ID, RUN_ID_PREFIX,
+    EXPECTED_ADAPTER, EXPECTED_BASE, FORMAL_RUN_ID, RUN_ID_PREFIX, SMOKE_RUN_ID,
     _ManifestWriter, formal_checkpoint_steps, validate_experiment_args,
 )
 from think_exact_clamp_trainer import ThinkExactClampRecGRPOTrainer
@@ -42,6 +42,18 @@ class FrontierRunnerTests(unittest.TestCase):
         for argv in (["--run-id", "wrong"], ["--run-id", FORMAL_RUN_ID, "--resume-from-checkpoint", "/tmp/other/checkpoint-2"]):
             with self.assertRaises(ValueError):
                 validate_experiment_args(argv)
+
+    def test_smoke24_contract(self):
+        args = validate_experiment_args([
+            "--run-id", SMOKE_RUN_ID,
+            "--max-steps", "24",
+        ])
+        self.assertEqual(args.max_steps, 24)
+        with self.assertRaises(ValueError):
+            validate_experiment_args([
+                "--run-id", SMOKE_RUN_ID,
+                "--max-steps", "26",
+            ])
 
     def test_route_guards_reject_think_without_model_work(self):
         trainer = object.__new__(NoThinkOnlyFrontierTrainer)
