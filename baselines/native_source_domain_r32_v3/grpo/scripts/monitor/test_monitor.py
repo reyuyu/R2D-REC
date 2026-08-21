@@ -93,8 +93,11 @@ with tempfile.TemporaryDirectory() as temporary:
     assert wilson_interval(3, 4)[0] < 0.75 < wilson_interval(3, 4)[1]
     evaluator_source = (Path(__file__).parent.parent / "checkpoint_eval.py").read_text(encoding="utf-8")
     assert "optimizer.step" not in evaluator_source and "scheduler.step" not in evaluator_source
+    assert 'dist.init_process_group("gloo")' in evaluator_source
+    assert 'dist.init_process_group("nccl")' not in evaluator_source
     launch_command = checkpoint_eval_launch_command(Path("/tmp/checkpoint_eval.py"), 29617)
     assert launch_command[1:4] == ["-m", "torch.distributed.run", "--nproc_per_node=4"]
+    assert "--master_addr=127.0.0.1" in launch_command
     assert launch_command[-2:] == ["--master_port=29617", "/tmp/checkpoint_eval.py"]
     print("[PASS] frozen disjoint cohort, route prompts, Wilson interval, and inference-only evaluator")
 
