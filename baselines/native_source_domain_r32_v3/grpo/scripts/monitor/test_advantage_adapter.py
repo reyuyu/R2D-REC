@@ -10,6 +10,7 @@ try:
     from .advantage_adapter import (
         _formal_source_roots,
         formal_available,
+        reconstruct_frontier_group,
         reconstruct_nothink_group,
         reconstruct_think_group,
     )
@@ -18,6 +19,7 @@ except ImportError:
     from advantage_adapter import (
         _formal_source_roots,
         formal_available,
+        reconstruct_frontier_group,
         reconstruct_nothink_group,
         reconstruct_think_group,
     )
@@ -134,6 +136,38 @@ def test_zero_bridge_and_gated_are_distinct() -> None:
     assert result["candidates"][0]["stages"][2]["credit"] is None
 
 
+def test_frontier_credit_and_format_penalty_display() -> None:
+    if not formal_available():
+        return
+    trace = {
+        "step": 20,
+        "rollout_id": 10,
+        "group_id": "frontier",
+        "route": "no_think",
+        "gold_sids": GOLD,
+        "candidates": [candidate_for_reward(index, reward) for index, reward in enumerate([0.0] * 8)],
+    }
+    for candidate in trace["candidates"]:
+        sid = candidate["parsed_sid"]
+        candidate["completion"] = (
+            f"<think>\n\n</think>\n\n该用户最近点击了商品: "
+            f"<|prod_begin|><s_a_{sid[1]}><s_b_{sid[2]}><s_c_{sid[3]}>"
+        )
+    result = reconstruct_frontier_group(trace, aligner=alignment)
+    assert result["algorithm"] == "frontier_v1"
+    assert result["taxonomy"] == "UNIFORM_A_FAILURE_FRONTIER"
+    assert result["frontier_negative_counts"] == {"Domain": 0, "A": 8, "B": 0, "C": 0}
+    assert result["candidates"][0]["stages"][1]["credit_kind"] == "frontier_negative"
+    assert_close(result["candidates"][0]["stages"][1]["credit"], -0.0625)
+
+    trace["candidates"][0]["completion"] = "bad output"
+    invalid = reconstruct_frontier_group(trace, aligner=alignment)
+    assert invalid["format_violation_count"] == 1
+    assert invalid["candidates"][0]["format_penalty_total"] == -0.09375
+    assert invalid["candidates"][0]["format_penalty_per_token"] == -0.09375 / 12
+    assert all(not stage["eligible"] for stage in invalid["candidates"][0]["stages"])
+
+
 def test_read_only_api_and_legacy_run() -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -168,5 +202,6 @@ if __name__ == "__main__":
     test_think_exact_clamp_display_contract()
     test_nothink_singleton_credit_patterns()
     test_zero_bridge_and_gated_are_distinct()
+    test_frontier_credit_and_format_penalty_display()
     test_read_only_api_and_legacy_run()
     print("ADVANTAGE ADAPTER CPU TESTS PASSED")

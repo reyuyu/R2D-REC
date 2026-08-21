@@ -964,7 +964,10 @@ def create_app(
                 "captured": "训练时直接落盘",
                 "reconstructed": "由已落盘数据只读复算，非训练时直接采集",
             },
-            "groups": reconstruct_groups(rows),
+            "groups": reconstruct_groups(
+                rows,
+                experiment=read_json(selected_run(run_id) / "manifest.json", {}).get("experiment"),
+            ),
         }
 
     @app.get("/api/probes")

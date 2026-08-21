@@ -42,9 +42,10 @@ def _formal_source_roots() -> list[Path]:
 def _formal() -> dict[str, Any]:
     for root in _formal_source_roots():
         ablation = root / "ablations" / "gr_rec_think_exact_clamp_v1"
+        frontier_ablation = root / "ablations" / "gr_rec_nothink_only_frontier_v1"
         if not (ablation / "nothink_hierarchical_credit.py").is_file():
             continue
-        for module_dir in (root / "scripts", ablation):
+        for module_dir in (root / "scripts", ablation, frontier_ablation):
             if str(module_dir) not in sys.path:
                 sys.path.insert(0, str(module_dir))
         from grpo_sid import parse_sid
@@ -56,6 +57,16 @@ def _formal() -> dict[str, Any]:
             locate_domain_commitment_token,
         )
         from think_exact_clamp import think_exact_clamp_advantages
+        from format_validator import validate_nothink_completion
+        from frontier_credit import (
+            FORMAT_ADV_TOTAL,
+            FRONTIER_NEGATIVE,
+            GATED,
+            HIERARCHY_SCALE as FRONTIER_SCALE,
+            POSITIVE_SUCCESS,
+            STAGE_INCREMENTS as FRONTIER_INCREMENTS,
+            plan_frontier_credits,
+        )
 
         return locals()
     raise RuntimeError("正式 ThinkExactClamp 算法模块不可用，无法只读复算")
@@ -288,6 +299,150 @@ def reconstruct_nothink_group(
     }
 
 
+def reconstruct_frontier_group(
+    trace: dict[str, Any],
+    tokenizer: Any | None = None,
+    aligner: Callable[[dict[str, Any], int], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Reconstruct the frozen Frontier v1 token plan from an immutable G8 trace."""
+    candidates = trace.get("candidates") or []
+    rewards = [_finite(candidate.get("reward")) for candidate in candidates]
+    target_domain = _target_domain(trace)
+    gold_sids = [_normalize_sid(value) for value in (trace.get("gold_sids") or [])]
+    gold_sids = [value for value in gold_sids if value is not None]
+    if len(candidates) != 8 or any(value is None for value in rewards) or target_domain is None:
+        return _invalid_group(trace, "NoThink Frontier credit 需要完整 G8、reward 和 gold SID")
+
+    formal = _formal()
+    values = [float(value) for value in rewards]
+    validations = [
+        formal["validate_nothink_completion"](str(candidate.get("completion") or ""))
+        for candidate in candidates
+    ]
+    states = [
+        formal["hierarchy_state"](
+            validation.parsed_sid if validation.valid else None,
+            gold_sids,
+            target_domain,
+        )
+        for validation in validations
+    ]
+    if aligner is not None:
+        alignments = [
+            aligner(candidate, index) if validation.valid else {
+                "valid": False,
+                "eligible": False,
+                "mode": "format_violation",
+                "failure": validation.reason,
+                "positions": [None] * 4,
+                "spans": [None] * 4,
+            }
+            for index, (candidate, validation) in enumerate(zip(candidates, validations))
+        ]
+    else:
+        tokenizer = tokenizer or monitor_tokenizer()
+        alignments = [
+            _default_alignment(candidate, tokenizer) if validation.valid else {
+                "valid": False,
+                "eligible": False,
+                "mode": "format_violation",
+                "failure": validation.reason,
+                "positions": [None] * 4,
+                "spans": [None] * 4,
+            }
+            for candidate, validation in zip(candidates, validations)
+        ]
+    plan = formal["plan_frontier_credits"](states, [item.valid for item in validations])
+    reason_counts: dict[str, int] = {}
+    rows = []
+    for index, (candidate, validation, state, alignment, planned) in enumerate(zip(
+        candidates, validations, states, alignments, plan.candidates
+    )):
+        if not validation.valid:
+            reason = validation.reason or "other"
+            reason_counts[reason] = reason_counts.get(reason, 0) + 1
+        stages = []
+        positions = alignment.get("positions") or [None] * 4
+        spans = alignment.get("spans") or [None] * 4
+        for column, name in enumerate(STAGES):
+            kind = planned.kinds[column]
+            eligible = bool(validation.valid and kind != formal["GATED"] and positions[column] is not None)
+            stages.append({
+                "stage": name,
+                "eligible": eligible,
+                "credit": float(planned.credits[column]) if eligible else None,
+                "credit_kind": kind,
+                "position": positions[column],
+                "span": spans[column],
+                "milestone_mean": float(plan.milestone_means[column]),
+                "increment": formal["FRONTIER_INCREMENTS"][column],
+                "scale": formal["FRONTIER_SCALE"],
+                "provenance": RECONSTRUCTED,
+            })
+        completion_length = candidate.get("completion_length")
+        penalty_total = float(formal["FORMAT_ADV_TOTAL"]) if not validation.valid else None
+        penalty_per_token = (
+            penalty_total / int(completion_length)
+            if penalty_total is not None and completion_length and int(completion_length) > 0
+            else None
+        )
+        rows.append({
+            "candidate_id": candidate.get("candidate_id", index),
+            "completion": candidate.get("completion", ""),
+            "completion_length": completion_length,
+            "reward": values[index],
+            "parsed_sid": candidate.get("parsed_sid"),
+            "format_valid": bool(validation.valid),
+            "format_violation_reason": validation.reason,
+            "format_penalty_total": penalty_total,
+            "format_penalty_per_token": penalty_per_token,
+            "milestones": {
+                "domain": state.domain_correct,
+                "a": state.a_correct,
+                "ab": state.ab_correct,
+                "exact": state.exact,
+            },
+            "commitment": {
+                "mode": alignment.get("mode", "unresolved"),
+                "valid": bool(alignment.get("valid")),
+                "failure": alignment.get("failure"),
+                "provenance": RECONSTRUCTED,
+            },
+            "stages": stages,
+            "provenance": {"completion": CAPTURED, "reward": CAPTURED, "credits": RECONSTRUCTED},
+        })
+    bridge_active = all(validation.valid for validation in validations) and values == [0.0] * 8
+    return {
+        **_identity(trace),
+        "valid": True,
+        "route": "no_think",
+        "kind": "frontier_token_credit",
+        "algorithm": "frontier_v1",
+        "target_domain": target_domain,
+        "gold_sids": [list(value) for value in gold_sids],
+        "rewards": values,
+        "milestone_means": dict(zip(STAGES, plan.milestone_means)),
+        "taxonomy": plan.taxonomy,
+        "zero_signal": len(set(values)) == 1,
+        "frontier_negative_counts": dict(zip(STAGES, plan.frontier_negative_counts)),
+        "frontier_active": dict(zip(STAGES, plan.frontier_active)),
+        "positive_stage_active": dict(zip(STAGES, plan.positive_active)),
+        "format_violation_count": sum(not item.valid for item in validations),
+        "format_violation_reason_counts": reason_counts,
+        "b_singleton": sum(state.ab_correct for state in states) == 1,
+        "c_singleton": sum(state.exact for state in states) == 1,
+        "bridge": {
+            "active": bridge_active,
+            "rl_credit": "frontier_primary" if bridge_active else None,
+            "lambda": 0.02 if bridge_active else None,
+            "gold_a_targets": sorted({int(value[1]) for value in gold_sids}) if bridge_active else [],
+            "provenance": RECONSTRUCTED,
+        },
+        "candidates": rows,
+        "provenance": RECONSTRUCTED,
+    }
+
+
 def _identity(trace: dict[str, Any]) -> dict[str, Any]:
     return {
         "step": trace.get("step"),
@@ -316,7 +471,9 @@ def monitor_tokenizer():
     return _TOKENIZER
 
 
-def reconstruct_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def reconstruct_groups(
+    rows: list[dict[str, Any]], *, experiment: str | None = None
+) -> list[dict[str, Any]]:
     result = []
     for trace in rows:
         try:
@@ -324,7 +481,10 @@ def reconstruct_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if route == "think":
                 result.append(reconstruct_think_group(trace))
             elif route == "no_think":
-                result.append(reconstruct_nothink_group(trace))
+                if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
+                    result.append(reconstruct_frontier_group(trace))
+                else:
+                    result.append(reconstruct_nothink_group(trace))
         except RuntimeError as error:
             result.append(_invalid_group(trace, str(error)))
     return result
