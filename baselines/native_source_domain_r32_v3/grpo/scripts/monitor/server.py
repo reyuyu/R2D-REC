@@ -751,6 +751,7 @@ def create_app(
         rows = queried_rows(rows, from_step, to_step, route, rollout_id)
         enrich_source_fields(rows, source_rows(selected_run(run_id), "train"))
         return rows
+
     @app.get("/api/advantages")
     def advantages(
         run_id: str | None = None,
