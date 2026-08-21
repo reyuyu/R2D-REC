@@ -64,6 +64,71 @@ contract before any model-selection or final-effectiveness claim.
 
 **FORMAL 1500-STEP RUN COMPLETE / CPU-ONLY FORENSIC COMPLETE**
 
+## External checkpoint scores and joint evidence (2026-08-21)
+
+The experiment owner supplied results from the same external evaluator for
+checkpoints 600, 1000, and 1500. These are user-reported benchmark
+observations, not values reproduced by this audit. Component subtotals below
+are derived from the supplied raw scores and are marked as calculated in the
+machine-readable record. The evaluator order is Material
+`video/product/ad/living`, User `action/chain`, Recommendation
+`video/product/ad/living`, then World.
+
+| Step | Aggregate | Material (calc.) | User (calc.) | Recommendation (calc.) | World |
+|---:|---:|---:|---:|---:|---:|
+| 600 | 1.3266 | 0.1799 | 0.2570 | 0.6563 | 0.2335 |
+| **1000** | **1.3383** | **0.1800** | **0.2573** | **0.6657** | **0.2353** |
+| 1500 | 1.3064 | 0.1798 | 0.2551 | 0.6394 | 0.2320 |
+
+Raw component values are preserved in
+[the structured checkpoint record](../results/gr_rec_clamp_bridge_v1_external_checkpoint_eval_20260821.json).
+Rounded component sums can differ from the reported aggregate by `0.0001`.
+
+Checkpoint 1000 is the best observed checkpoint under this evaluator. From
+600 to 1000, aggregate score rises `+0.0117`; `+0.0094` comes from the
+Recommendation subtotal, primarily Recommendation-video (`+0.0121`) and
+Recommendation-ad (`+0.0070`), while product and living decline slightly.
+From 1000 to 1500, aggregate score falls `-0.0319`. Recommendation accounts
+for `-0.0263`, and all four Recommendation domains decline, so the late drop
+is broad rather than a single-domain fluctuation. Material is effectively
+flat across all three checkpoints and User changes only slightly.
+
+Against the recorded BETA conservative baseline (`1.3313`), checkpoint 1000
+is `+0.0070`, which remains inside the established approximately `+/-0.01`
+same-model evaluation-noise reference. It is therefore the current model
+selection candidate, not proof of a statistically reliable absolute gain.
+Checkpoint 1500 is `-0.0249` below BETA and `-0.0319` below checkpoint 1000,
+both materially larger than that reference. Against GR_REC_v1 at the matched
+step 1500 (`1.3510`), this checkpoint is `-0.0446`; `-0.0406` is attributable
+to Recommendation. Against DSR-Simple at step 1500 (`1.3254`), it is
+`-0.0190`, including a `-0.0141` Recommendation gap.
+
+The external result agrees with the training-side warning rather than with a
+numerical-instability explanation. The formal run had bounded KL and clipping,
+no non-finite values, no frozen-parameter movement, and no engineering
+failure. However, Think online reward peaked in steps 601-1000 and then fell;
+completion length, Raw N, Grounded N, grounding coverage, and effective
+advantage exposure all contracted toward step 1500. The fixed Think probe also
+fell from reward `3.7305` at step 0 to `2.2305` at step 1500. NoThink online
+hierarchy metrics improved, but that improvement did not offset the Think and
+Recommendation degradation in the external evaluator. This is evidence of a
+late-stage objective/quality tradeoff and possible Think structure collapse,
+not evidence that the optimizer became unstable.
+
+The separately persisted frozen-cohort evaluation (`N=128`, seed `20260822`)
+compared checkpoints 250 and 600 on the exact same examples. Think Hit@32 was
+`9/128 -> 8/128`, and NoThink Hit@32 was `10/128 -> 10/128`; confidence
+intervals were wide and overlapping. That contract is different from the
+external aggregate benchmark and did not evaluate checkpoint 1000, so it
+neither proves nor refutes the checkpoint-1000 peak. It does warn against
+claiming broad generalization from the aggregate score alone.
+
+**Initial model-selection conclusion:** preserve checkpoint 1000 as the best
+currently observed candidate; do not select checkpoint 1500. Before claiming
+an absolute improvement, rerun the same external evaluator with repeated
+seeds or a larger frozen cohort on BETA, checkpoint 1000, and at least one
+adjacent checkpoint.
+
 ## Authorized full-epoch continuation
 
 After reviewing the 1500-step result, the experiment owner explicitly
