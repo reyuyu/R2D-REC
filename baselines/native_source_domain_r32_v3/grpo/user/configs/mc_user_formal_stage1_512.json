@@ -1,0 +1,23 @@
+{
+  "experiment_type": "formal",
+  "stage": "stage1_512",
+  "base_model": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+  "train_data": "/data/GRPO_USER/data/gr_user_v1/train_3000.jsonl",
+  "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+  "prompt_count": 512,
+  "action_count": 256,
+  "chain_count": 256,
+  "selection_seed": 20260823,
+  "route_schedule": "strict_alternating",
+  "K": 2,
+  "temperature": 0.9,
+  "top_p": 0.95,
+  "max_new_tokens": 512,
+  "learning_rate": 1e-6,
+  "weight_decay": 0.0,
+  "forward_batch_size": 1,
+  "checkpoint_steps": [128, 256, 384, 512],
+  "resume_supported": false,
+  "resume_policy": "continuous_run_only"
+}
