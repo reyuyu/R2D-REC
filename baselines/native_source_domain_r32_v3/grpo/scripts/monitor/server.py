@@ -4,12 +4,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
+import signal
 import shutil
+import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
 from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -24,6 +30,16 @@ RECOMMENDATION_RUN_KIND = "recommendation_grpo"
 USER_RUN_KIND = "user_grpo"
 CHECKPOINT_NAME_RE = re.compile(r"checkpoint-(?:step)?(\d+)")
 FINAL_CHECKPOINT_NAME = "full-epoch-final"
+EVAL_JOB_RE = re.compile(r"eval-[0-9]{8}T[0-9]{6}-[0-9a-f]{8}")
+EVAL_DATASET = Path("/data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1/dev.jsonl")
+EVAL_LEAKAGE_AUDIT = EVAL_DATASET.parent / "leakage_audit.json"
+EVAL_TRAIN_DATASET = Path("/data/GRPO/data/rec_mp_grpo_v2/train.jsonl")
+
+
+class CheckpointEvalRequest(BaseModel):
+    checkpoints: list[str] = Field(min_length=1, max_length=20)
+    sample_size: int = Field(default=128)
+    seed: int = Field(default=20260822, ge=0, le=2_147_483_647)
 
 
 def checkpoint_step(path: Path) -> int | None:
@@ -96,6 +112,7 @@ def create_app(
     runs_dir: str | Path | None = None,
     outputs_dir: str | Path | None = None,
     user_runs_dir: str | Path | None = None,
+    eval_dir: str | Path | None = None,
 ) -> FastAPI:
     if (run_dir is None) == (runs_dir is None):
         raise ValueError("exactly one of run_dir or runs_dir is required")
@@ -103,11 +120,13 @@ def create_app(
     root = single_run.parent if single_run is not None else Path(runs_dir).expanduser().resolve()
     outputs_root = Path(outputs_dir).expanduser().resolve() if outputs_dir is not None else None
     user_runs_root = Path(user_runs_dir).expanduser().resolve() if user_runs_dir is not None else None
+    eval_root = Path(eval_dir).expanduser().resolve() if eval_dir is not None else (root.parent / "evaluations").resolve()
     app = FastAPI(title="GRPO Monitor", docs_url="/api/docs", redoc_url=None)
     app.state.run_dir = single_run
     app.state.runs_dir = root
     app.state.outputs_dir = outputs_root
     app.state.user_runs_dir = user_runs_root
+    app.state.eval_dir = eval_root
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
 
@@ -243,6 +262,147 @@ def create_app(
                 resolved.append(path)
         return resolved
 
+    def checkpoint_directory(selected: Path, name: str) -> Path | None:
+        if not checkpoint_name_allowed(name):
+            return None
+        for run_output in checkpoint_run_dirs(selected):
+            candidate = (run_output / name).resolve()
+            if (
+                candidate.parent == run_output
+                and candidate.is_dir()
+                and (candidate / "adapter_config.json").is_file()
+                and (candidate / "adapter_model.safetensors").is_file()
+            ):
+                return candidate
+        return None
+
+    def eval_run_dir(selected: Path) -> Path:
+        candidate = (eval_root / selected.name).resolve()
+        if candidate.parent != eval_root:
+            raise HTTPException(status_code=400, detail="invalid evaluation run")
+        return candidate
+
+    def eval_job_dir(selected: Path, job_id: str) -> Path:
+        if EVAL_JOB_RE.fullmatch(job_id) is None:
+            raise HTTPException(status_code=404, detail="evaluation job not found")
+        candidate = (eval_run_dir(selected) / job_id).resolve()
+        if candidate.parent != eval_run_dir(selected):
+            raise HTTPException(status_code=404, detail="evaluation job not found")
+        return candidate
+
+    def read_json(path: Path, default: Any = None) -> Any:
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return default
+
+    def write_json_atomic(path: Path, payload: Any) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.replace(path)
+
+    def process_alive(pid: int | None) -> bool:
+        if not isinstance(pid, int) or pid < 1:
+            return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    def gpu_state() -> dict[str, Any]:
+        try:
+            gpu_rows = subprocess.run(
+                ["nvidia-smi", "--query-gpu=index,name,memory.used,memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=4, check=True,
+            ).stdout.splitlines()
+            process_rows = subprocess.run(
+                ["nvidia-smi", "--query-compute-apps=pid,process_name,used_gpu_memory", "--format=csv,noheader,nounits"],
+                capture_output=True, text=True, timeout=4, check=True,
+            ).stdout.splitlines()
+        except (OSError, subprocess.SubprocessError):
+            return {"available": False, "reason": "GPU 状态不可用", "gpus": [], "processes": []}
+        gpus = []
+        for row in gpu_rows:
+            parts = [part.strip() for part in row.split(",")]
+            if len(parts) >= 4:
+                gpus.append({"index": int(parts[0]), "name": parts[1], "memory_used_mb": int(parts[2]), "memory_total_mb": int(parts[3])})
+        processes = []
+        for row in process_rows:
+            parts = [part.strip() for part in row.split(",")]
+            if len(parts) >= 3 and parts[0].isdigit():
+                processes.append({"pid": int(parts[0]), "name": parts[1], "memory_mb": int(parts[2])})
+        ready = len(gpus) >= 4 and not processes
+        return {
+            "available": ready,
+            "reason": "4 张 GPU 空闲" if ready else ("GPU 正被训练或其他任务占用" if processes else "少于 4 张可用 GPU"),
+            "gpus": gpus, "processes": processes,
+        }
+
+    catalog_cache: dict[str, Any] = {}
+
+    def validation_catalog() -> dict[str, Any]:
+        if catalog_cache:
+            return dict(catalog_cache)
+        leakage = read_json(EVAL_LEAKAGE_AUDIT, {})
+        safe = bool(leakage.get("validation_safe")) and all(
+            int(leakage.get("dev", {}).get(key, -1)) == 0
+            for key in (
+                "recommendation_group_id_overlap", "recommendation_history_domain_overlap",
+                "exact_full_row_overlap", "canonical_prompt_overlap",
+            )
+        )
+        groups: dict[str, str] = {}
+        for row in read_jsonl(EVAL_DATASET):
+            if row.get("source_segment") not in {"recommendation_cot", "recommendation_nocot"}:
+                continue
+            try:
+                metadata = json.loads(row.get("aux_metadata_json") or "{}")
+            except (TypeError, json.JSONDecodeError):
+                continue
+            group_id = metadata.get("recommendation_group_id")
+            golds = metadata.get("recommendation_all_gold_sids") or []
+            match = re.match(r"<\|(video|prod|ad|living)_begin\|>", str(golds[0])) if golds else None
+            if isinstance(group_id, str) and match:
+                groups[group_id] = match.group(1)
+        train_ids = {
+            row.get("recommendation_group_id") for row in read_jsonl(EVAL_TRAIN_DATASET)
+            if row.get("recommendation_group_id")
+        }
+        domain_counts = {domain: sum(value == domain for value in groups.values()) for domain in ("video", "prod", "ad", "living")}
+        try:
+            dataset_sha = hashlib.sha256(EVAL_DATASET.read_bytes()).hexdigest()
+        except OSError:
+            dataset_sha = None
+        catalog_cache.update({
+            "dataset": str(EVAL_DATASET), "dataset_sha256": dataset_sha,
+            "validation_safe": safe and not train_ids.intersection(groups),
+            "train_group_overlap": len(train_ids.intersection(groups)),
+            "pool_size": len(groups), "domain_counts": domain_counts,
+            "sample_presets": [64, 128, 256], "recommended_sample_size": 128,
+        })
+        return dict(catalog_cache)
+
+    def job_payload(job_dir: Path) -> dict[str, Any]:
+        config = read_json(job_dir / "job.json", {})
+        status = read_json(job_dir / "status.json", {"state": "starting"})
+        pid = config.get("pid")
+        if status.get("state") in {"starting", "running"} and not process_alive(pid):
+            status = {**status, "state": "failed", "message": "验证进程已退出，请查看日志"}
+        progress = [read_json(path, {}) for path in sorted(job_dir.glob("rank*-progress.json"))]
+        results = read_json(job_dir / "results.json", {"checkpoints": []})
+        try:
+            log_tail = "\n".join((job_dir / "evaluation.log").read_text(encoding="utf-8", errors="replace").splitlines()[-40:])
+        except OSError:
+            log_tail = ""
+        return {
+            "job_id": job_dir.name, "run_id": config.get("run_id"),
+            "checkpoints": config.get("checkpoints", []), "sample_size": config.get("sample_size"),
+            "seed": config.get("seed"), "status": status, "progress": progress,
+            "results": results, "log_tail": log_tail,
+        }
+
     @app.get("/")
     def dashboard():
         return FileResponse(STATIC_DIR / "index.html")
@@ -323,6 +483,123 @@ def create_app(
             "deleted_directories": len(targets),
             "released_bytes": released_bytes,
         }
+
+    @app.get("/api/checkpoint-eval/catalog")
+    def checkpoint_eval_catalog(run_id: str | None = None):
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if normalized_run_kind(manifest_data) != RECOMMENDATION_RUN_KIND:
+            raise HTTPException(status_code=400, detail="checkpoint evaluation supports Recommendation GRPO only")
+        items = []
+        for run_output in checkpoint_run_dirs(selected):
+            for path in run_output.iterdir():
+                step = checkpoint_step(path) if path.is_dir() else None
+                if step is not None and checkpoint_directory(selected, path.name) is not None:
+                    items.append({"checkpoint": path.name, "step": step})
+        deduplicated = {item["checkpoint"]: item for item in items}
+        return {
+            **validation_catalog(), "gpu": gpu_state(),
+            "checkpoints": sorted(deduplicated.values(), key=lambda item: item["step"]),
+        }
+
+    @app.get("/api/checkpoint-eval/jobs")
+    def checkpoint_eval_jobs(run_id: str | None = None):
+        selected = selected_run(run_id)
+        root_dir = eval_run_dir(selected)
+        if not root_dir.is_dir():
+            return []
+        return [
+            job_payload(path) for path in sorted(root_dir.iterdir(), reverse=True)
+            if path.is_dir() and EVAL_JOB_RE.fullmatch(path.name)
+        ]
+
+    @app.post("/api/checkpoint-eval/jobs")
+    def start_checkpoint_eval(request: CheckpointEvalRequest, run_id: str | None = None):
+        selected = selected_run(run_id)
+        catalog = validation_catalog()
+        if not catalog.get("validation_safe"):
+            raise HTTPException(status_code=409, detail="validation leakage audit is not clean")
+        if request.sample_size not in catalog["sample_presets"]:
+            raise HTTPException(status_code=400, detail="sample_size must be 64, 128, or 256")
+        names = list(dict.fromkeys(request.checkpoints))
+        resolved = []
+        for name in names:
+            path = checkpoint_directory(selected, name)
+            if path is None:
+                raise HTTPException(status_code=404, detail=f"checkpoint not found: {name}")
+            resolved.append({"name": name, "step": checkpoint_step(path), "path": str(path)})
+        resolved.sort(key=lambda item: item["step"])
+
+        root_dir = eval_run_dir(selected)
+        if root_dir.is_dir():
+            for existing in root_dir.iterdir():
+                config = read_json(existing / "job.json", {}) if existing.is_dir() else {}
+                if process_alive(config.get("pid")):
+                    raise HTTPException(status_code=409, detail="an evaluation job is already running")
+        gpu = gpu_state()
+        if not gpu.get("available"):
+            raise HTTPException(status_code=409, detail=gpu.get("reason", "4 GPUs are not idle"))
+
+        stamp = time.strftime("%Y%m%dT%H%M%S", time.localtime())
+        suffix = hashlib.sha256(f"{selected.name}:{stamp}:{request.seed}:{names}".encode()).hexdigest()[:8]
+        job_id = f"eval-{stamp}-{suffix}"
+        job_dir = eval_job_dir(selected, job_id)
+        job_dir.mkdir(parents=True, exist_ok=False)
+        config = {
+            "job_id": job_id, "run_id": selected.name, "created_at": time.time(),
+            "sample_size": request.sample_size, "seed": request.seed, "checkpoints": resolved,
+            "world_size": 4, "inference_only": True, "paired_cohort": True,
+        }
+        write_json_atomic(job_dir / "job.json", config)
+        write_json_atomic(job_dir / "status.json", {
+            "state": "starting", "checkpoint_count": len(resolved), "completed_checkpoints": 0,
+            "sample_size": request.sample_size,
+        })
+        script = Path(__file__).resolve().parents[1] / "checkpoint_eval.py"
+        torchrun = Path(sys.executable).with_name("torchrun")
+        if not script.is_file() or not torchrun.is_file():
+            raise HTTPException(status_code=500, detail="checkpoint evaluator is not installed")
+        master_port = 29600 + int(suffix[:4], 16) % 300
+        command = [
+            str(torchrun), "--nproc_per_node=4", f"--master_port={master_port}", str(script),
+            "--run-id", selected.name, "--config", str(job_dir / "job.json"),
+            "--output-dir", str(job_dir), "--sample-size", str(request.sample_size),
+            "--seed", str(request.seed),
+        ]
+        environment = os.environ.copy()
+        environment.update({"CUDA_VISIBLE_DEVICES": "0,1,2,3", "TOKENIZERS_PARALLELISM": "false"})
+        with (job_dir / "evaluation.log").open("ab", buffering=0) as log_handle:
+            process = subprocess.Popen(
+                command, cwd=str(script.parent), env=environment, stdout=log_handle, stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        config["pid"] = process.pid
+        write_json_atomic(job_dir / "job.json", config)
+        return job_payload(job_dir)
+
+    @app.get("/api/checkpoint-eval/jobs/{job_id}")
+    def checkpoint_eval_job(job_id: str, run_id: str | None = None):
+        selected = selected_run(run_id)
+        job_dir = eval_job_dir(selected, job_id)
+        if not job_dir.is_dir():
+            raise HTTPException(status_code=404, detail="evaluation job not found")
+        return job_payload(job_dir)
+
+    @app.post("/api/checkpoint-eval/jobs/{job_id}/stop")
+    def stop_checkpoint_eval(job_id: str, run_id: str | None = None):
+        selected = selected_run(run_id)
+        job_dir = eval_job_dir(selected, job_id)
+        config = read_json(job_dir / "job.json", {})
+        pid = config.get("pid")
+        if not process_alive(pid):
+            raise HTTPException(status_code=409, detail="evaluation job is not running")
+        try:
+            os.killpg(pid, signal.SIGTERM)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail=f"could not stop evaluation: {exc}") from exc
+        status = read_json(job_dir / "status.json", {})
+        write_json_atomic(job_dir / "status.json", {**status, "state": "stopped", "stopped_at": time.time()})
+        return job_payload(job_dir)
 
     @app.get("/api/manifest")
     def manifest(run_id: str | None = None):
@@ -560,6 +837,7 @@ def main() -> None:
     source.add_argument("--runs-dir", help="Serve an experiment list rooted at this directory")
     parser.add_argument("--outputs-dir", help="Formal output root used for checkpoint adapter downloads")
     parser.add_argument("--user-runs-dir", help="Approved User-GRPO run root declared by monitor manifests")
+    parser.add_argument("--eval-dir", help="Checkpoint evaluation job root (defaults beside runs-dir)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
@@ -567,7 +845,10 @@ def main() -> None:
 
     print(f"GRPO Monitor: http://{args.host}:{args.port}", flush=True)
     uvicorn.run(
-        create_app(args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir, user_runs_dir=args.user_runs_dir),
+        create_app(
+            args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir,
+            user_runs_dir=args.user_runs_dir, eval_dir=args.eval_dir,
+        ),
         host=args.host, port=args.port, log_level="warning",
     )
 
