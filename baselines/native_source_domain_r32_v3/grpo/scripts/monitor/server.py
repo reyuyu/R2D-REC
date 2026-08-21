@@ -135,6 +135,15 @@ def summarize_mc_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         "no_credit_prompt_rate": ratio(sum(bool(row.get("skipped_update")) for row in records), len(records)),
         "projection_required_rate": ratio(sum(bool(item.get("projection_required")) for item in candidates), len(candidates)),
         "overlap_candidate_rate": ratio(sum(int(item.get("overlap_token_count", 0)) > 0 for item in candidates), len(candidates)),
+        "peak_vram_mib": max(
+            max(
+                float(row.get("peak_vram_mib", 0.0)),
+                float(row.get("combined_process_peak_vram_mib", 0.0)),
+                float(row.get("generation_peak_vram_mib", 0.0)),
+                float(row.get("training_peak_vram_mib", 0.0)),
+            )
+            for row in records
+        ) if records else 0.0,
         "action": {
             "candidate_count": len(action),
             "negative_candidate_rate": ratio(sum(int(item.get("negative_unit_count", 0)) > 0 for item in action), len(action)),

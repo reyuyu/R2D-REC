@@ -69,8 +69,8 @@ class MCUserMonitorTests(unittest.TestCase):
         write_jsonl(
             self.mc / "metrics.jsonl",
             [
-                {"prompt_step": 1, "optimizer_step": 1, "route": "action", "skipped_update": False, "optimizer_step_performed": True, "candidates": candidates["action"]},
-                {"prompt_step": 32, "optimizer_step": 31, "route": "chain", "skipped_update": True, "optimizer_step_performed": False, "candidates": candidates["chain"]},
+                {"prompt_step": 1, "optimizer_step": 1, "route": "action", "skipped_update": False, "optimizer_step_performed": True, "active_unit_count": 3, "active_token_count": 9, "generation_peak_vram_mib": 17200, "candidates": candidates["action"]},
+                {"prompt_step": 32, "optimizer_step": 31, "route": "chain", "skipped_update": True, "optimizer_step_performed": False, "active_unit_count": 0, "active_token_count": 0, "training_peak_vram_mib": 18400, "candidates": candidates["chain"]},
             ],
         )
         for step in (8, 16, 32):
@@ -111,23 +111,63 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertAlmostEqual(summary["overlap_candidate_rate"], 0.25)
         self.assertAlmostEqual(summary["action"]["negative_candidate_rate"], 0.5)
         self.assertAlmostEqual(summary["chain"]["mean_predicted_event_count"], 3.0)
+        self.assertEqual(summary["peak_vram_mib"], 18400)
         self.assertEqual(self.client.get(f"/api/rollouts?run_id={self.mc.name}").json(), [])
         self.assertEqual(self.client.get(f"/api/user-light-probe?run_id={self.mc.name}").json(), {"available": False})
         self.assertEqual(self.client.get(f"/api/recommendation-guard?run_id={self.mc.name}").json(), {"available": False})
 
     def test_future_rollout_is_read_without_recomputation(self):
-        row = {"prompt_step": 2, "optimizer_step": 2, "route": "action", "candidate_index": 0, "credit_units": [{"delta": -0.25}]}
+        row = {
+            "prompt_step": 2,
+            "optimizer_step": 2,
+            "route": "action",
+            "candidate_index": 0,
+            "completion": "A B",
+            "credit_units": [{"unit_index": 0, "delta": -0.25, "credit_type": "negative", "char_start": 0, "char_end": 1, "generated_token_indices": [0]}],
+            "overlap_metadata": [{"token_index": 0, "unit_indices": [0], "mixed_sign": False, "net_coefficient": -0.25}],
+        }
         write_jsonl(self.mc / "rollouts.jsonl", [row])
         returned = self.client.get(f"/api/rollouts?run_id={self.mc.name}").json()
         self.assertEqual(returned[0]["step"], 2)
-        self.assertEqual(returned[0]["credit_units"], [{"delta": -0.25}])
+        self.assertEqual(returned[0]["credit_units"], row["credit_units"])
+        self.assertEqual(returned[0]["overlap_metadata"], row["overlap_metadata"])
+
+    def test_future_probe_and_recommendation_guard_are_read_only(self):
+        probe = {
+            "status": "PASS",
+            "checkpoints": [
+                {"step": step, "summary": {"action": {"f1": 0.4 + step / 1000, "precision": 0.5, "recall": 0.4}, "chain": {"total_reward": 0.3, "action_alignment": 0.4, "logic_alignment": 0.2}, "overall_user_proxy": 0.7 + step / 1000}}
+                for step in (0, 8, 16, 32)
+            ],
+        }
+        guard = {"status": "PASS", "checkpoints": [{"step": 0, "hit_rate": 0.2, "history_copy_rate": 0.3, "unique_history_copy_rate": 0.25}, {"step": 32, "hit_rate": 0.21, "history_copy_rate": 0.32, "unique_history_copy_rate": 0.27}]}
+        write_json(self.mc / "evaluations" / "user_light_probe" / "results.json", probe)
+        write_json(self.mc / "evaluations" / "recommendation_guard" / "results.json", guard)
+        returned_probe = self.client.get(f"/api/user-light-probe?run_id={self.mc.name}").json()
+        returned_guard = self.client.get(f"/api/recommendation-guard?run_id={self.mc.name}").json()
+        self.assertTrue(returned_probe["available"])
+        self.assertEqual([row["step"] for row in returned_probe["checkpoints"]], [0, 8, 16, 32])
+        self.assertTrue(returned_guard["available"])
+        self.assertEqual(returned_guard["checkpoints"][-1]["history_copy_rate"], 0.32)
 
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260821-mc1a", html)
+        self.assertIn("20260821-mc1b", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
+        self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
+        self.assertIn("tokenTab.hidden = !user", javascript)
+        for title in ("Marginal Credit Mass", "Negative Candidate Rate", "Training Signal", "Pipeline Health"):
+            self.assertIn(title, javascript)
+        self.assertIn("Action · SID Marginal Credit", javascript)
+        self.assertIn("Chain · Event Marginal Credit", javascript)
+        self.assertIn("该历史 run 未落盘 unit-level marginal trace", javascript)
+        self.assertIn("generated_token_indices", javascript)
+        self.assertIn("尚未执行固定 paired User Light Probe", javascript)
+        self.assertIn("尚未执行 Recommendation guard evaluation", javascript)
+        self.assertIn("state.checkpoints", javascript)
+        self.assertIn("`ckpt ${step}`", javascript)
         self.assertIn("/api/mc-user/summary", javascript)
         self.assertIn("/api/user-light-probe", javascript)
         self.assertIn("/api/recommendation-guard", javascript)
