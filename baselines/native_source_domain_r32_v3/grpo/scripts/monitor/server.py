@@ -46,7 +46,7 @@ def checkpoint_eval_launch_command(script: Path, master_port: int) -> list[str]:
     """Launch distributed evaluation through the active Python environment."""
     return [
         sys.executable, "-m", "torch.distributed.run", "--nproc_per_node=4",
-        f"--master_port={master_port}", str(script),
+        "--master_addr=127.0.0.1", f"--master_port={master_port}", str(script),
     ]
 
 
@@ -314,9 +314,18 @@ def create_app(
         if not isinstance(pid, int) or pid < 1:
             return False
         try:
+            reaped_pid, _ = os.waitpid(pid, os.WNOHANG)
+            if reaped_pid == pid:
+                return False
+        except ChildProcessError:
+            pass
+        try:
             os.kill(pid, 0)
+            proc_stat = Path(f"/proc/{pid}/stat")
+            if proc_stat.is_file() and proc_stat.read_text(encoding="utf-8").split()[2] == "Z":
+                return False
             return True
-        except OSError:
+        except (OSError, IndexError):
             return False
 
     def gpu_state() -> dict[str, Any]:
@@ -581,7 +590,10 @@ def create_app(
             "--seed", str(request.seed),
         ]
         environment = os.environ.copy()
-        environment.update({"CUDA_VISIBLE_DEVICES": "0,1,2,3", "TOKENIZERS_PARALLELISM": "false"})
+        environment.update({
+            "CUDA_VISIBLE_DEVICES": "0,1,2,3", "TOKENIZERS_PARALLELISM": "false",
+            "GLOO_SOCKET_IFNAME": "lo",
+        })
         try:
             with (job_dir / "evaluation.log").open("ab", buffering=0) as log_handle:
                 process = subprocess.Popen(

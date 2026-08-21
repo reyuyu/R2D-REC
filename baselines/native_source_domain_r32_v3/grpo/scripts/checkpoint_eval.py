@@ -224,7 +224,9 @@ def run_evaluation(args: argparse.Namespace) -> None:
     local_rank = int(os.environ.get("LOCAL_RANK", str(rank)))
     world = int(os.environ.get("WORLD_SIZE", "1"))
     if world > 1:
-        dist.init_process_group("nccl")
+        # Ranks only exchange small Python result objects. CPU coordination avoids
+        # coupling independent GPU inference to the host's NCCL network setup.
+        dist.init_process_group("gloo")
     torch.cuda.set_device(local_rank)
     output = Path(args.output_dir).resolve()
     checkpoints = json.loads(Path(args.config).read_text(encoding="utf-8"))["checkpoints"]
@@ -239,6 +241,7 @@ def run_evaluation(args: argparse.Namespace) -> None:
         atomic_json(output / "status.json", {
             "state": "running", "started_at": utc_now(), "sample_size": len(cohort),
             "checkpoint_count": len(checkpoints), "completed_checkpoints": 0,
+            "phase": "loading_base_model",
         })
     if world > 1:
         dist.barrier()
@@ -257,12 +260,18 @@ def run_evaluation(args: argparse.Namespace) -> None:
             atomic_json(output / "status.json", {
                 "state": "running", "started_at": utc_now(), "sample_size": len(cohort),
                 "checkpoint_count": len(checkpoints), "completed_checkpoints": checkpoint_index,
-                "current_checkpoint": checkpoint["name"],
+                "current_checkpoint": checkpoint["name"], "phase": "loading_checkpoint",
             })
         if world > 1:
             dist.barrier()
         model = PeftModel.from_pretrained(base_model, checkpoint["path"], is_trainable=False)
         model.eval()
+        if rank == 0:
+            atomic_json(output / "status.json", {
+                "state": "running", "started_at": utc_now(), "sample_size": len(cohort),
+                "checkpoint_count": len(checkpoints), "completed_checkpoints": checkpoint_index,
+                "current_checkpoint": checkpoint["name"], "phase": "evaluating",
+            })
         local_rows = []
         for cohort_index in range(rank, len(cohort), world):
             sample = cohort[cohort_index]
@@ -336,7 +345,7 @@ def run_evaluation(args: argparse.Namespace) -> None:
             atomic_json(output / "status.json", {
                 "state": "running", "started_at": utc_now(), "sample_size": len(cohort),
                 "checkpoint_count": len(checkpoints), "completed_checkpoints": checkpoint_index + 1,
-                "current_checkpoint": checkpoint["name"],
+                "current_checkpoint": checkpoint["name"], "phase": "checkpoint_complete",
             })
         base_model = model.unload()
         del model
@@ -348,6 +357,7 @@ def run_evaluation(args: argparse.Namespace) -> None:
         atomic_json(output / "status.json", {
             "state": "completed", "completed_at": utc_now(), "sample_size": len(cohort),
             "checkpoint_count": len(checkpoints), "completed_checkpoints": len(checkpoints),
+            "phase": "completed",
             "wall_sec": time.time() - started_all,
         })
     if world > 1:
