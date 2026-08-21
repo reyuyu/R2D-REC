@@ -21,6 +21,7 @@ from run_mc_user_pilot_v1 import (  # noqa: E402
     build_manifest,
     candidate_record,
     claim_gpu_process_ownership,
+    display_rollout_records,
     run_cli,
     run_prompt_loop,
     run_preflight,
@@ -63,6 +64,55 @@ def candidate(route, *, negative=False):
             full_logic_alignment=0.4,
         )
     return value
+
+
+class DisplayRolloutContractTests(unittest.TestCase):
+    def test_action_and_chain_copy_existing_credit_without_recomputation(self):
+        common_candidate = {
+            "candidate_index": 0,
+            "completion": "completion",
+            "generated_token_count": 4,
+            "format_valid": True,
+            "full_reward": 0.5,
+            "projection_required": False,
+            "overlap_token_count": 1,
+            "same_sign_overlap_token_count": 0,
+            "mixed_sign_overlap_token_count": 1,
+            "max_active_units_per_token": 2,
+        }
+        action_unit = {
+            "sid": "sid-A",
+            "occurrence": 2,
+            "delta": -0.25,
+            "credit_type": "negative",
+            "generated_token_indices": [1, 2],
+            "char_start": 3,
+            "char_end": 8,
+        }
+        action = display_rollout_records(
+            prompt_step=4, optimizer_step=3, route="action", sample_id="sample",
+            candidates=[common_candidate], units_per_candidate=[[action_unit]],
+        )[0]
+        self.assertEqual(action["credit_units"][0]["delta"], -0.25)
+        self.assertEqual(action["credit_units"][0]["occurrence_index"], 2)
+        self.assertEqual(action["credit_units"][0]["generated_token_indices"], [1, 2])
+
+        chain_unit = {
+            "event_index": 1,
+            "delta": 0.4,
+            "delta_action_alignment": 0.6,
+            "delta_logic_alignment": 0.2,
+            "credit_type": "positive",
+            "generated_token_indices": [0, 1, 2],
+        }
+        chain = display_rollout_records(
+            prompt_step=5, optimizer_step=4, route="chain", sample_id="sample",
+            candidates=[common_candidate], units_per_candidate=[[chain_unit]],
+        )[0]
+        self.assertEqual(chain["credit_units"][0]["event_index"], 1)
+        self.assertEqual(chain["credit_units"][0]["delta_action"], 0.6)
+        self.assertEqual(chain["credit_units"][0]["delta_logic"], 0.2)
+        self.assertEqual(chain["full_reward"], 0.5)
 
 
 def prompt_result(route, *, active=True, negative=False):

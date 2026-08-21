@@ -28,7 +28,9 @@ except ImportError:  # Direct execution: python monitor/server.py
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 RECOMMENDATION_RUN_KIND = "recommendation_grpo"
 USER_RUN_KIND = "user_grpo"
+MC_USER_ALGORITHM = "mc_user_v1"
 CHECKPOINT_NAME_RE = re.compile(r"checkpoint-(?:step)?(\d+)")
+PROMPT_CHECKPOINT_NAME_RE = re.compile(r"prompt-step-(\d+)")
 FINAL_CHECKPOINT_NAME = "full-epoch-final"
 EVAL_JOB_RE = re.compile(r"eval-[0-9]{8}T[0-9]{6}-[0-9a-f]{8}")
 EVAL_DATASET = Path("/data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1/dev.jsonl")
@@ -51,7 +53,7 @@ def checkpoint_eval_launch_command(script: Path, master_port: int) -> list[str]:
 
 
 def checkpoint_step(path: Path) -> int | None:
-    match = CHECKPOINT_NAME_RE.fullmatch(path.name)
+    match = CHECKPOINT_NAME_RE.fullmatch(path.name) or PROMPT_CHECKPOINT_NAME_RE.fullmatch(path.name)
     if match is not None:
         return int(match.group(1))
     if path.name != FINAL_CHECKPOINT_NAME:
@@ -65,12 +67,93 @@ def checkpoint_step(path: Path) -> int | None:
 
 
 def checkpoint_name_allowed(name: str) -> bool:
-    return CHECKPOINT_NAME_RE.fullmatch(name) is not None or name == FINAL_CHECKPOINT_NAME
+    return (
+        CHECKPOINT_NAME_RE.fullmatch(name) is not None
+        or PROMPT_CHECKPOINT_NAME_RE.fullmatch(name) is not None
+        or name == FINAL_CHECKPOINT_NAME
+    )
+
+
+def is_mc_user_manifest(manifest: dict[str, Any]) -> bool:
+    """Recognize explicit MC manifests and the immutable first Pilot32 manifest."""
+    if manifest.get("algorithm") == MC_USER_ALGORITHM:
+        return True
+    config = manifest.get("config")
+    prompts = manifest.get("prompts")
+    return bool(
+        isinstance(config, dict)
+        and config.get("K") == 2
+        and config.get("prompt_count") == 32
+        and isinstance(prompts, list)
+        and len(prompts) == 32
+        and all(isinstance(row, dict) and "prompt_step" in row for row in prompts)
+        and str(manifest.get("train_data", "")).endswith("/gr_user_v1/train_3000.jsonl")
+    )
+
+
+def normalized_algorithm(manifest: dict[str, Any]) -> str | None:
+    if is_mc_user_manifest(manifest):
+        return MC_USER_ALGORITHM
+    value = manifest.get("algorithm")
+    return str(value) if isinstance(value, str) and value else None
 
 
 def normalized_run_kind(manifest: dict[str, Any]) -> str:
     """Return the supported run kind, preserving legacy Recommendation runs."""
-    return USER_RUN_KIND if manifest.get("run_kind") == USER_RUN_KIND else RECOMMENDATION_RUN_KIND
+    return USER_RUN_KIND if manifest.get("run_kind") == USER_RUN_KIND or is_mc_user_manifest(manifest) else RECOMMENDATION_RUN_KIND
+
+
+def normalize_monitor_row(row: dict[str, Any], *, mc_user: bool = False) -> dict[str, Any]:
+    """Expose a shared x-axis without erasing MC prompt/optimizer semantics."""
+    normalized = dict(row)
+    if mc_user and normalized.get("prompt_step") is not None:
+        normalized["step"] = normalized["prompt_step"]
+    return normalized
+
+
+def summarize_mc_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    records = [normalize_monitor_row(row, mc_user=True) for row in rows]
+    candidates = [candidate for row in records for candidate in row.get("candidates", [])]
+    action = [candidate for row in records if row.get("route") == "action" for candidate in row.get("candidates", [])]
+    chain = [candidate for row in records if row.get("route") == "chain" for candidate in row.get("candidates", [])]
+
+    def ratio(numerator: int, denominator: int) -> float:
+        return numerator / denominator if denominator else 0.0
+
+    def total(items: list[dict[str, Any]], key: str) -> float:
+        return sum(float(item.get(key, 0.0)) for item in items)
+
+    latest = records[-1] if records else {}
+    return {
+        "available": bool(records),
+        "algorithm": MC_USER_ALGORITHM,
+        "prompt_step": int(latest.get("prompt_step", 0)),
+        "optimizer_step": int(latest.get("optimizer_step", 0)),
+        "prompt_count": len(records),
+        "optimizer_update_count": sum(bool(row.get("optimizer_step_performed")) for row in records),
+        "valid_candidate_rate": ratio(sum(bool(item.get("format_valid")) for item in candidates), len(candidates)),
+        "no_credit_prompt_rate": ratio(sum(bool(row.get("skipped_update")) for row in records), len(records)),
+        "projection_required_rate": ratio(sum(bool(item.get("projection_required")) for item in candidates), len(candidates)),
+        "overlap_candidate_rate": ratio(sum(int(item.get("overlap_token_count", 0)) > 0 for item in candidates), len(candidates)),
+        "action": {
+            "candidate_count": len(action),
+            "negative_candidate_rate": ratio(sum(int(item.get("negative_unit_count", 0)) > 0 for item in action), len(action)),
+            "positive_credit_mass": total(action, "positive_credit_mass"),
+            "negative_credit_mass": total(action, "negative_credit_mass"),
+            "mean_predicted_sid_count": total(action, "predicted_sid_unit_count") / len(action) if action else 0.0,
+            "mean_reward": total(action, "reward") / len(action) if action else 0.0,
+        },
+        "chain": {
+            "candidate_count": len(chain),
+            "negative_candidate_rate": ratio(sum(int(item.get("negative_unit_count", 0)) > 0 for item in chain), len(chain)),
+            "positive_credit_mass": total(chain, "positive_credit_mass"),
+            "negative_credit_mass": total(chain, "negative_credit_mass"),
+            "mean_predicted_event_count": total(chain, "predicted_event_count") / len(chain) if chain else 0.0,
+            "mean_reward": total(chain, "reward") / len(chain) if chain else 0.0,
+            "mean_action_alignment": total(chain, "full_action_alignment") / len(chain) if chain else 0.0,
+            "mean_logic_alignment": total(chain, "full_logic_alignment") / len(chain) if chain else 0.0,
+        },
+    }
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -101,7 +184,7 @@ def filter_rows(
 ) -> list[dict[str, Any]]:
     result = []
     for row in rows:
-        step = row.get("step")
+        step = row.get("step", row.get("prompt_step"))
         if from_step is not None and (step is None or step < from_step):
             continue
         if to_step is not None and (step is None or step > to_step):
@@ -138,20 +221,45 @@ def create_app(
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
 
+    def run_paths() -> list[Path]:
+        """Return monitor runs plus direct and one-level categorized User runs."""
+        if single_run is not None:
+            return [single_run]
+        candidates = [path for path in root.iterdir() if path.is_dir()] if root.exists() else []
+        if user_runs_root is not None and user_runs_root.is_dir():
+            try:
+                user_children = [path for path in user_runs_root.iterdir() if path.is_dir()]
+            except OSError:
+                user_children = []
+            candidates.extend(user_children)
+            for category in user_children:
+                if (category / "manifest.json").is_file():
+                    continue
+                try:
+                    candidates.extend(
+                        child for child in category.iterdir()
+                        if child.is_dir() and (child / "manifest.json").is_file()
+                    )
+                except OSError:
+                    continue
+        by_name: dict[str, Path] = {}
+        for candidate in candidates:
+            if (candidate / "manifest.json").is_file():
+                by_name.setdefault(candidate.name, candidate)
+        return list(by_name.values())
+
     def available_runs() -> list[dict[str, Any]]:
-        paths = [single_run] if single_run is not None else (
-            [path for path in root.iterdir() if path.is_dir()] if root.exists() else []
-        )
         runs = []
-        for path in paths:
+        for path in run_paths():
             if path is None:
                 continue
             try:
                 manifest = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 manifest = {}
+            mc_user = is_mc_user_manifest(manifest)
             metrics = read_jsonl(path / "metrics.jsonl")
-            latest = metrics[-1] if metrics else {}
+            latest = normalize_monitor_row(metrics[-1], mc_user=mc_user) if metrics else {}
             try:
                 updated_at = max(
                     candidate.stat().st_mtime
@@ -163,9 +271,14 @@ def create_app(
             runs.append({
                 "run_id": path.name,
                 "run_kind": normalized_run_kind(manifest),
+                "algorithm": normalized_algorithm(manifest),
+                "display_name": manifest.get("display_name", "MC_USER_v1" if mc_user else None),
                 "demo": bool(manifest.get("demo", False)),
                 "start_time": manifest.get("start_time"),
-                "max_steps": manifest.get("effective_max_steps", manifest.get("max_steps")),
+                "max_steps": manifest.get(
+                    "effective_max_steps",
+                    manifest.get("max_steps", manifest.get("config", {}).get("prompt_count") if mc_user else None),
+                ),
                 "latest_step": latest.get("step", 0),
                 "latest_route": latest.get("route"),
                 "updated_at": updated_at,
@@ -179,10 +292,10 @@ def create_app(
             return single_run
         if not run_id or Path(run_id).name != run_id or run_id in {".", ".."}:
             raise HTTPException(status_code=400, detail="a valid run_id is required")
-        candidate = (root / run_id).resolve()
-        if candidate.parent != root or not candidate.is_dir():
+        matches = [path for path in run_paths() if path.name == run_id]
+        if not matches:
             raise HTTPException(status_code=404, detail="unknown run_id")
-        return candidate
+        return matches[0]
 
     def source_rows(selected: Path, source_kind: str) -> dict[str, dict[str, Any]]:
         """Load a manifest-declared frozen dataset and expose only display fields."""
@@ -239,6 +352,9 @@ def create_app(
     def checkpoint_run_dirs(selected: Path) -> list[Path]:
         """Find approved adapter-output layouts without exposing arbitrary manifest paths."""
         candidates = []
+        local_checkpoints = selected / "checkpoints"
+        if local_checkpoints.is_dir():
+            candidates.append(local_checkpoints)
         if outputs_root is not None and outputs_root.is_dir():
             candidates.append(outputs_root / selected.name)
             try:
@@ -249,7 +365,9 @@ def create_app(
             try:
                 manifest = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
                 declared = Path(str(manifest["output_dir"])).expanduser().resolve()
-                if declared.parent == user_runs_root and declared.name == selected.name:
+                if declared.name == selected.name and (
+                    declared.parent == user_runs_root or user_runs_root in declared.parents
+                ):
                     candidates.append(declared)
             except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
                 pass
@@ -644,6 +762,12 @@ def create_app(
         try:
             data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
             data["run_kind"] = normalized_run_kind(data)
+            algorithm = normalized_algorithm(data)
+            if algorithm is not None:
+                data["algorithm"] = algorithm
+            if algorithm == MC_USER_ALGORITHM:
+                data.setdefault("display_name", "MC_USER_v1")
+                data.setdefault("max_steps", data.get("config", {}).get("prompt_count"))
             if "effective_max_steps" in data:
                 data["max_steps"] = data["effective_max_steps"]
             return data
@@ -670,8 +794,12 @@ def create_app(
             for output in checkpoint_run_dirs(selected)
             for path in output.iterdir()
         )
+        algorithm = normalized_algorithm(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
+            "algorithm": algorithm,
+            "mc_user": algorithm == MC_USER_ALGORITHM,
+            "dual_step": algorithm == MC_USER_ALGORITHM,
             "user_grpo": normalized_run_kind(manifest_data) == USER_RUN_KIND,
             "dsr": dsr,
             "probes": bool(
@@ -679,10 +807,16 @@ def create_app(
                 or (selected / "probes.jsonl").is_file()
             ),
             "checkpoints": checkpoint_available,
+            "rollouts": (selected / "rollouts.jsonl").is_file(),
         }
 
-    def queried(path: Path, from_step, to_step, route, rollout_id):
-        return filter_rows(read_jsonl(path), from_step, to_step, route, rollout_id)
+    def queried(selected: Path, path: Path, from_step, to_step, route, rollout_id):
+        manifest_data = read_json(selected / "manifest.json", {})
+        rows = [
+            normalize_monitor_row(row, mc_user=is_mc_user_manifest(manifest_data))
+            for row in read_jsonl(path)
+        ]
+        return filter_rows(rows, from_step, to_step, route, rollout_id)
 
     @app.get("/api/metrics")
     def metrics(
@@ -692,7 +826,8 @@ def create_app(
         route: str | None = None,
         rollout_id: int | None = None,
     ):
-        return queried(selected_run(run_id) / "metrics.jsonl", from_step, to_step, route, rollout_id)
+        selected = selected_run(run_id)
+        return queried(selected, selected / "metrics.jsonl", from_step, to_step, route, rollout_id)
 
     @app.get("/api/rollouts")
     def rollouts(
@@ -702,7 +837,28 @@ def create_app(
         route: str | None = None,
         rollout_id: int | None = None,
     ):
-        return queried(selected_run(run_id) / "rollouts.jsonl", from_step, to_step, route, rollout_id)
+        selected = selected_run(run_id)
+        return queried(selected, selected / "rollouts.jsonl", from_step, to_step, route, rollout_id)
+
+    @app.get("/api/mc-user/summary")
+    def mc_user_summary(run_id: str | None = None):
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if not is_mc_user_manifest(manifest_data):
+            return {"available": False, "algorithm": normalized_algorithm(manifest_data)}
+        return summarize_mc_metrics(read_jsonl(selected / "metrics.jsonl"))
+
+    @app.get("/api/user-light-probe")
+    def user_light_probe(run_id: str | None = None):
+        selected = selected_run(run_id)
+        result = read_json(selected / "evaluations" / "user_light_probe" / "results.json")
+        return {"available": False} if not isinstance(result, dict) else {"available": True, **result}
+
+    @app.get("/api/recommendation-guard")
+    def recommendation_guard(run_id: str | None = None):
+        selected = selected_run(run_id)
+        result = read_json(selected / "evaluations" / "recommendation_guard" / "results.json")
+        return {"available": False} if not isinstance(result, dict) else {"available": True, **result}
 
     @app.get("/api/sample-context")
     def sample_context(sample_id: str, run_id: str | None = None):
@@ -806,8 +962,10 @@ def create_app(
         return rows
 
     def dsr_rows(filename, run_id, from_step, to_step, route, rollout_id):
+        selected = selected_run(run_id)
         return queried(
-            selected_run(run_id) / filename,
+            selected,
+            selected / filename,
             from_step,
             to_step,
             route,

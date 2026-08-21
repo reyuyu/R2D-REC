@@ -22,6 +22,7 @@
 
   state.allRuns = [];
   state.activeKind = RECOMMENDATION;
+  state.mcSummary = {available: false};
   const userSampleContextCache = new Map();
   let userRefreshInFlight = false;
   const monitorScrollableSelectors = [
@@ -69,6 +70,10 @@
     return state.activeKind === USER || state.manifest.run_kind === USER || state.capabilities.user_grpo === true;
   }
 
+  function isMcRun() {
+    return state.manifest.algorithm === 'mc_user_v1' || state.capabilities.mc_user === true;
+  }
+
   function buildUserShell() {
     document.querySelector('.experiment-bar').insertAdjacentHTML('beforebegin', `
       <section class="run-kind-switcher" aria-label="GRPO 任务类型">
@@ -92,7 +97,8 @@
       <main id="userOverview" class="view"><div class="wrap">
         <div class="user-callout demo" id="userDemoNotice" hidden>当前为合成 UI 演示数据，不代表真实训练结果。</div>
         <section class="status user-status">
-          <div class="stat"><div class="label">训练步数</div><div class="value" id="uStep">-</div></div>
+          <div class="stat"><div class="label" id="uStepLabel">训练步数</div><div class="value" id="uStep">-</div></div>
+          <div class="stat" id="uOptimizerStat" hidden><div class="label">Optimizer Step</div><div class="value" id="uOptimizerStep">-</div></div>
           <div class="stat"><div class="label">当前路由</div><div class="value" id="uRoute">-</div></div>
           <div class="stat"><div class="label">总体进度</div><div class="value" id="uProgress">-</div></div>
           <div class="stat"><div class="label">Loss</div><div class="value" id="uLoss">-</div></div>
@@ -166,20 +172,56 @@
     return rows.filter(row => row[field]?.[key] != null).map(row => [row.step, Number(row[field][key])]);
   }
 
+  function mcCandidateMean(row, key) {
+    const values = (row.candidates || []).filter(candidate => candidate[key] != null).map(candidate => Number(candidate[key]));
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  }
+
+  function mcCandidatePoints(rows, key) {
+    return rows.map(row => [Number(row.prompt_step ?? row.step), mcCandidateMean(row, key)]).filter(([, value]) => value != null);
+  }
+
+  function setMcLegacyPanelsHidden(hidden) {
+    ['userAdvantageChart', 'userMaskChart', 'userPolicyChart', 'userVarianceChart'].forEach(id => $(id)?.closest('.panel')?.toggleAttribute('hidden', hidden));
+  }
+
   function renderUserOverview() {
     const current = state.metrics.at(-1) || {};
     const action = latestRoute('action');
     const chain = latestRoute('chain');
-    const max = Number(state.manifest.max_steps || 0);
-    const progress = max ? Math.min(100, 100 * Number(current.step || 0) / max) : 0;
-    setText('uStep', `${current.step ?? 0} / ${max || '-'}`);
+    const mc = isMcRun();
+    const max = Number(state.manifest.max_steps || state.manifest.config?.prompt_count || 0);
+    const promptStep = Number(current.prompt_step ?? current.step ?? 0);
+    const progress = max ? Math.min(100, 100 * promptStep / max) : 0;
+    setText('uStepLabel', mc ? 'Prompt Step' : '训练步数');
+    $('uOptimizerStat').hidden = !mc;
+    setText('uOptimizerStep', current.optimizer_step ?? 0);
+    setText('uStep', `${promptStep} / ${max || '-'}`);
     setText('uRoute', routeName(current.route));
     setText('uProgress', max ? `${progress.toFixed(1)}%` : '-');
     setText('uLoss', fmt(current.loss));
     setText('uGrad', fmt(current.grad_norm));
-    setText('uLr', current.learning_rate == null ? '-' : Number(current.learning_rate).toExponential(2));
+    const learningRate = current.learning_rate ?? state.manifest.config?.learning_rate;
+    setText('uLr', learningRate == null ? '-' : Number(learningRate).toExponential(2));
     $('uProgressFill').style.width = `${progress}%`;
     $('userDemoNotice').hidden = !state.manifest.demo;
+    if (mc) {
+      const summary = state.mcSummary || {};
+      metricCards('userOverviewCards', [
+        ['Valid candidates', pct(summary.valid_candidate_rate)], ['No-credit prompts', pct(summary.no_credit_prompt_rate)],
+        ['Projection required', pct(summary.projection_required_rate)], ['Overlap candidates', pct(summary.overlap_candidate_rate)],
+        ['Active units', String(current.active_unit_count ?? '-')], ['Active tokens', String(current.active_token_count ?? '-')],
+        ['Token assignments', String(current.active_token_assignment_count ?? '-')], ['Optimizer updates', String(summary.optimizer_update_count ?? current.optimizer_step ?? '-')],
+      ]);
+      setMcLegacyPanelsHidden(true);
+      draw('userLossChart', [{data: points(state.metrics, 'loss'), color: colors[3]}, {data: points(state.metrics, 'grad_norm'), color: colors[0]}]);
+      draw('userRewardChart', [
+        {data: mcCandidatePoints(state.metrics.filter(row => row.route === 'action'), 'reward'), color: colors[0]},
+        {data: mcCandidatePoints(state.metrics.filter(row => row.route === 'chain'), 'reward'), color: colors[3]},
+      ]);
+      return;
+    }
+    setMcLegacyPanelsHidden(false);
     metricCards('userOverviewCards', [
       ['Ratio mean', fmt(current.ratio_mean)], ['Clip fraction', pct(current.clip_fraction)],
       ['Task reward std', fmt(current.task_reward_std)], ['Zero-std ratio', pct(current.zero_std_ratio)],
@@ -202,6 +244,22 @@
   function renderUserAction() {
     const rows = state.metrics.filter(row => row.route === 'action');
     const row = rows.at(-1) || {};
+    if (isMcRun()) {
+      const summary = state.mcSummary?.action || {};
+      metricCards('userActionCards', [
+        ['Mean F1 reward', fmt(summary.mean_reward)], ['Negative candidates', pct(summary.negative_candidate_rate)],
+        ['Positive credit mass', fmt(summary.positive_credit_mass)], ['Negative credit mass', fmt(summary.negative_credit_mass)],
+        ['Mean predicted SID', fmt(summary.mean_predicted_sid_count, 1)], ['Latest active units', String(row.active_unit_count ?? '-')],
+      ]);
+      $('userActionScoreChart').closest('.panel').querySelector('h2').textContent = 'Candidate F1 Reward';
+      $('userActionScoreChart').closest('.panel').querySelector('.legend').innerHTML = '<span class="key" style="--c:#16835f">Mean F1 reward</span>';
+      draw('userActionScoreChart', [{data: mcCandidatePoints(rows, 'reward'), color: colors[1]}]);
+      ['userActionExactChart', 'userWrongSelectionChart', 'userActionConstraintChart'].forEach(id => $(id)?.closest('.panel')?.toggleAttribute('hidden', true));
+      return;
+    }
+    $('userActionScoreChart').closest('.panel').querySelector('h2').textContent = 'F1 / Precision / Recall';
+    $('userActionScoreChart').closest('.panel').querySelector('.legend').innerHTML = '<span class="key" style="--c:#16835f">F1</span><span class="key" style="--c:#2d6cdf">Precision</span><span class="key" style="--c:#b36b08">Recall</span>';
+    ['userActionExactChart', 'userWrongSelectionChart', 'userActionConstraintChart'].forEach(id => $(id)?.closest('.panel')?.removeAttribute('hidden'));
     metricCards('userActionCards', [
       ['F1', fmt(row.f1_mean)], ['Precision', fmt(row.precision_mean)], ['Recall', fmt(row.recall_mean)],
       ['Exact Match', fmt(row.exact_match_rate)], ['Wrong selection', pct(row.wrong_selection_candidate_rate)],
@@ -217,6 +275,23 @@
     const rows = state.metrics.filter(row => row.route === 'chain');
     const row = rows.at(-1) || {};
     const counts = row.violation_counts || {};
+    if (isMcRun()) {
+      const summary = state.mcSummary?.chain || {};
+      metricCards('userChainCards', [
+        ['Mean total reward', fmt(summary.mean_reward)], ['Mean Action Alignment', fmt(summary.mean_action_alignment)],
+        ['Mean Logic Alignment', fmt(summary.mean_logic_alignment)], ['Negative candidates', pct(summary.negative_candidate_rate)],
+        ['Positive credit mass', fmt(summary.positive_credit_mass)], ['Negative credit mass', fmt(summary.negative_credit_mass)],
+        ['Mean predicted events', fmt(summary.mean_predicted_event_count, 1)], ['Latest active units', String(row.active_unit_count ?? '-')],
+      ]);
+      draw('userChainScoreChart', [
+        {data: mcCandidatePoints(rows, 'reward'), color: colors[1]},
+        {data: mcCandidatePoints(rows, 'full_action_alignment'), color: colors[0]},
+        {data: mcCandidatePoints(rows, 'full_logic_alignment'), color: colors[4]},
+      ]);
+      ['userChainMismatchChart', 'userChainConstraintChart', 'userGroundingChart'].forEach(id => $(id)?.closest('.panel')?.toggleAttribute('hidden', true));
+      return;
+    }
+    ['userChainMismatchChart', 'userChainConstraintChart', 'userGroundingChart'].forEach(id => $(id)?.closest('.panel')?.removeAttribute('hidden'));
     metricCards('userChainCards', [
       ['Total Reward', fmt(row.total_reward_mean)], ['Action Alignment', fmt(row.action_alignment_mean)],
       ['Logic Alignment', fmt(row.logic_alignment_mean)], ['Date mismatch', counts.date_mismatch == null ? '-' : String(counts.date_mismatch)],
@@ -455,20 +530,29 @@
 
   function configureNavigation() {
     const user = isUserRun();
+    const mc = isMcRun();
     document.body.classList.toggle('user-mode', user);
     document.querySelectorAll('.tab[data-kind="recommendation"]').forEach(tab => tab.hidden = user || (tab.id === 'dsrTab' && !state.capabilities.dsr));
     document.querySelectorAll('.tab[data-kind="user"]').forEach(tab => tab.hidden = !user);
     const explorerTab = document.querySelector('.tab[data-view="explorer"]');
     explorerTab.textContent = user ? 'Rollout 样本' : '采样检视';
-    $('runKind').textContent = user ? '懂用户 GRPO' : (state.capabilities.dsr ? 'DSR 实验' : '懂推荐 GRPO');
+    $('runKind').textContent = mc ? 'MC_USER_v1' : (user ? '懂用户 GRPO' : (state.capabilities.dsr ? 'DSR 实验' : '懂推荐 GRPO'));
     $('runKind').classList.toggle('user', user);
     $('runKind').classList.toggle('dsr', !user && Boolean(state.capabilities.dsr));
-    $('kindContext').textContent = user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验';
+    $('kindContext').textContent = mc ? 'Action / Chain · K2 · Marginal Credit' : (user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验');
+    document.querySelector('#userAction .user-section-head p').textContent = mc
+      ? '候选 SID 的正负 credit 仅由删除该 SID 后的 Action F1 边际变化决定'
+      : 'wrong selection 由主 F1 处理；hallucination / duplicate 同时具有局部 token penalty';
+    document.querySelector('#userChain .user-section-head p').textContent = mc
+      ? '候选 event 的 credit 由重新计算后的 Action / Logic Alignment 边际变化决定'
+      : '同时观察 Action Alignment、Logic Alignment 与局部 grounding/constraint 信号';
+    const tokenTab = document.querySelector('.tab[data-view="userToken"]');
+    if (tokenTab) tokenTab.hidden = !user || mc;
     const demo = Boolean(state.manifest.demo);
     if (demo && !$('demoChip')) $('experimentMeta').insertAdjacentHTML('afterend', '<span class="demo-chip" id="demoChip">DEMO</span>');
     $('demoChip')?.toggleAttribute('hidden', !demo);
     const active = document.querySelector('.view.active')?.id;
-    if (user && !['userOverview', 'userAction', 'userChain', 'userToken', 'userProbe', 'explorer'].includes(active)) activateView('userOverview');
+    if (user && (!['userOverview', 'userAction', 'userChain', 'userToken', 'userProbe', 'explorer'].includes(active) || (mc && active === 'userToken'))) activateView('userOverview');
     if (!user && ['userOverview', 'userAction', 'userChain', 'userToken', 'userProbe'].includes(active)) activateView('overview');
     if (user) {
       $('routeSelect').innerHTML = '<option value="">全部</option><option value="action">Action</option><option value="chain">Chain</option>';
@@ -557,13 +641,13 @@
     try {
       if (!state.activeRun && !(await loadRuns())) { setLiveState('stale', '等待实验数据'); return; }
       const requestedRun = state.activeRun;
-      const endpoints = ['/api/manifest', '/api/capabilities', '/api/metrics', '/api/rollouts', '/api/ranks', '/api/traces', '/api/checkpoints', '/api/probes', '/api/dsr/metrics', '/api/dsr/steps', '/api/dsr/traces', '/api/dsr/gate'];
+      const endpoints = ['/api/manifest', '/api/capabilities', '/api/metrics', '/api/rollouts', '/api/ranks', '/api/traces', '/api/checkpoints', '/api/probes', '/api/dsr/metrics', '/api/dsr/steps', '/api/dsr/traces', '/api/dsr/gate', '/api/mc-user/summary', '/api/user-light-probe', '/api/recommendation-guard'];
       const responses = await Promise.all(endpoints.map(url => fetch(apiUrl(url), {cache: 'no-store'})));
       if (responses.some(response => !response.ok)) throw new Error('接口返回异常状态');
-      const [manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate] = await Promise.all(responses.map(response => response.json()));
+      const [manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard] = await Promise.all(responses.map(response => response.json()));
       if (requestedRun !== state.activeRun) return;
       scrollState = captureMonitorScrollState();
-      Object.assign(state, {manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate});
+      Object.assign(state, {manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard});
       if (typeof mergeDsrCandidateTraces === 'function') mergeDsrCandidateTraces();
       state.activeKind = manifest.run_kind === USER ? USER : RECOMMENDATION;
       state.runs = state.allRuns.filter(run => run.run_kind === state.activeKind);
@@ -574,7 +658,7 @@
       renderExperimentList();
       renderCheckpoints();
       configureNavigation();
-      if (autoRefresh) setLiveState('', `实时 · ${new Date(lastSuccessAt).toLocaleTimeString()}`);
+      if (autoRefresh) setLiveState('', `实时 · ${isMcRun() ? `Prompt ${metrics.at(-1)?.prompt_step ?? 0} · Optimizer ${metrics.at(-1)?.optimizer_step ?? 0}` : `step ${metrics.at(-1)?.step ?? '-'}`} · ${new Date(lastSuccessAt).toLocaleTimeString()}`);
       $('error').style.display = 'none';
       if (isUserRun()) {
         renderUserOverview(); renderUserAction(); renderUserChain(); renderUserToken(); renderUserProbe(); renderExplorerOptions();

@@ -153,10 +153,16 @@ def build_manifest(
     return {
         "status": "READY_TO_EXECUTE",
         "run_id": run_id,
+        "run_kind": "user_grpo",
+        "algorithm": "mc_user_v1",
+        "display_name": "MC_USER_v1",
         "base_model": str(args.base_model),
         "adapter": str(args.adapter),
         "train_data": str(args.train_data),
         "train_sha256": TRAIN_SHA256,
+        "dataset": str(args.train_data),
+        "dataset_sha": {Path(args.train_data).name: TRAIN_SHA256},
+        "dataset_sha256": TRAIN_SHA256,
         "selection_method": "sha256(seed:sample_id), then sample_id",
         "excluded_smoke_sample_ids": sorted(excluded),
         "config": pilot_config(),
@@ -346,6 +352,66 @@ def candidate_record(
     return record
 
 
+def display_credit_unit(unit: Mapping[str, Any], unit_index: int, route: str) -> dict[str, Any]:
+    """Copy already-computed credit data into the display-only rollout contract."""
+    record = {
+        "unit_index": unit_index,
+        "delta": float(unit["delta"]),
+        "credit_type": str(unit["credit_type"]),
+        "generated_token_indices": [int(index) for index in unit["generated_token_indices"]],
+    }
+    for key in ("char_start", "char_end"):
+        if unit.get(key) is not None:
+            record[key] = int(unit[key])
+    if route == "action":
+        record.update({"sid": str(unit["sid"]), "occurrence_index": int(unit["occurrence"])})
+    else:
+        record.update(
+            {
+                "event_index": int(unit["event_index"]),
+                "delta_action": float(unit["delta_action_alignment"]),
+                "delta_logic": float(unit["delta_logic_alignment"]),
+            }
+        )
+    return record
+
+
+def display_rollout_records(
+    *,
+    prompt_step: int,
+    optimizer_step: int,
+    route: str,
+    sample_id: str,
+    candidates: Sequence[Mapping[str, Any]],
+    units_per_candidate: Sequence[Sequence[Mapping[str, Any]]],
+) -> list[dict[str, Any]]:
+    records = []
+    for candidate, units in zip(candidates, units_per_candidate, strict=True):
+        records.append(
+            {
+                "prompt_step": prompt_step,
+                "optimizer_step": optimizer_step,
+                "route": route,
+                "sample_id": sample_id,
+                "candidate_index": int(candidate["candidate_index"]),
+                "completion": str(candidate["completion"]),
+                "generated_token_count": int(candidate["generated_token_count"]),
+                "format_valid": bool(candidate["format_valid"]),
+                "full_reward": float(candidate["full_reward"]),
+                "projection_required": bool(candidate["projection_required"]),
+                "credit_units": [
+                    display_credit_unit(unit, unit_index, route)
+                    for unit_index, unit in enumerate(units)
+                ],
+                "overlap_token_count": int(candidate["overlap_token_count"]),
+                "same_sign_overlap_token_count": int(candidate["same_sign_overlap_token_count"]),
+                "mixed_sign_overlap_token_count": int(candidate["mixed_sign_overlap_token_count"]),
+                "max_active_units_per_token": int(candidate["max_active_units_per_token"]),
+            }
+        )
+    return records
+
+
 def validate_prompt_metric(record: Mapping[str, Any]) -> None:
     required = {
         "prompt_step", "optimizer_step", "route", "sample_id", "candidates",
@@ -511,9 +577,12 @@ def execute_pilot(
     )
     run_dir = Path(preflight["run_dir"])
     metrics_path = run_dir / "metrics.jsonl"
+    rollouts_path = run_dir / "rollouts.jsonl"
     started = time.perf_counter()
+    display_optimizer_step = 0
 
     def process_prompt(row: Mapping[str, Any], persistent_optimizer: torch.optim.Optimizer, prompt_step: int) -> Mapping[str, Any]:
+        nonlocal display_optimizer_step
         if file_sha256(args.train_data) != TRAIN_SHA256:
             raise MCPilotError("frozen train_3000 SHA changed during pilot")
         assert_only_lora_trainable(model)
@@ -566,6 +635,17 @@ def execute_pilot(
         if not bool(update["finite"]) or not math.isfinite(float(update["loss"])) or not math.isfinite(float(update["grad_norm"])):
             raise MCPilotError("non-finite pilot loss or gradient")
         metadata = update["objective_metadata"]
+        if bool(update["optimizer_step_performed"]):
+            display_optimizer_step += 1
+        for display_record in display_rollout_records(
+            prompt_step=prompt_step,
+            optimizer_step=display_optimizer_step,
+            route=route,
+            sample_id=str(row["sample_id"]),
+            candidates=scored["candidates"],
+            units_per_candidate=units,
+        ):
+            _append_jsonl(rollouts_path, display_record)
         return {
             "route": route,
             "sample_id": row["sample_id"],
