@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from checkpoint_eval import build_cohort, load_validation_pool, route_prompt, wilson_interval
 from monitor.generate_demo_run import generate
 from monitor.generate_user_demo_run import generate as generate_user
 from monitor.server import create_app, read_jsonl
@@ -59,6 +60,40 @@ with tempfile.TemporaryDirectory() as temporary:
         handle.write('\n{"type":"step","step":4}\n')
     assert [row["step"] for row in read_jsonl(metrics_path)] == [1, 2, 4]
     print("[PASS] concurrent partial append cannot break JSONL reads")
+
+    eval_validation = root / "eval-validation.jsonl"
+    eval_train = root / "eval-train.jsonl"
+    eval_leakage = root / "eval-leakage.json"
+    validation_rows = []
+    for index, domain in enumerate(("video", "prod", "ad", "living")):
+        group_id = hashlib.sha256(f"validation-{index}".encode()).hexdigest()
+        sid = f"<|{domain}_begin|><s_a_{index + 1}><s_b_2><s_c_3>"
+        validation_rows.append({
+            "instruction": f"旧提示\n历史 {index}/{domain}/think", "input": "",
+            "source_segment": "recommendation_cot",
+            "aux_metadata_json": json.dumps({
+                "recommendation_group_id": group_id,
+                "recommendation_all_gold_sids": [sid],
+            }, ensure_ascii=False),
+        })
+    eval_validation.write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in validation_rows) + "\n", encoding="utf-8")
+    eval_train.write_text(json.dumps({"recommendation_group_id": hashlib.sha256(b"train").hexdigest()}) + "\n", encoding="utf-8")
+    eval_leakage.write_text(json.dumps({
+        "validation_safe": True,
+        "dev": {
+            "recommendation_group_id_overlap": 0,
+            "recommendation_history_domain_overlap": 0,
+            "exact_full_row_overlap": 0,
+            "canonical_prompt_overlap": 0,
+        },
+    }), encoding="utf-8")
+    eval_pool = load_validation_pool(eval_validation, eval_leakage, eval_train)
+    assert len(eval_pool) == 4 and len(build_cohort(eval_pool, 4, 20260822)) == 4
+    assert route_prompt(eval_pool[0]["base_prompt"], eval_pool[0]["domain"], "think").endswith("/think")
+    assert wilson_interval(3, 4)[0] < 0.75 < wilson_interval(3, 4)[1]
+    evaluator_source = (Path(__file__).parent.parent / "checkpoint_eval.py").read_text(encoding="utf-8")
+    assert "optimizer.step" not in evaluator_source and "scheduler.step" not in evaluator_source
+    print("[PASS] frozen disjoint cohort, route prompts, Wilson interval, and inference-only evaluator")
 
     app = create_app(rank0.run_dir)
     client = TestClient(app)
@@ -231,12 +266,24 @@ with tempfile.TemporaryDirectory() as temporary:
         "Token Credit", "查看完整优势详情", "优势载入中", "复算"
     ))
     assert all(label in html for label in (
+        "function rolloutKey(row)", "function selectedExplorerRollout()",
+        "function selectedExplorerTrace()", "data-rollout-key", "data-trace-key",
+        "from_step=${encodeURIComponent(trace.step)}", "to_step=${encodeURIComponent(trace.step)}",
+        "Number(item.step)===Number(trace.step)", "rollouts:['step','rollout_id','route']",
+        "traces:['step','rollout_id','route','group_id']",
+    ))
+    assert all(label in html for label in (
         "历史实验奖励对比", "历史实验 1", "历史实验 2", "清空对比",
         "updateRewardComparison", "historicalMetricCache", "当前粗实线，历史细虚线"
     ))
     assert all(label in html for label in (
         "放大查看", "原始曲线（保留尖峰）", "attachChartControls",
         "chart-smoothing-control", "下方均为原始采样值", "最近 100", "最近 200"
+    ))
+    assert all(label in html for label in (
+        "Checkpoint 验证", "冻结验证集上的 Checkpoint 横向评测", "启动 4 卡验证",
+        "思考路线 Hit@32", "直答路线 Hit@32", "95% CI", "function renderCheckpointEval()",
+        "/api/checkpoint-eval/catalog", "/api/checkpoint-eval/jobs",
     ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
