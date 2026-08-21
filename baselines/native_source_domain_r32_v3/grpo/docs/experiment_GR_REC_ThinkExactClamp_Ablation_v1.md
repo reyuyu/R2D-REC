@@ -84,6 +84,15 @@ Think Exact-Clamp, NoThink hierarchical credit, bridge lambda, reward, loss,
 route multiplier, and all hierarchy coefficients remain unchanged. This is a
 continuation of the same experiment, not a fresh run or a new ablation.
 
+The developer image currently combines PyTorch `2.5.1` with Transformers
+`5.6`, whose generic security guard rejects every `optimizer.pt` restore on
+PyTorch below `2.6`. The runner therefore permits that load only after the
+resume path resolves to this exact run directory, the locally generated
+adapter/optimizer/scheduler/trainer-state files are present, and the
+checkpoint directory step equals `trainer_state.json.global_step`. This
+compatibility gate restores the existing optimizer and scheduler; it does not
+change model, objective, or training math.
+
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
   A-collapse A+B teacher branches.

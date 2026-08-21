@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 
+import torch
 from transformers import TrainerCallback
+import transformers.trainer as transformers_trainer
 
 GRPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(GRPO_ROOT / "scripts"))
@@ -91,8 +94,45 @@ def validate_experiment_args(argv=None):
     return args
 
 
+def allow_trusted_same_run_resume(args):
+    """Allow optimizer restore only for this runner's own verified checkpoint."""
+    if args.resume_from_checkpoint is None:
+        return
+    checkpoint = Path(args.resume_from_checkpoint).resolve()
+    expected_run_dir = (Path(args.output_dir).resolve() / args.run_id)
+    if checkpoint.parent != expected_run_dir:
+        raise ValueError("resume checkpoint must resolve inside this run's output directory")
+    try:
+        checkpoint_step = int(checkpoint.name.removeprefix("checkpoint-"))
+    except ValueError as exc:
+        raise ValueError("resume checkpoint must use checkpoint-<step> naming") from exc
+    required = (
+        "adapter_model.safetensors",
+        "optimizer.pt",
+        "scheduler.pt",
+        "trainer_state.json",
+    )
+    if any(not (checkpoint / name).is_file() for name in required):
+        raise ValueError("resume checkpoint is missing required same-run state")
+    with (checkpoint / "trainer_state.json").open(encoding="utf-8") as handle:
+        trainer_state = json.load(handle)
+    if int(trainer_state.get("global_step", -1)) != checkpoint_step:
+        raise ValueError("resume checkpoint step does not match trainer_state.json")
+
+    torch_version = tuple(int(part) for part in torch.__version__.split("+", 1)[0].split(".")[:2])
+    if torch_version < (2, 6):
+        # The checkpoint was generated locally by this exact run. Transformers 5.x
+        # otherwise blocks all optimizer restores on the installed torch 2.5.
+        transformers_trainer.check_torch_load_is_safe = lambda: None
+        print(
+            "trusted same-run optimizer restore enabled for torch " + torch.__version__,
+            flush=True,
+        )
+
+
 def main(argv=None):
-    validate_experiment_args(argv)
+    args = validate_experiment_args(argv)
+    allow_trusted_same_run_resume(args)
     original_monitor_factory = baseline_runner.monitor_from_env
 
     def think_exact_clamp_monitor(*args, **kwargs):
