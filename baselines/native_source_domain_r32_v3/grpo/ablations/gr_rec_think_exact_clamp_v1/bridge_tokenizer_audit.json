@@ -1,0 +1,32 @@
+{
+  "audit": "NoThink bridge tokenizer-only single-token contract",
+  "model_weights_loaded": false,
+  "tokenizer_path": "/data/models/onereason-8b-pretrain-competition",
+  "domains_checked": [
+    "<|video_begin|>",
+    "<|prod_begin|>",
+    "<|ad_begin|>",
+    "<|living_begin|>"
+  ],
+  "hierarchy": {
+    "a": {
+      "count": 8192,
+      "minimum": 0,
+      "maximum": 8191
+    },
+    "b": {
+      "count": 8192,
+      "minimum": 0,
+      "maximum": 8191
+    },
+    "c": {
+      "count": 8192,
+      "minimum": 0,
+      "maximum": 8191
+    }
+  },
+  "failure_count": 0,
+  "failures": [],
+  "status": "PASS",
+  "runtime_contract": "Every concrete domain/A/B/C token is revalidated before use."
+}

@@ -1,0 +1,397 @@
+{
+  "metadata": {
+    "route": "think_only",
+    "group_count": 1596,
+    "candidate_count": 6384,
+    "advantage_mass_proxy": "sum(abs(advantage)); proxy only, not gradient norm",
+    "sources": {
+      "GR_REC_v1_probe": "fixed Probe rewards, not full training coverage",
+      "DSR_Simple_training": "full simple_forensic Think primary rewards"
+    }
+  },
+  "reward_levels": {
+    "0": {
+      "candidate_count": 1706,
+      "current": {
+        "mean_positive_advantage": null,
+        "mean_abs_advantage": 0.352148254759633,
+        "total_abs_advantage": 600.7649226199339,
+        "share_of_total_abs_advantage": 0.18738583292045946,
+        "positive_rate": 0.0,
+        "negative_rate": 0.3716295427901524,
+        "zero_rate": 0.6283704572098476
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": null,
+        "mean_abs_advantage": 0.06145445990254982,
+        "total_abs_advantage": 104.84130859375,
+        "share_of_total_abs_advantage": 0.20061309817501594,
+        "positive_rate": 0.0,
+        "negative_rate": 0.3716295427901524,
+        "zero_rate": 0.6283704572098476
+      }
+    },
+    "0.5": {
+      "candidate_count": 1098,
+      "current": {
+        "mean_positive_advantage": 0.9159598012859641,
+        "mean_abs_advantage": 0.49247638219910583,
+        "total_abs_advantage": 540.7390676546182,
+        "share_of_total_abs_advantage": 0.16866304401263524,
+        "positive_rate": 0.2777777777777778,
+        "negative_rate": 0.25318761384335153,
+        "zero_rate": 0.4690346083788707
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": 0.02648565573770492,
+        "mean_abs_advantage": 0.05896062798838798,
+        "total_abs_advantage": 64.73876953125,
+        "share_of_total_abs_advantage": 0.1238771749599911,
+        "positive_rate": 0.2777777777777778,
+        "negative_rate": 0.25318761384335153,
+        "zero_rate": 0.4690346083788707
+      }
+    },
+    "2": {
+      "candidate_count": 391,
+      "current": {
+        "mean_positive_advantage": 0.8917509311738102,
+        "mean_abs_advantage": 0.42672307443569607,
+        "total_abs_advantage": 166.84872210435717,
+        "share_of_total_abs_advantage": 0.05204213093349775,
+        "positive_rate": 0.2506393861892583,
+        "negative_rate": 0.24808184143222506,
+        "zero_rate": 0.5012787723785166
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": 0.0911391900510204,
+        "mean_abs_advantage": 0.06279471707161126,
+        "total_abs_advantage": 24.552734375,
+        "share_of_total_abs_advantage": 0.046981482563549365,
+        "positive_rate": 0.2506393861892583,
+        "negative_rate": 0.24808184143222506,
+        "zero_rate": 0.5012787723785166
+      }
+    },
+    "8": {
+      "candidate_count": 607,
+      "current": {
+        "mean_positive_advantage": 0.9026645887155285,
+        "mean_abs_advantage": 0.42943433225639277,
+        "total_abs_advantage": 260.6666396796304,
+        "share_of_total_abs_advantage": 0.0813050721702108,
+        "positive_rate": 0.3311367380560132,
+        "negative_rate": 0.14991762767710048,
+        "zero_rate": 0.5189456342668863
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": 0.38516402363184077,
+        "mean_abs_advantage": 0.12754195840197693,
+        "total_abs_advantage": 77.41796875,
+        "share_of_total_abs_advantage": 0.1481387324678999,
+        "positive_rate": 0.3311367380560132,
+        "negative_rate": 0.0,
+        "zero_rate": 0.6688632619439868
+      }
+    },
+    ">8": {
+      "candidate_count": 1323,
+      "current": {
+        "mean_positive_advantage": 0.8751011155269042,
+        "mean_abs_advantage": 0.6286338310798028,
+        "total_abs_advantage": 831.6825585185791,
+        "share_of_total_abs_advantage": 0.2594118316258893,
+        "positive_rate": 0.5170068027210885,
+        "negative_rate": 0.20483749055177627,
+        "zero_rate": 0.2781557067271353
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": 0.2321697201645165,
+        "mean_abs_advantage": 0.1200333247109065,
+        "total_abs_advantage": 158.8040885925293,
+        "share_of_total_abs_advantage": 0.3038704938227583,
+        "positive_rate": 0.5170068027210885,
+        "negative_rate": 0.0,
+        "zero_rate": 0.48299319727891155
+      }
+    },
+    "other": {
+      "candidate_count": 1259,
+      "current": {
+        "mean_positive_advantage": 0.8723743398217659,
+        "mean_abs_advantage": 0.6396583009335949,
+        "total_abs_advantage": 805.329800875396,
+        "share_of_total_abs_advantage": 0.2511920883373103,
+        "positive_rate": 0.41540905480540113,
+        "negative_rate": 0.31056393963463064,
+        "zero_rate": 0.27402700555996823
+      },
+      "think_exact_clamp": {
+        "mean_positive_advantage": 0.04281937141491396,
+        "mean_abs_advantage": 0.07327214756875497,
+        "total_abs_advantage": 92.2496337890625,
+        "share_of_total_abs_advantage": 0.17651901801078537,
+        "positive_rate": 0.41540905480540113,
+        "negative_rate": 0.31056393963463064,
+        "zero_rate": 0.27402700555996823
+      }
+    }
+  },
+  "patterns": {
+    "AB_SIGNAL": {
+      "group_count": 127,
+      "current": {
+        "mean_group_abs_sum": 2.2205622148260877,
+        "total_abs_sum": 282.01140128291314
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.18580831692913385,
+        "total_abs_sum": 23.59765625
+      }
+    },
+    "ALL_ZERO": {
+      "group_count": 268,
+      "current": {
+        "mean_group_abs_sum": 0.0,
+        "total_abs_sum": 0.0
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.0,
+        "total_abs_sum": 0.0
+      }
+    },
+    "A_ONLY": {
+      "group_count": 369,
+      "current": {
+        "mean_group_abs_sum": 2.3492389889979224,
+        "total_abs_sum": 866.8691869402334
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.07808000931571815,
+        "total_abs_sum": 28.8115234375
+      }
+    },
+    "EXACT_SATURATED": {
+      "group_count": 78,
+      "current": {
+        "mean_group_abs_sum": 0.0,
+        "total_abs_sum": 0.0
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.0,
+        "total_abs_sum": 0.0
+      }
+    },
+    "MIXED_HIGH": {
+      "group_count": 403,
+      "current": {
+        "mean_group_abs_sum": 2.7441745220409413,
+        "total_abs_sum": 1105.9023323824993
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.7139883774977464,
+        "total_abs_sum": 287.7373161315918
+      }
+    },
+    "MULTI_EXACT": {
+      "group_count": 88,
+      "current": {
+        "mean_group_abs_sum": 3.670843977655767,
+        "total_abs_sum": 323.0342700337075
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 1.1808860085227273,
+        "total_abs_sum": 103.91796875
+      }
+    },
+    "OTHER": {
+      "group_count": 225,
+      "current": {
+        "mean_group_abs_sum": 2.2095183667774276,
+        "total_abs_sum": 497.14163252492125
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 0.11733072916666666,
+        "total_abs_sum": 26.3994140625
+      }
+    },
+    "SINGLE_EXACT": {
+      "group_count": 38,
+      "current": {
+        "mean_group_abs_sum": 3.449286533901056,
+        "total_abs_sum": 131.07288828824014
+      },
+      "think_exact_clamp": {
+        "mean_group_abs_sum": 1.3721217105263157,
+        "total_abs_sum": 52.140625
+      }
+    }
+  },
+  "bias": {
+    "domain": {
+      "ad": {
+        "candidate_count": 1756,
+        "current": {
+          "mean_positive_advantage": 0.8669798600175859,
+          "mean_abs_advantage": 0.39596688367545624,
+          "total_abs_advantage": 695.3178477341012,
+          "share_of_total_abs_advantage": 0.21687803188293625,
+          "positive_rate": 0.22835990888382687,
+          "negative_rate": 0.21469248291571755,
+          "zero_rate": 0.5569476082004556
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.1702019365648379,
+          "mean_abs_advantage": 0.07422431128986333,
+          "total_abs_advantage": 130.337890625,
+          "share_of_total_abs_advantage": 0.249400626514465,
+          "positive_rate": 0.22835990888382687,
+          "negative_rate": 0.1725512528473804,
+          "zero_rate": 0.5990888382687927
+        }
+      },
+      "living": {
+        "candidate_count": 808,
+        "current": {
+          "mean_positive_advantage": 0.9461167569453537,
+          "mean_abs_advantage": 0.38640907152471154,
+          "total_abs_advantage": 312.21852979196694,
+          "share_of_total_abs_advantage": 0.09738472912687289,
+          "positive_rate": 0.2042079207920792,
+          "negative_rate": 0.22153465346534654,
+          "zero_rate": 0.5742574257425742
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.1621212121212121,
+          "mean_abs_advantage": 0.06558680770420793,
+          "total_abs_advantage": 52.994140625,
+          "share_of_total_abs_advantage": 0.10140391109671346,
+          "positive_rate": 0.2042079207920792,
+          "negative_rate": 0.2042079207920792,
+          "zero_rate": 0.5915841584158416
+        }
+      },
+      "prod": {
+        "candidate_count": 1576,
+        "current": {
+          "mean_positive_advantage": 0.9354519970036432,
+          "mean_abs_advantage": 0.4143055164394303,
+          "total_abs_advantage": 652.9454939085422,
+          "share_of_total_abs_advantage": 0.20366158312661312,
+          "positive_rate": 0.22144670050761422,
+          "negative_rate": 0.2366751269035533,
+          "zero_rate": 0.5418781725888325
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.22760901683381088,
+          "mean_abs_advantage": 0.09794717391735407,
+          "total_abs_advantage": 154.36474609375,
+          "share_of_total_abs_advantage": 0.29537584353189744,
+          "positive_rate": 0.22144670050761422,
+          "negative_rate": 0.2068527918781726,
+          "zero_rate": 0.5717005076142132
+        }
+      },
+      "video": {
+        "candidate_count": 2244,
+        "current": {
+          "mean_positive_advantage": 0.8624720089385611,
+          "mean_abs_advantage": 0.6887477005427375,
+          "total_abs_advantage": 1545.5498400179029,
+          "share_of_total_abs_advantage": 0.48207565586358014,
+          "positive_rate": 0.39928698752228164,
+          "negative_rate": 0.3712121212121212,
+          "zero_rate": 0.22950089126559714
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.11293507899556841,
+          "mean_abs_advantage": 0.08240094754360151,
+          "total_abs_advantage": 184.9077262878418,
+          "share_of_total_abs_advantage": 0.3538196188569241,
+          "positive_rate": 0.39928698752228164,
+          "negative_rate": 0.2700534759358289,
+          "zero_rate": 0.3306595365418895
+        }
+      }
+    },
+    "gold_count": {
+      "1-2": {
+        "candidate_count": 3120,
+        "current": {
+          "mean_positive_advantage": 0.911414251509494,
+          "mean_abs_advantage": 0.3663184203182382,
+          "total_abs_advantage": 1142.9134713929031,
+          "share_of_total_abs_advantage": 0.35648851111179486,
+          "positive_rate": 0.20096153846153847,
+          "negative_rate": 0.20608974358974358,
+          "zero_rate": 0.592948717948718
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.1840485446570973,
+          "mean_abs_advantage": 0.07280649038461538,
+          "total_abs_advantage": 227.15625,
+          "share_of_total_abs_advantage": 0.43466186843298427,
+          "positive_rate": 0.20096153846153847,
+          "negative_rate": 0.18942307692307692,
+          "zero_rate": 0.6096153846153847
+        }
+      },
+      "3-4": {
+        "candidate_count": 812,
+        "current": {
+          "mean_positive_advantage": 0.9232252676960413,
+          "mean_abs_advantage": 0.4707084492933021,
+          "total_abs_advantage": 382.2152608261613,
+          "share_of_total_abs_advantage": 0.11921755466760406,
+          "positive_rate": 0.25492610837438423,
+          "negative_rate": 0.2660098522167488,
+          "zero_rate": 0.479064039408867
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.20772946859903382,
+          "mean_abs_advantage": 0.0996935614224138,
+          "total_abs_advantage": 80.951171875,
+          "share_of_total_abs_advantage": 0.1548994915131199,
+          "positive_rate": 0.25492610837438423,
+          "negative_rate": 0.21182266009852216,
+          "zero_rate": 0.5332512315270936
+        }
+      },
+      "5+": {
+        "candidate_count": 2452,
+        "current": {
+          "mean_positive_advantage": 0.8602369392187532,
+          "mean_abs_advantage": 0.6855232378602966,
+          "total_abs_advantage": 1680.9029792334472,
+          "share_of_total_abs_advantage": 0.524293934220603,
+          "positive_rate": 0.39845024469820556,
+          "negative_rate": 0.3682707993474715,
+          "zero_rate": 0.233278955954323
+        },
+        "think_exact_clamp": {
+          "mean_positive_advantage": 0.11998763225949774,
+          "mean_abs_advantage": 0.08747841833466223,
+          "total_abs_advantage": 214.4970817565918,
+          "share_of_total_abs_advantage": 0.4104386400538958,
+          "positive_rate": 0.39845024469820556,
+          "negative_rate": 0.2597879282218597,
+          "zero_rate": 0.34176182707993474
+        }
+      }
+    }
+  },
+  "ratios": {
+    "current": {
+      "multi_exact_mean_mass_over_a_only": 1.5625672802329833,
+      "video_mass_share": 0.48207565586358014,
+      "gold_count_5_plus_mass_share": 0.524293934220603,
+      "total_abs_advantage": 3206.0317114525055
+    },
+    "think_exact_clamp": {
+      "multi_exact_mean_mass_over_a_only": 15.124050558802958,
+      "video_mass_share": 0.3538196188569241,
+      "gold_count_5_plus_mass_share": 0.4104386400538958,
+      "total_abs_advantage": 522.6045036315918
+    }
+  }
+}

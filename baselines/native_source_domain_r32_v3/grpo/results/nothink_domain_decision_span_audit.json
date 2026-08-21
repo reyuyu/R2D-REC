@@ -1,0 +1,645 @@
+{
+  "audit": "NoThink Domain Decision-Span Audit",
+  "created_at": "2026-08-20T18:14:31.530292+00:00",
+  "scope": {
+    "gpu_used": false,
+    "model_weights_loaded": false,
+    "training_started": false,
+    "training_algorithm_modified": false
+  },
+  "sft_template_statistics": {
+    "path": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+    "selection": "source_segment == recommendation_nocot",
+    "total_samples": 16090,
+    "samples_with_sid": 16090,
+    "samples_with_sid_preceded_by_known_domain_declaration": 16090,
+    "domain_declaration_rate": 1.0,
+    "missing_sid_count": 0,
+    "missing_known_declaration_count": 0,
+    "direct_sid_without_natural_language_count": 0,
+    "direct_sid_without_natural_language_rate": 0.0,
+    "distinct_templates_overall": 4,
+    "multiple_synonymous_expressions_observed": false,
+    "per_domain": {
+      "video": {
+        "sample_count": 12322,
+        "natural_language_span": "视频",
+        "expected_declaration": "该用户最近喜欢的视频有: ",
+        "template_count": 1,
+        "fixed_within_domain": true,
+        "templates": [
+          {
+            "count": 12322,
+            "template": "<think>\n\n</think>\n\n该用户最近喜欢的视频有: {SID}"
+          }
+        ]
+      },
+      "prod": {
+        "sample_count": 1289,
+        "natural_language_span": "商品",
+        "expected_declaration": "该用户最近点击了商品: ",
+        "template_count": 1,
+        "fixed_within_domain": true,
+        "templates": [
+          {
+            "count": 1289,
+            "template": "<think>\n\n</think>\n\n该用户最近点击了商品: {SID}"
+          }
+        ]
+      },
+      "ad": {
+        "sample_count": 1320,
+        "natural_language_span": "广告",
+        "expected_declaration": "该用户最近感兴趣的广告有: ",
+        "template_count": 1,
+        "fixed_within_domain": true,
+        "templates": [
+          {
+            "count": 1320,
+            "template": "<think>\n\n</think>\n\n该用户最近感兴趣的广告有: {SID}"
+          }
+        ]
+      },
+      "living": {
+        "sample_count": 1159,
+        "natural_language_span": "主播",
+        "expected_declaration": "该用户最近首次打赏了主播: ",
+        "template_count": 1,
+        "fixed_within_domain": true,
+        "templates": [
+          {
+            "count": 1159,
+            "template": "<think>\n\n</think>\n\n该用户最近首次打赏了主播: {SID}"
+          }
+        ]
+      }
+    }
+  },
+  "text_domain_vocabulary_and_tokenization": {
+    "tokenizer_path": "/data/models/onereason-8b-pretrain-competition",
+    "model_weights_loaded": false,
+    "spans": {
+      "video": {
+        "span": "视频",
+        "token_ids": [
+          87140
+        ],
+        "token_count": 1,
+        "decoded_tokens": [
+          "视频"
+        ],
+        "full_declaration": "该用户最近喜欢的视频有: ",
+        "full_declaration_token_ids": [
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220
+        ],
+        "full_declaration_token_count": 9
+      },
+      "prod": {
+        "span": "商品",
+        "token_ids": [
+          45943
+        ],
+        "token_count": 1,
+        "decoded_tokens": [
+          "商品"
+        ],
+        "full_declaration": "该用户最近点击了商品: ",
+        "full_declaration_token_ids": [
+          75882,
+          20002,
+          104044,
+          72651,
+          34187,
+          45943,
+          25,
+          220
+        ],
+        "full_declaration_token_count": 8
+      },
+      "ad": {
+        "span": "广告",
+        "token_ids": [
+          101927
+        ],
+        "token_count": 1,
+        "decoded_tokens": [
+          "广告"
+        ],
+        "full_declaration": "该用户最近感兴趣的广告有: ",
+        "full_declaration_token_ids": [
+          75882,
+          20002,
+          104044,
+          112429,
+          101927,
+          18830,
+          25,
+          220
+        ],
+        "full_declaration_token_count": 8
+      },
+      "living": {
+        "span": "主播",
+        "token_ids": [
+          107206
+        ],
+        "token_count": 1,
+        "decoded_tokens": [
+          "主播"
+        ],
+        "full_declaration": "该用户最近首次打赏了主播: ",
+        "full_declaration_token_ids": [
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220
+        ],
+        "full_declaration_token_count": 10
+      }
+    }
+  },
+  "historical_rollout_consistency": {
+    "runs_root": "/data/GRPO/runs",
+    "eligibility": "route=no_think; 64-hex real group_id; non-empty string gold_sids with one domain; candidate has recoverable full completion",
+    "source_files": [
+      {
+        "path": "/data/GRPO/runs/ACCEPT-20260818-ON/traces/traces.jsonl",
+        "run": "ACCEPT-20260818-ON",
+        "source_family": "GR_REC",
+        "candidate_count": 8
+      },
+      {
+        "path": "/data/GRPO/runs/ACCEPT2-20260818-ON/traces/traces.jsonl",
+        "run": "ACCEPT2-20260818-ON",
+        "source_family": "GR_REC",
+        "candidate_count": 8
+      },
+      {
+        "path": "/data/GRPO/runs/GR-REC-DSR-SIMPLE-V1-FULL-E1-GATE200-20260819/traces/traces.jsonl",
+        "run": "GR-REC-DSR-SIMPLE-V1-FULL-E1-GATE200-20260819",
+        "source_family": "DSR-Simple",
+        "candidate_count": 304
+      },
+      {
+        "path": "/data/GRPO/runs/GR-REC-DSR-SIMPLE-V1-SMOKE-20260819-R2/traces/traces.jsonl",
+        "run": "GR-REC-DSR-SIMPLE-V1-SMOKE-20260819-R2",
+        "source_family": "DSR-Simple",
+        "candidate_count": 32
+      },
+      {
+        "path": "/data/GRPO/runs/GR-REC-DSR-V1-PILOT200-20260818/traces/traces.jsonl",
+        "run": "GR-REC-DSR-V1-PILOT200-20260818",
+        "source_family": "DSR",
+        "candidate_count": 24
+      },
+      {
+        "path": "/data/GRPO/runs/GR-REC-DSR-V1-SMOKE-20260818-01/traces/traces.jsonl",
+        "run": "GR-REC-DSR-V1-SMOKE-20260818-01",
+        "source_family": "DSR",
+        "candidate_count": 32
+      },
+      {
+        "path": "/data/GRPO/runs/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/traces/traces.jsonl",
+        "run": "REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818",
+        "source_family": "GR_REC",
+        "candidate_count": 304
+      },
+      {
+        "path": "/data/GRPO/runs/REC-MP-GRPO-PILOT120-20260818/traces/traces.jsonl",
+        "run": "REC-MP-GRPO-PILOT120-20260818",
+        "source_family": "GR_REC",
+        "candidate_count": 16
+      }
+    ],
+    "overall": {
+      "candidate_count": 728,
+      "text_domain_defined": {
+        "numerator": 727,
+        "denominator": 728,
+        "rate": 0.9986263736263736
+      },
+      "sid_domain_defined": {
+        "numerator": 728,
+        "denominator": 728,
+        "rate": 1.0
+      },
+      "text_domain_equals_sid_domain": {
+        "numerator": 727,
+        "denominator": 727,
+        "rate": 1.0
+      },
+      "text_domain_equals_target_domain": {
+        "numerator": 682,
+        "denominator": 727,
+        "rate": 0.938101788170564
+      },
+      "sid_domain_equals_target_domain": {
+        "numerator": 683,
+        "denominator": 728,
+        "rate": 0.9381868131868132
+      },
+      "confusion": {
+        "text_correct__sid_correct": 682,
+        "text_correct__sid_wrong": 0,
+        "text_wrong__sid_correct": 0,
+        "text_wrong__sid_wrong": 45
+      },
+      "undefined_for_confusion": 1
+    },
+    "by_target_domain": {
+      "video": {
+        "candidate_count": 224,
+        "text_domain_defined": {
+          "numerator": 224,
+          "denominator": 224,
+          "rate": 1.0
+        },
+        "sid_domain_defined": {
+          "numerator": 224,
+          "denominator": 224,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 224,
+          "denominator": 224,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 223,
+          "denominator": 224,
+          "rate": 0.9955357142857143
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 223,
+          "denominator": 224,
+          "rate": 0.9955357142857143
+        },
+        "confusion": {
+          "text_correct__sid_correct": 223,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 1
+        },
+        "undefined_for_confusion": 0
+      },
+      "prod": {
+        "candidate_count": 152,
+        "text_domain_defined": {
+          "numerator": 151,
+          "denominator": 152,
+          "rate": 0.993421052631579
+        },
+        "sid_domain_defined": {
+          "numerator": 152,
+          "denominator": 152,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 151,
+          "denominator": 151,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 125,
+          "denominator": 151,
+          "rate": 0.8278145695364238
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 126,
+          "denominator": 152,
+          "rate": 0.8289473684210527
+        },
+        "confusion": {
+          "text_correct__sid_correct": 125,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 26
+        },
+        "undefined_for_confusion": 1
+      },
+      "ad": {
+        "candidate_count": 272,
+        "text_domain_defined": {
+          "numerator": 272,
+          "denominator": 272,
+          "rate": 1.0
+        },
+        "sid_domain_defined": {
+          "numerator": 272,
+          "denominator": 272,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 272,
+          "denominator": 272,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 270,
+          "denominator": 272,
+          "rate": 0.9926470588235294
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 270,
+          "denominator": 272,
+          "rate": 0.9926470588235294
+        },
+        "confusion": {
+          "text_correct__sid_correct": 270,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 2
+        },
+        "undefined_for_confusion": 0
+      },
+      "living": {
+        "candidate_count": 80,
+        "text_domain_defined": {
+          "numerator": 80,
+          "denominator": 80,
+          "rate": 1.0
+        },
+        "sid_domain_defined": {
+          "numerator": 80,
+          "denominator": 80,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 80,
+          "denominator": 80,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 64,
+          "denominator": 80,
+          "rate": 0.8
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 64,
+          "denominator": 80,
+          "rate": 0.8
+        },
+        "confusion": {
+          "text_correct__sid_correct": 64,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 16
+        },
+        "undefined_for_confusion": 0
+      }
+    },
+    "by_source_family": {
+      "GR_REC": {
+        "candidate_count": 336,
+        "text_domain_defined": {
+          "numerator": 335,
+          "denominator": 336,
+          "rate": 0.9970238095238095
+        },
+        "sid_domain_defined": {
+          "numerator": 336,
+          "denominator": 336,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 335,
+          "denominator": 335,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 323,
+          "denominator": 335,
+          "rate": 0.9641791044776119
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 324,
+          "denominator": 336,
+          "rate": 0.9642857142857143
+        },
+        "confusion": {
+          "text_correct__sid_correct": 323,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 12
+        },
+        "undefined_for_confusion": 1
+      },
+      "DSR": {
+        "candidate_count": 56,
+        "text_domain_defined": {
+          "numerator": 56,
+          "denominator": 56,
+          "rate": 1.0
+        },
+        "sid_domain_defined": {
+          "numerator": 56,
+          "denominator": 56,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 56,
+          "denominator": 56,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 39,
+          "denominator": 56,
+          "rate": 0.6964285714285714
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 39,
+          "denominator": 56,
+          "rate": 0.6964285714285714
+        },
+        "confusion": {
+          "text_correct__sid_correct": 39,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 17
+        },
+        "undefined_for_confusion": 0
+      },
+      "DSR-Simple": {
+        "candidate_count": 336,
+        "text_domain_defined": {
+          "numerator": 336,
+          "denominator": 336,
+          "rate": 1.0
+        },
+        "sid_domain_defined": {
+          "numerator": 336,
+          "denominator": 336,
+          "rate": 1.0
+        },
+        "text_domain_equals_sid_domain": {
+          "numerator": 336,
+          "denominator": 336,
+          "rate": 1.0
+        },
+        "text_domain_equals_target_domain": {
+          "numerator": 320,
+          "denominator": 336,
+          "rate": 0.9523809523809523
+        },
+        "sid_domain_equals_target_domain": {
+          "numerator": 320,
+          "denominator": 336,
+          "rate": 0.9523809523809523
+        },
+        "confusion": {
+          "text_correct__sid_correct": 320,
+          "text_correct__sid_wrong": 0,
+          "text_wrong__sid_correct": 0,
+          "text_wrong__sid_wrong": 16
+        },
+        "undefined_for_confusion": 0
+      }
+    },
+    "natural_language_declarations_observed": {
+      "video": [
+        {
+          "declaration": "该用户最近喜欢的视频有:",
+          "count": 256
+        },
+        {
+          "declaration": "该用户最近感兴趣的视频有:",
+          "count": 5
+        }
+      ],
+      "prod": [
+        {
+          "declaration": "该用户最近点击了商品:",
+          "count": 125
+        }
+      ],
+      "ad": [
+        {
+          "declaration": "该用户最近感兴趣的广告有:",
+          "count": 270
+        },
+        {
+          "declaration": "该用户最近喜欢的广告有:",
+          "count": 1
+        }
+      ],
+      "living": [
+        {
+          "declaration": "该用户最近首次打赏了主播:",
+          "count": 62
+        },
+        {
+          "declaration": "该用户最近首次关注了主播:",
+          "count": 8
+        }
+      ]
+    },
+    "reward_minus_0_25": {
+      "candidate_count": 45,
+      "text_domain_defined": {
+        "numerator": 45,
+        "denominator": 45,
+        "rate": 1.0
+      },
+      "sid_domain_defined": {
+        "numerator": 45,
+        "denominator": 45,
+        "rate": 1.0
+      },
+      "text_domain_equals_sid_domain": {
+        "numerator": 45,
+        "denominator": 45,
+        "rate": 1.0
+      },
+      "text_domain_equals_target_domain": {
+        "numerator": 0,
+        "denominator": 45,
+        "rate": 0.0
+      },
+      "sid_domain_equals_target_domain": {
+        "numerator": 0,
+        "denominator": 45,
+        "rate": 0.0
+      },
+      "confusion": {
+        "text_correct__sid_correct": 0,
+        "text_correct__sid_wrong": 0,
+        "text_wrong__sid_correct": 0,
+        "text_wrong__sid_wrong": 45
+      },
+      "undefined_for_confusion": 0
+    },
+    "reward_gte_0": {
+      "candidate_count": 683,
+      "text_domain_defined": {
+        "numerator": 682,
+        "denominator": 683,
+        "rate": 0.9985358711566618
+      },
+      "sid_domain_defined": {
+        "numerator": 683,
+        "denominator": 683,
+        "rate": 1.0
+      },
+      "text_domain_equals_sid_domain": {
+        "numerator": 682,
+        "denominator": 682,
+        "rate": 1.0
+      },
+      "text_domain_equals_target_domain": {
+        "numerator": 682,
+        "denominator": 682,
+        "rate": 1.0
+      },
+      "sid_domain_equals_target_domain": {
+        "numerator": 683,
+        "denominator": 683,
+        "rate": 1.0
+      },
+      "confusion": {
+        "text_correct__sid_correct": 682,
+        "text_correct__sid_wrong": 0,
+        "text_wrong__sid_correct": 0,
+        "text_wrong__sid_wrong": 0
+      },
+      "undefined_for_confusion": 1
+    },
+    "other_reward_candidate_count": 0
+  },
+  "known_sid_domain_saturation_evidence": {
+    "source": "/data/GRPO/audits/GR_REC_ThinkExactClamp_Ablation_v1/gpu_domain_geometry_diagnostic_g8_seed20260816_20260821.attempt2-float32-cosine.json",
+    "available": true,
+    "evidence_scope": "Read-only reuse of saved sampled final-SID Domain probabilities only; gradient geometry is excluded.",
+    "sample_count": 40,
+    "minimum": 0.02297536246786889,
+    "median": 0.9999862315165746,
+    "maximum": 0.9999958276922101,
+    "count_gte_0_9999": 33,
+    "rate_gte_0_9999": 0.825,
+    "text_domain_probability": "TEXT-DOMAIN PROBABILITY NOT YET OBSERVED"
+  },
+  "final_verdict": "TEXT_DOMAIN_IS_PRIMARY_DECISION",
+  "verdict_evidence": [
+    "SFT known-declaration rate=1.0",
+    "all four SFT domain templates fixed=True",
+    "historical text/SID agreement=1.0",
+    "historical text-domain defined rate=0.9986263736263736",
+    "saved SID Domain probability >=0.9999 rate=0.825",
+    "the natural-language declaration precedes the final SID Domain token",
+    "TEXT-DOMAIN PROBABILITY NOT YET OBSERVED"
+  ],
+  "algorithm_change": "NONE; audit-only evidence"
+}

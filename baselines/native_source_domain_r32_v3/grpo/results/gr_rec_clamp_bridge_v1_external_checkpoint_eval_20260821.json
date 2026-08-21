@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "experiment": "GR_REC_ThinkExactClamp_Ablation_v1",
+  "run_id": "GR-REC-CLAMP-BRIDGE-V1-G8BASE-FORMAL1500-20260821",
+  "recorded_date": "2026-08-21",
+  "provenance": {
+    "external_checkpoint_scores": "user_reported_external_evaluator",
+    "benchmark_reproduced_by_forensic_audit": false,
+    "component_order": {
+      "material": ["video", "product", "ad", "living"],
+      "user": ["action", "chain"],
+      "recommendation": ["video", "product", "ad", "living"],
+      "world": ["world"]
+    },
+    "calculated_fields": [
+      "external_checkpoints[*].subtotals",
+      "comparisons"
+    ],
+    "rounding_note": "Subtotals are calculated from four-decimal inputs; their sum can differ from the reported aggregate by 0.0001."
+  },
+  "external_checkpoints": [
+    {
+      "step": 600,
+      "aggregate": 1.3266,
+      "components": {
+        "material": [0.0504, 0.0358, 0.0515, 0.0422],
+        "user": [0.1596, 0.0974],
+        "recommendation": [0.1251, 0.1632, 0.1988, 0.1692],
+        "world": 0.2335
+      },
+      "subtotals": {
+        "material": 0.1799,
+        "user": 0.2570,
+        "recommendation": 0.6563
+      }
+    },
+    {
+      "step": 1000,
+      "aggregate": 1.3383,
+      "components": {
+        "material": [0.0510, 0.0356, 0.0512, 0.0422],
+        "user": [0.1600, 0.0973],
+        "recommendation": [0.1372, 0.1598, 0.2058, 0.1629],
+        "world": 0.2353
+      },
+      "subtotals": {
+        "material": 0.1800,
+        "user": 0.2573,
+        "recommendation": 0.6657
+      }
+    },
+    {
+      "step": 1500,
+      "aggregate": 1.3064,
+      "components": {
+        "material": [0.0503, 0.0356, 0.0518, 0.0421],
+        "user": [0.1586, 0.0965],
+        "recommendation": [0.1288, 0.1530, 0.1974, 0.1602],
+        "world": 0.2320
+      },
+      "subtotals": {
+        "material": 0.1798,
+        "user": 0.2551,
+        "recommendation": 0.6394
+      }
+    }
+  ],
+  "comparisons": {
+    "step_600_to_1000": {
+      "aggregate": 0.0117,
+      "material": 0.0001,
+      "user": 0.0003,
+      "recommendation": 0.0094,
+      "world": 0.0018,
+      "recommendation_components": [0.0121, -0.0034, 0.0070, -0.0063]
+    },
+    "step_1000_to_1500": {
+      "aggregate": -0.0319,
+      "material": -0.0002,
+      "user": -0.0022,
+      "recommendation": -0.0263,
+      "world": -0.0033,
+      "recommendation_components": [-0.0084, -0.0068, -0.0084, -0.0027]
+    },
+    "versus_beta_conservative": {
+      "baseline_aggregate": 1.3313,
+      "noise_reference": 0.01,
+      "step_600": -0.0047,
+      "step_1000": 0.0070,
+      "step_1500": -0.0249
+    },
+    "matched_step_1500": {
+      "versus_gr_rec_v1_aggregate": -0.0446,
+      "versus_gr_rec_v1_recommendation": -0.0406,
+      "versus_dsr_simple_aggregate": -0.0190,
+      "versus_dsr_simple_recommendation": -0.0141
+    }
+  },
+  "training_evidence": {
+    "integrity": {
+      "optimizer_steps": 1500,
+      "metrics_records": 1500,
+      "rollout_records": 750,
+      "probe_records": 36,
+      "gradient_trace_records": 750,
+      "trainable_lora_delta": 0.0136787,
+      "frozen_base_delta": 0.0,
+      "engineering_failure_observed": false
+    },
+    "think_policy": {
+      "approx_kl_mean": 0.000853,
+      "approx_kl_p95": 0.001909,
+      "clip_fraction_mean": 0.00977,
+      "clip_fraction_p95": 0.02423,
+      "online_reward_peak_window": "601-1000",
+      "online_reward_peak": 3.6511,
+      "online_reward_final_window": 3.4339,
+      "completion_length_first_to_final": [699.1, 409.4],
+      "raw_n_first_to_final": [3.210, 2.299],
+      "grounded_n_first_to_final": [2.749, 1.718],
+      "grounding_coverage_first_to_final": [0.861, 0.742],
+      "advantage_exposure_first_to_final": [0.589, 0.494],
+      "fixed_probe_reward_step0_to_1500": [3.7305, 2.2305]
+    },
+    "nothink_policy": {
+      "approx_kl_mean": 0.000470,
+      "approx_kl_p95": 0.001714,
+      "clip_fraction_mean": 0.00469,
+      "clip_fraction_p95": 0.02941,
+      "online_reward_early_to_final": [0.2223, 0.5100],
+      "wrong_domain_rate_early_to_final": [0.1711, 0.0056],
+      "exact_hit_rate_early_to_final": [0.0179, 0.0347]
+    }
+  },
+  "frozen_cohort_evidence": {
+    "job_id": "eval-20260821T185245-a70c87a0",
+    "sample_count": 128,
+    "seed": 20260822,
+    "checkpoint_250": {
+      "think_hit_at_32": 0.0703125,
+      "think_hits": 9,
+      "nothink_hit_at_32": 0.078125,
+      "nothink_hits": 10
+    },
+    "checkpoint_600": {
+      "think_hit_at_32": 0.0625,
+      "think_hits": 8,
+      "nothink_hit_at_32": 0.078125,
+      "nothink_hits": 10
+    },
+    "interpretation": "No detected Hit@32 gain from checkpoint 250 to 600 on this small frozen cohort; this distinct contract did not evaluate checkpoint 1000."
+  },
+  "initial_conclusion": {
+    "selected_checkpoint": 1000,
+    "checkpoint_1500_recommended": false,
+    "absolute_improvement_proven": false,
+    "reason": "Checkpoint 1000 is the best observed external score. The broad recommendation decline after step 1000 aligns with Think structure contraction while numerical training remained stable.",
+    "required_confirmation": "Repeat the same external evaluator with repeated seeds or a larger frozen cohort on BETA, checkpoint 1000, and an adjacent checkpoint."
+  }
+}

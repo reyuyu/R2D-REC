@@ -1,0 +1,291 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_fast_commitment_preflight",
+  "created_at": "2026-08-20T19:35:48.564765+00:00",
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+  "groups": 8,
+  "seed": 20260816,
+  "zero_update": true,
+  "trainable_parameter_checksum_before": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+  "trainable_parameter_checksum_after": "b1cfbe7b048ca6c7de8a906ea4419cbe8e339e9974f58d5ed1371f1a471066ad",
+  "parameter_change": false,
+  "fingerprint_parity_count": 8,
+  "reward_parity_count": 8,
+  "conditions": {
+    "fingerprint_parity_8_of_8": true,
+    "reward_parity_8_of_8": true,
+    "parameter_checksum_unchanged": true,
+    "g0_candidate_fallback_active": true,
+    "aligned_domain_groups_nonzero_above_saturation_floor": true,
+    "matched_support_cosine_near_one": true,
+    "groups_6_7_abc_parity": true,
+    "cpu_regression_passed": true
+  },
+  "preflight": "FAST_PREFLIGHT_PASS",
+  "results": [
+    {
+      "audit_index": 0,
+      "group_id": "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+      "rollout_fingerprint": "f6885c7ec834a52e425609c7ccb64f3c159ee785b7e0cbdef57ab56fcac00001",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25
+      ],
+      "eligible_count": 8,
+      "branch_count": 7,
+      "direct_sid_fallback_count": 1,
+      "unresolved_count": 0,
+      "hier_grad_norm": 0.3926238715648651,
+      "hier_over_legacy": 0.08638449318118155,
+      "matched_support_cosine": 0.9999250943892011,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 1,
+      "group_id": "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+      "rollout_fingerprint": "4ac38511978974f9f5d894b3536911d33dfdbb29d5938e9a6eb261bd49f67a19",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": 0.14746561646461487,
+      "hier_over_legacy": 0.18664854596987007,
+      "matched_support_cosine": 0.9999485413104675,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 2,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "rollout_fingerprint": "9da9613dd5e5de7dff0ef796c04625261b68a8ba8b3158991b310cfe82cf5747",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": null,
+      "hier_over_legacy": null,
+      "matched_support_cosine": null,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 3,
+      "group_id": "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8",
+      "rollout_fingerprint": "03f46012f978008513483457806c0e3b3fd2ec13cf1aee2eb702540cc97d02a5",
+      "rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": 0.15631741285324097,
+      "hier_over_legacy": 0.03084581317030342,
+      "matched_support_cosine": 0.9999535775109447,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 4,
+      "group_id": "5312b41c5a6b8ac1fdbe5a0211cbfaf002533367a177c86d9595bbab0ca19090",
+      "rollout_fingerprint": "d43b2153ed422ad743b2fb92081bcbef0265d4f6afd2d1daa55701d0ce51a0be",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        0.0,
+        0.0,
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": 0.25355684757232666,
+      "hier_over_legacy": 0.21807769922018622,
+      "matched_support_cosine": 0.9999819205698686,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 5,
+      "group_id": "5ea4740a4656ed1e8e8f7981641afed8ced421efcf5672a4502270b8ac043631",
+      "rollout_fingerprint": "eb0237e5f319662591fc1d36fa816be2cbe5b42a0c4e80c5d8b4f6e4dd280571",
+      "rewards": [
+        0.0,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": 0.07949259132146835,
+      "hier_over_legacy": 0.10442706596033027,
+      "matched_support_cosine": 0.9999188541779611,
+      "abc_stage_active": {
+        "a": false,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 0,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 6,
+      "group_id": "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+      "rollout_fingerprint": "cb83c0940768fcdbd144a63075b6c072c58c6eeff2201cfbe1ae4cfca40a89a9",
+      "rewards": [
+        0.0,
+        0.5,
+        0.0,
+        0.5,
+        0.5,
+        8.0,
+        0.0,
+        0.5
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": null,
+      "hier_over_legacy": null,
+      "matched_support_cosine": null,
+      "abc_stage_active": {
+        "a": true,
+        "b": true,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 8,
+        "b": 5,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    },
+    {
+      "audit_index": 7,
+      "group_id": "dea6a49f8f2209c89897a1dfd297db748f89f0011487d3f0039c5e74adfbb201",
+      "rollout_fingerprint": "af7ba0e445081f703ac92816e16f1bbda30de63b6e4aee7c2710de3e26d1274f",
+      "rewards": [
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        0.0,
+        0.5,
+        0.0,
+        0.5
+      ],
+      "eligible_count": 8,
+      "branch_count": 8,
+      "direct_sid_fallback_count": 0,
+      "unresolved_count": 0,
+      "hier_grad_norm": null,
+      "hier_over_legacy": null,
+      "matched_support_cosine": null,
+      "abc_stage_active": {
+        "a": true,
+        "b": false,
+        "c": false
+      },
+      "abc_credited_token_count": {
+        "a": 5,
+        "b": 0,
+        "c": 0
+      },
+      "abc_credit_parity": true
+    }
+  ]
+}

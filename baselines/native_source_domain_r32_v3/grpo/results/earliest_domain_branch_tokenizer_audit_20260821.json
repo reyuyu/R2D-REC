@@ -1,0 +1,291 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_earliest_domain_branch_tokenizer_audit",
+  "created_at": "2026-08-20T19:08:38.081023+00:00",
+  "tokenizer_path": "/data/models/onereason-8b-pretrain-competition",
+  "model_weights_loaded": false,
+  "templates": {
+    "video": {
+      "declaration": "该用户最近喜欢的视频有: ",
+      "token_ids": [
+        75882,
+        20002,
+        104044,
+        99729,
+        9370,
+        87140,
+        18830,
+        25,
+        220
+      ],
+      "tokens": [
+        {
+          "token_id": 75882,
+          "token": "è¯¥",
+          "decoded": "该"
+        },
+        {
+          "token_id": 20002,
+          "token": "çĶ¨æĪ·",
+          "decoded": "用户"
+        },
+        {
+          "token_id": 104044,
+          "token": "æľĢè¿ĳ",
+          "decoded": "最近"
+        },
+        {
+          "token_id": 99729,
+          "token": "åĸľæ¬¢",
+          "decoded": "喜欢"
+        },
+        {
+          "token_id": 9370,
+          "token": "çļĦ",
+          "decoded": "的"
+        },
+        {
+          "token_id": 87140,
+          "token": "è§Ĩé¢ĳ",
+          "decoded": "视频"
+        },
+        {
+          "token_id": 18830,
+          "token": "æľī",
+          "decoded": "有"
+        },
+        {
+          "token_id": 25,
+          "token": ":",
+          "decoded": ":"
+        },
+        {
+          "token_id": 220,
+          "token": "Ġ",
+          "decoded": " "
+        }
+      ]
+    },
+    "prod": {
+      "declaration": "该用户最近点击了商品: ",
+      "token_ids": [
+        75882,
+        20002,
+        104044,
+        72651,
+        34187,
+        45943,
+        25,
+        220
+      ],
+      "tokens": [
+        {
+          "token_id": 75882,
+          "token": "è¯¥",
+          "decoded": "该"
+        },
+        {
+          "token_id": 20002,
+          "token": "çĶ¨æĪ·",
+          "decoded": "用户"
+        },
+        {
+          "token_id": 104044,
+          "token": "æľĢè¿ĳ",
+          "decoded": "最近"
+        },
+        {
+          "token_id": 72651,
+          "token": "çĤ¹åĩ»",
+          "decoded": "点击"
+        },
+        {
+          "token_id": 34187,
+          "token": "äºĨ",
+          "decoded": "了"
+        },
+        {
+          "token_id": 45943,
+          "token": "åķĨåĵģ",
+          "decoded": "商品"
+        },
+        {
+          "token_id": 25,
+          "token": ":",
+          "decoded": ":"
+        },
+        {
+          "token_id": 220,
+          "token": "Ġ",
+          "decoded": " "
+        }
+      ]
+    },
+    "ad": {
+      "declaration": "该用户最近感兴趣的广告有: ",
+      "token_ids": [
+        75882,
+        20002,
+        104044,
+        112429,
+        101927,
+        18830,
+        25,
+        220
+      ],
+      "tokens": [
+        {
+          "token_id": 75882,
+          "token": "è¯¥",
+          "decoded": "该"
+        },
+        {
+          "token_id": 20002,
+          "token": "çĶ¨æĪ·",
+          "decoded": "用户"
+        },
+        {
+          "token_id": 104044,
+          "token": "æľĢè¿ĳ",
+          "decoded": "最近"
+        },
+        {
+          "token_id": 112429,
+          "token": "æĦŁåħ´è¶£çļĦ",
+          "decoded": "感兴趣的"
+        },
+        {
+          "token_id": 101927,
+          "token": "å¹¿åĳĬ",
+          "decoded": "广告"
+        },
+        {
+          "token_id": 18830,
+          "token": "æľī",
+          "decoded": "有"
+        },
+        {
+          "token_id": 25,
+          "token": ":",
+          "decoded": ":"
+        },
+        {
+          "token_id": 220,
+          "token": "Ġ",
+          "decoded": " "
+        }
+      ]
+    },
+    "living": {
+      "declaration": "该用户最近首次打赏了主播: ",
+      "token_ids": [
+        75882,
+        20002,
+        104044,
+        104181,
+        75437,
+        100541,
+        34187,
+        107206,
+        25,
+        220
+      ],
+      "tokens": [
+        {
+          "token_id": 75882,
+          "token": "è¯¥",
+          "decoded": "该"
+        },
+        {
+          "token_id": 20002,
+          "token": "çĶ¨æĪ·",
+          "decoded": "用户"
+        },
+        {
+          "token_id": 104044,
+          "token": "æľĢè¿ĳ",
+          "decoded": "最近"
+        },
+        {
+          "token_id": 104181,
+          "token": "é¦ĸæ¬¡",
+          "decoded": "首次"
+        },
+        {
+          "token_id": 75437,
+          "token": "æīĵ",
+          "decoded": "打"
+        },
+        {
+          "token_id": 100541,
+          "token": "èµı",
+          "decoded": "赏"
+        },
+        {
+          "token_id": 34187,
+          "token": "äºĨ",
+          "decoded": "了"
+        },
+        {
+          "token_id": 107206,
+          "token": "ä¸»æĴŃ",
+          "decoded": "主播"
+        },
+        {
+          "token_id": 25,
+          "token": ":",
+          "decoded": ":"
+        },
+        {
+          "token_id": 220,
+          "token": "Ġ",
+          "decoded": " "
+        }
+      ]
+    }
+  },
+  "longest_common_prefix_token_ids": [
+    75882,
+    20002,
+    104044
+  ],
+  "longest_common_prefix_tokens": [
+    {
+      "token_id": 75882,
+      "token": "è¯¥",
+      "decoded": "该"
+    },
+    {
+      "token_id": 20002,
+      "token": "çĶ¨æĪ·",
+      "decoded": "用户"
+    },
+    {
+      "token_id": 104044,
+      "token": "æľĢè¿ĳ",
+      "decoded": "最近"
+    }
+  ],
+  "earliest_branch_declaration_token_index": 3,
+  "earliest_branch_tokens": {
+    "video": {
+      "token_id": 99729,
+      "token": "åĸľæ¬¢",
+      "decoded": "喜欢"
+    },
+    "prod": {
+      "token_id": 72651,
+      "token": "çĤ¹åĩ»",
+      "decoded": "点击"
+    },
+    "ad": {
+      "token_id": 112429,
+      "token": "æĦŁåħ´è¶£çļĦ",
+      "decoded": "感兴趣的"
+    },
+    "living": {
+      "token_id": 104181,
+      "token": "é¦ĸæ¬¡",
+      "decoded": "首次"
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "type": "gr_rec_think_exact_clamp_v1_g8_baseline_smoke12_summary",
+  "run_id": "GR-REC-CLAMP-BRIDGE-V1-SMOKE12-G8BASE-20260821",
+  "algorithm_commit": "6c5f41254e3d8969fa9c71489c134310756ddc3c",
+  "status": "SMOKE_PASS",
+  "optimizer_steps": 12,
+  "world_size": 4,
+  "groups": {
+    "think": 8,
+    "no_think": 8
+  },
+  "stage_active_count": {
+    "domain": 6,
+    "a": 2,
+    "b": 0,
+    "c": 0
+  },
+  "stage_active_rate": {
+    "domain": 0.75,
+    "a": 0.25,
+    "b": 0.0,
+    "c": 0.0
+  },
+  "b_singleton_success_count": 0,
+  "c_singleton_success_count": 0,
+  "loss_range": [
+    -0.006651192903518677,
+    7.984426338225603e-05
+  ],
+  "grad_norm_range": [
+    0.07880621403455734,
+    0.17861153185367584
+  ],
+  "train_loss": -0.0012477344086316104,
+  "lora_delta_range": [
+    3.3886617558209764e-05,
+    3.3886617558209764e-05
+  ],
+  "base_delta_range": [
+    0.0,
+    0.0
+  ],
+  "nan_or_inf": false,
+  "oom": false,
+  "think_and_nothink_executed": true,
+  "stopped_after_step12": true,
+  "formal_training_started": false
+}

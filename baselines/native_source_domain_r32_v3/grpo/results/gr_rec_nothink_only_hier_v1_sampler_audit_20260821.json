@@ -1,0 +1,112 @@
+{
+  "experiment": "GR_REC_NoThinkOnly_Hier_v1",
+  "run_id": "GR-REC-NOTHINK-ONLY-HIER-G8BASE-E1-20260821",
+  "gpu_used": false,
+  "dataset_path": "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl",
+  "raw_group_count": 1549,
+  "probe_group_ids": [
+    "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+    "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8"
+  ],
+  "probe_group_count": 4,
+  "sampler_audit": {
+    "selected_groups": 1544,
+    "trained_groups": 1544,
+    "dropped_groups": 0,
+    "dropped_group_ids": [],
+    "think_unique_groups": 0,
+    "nothink_unique_groups": 1544,
+    "think_rollouts": 0,
+    "nothink_rollouts": 772,
+    "fresh_rollout_count": 772,
+    "unique_groups_per_global_rollout": 2,
+    "optimizer_steps": 1544,
+    "nothink_optimizer_steps": 1544,
+    "think_optimizer_steps": 0,
+    "repeat_count": 2,
+    "num_iterations": 2,
+    "route_schedule_preview": [
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think",
+      "no_think"
+    ],
+    "rollout_group_ids_preview": [
+      [
+        "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+        "5312b41c5a6b8ac1fdbe5a0211cbfaf002533367a177c86d9595bbab0ca19090"
+      ],
+      [
+        "5ea4740a4656ed1e8e8f7981641afed8ced421efcf5672a4502270b8ac043631",
+        "dea6a49f8f2209c89897a1dfd297db748f89f0011487d3f0039c5e74adfbb201"
+      ],
+      [
+        "775d2c1d73b635f501a0f4bc9da6024002fecb009894b9d6fbdb1cb3fbd0ba72",
+        "f2a93244b0b82a2194e1cd15375c3293287c9e6553ecd5f38e7f390b0062e7a8"
+      ],
+      [
+        "483d40bd8e6a7be759779bba6c1a58dca78f41a0a8d8cb365e1dd0eff5566142",
+        "9886d50833d0057054a165cad6e78eaaa0438b716e4a53f2a1b84ee40a63e284"
+      ],
+      [
+        "f1bd212b32ec1e0144a7f62712c6f16c08df99284c0dee310314e0d548bd432c",
+        "b8eb62be9fc57a8c9a163c248120894d01491270f47ada7c41e25af7f9374d7c"
+      ],
+      [
+        "2f8b9238c59badc96cd439911c7c42afd62e8cefa539853df2d36a549228d2b3",
+        "2dc02a7c59eb8279b7caa10022e6a9ee7c30c8d851b632515315806e1655bd75"
+      ],
+      [
+        "7b91df630c0a3b6d7232ae4564551cf7bc9db819af9738de06dcde9656fd2e2f",
+        "d93a68d31aa1ea6d12bc82e135e44340e9a1aaefd4cee134444746ecc9aee9ad"
+      ],
+      [
+        "3baf4e2bd66a078acfd02069635a7b0d09b8563a43d6f45285a80a90fd89f65d",
+        "91222818a1da2fe8a47421933d22debe4b2f1f314245e2250401666386d5c8f2"
+      ]
+    ],
+    "post_probe_candidate_groups": 1545,
+    "joint_sampler_parity_excluded_groups": 1,
+    "joint_sampler_parity_excluded_group_ids": [
+      "c399e01d9eaa30e416df6c29ee118db4b9a6361bf558433439ccec27500e0d46"
+    ]
+  },
+  "derived_full_epoch_step": 1544,
+  "formal_checkpoint_steps": [
+    250,
+    500,
+    666,
+    750,
+    1000,
+    1250,
+    1544
+  ],
+  "training_routes": [
+    "no_think"
+  ],
+  "think_optimizer_updates": 0,
+  "route_multiplier": 0.5,
+  "num_iterations": 2
+}
