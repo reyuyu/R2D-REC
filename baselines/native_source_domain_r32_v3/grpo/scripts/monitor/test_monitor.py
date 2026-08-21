@@ -178,6 +178,21 @@ with tempfile.TemporaryDirectory() as temporary:
     (checkpoint / "adapter_model.safetensors").write_bytes(b"safe-adapter")
     (checkpoint / "optimizer.pt").write_bytes(b"private-training-state")
     multi_client = TestClient(create_app(runs_dir=root, outputs_dir=outputs, user_runs_dir=user_outputs))
+    extra_outputs = root / "_extra_outputs"
+    extra_checkpoint = extra_outputs / "isolated-run" / "checkpoint-250"
+    extra_checkpoint.mkdir(parents=True)
+    (extra_checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (extra_checkpoint / "adapter_model.safetensors").write_bytes(b"extra-safe-adapter")
+    extra_outputs_client = TestClient(create_app(
+        runs_dir=root,
+        outputs_dir=outputs,
+        checkpoint_outputs_dirs=[extra_outputs],
+        user_runs_dir=user_outputs,
+    ))
+    assert {
+        item["checkpoint"]
+        for item in extra_outputs_client.get("/api/checkpoints?run_id=isolated-run").json()
+    } == {"checkpoint-17", "checkpoint-250"}
     runs = multi_client.get("/api/runs").json()
     assert {item["run_id"] for item in runs} >= {"writer-test", "isolated-run"}
     assert multi_client.get("/api/manifest?run_id=writer-test").json()["seed"] == 7

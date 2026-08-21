@@ -211,6 +211,7 @@ def create_app(
     *,
     runs_dir: str | Path | None = None,
     outputs_dir: str | Path | None = None,
+    checkpoint_outputs_dirs: Iterable[str | Path] | None = None,
     user_runs_dir: str | Path | None = None,
     eval_dir: str | Path | None = None,
 ) -> FastAPI:
@@ -219,12 +220,25 @@ def create_app(
     single_run = Path(run_dir).expanduser().resolve() if run_dir is not None else None
     root = single_run.parent if single_run is not None else Path(runs_dir).expanduser().resolve()
     outputs_root = Path(outputs_dir).expanduser().resolve() if outputs_dir is not None else None
+    checkpoint_outputs_roots = tuple(
+        dict.fromkeys(
+            Path(path).expanduser().resolve()
+            for path in checkpoint_outputs_dirs or ()
+        )
+    )
+    approved_outputs_roots = tuple(
+        dict.fromkeys(
+            ([outputs_root] if outputs_root is not None else [])
+            + list(checkpoint_outputs_roots)
+        )
+    )
     user_runs_root = Path(user_runs_dir).expanduser().resolve() if user_runs_dir is not None else None
     eval_root = Path(eval_dir).expanduser().resolve() if eval_dir is not None else (root.parent / "evaluations").resolve()
     app = FastAPI(title="GRPO Monitor", docs_url="/api/docs", redoc_url=None)
     app.state.run_dir = single_run
     app.state.runs_dir = root
     app.state.outputs_dir = outputs_root
+    app.state.checkpoint_outputs_dirs = checkpoint_outputs_roots
     app.state.user_runs_dir = user_runs_root
     app.state.eval_dir = eval_root
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -364,10 +378,12 @@ def create_app(
         local_checkpoints = selected / "checkpoints"
         if local_checkpoints.is_dir():
             candidates.append(local_checkpoints)
-        if outputs_root is not None and outputs_root.is_dir():
-            candidates.append(outputs_root / selected.name)
+        for approved_root in approved_outputs_roots:
+            if not approved_root.is_dir():
+                continue
+            candidates.append(approved_root / selected.name)
             try:
-                candidates.extend(path / selected.name for path in outputs_root.iterdir() if path.is_dir())
+                candidates.extend(path / selected.name for path in approved_root.iterdir() if path.is_dir())
             except OSError:
                 pass
         if user_runs_root is not None and user_runs_root.is_dir():
@@ -384,13 +400,12 @@ def create_app(
         for candidate in candidates:
             try:
                 path = candidate.resolve()
-                if outputs_root is not None:
-                    try:
-                        path.relative_to(outputs_root)
-                    except ValueError:
-                        if user_runs_root is None:
-                            continue
-                        path.relative_to(user_runs_root)
+                if approved_outputs_roots and not any(
+                    path == root or root in path.parents for root in approved_outputs_roots
+                ):
+                    if user_runs_root is None:
+                        continue
+                    path.relative_to(user_runs_root)
             except (OSError, ValueError):
                 continue
             if path.is_dir() and path not in resolved:
@@ -1041,6 +1056,12 @@ def main() -> None:
     source.add_argument("--run-dir", help="Serve one run (backward-compatible mode)")
     source.add_argument("--runs-dir", help="Serve an experiment list rooted at this directory")
     parser.add_argument("--outputs-dir", help="Formal output root used for checkpoint adapter downloads")
+    parser.add_argument(
+        "--checkpoint-outputs-dir",
+        action="append",
+        default=[],
+        help="Additional approved checkpoint output root (repeatable)",
+    )
     parser.add_argument("--user-runs-dir", help="Approved User-GRPO run root declared by monitor manifests")
     parser.add_argument("--eval-dir", help="Checkpoint evaluation job root (defaults beside runs-dir)")
     parser.add_argument("--host", default="127.0.0.1")
@@ -1052,6 +1073,7 @@ def main() -> None:
     uvicorn.run(
         create_app(
             args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir,
+            checkpoint_outputs_dirs=args.checkpoint_outputs_dir,
             user_runs_dir=args.user_runs_dir, eval_dir=args.eval_dir,
         ),
         host=args.host, port=args.port, log_level="warning",
