@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from checkpoint_eval import build_cohort, load_validation_pool, route_prompt, wilson_interval
 from monitor.generate_demo_run import generate
 from monitor.generate_user_demo_run import generate as generate_user
-from monitor.server import create_app, read_jsonl
+from monitor.server import checkpoint_eval_launch_command, create_app, read_jsonl
 from monitor.writer import MonitorWriter, monitor_from_env
 
 
@@ -93,6 +93,9 @@ with tempfile.TemporaryDirectory() as temporary:
     assert wilson_interval(3, 4)[0] < 0.75 < wilson_interval(3, 4)[1]
     evaluator_source = (Path(__file__).parent.parent / "checkpoint_eval.py").read_text(encoding="utf-8")
     assert "optimizer.step" not in evaluator_source and "scheduler.step" not in evaluator_source
+    launch_command = checkpoint_eval_launch_command(Path("/tmp/checkpoint_eval.py"), 29617)
+    assert launch_command[1:4] == ["-m", "torch.distributed.run", "--nproc_per_node=4"]
+    assert launch_command[-2:] == ["--master_port=29617", "/tmp/checkpoint_eval.py"]
     print("[PASS] frozen disjoint cohort, route prompts, Wilson interval, and inference-only evaluator")
 
     app = create_app(rank0.run_dir)
