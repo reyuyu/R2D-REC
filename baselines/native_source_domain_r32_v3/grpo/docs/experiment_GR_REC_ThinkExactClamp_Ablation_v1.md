@@ -6,6 +6,64 @@
 
 **ZERO PARAMETER UPDATE / TRAINING NOT STARTED**
 
+## Formal G8-baseline run: 1500-step completion (2026-08-21)
+
+Run `GR-REC-CLAMP-BRIDGE-V1-G8BASE-FORMAL1500-20260821` completed all
+1500 optimizer steps from the fresh original BATA parent. This is the first
+formal run of the frozen G8-baseline formula recorded above. The CPU-only
+post-run artifacts are:
+
+- [machine-readable forensic summary](../results/gr_rec_clamp_bridge_v1_formal1500_forensic_20260821.json)
+- [human-readable forensic report](../results/gr_rec_clamp_bridge_v1_formal1500_forensic_20260821.md)
+
+Run integrity is complete: `metrics=1500`, `rollouts=750`, `probes=36`,
+`gradient traces=750`, and all eight scheduled checkpoints
+(`250/600/750/800/1000/1200/1400/1500`) contain non-empty adapter and trainer
+state files. Runtime was `35273.65s`, final aggregate train loss was
+`0.0150117`, trainable LoRA delta was `0.0136787`, and frozen-base delta was
+exactly `0`. No OOM, traceback, NCCL failure, save failure, or non-finite
+monitor metric was observed. The only terminal warning was PyTorch's normal
+process-group cleanup warning after successful completion.
+
+Policy movement remained bounded. Think route mean/p95/max approximate KL was
+`0.000853 / 0.001909 / 0.002136`; clipping was
+`0.00977 / 0.02423 / 0.03086`. NoThink mean/p95/max approximate KL was
+`0.000470 / 0.001714 / 0.017980`; clipping was
+`0.00469 / 0.02941 / 0.11111`. These measurements support numerical training
+stability, but do not establish recommendation quality.
+
+NoThink shows a useful hierarchy trend across the run. Comparing steps
+`1-250` with `1001-1500`, online reward rose from `0.2223` to `0.5100`,
+wrong-domain rate fell from `0.1711` to `0.0056`, A-hit rate rose from `0.1972`
+to `0.3195`, AB-hit rate from `0.0401` to `0.0967`, and exact-hit rate from
+`0.0179` to `0.0347`. The tradeoff is increased dead-group exposure:
+all-zero and bridge-active rates rose from `0.1673` to `0.3476`.
+
+Think does not show a healthy monotonic trajectory. Its online reward peaked
+at `3.6511` in steps `601-1000` and fell to `3.4339` in `1001-1500`.
+Simultaneously, mean completion length fell `699.1 -> 409.4`, Raw N
+`3.210 -> 2.299`, Grounded N `2.749 -> 1.718`, grounding coverage
+`0.861 -> 0.742`, and effective-advantage exposure `0.589 -> 0.494` from the
+first to final window. The simultaneous Raw N and Grounded N decline is a
+structure-collapse warning, not merely a SID-grounding citation issue.
+
+The four fixed probes give the same directional warning. From step 0 to 1500,
+Think reward fell `3.7305 -> 2.2305`, exact-candidate rate fell
+`0.4375 -> 0.1875`, and completion length fell `747.6 -> 415.4`. NoThink probe
+reward rose `0 -> 0.7188`, positive-candidate rate rose `0.1562 -> 0.3125`,
+and exact-candidate rate rose `0 -> 0.0625`. Final probe cases remain uneven:
+the product case has two exact NoThink candidates, while the living case is
+still an all-zero G8 and the ad case remains weak.
+
+External checkpoint evidence is intentionally separated from monitor data.
+The user-reported checkpoint-250 benchmark score is `1.310`; this audit did
+not reproduce that benchmark and ran no benchmark at any checkpoint. The
+score is below the referenced baseline, so checkpoint 250 is not evidence of
+quality improvement. Later checkpoints require the same external evaluation
+contract before any model-selection or final-effectiveness claim.
+
+**FORMAL 1500-STEP RUN COMPLETE / CPU-ONLY FORENSIC COMPLETE**
+
 - Phase 1 `917d3d3a9e53db2e80bf425b435c597bb210b804`: Think-only Centered Exact-Clamp.
 - Phase 2 `ba813321f3d31158f293e67a5729669e78d42ca9`: added dead-zero Gold-A and
   A-collapse A+B teacher branches.
