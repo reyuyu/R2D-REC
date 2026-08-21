@@ -173,7 +173,10 @@ def test_read_only_api_and_legacy_run() -> None:
         root = Path(directory)
         run = root / "current"
         (run / "traces").mkdir(parents=True)
-        (run / "manifest.json").write_text('{"run_id":"current"}', encoding="utf-8")
+        (run / "manifest.json").write_text(
+            '{"run_id":"current","runner":"ablations/gr_rec_think_exact_clamp_v1/run_think_exact_clamp_train.py"}',
+            encoding="utf-8",
+        )
         trace = {
             "step": 2,
             "route": "think",
@@ -195,6 +198,21 @@ def test_read_only_api_and_legacy_run() -> None:
         else:
             assert payload["groups"][0]["valid"] is False
         assert client.get("/api/advantages?run_id=legacy").json()["groups"] == []
+
+        unsupported = root / "unsupported"
+        (unsupported / "traces").mkdir(parents=True)
+        (unsupported / "manifest.json").write_text(
+            '{"run_id":"unsupported","experiment":"GR_REC_DSR_Ablation_v1"}',
+            encoding="utf-8",
+        )
+        (unsupported / "traces" / "traces.jsonl").write_text(
+            json.dumps(trace) + "\n", encoding="utf-8"
+        )
+        unsupported_payload = client.get("/api/advantages?run_id=unsupported").json()
+        assert unsupported_payload["supported"] is False
+        assert unsupported_payload["formula"] is None
+        assert unsupported_payload["groups"][0]["valid"] is False
+        assert "避免套用新公式" in unsupported_payload["groups"][0]["reason"]
 
 
 if __name__ == "__main__":

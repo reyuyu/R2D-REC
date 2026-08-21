@@ -472,19 +472,29 @@ def monitor_tokenizer():
 
 
 def reconstruct_groups(
-    rows: list[dict[str, Any]], *, experiment: str | None = None
+    rows: list[dict[str, Any]], *, formula: str | None = None
 ) -> list[dict[str, Any]]:
     result = []
     for trace in rows:
         try:
             route = trace.get("route")
-            if route == "think":
+            if route == "think" and formula == "clamp_bridge_v1":
                 result.append(reconstruct_think_group(trace))
             elif route == "no_think":
-                if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
+                if formula == "frontier_v1":
                     result.append(reconstruct_frontier_group(trace))
-                else:
+                elif formula == "clamp_bridge_v1":
                     result.append(reconstruct_nothink_group(trace))
+                else:
+                    result.append(_invalid_group(
+                        trace,
+                        "该历史实验未声明可验证的 advantage 公式，已停止复算以避免套用新公式",
+                    ))
+            elif route == "think":
+                result.append(_invalid_group(
+                    trace,
+                    "该历史实验未声明可验证的 advantage 公式，已停止复算以避免套用新公式",
+                ))
         except RuntimeError as error:
             result.append(_invalid_group(trace, str(error)))
     return result

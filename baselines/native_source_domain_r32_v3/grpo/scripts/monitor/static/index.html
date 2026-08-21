@@ -588,6 +588,7 @@ function renderNoThinkAdvantage(group){
   return `<section class="adv-group"><header class="adv-group-head"><div><div class="adv-title">Step ${group.step??'—'} · NoThink G8 · ${frontier?'Frontier Token Credit':'Token Credit'} ${provenanceBadge()}</div><div class="adv-sub">${explanation}</div></div><div class="summary-chips">${chips.map(chip=>`<span class="summary-chip ${group.zero_signal?'alert':'good'}">${escapeHtml(chip)}</span>`).join('')}</div></header><div class="credit-layout"><div>${matrix}</div><aside class="credit-detail" id="creditDetail">${selectedCreditDetail(group)}</aside></div>${bridge}<div class="credit-candidates">${candidates}</div></section>`
 }
 function renderAdvantages(){
+  if(state.advantages?.supported===false){$('advantageContent').innerHTML=`<div class="adv-empty"><strong>未复算该历史实验的优势</strong><br>${escapeHtml(state.advantages.unsupported_reason||'公式未声明。')}<br>Reward、loss 与原始 rollout 仍按实采数据展示。</div>`;return}
   const groups=(state.advantages?.groups||[]).filter(group=>group.valid),route=$('advRouteSelect').value,focus=$('advFocusSelect').value,visible=groups.filter(group=>advantageMatches(group,route,focus));
   const select=$('advGroupSelect'),current=select.value;
   select.innerHTML=visible.length?[...visible].reverse().map(group=>`<option value="${escapeHtml(groupKey(group))}">Step ${group.step??'—'} · ${routeName(group.route)} · ${escapeHtml(String(group.group_id||'未命名组').slice(0,42))}</option>`).join(''):'<option value="">没有匹配记录</option>';

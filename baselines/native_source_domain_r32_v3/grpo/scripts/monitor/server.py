@@ -103,6 +103,20 @@ def normalized_run_kind(manifest: dict[str, Any]) -> str:
     return USER_RUN_KIND if manifest.get("run_kind") == USER_RUN_KIND or is_mc_user_manifest(manifest) else RECOMMENDATION_RUN_KIND
 
 
+def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
+    """Select only formulas whose immutable run manifest identifies them exactly."""
+    experiment = str(manifest.get("experiment") or "")
+    runner = str(manifest.get("runner") or "")
+    if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
+        return "frontier_v1"
+    if (
+        experiment == "GR_REC_NoThinkOnly_Hier_v1"
+        or runner.endswith("gr_rec_think_exact_clamp_v1/run_think_exact_clamp_train.py")
+    ):
+        return "clamp_bridge_v1"
+    return None
+
+
 def normalize_monitor_row(row: dict[str, Any], *, mc_user: bool = False) -> dict[str, Any]:
     """Expose a shared x-axis without erasing MC prompt/optimizer semantics."""
     normalized = dict(row)
@@ -944,7 +958,8 @@ def create_app(
     ):
         """Reconstruct display-only credit from immutable trace rows."""
         rows = []
-        trace_dir = selected_run(run_id) / "traces"
+        selected = selected_run(run_id)
+        trace_dir = selected / "traces"
         for path in sorted(trace_dir.glob("*.jsonl")):
             rows.extend(read_jsonl(path))
         for path in sorted(trace_dir.glob("*.json")):
@@ -957,16 +972,23 @@ def create_app(
         if group_id is not None:
             rows = [row for row in rows if row.get("group_id") == group_id]
         rows = rows[-limit:]
-        enrich_source_fields(rows, source_rows(selected_run(run_id), "train"))
+        enrich_source_fields(rows, source_rows(selected, "train"))
+        formula = monitor_advantage_formula(read_json(selected / "manifest.json", {}))
         return {
             "read_only": True,
+            "supported": formula is not None,
+            "formula": formula,
+            "unsupported_reason": (
+                None if formula is not None
+                else "该历史实验未在 manifest 中声明受支持的 advantage 公式；为避免套用新公式，本页不复算。"
+            ),
             "provenance": {
                 "captured": "训练时直接落盘",
                 "reconstructed": "由已落盘数据只读复算，非训练时直接采集",
             },
             "groups": reconstruct_groups(
                 rows,
-                experiment=read_json(selected_run(run_id) / "manifest.json", {}).get("experiment"),
+                formula=formula,
             ),
         }
 

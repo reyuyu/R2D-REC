@@ -287,7 +287,8 @@ with tempfile.TemporaryDirectory() as temporary:
         "renderRolloutCredit", "ensureExplorerAdvantages", "Sequence Advantage",
         "Token Credit", "Frontier Token Credit", "首次错误 Frontier 惩罚",
         "查看完整优势详情", "优势载入中", "复算",
-        "requestedRun!==state.activeRun", "explorerAdvantageController.abort()"
+        "requestedRun!==state.activeRun", "explorerAdvantageController.abort()",
+        "未复算该历史实验的优势"
     ))
     assert all(label in html for label in (
         "function rolloutKey(row)", "function selectedExplorerRollout()",
