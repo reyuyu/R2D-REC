@@ -42,6 +42,14 @@ class CheckpointEvalRequest(BaseModel):
     seed: int = Field(default=20260822, ge=0, le=2_147_483_647)
 
 
+def checkpoint_eval_launch_command(script: Path, master_port: int) -> list[str]:
+    """Launch distributed evaluation through the active Python environment."""
+    return [
+        sys.executable, "-m", "torch.distributed.run", "--nproc_per_node=4",
+        f"--master_port={master_port}", str(script),
+    ]
+
+
 def checkpoint_step(path: Path) -> int | None:
     match = CHECKPOINT_NAME_RE.fullmatch(path.name)
     if match is not None:
@@ -556,23 +564,40 @@ def create_app(
             "sample_size": request.sample_size,
         })
         script = Path(__file__).resolve().parents[1] / "checkpoint_eval.py"
-        torchrun = Path(sys.executable).with_name("torchrun")
-        if not script.is_file() or not torchrun.is_file():
-            raise HTTPException(status_code=500, detail="checkpoint evaluator is not installed")
+        if not script.is_file():
+            message = "checkpoint evaluator is not installed"
+            write_json_atomic(job_dir / "status.json", {
+                "state": "failed", "checkpoint_count": len(resolved),
+                "completed_checkpoints": 0, "sample_size": request.sample_size,
+                "message": message,
+            })
+            (job_dir / "evaluation.log").write_text(message + "\n", encoding="utf-8")
+            raise HTTPException(status_code=500, detail=message)
         master_port = 29600 + int(suffix[:4], 16) % 300
         command = [
-            str(torchrun), "--nproc_per_node=4", f"--master_port={master_port}", str(script),
+            *checkpoint_eval_launch_command(script, master_port),
             "--run-id", selected.name, "--config", str(job_dir / "job.json"),
             "--output-dir", str(job_dir), "--sample-size", str(request.sample_size),
             "--seed", str(request.seed),
         ]
         environment = os.environ.copy()
         environment.update({"CUDA_VISIBLE_DEVICES": "0,1,2,3", "TOKENIZERS_PARALLELISM": "false"})
-        with (job_dir / "evaluation.log").open("ab", buffering=0) as log_handle:
-            process = subprocess.Popen(
-                command, cwd=str(script.parent), env=environment, stdout=log_handle, stderr=subprocess.STDOUT,
-                start_new_session=True,
-            )
+        try:
+            with (job_dir / "evaluation.log").open("ab", buffering=0) as log_handle:
+                process = subprocess.Popen(
+                    command, cwd=str(script.parent), env=environment,
+                    stdout=log_handle, stderr=subprocess.STDOUT, start_new_session=True,
+                )
+        except OSError as exc:
+            message = f"checkpoint evaluator could not start: {exc}"
+            write_json_atomic(job_dir / "status.json", {
+                "state": "failed", "checkpoint_count": len(resolved),
+                "completed_checkpoints": 0, "sample_size": request.sample_size,
+                "message": message,
+            })
+            with (job_dir / "evaluation.log").open("a", encoding="utf-8") as log_handle:
+                log_handle.write(message + "\n")
+            raise HTTPException(status_code=500, detail=message) from exc
         config["pid"] = process.pid
         write_json_atomic(job_dir / "job.json", config)
         return job_payload(job_dir)
