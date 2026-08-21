@@ -8799,8 +8799,8 @@
         "cosine_old_frontier": {
           "n": 5,
           "min": 0.010641317814588547,
-          "max": 1.0071849822998047,
-          "mean": 0.7224186263978482,
+          "max": 1.0,
+          "mean": 0.7209816299378872,
           "median": 0.9495573043823242
         }
       },
@@ -16578,7 +16578,7 @@
           "old_grad_norm": 2.459484100341797,
           "frontier_grad_norm": 2.9604573249816895,
           "frontier_over_old": 1.203690369281213,
-          "cosine_old_frontier": 1.0071849822998047,
+          "cosine_old_frontier": 1.0,
           "old_grad_finite": true,
           "frontier_grad_finite": true,
           "old_hier_credits": [

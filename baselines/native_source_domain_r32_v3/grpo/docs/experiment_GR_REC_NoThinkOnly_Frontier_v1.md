@@ -6,9 +6,11 @@
 - Parent experiment: `GR_REC_NoThinkOnly_Hier_v1`
 - Branch: `ablation/gr-rec-nothink-only-frontier-v1`
 - Isolated developer-machine worktree: `/data/GRPO-frontier-v1`
-- This phase: CPU implementation, regression tests, and static audit only
-- GPU used: no
-- Training started: no
+- Completed phases: CPU implementation, historical forensic, paired zero-update
+  GPU audit, and bounded Smoke24
+- GPU used: yes, only for the authorized zero-update audit and Smoke24
+- Full Frontier training started: no
+- External benchmark started: no
 
 ## Research change
 
@@ -124,6 +126,67 @@ the stopped Hier run retained only its configured recent 32-G8 trace sample.
 These statistics describe all available immutable candidate traces, not all
 1,297 optimizer steps of the stopped Hier run.
 
-Phase B has not started. The required Hier final checkpoint-1544 does not exist
-because that run was explicitly stopped at step 1297; no checkpoint substitution
-or automatic restart is permitted.
+## Paired zero-update gradient audit (2026-08-22)
+
+Phase B used the fixed ten real G8 groups and two policy states: Fresh original
+BATA and Hier v1 `checkpoint-1250`. The checkpoint was used only as a late-policy
+gradient stress diagnostic; Frontier training initialization remained Fresh BATA.
+For every `policy_state x G8`, generation occurred exactly once, and the saved
+completion IDs, masks and old log probabilities were reused for OLD_HIER and
+FRONTIER_V1 backward passes.
+
+All 20 policy/group comparisons completed. Fresh BATA OLD_HIER gradient norms
+ranged `0.0..2.2520`, Frontier norms `0.1172..4.2753`; finite nonzero ratios had
+median `3.0686`, and cosine median `0.5056`. Hier-1250 OLD_HIER norms ranged
+`0.0..2.6847`, Frontier norms `0.1881..6.2655`; finite nonzero ratios had median
+`2.3338`, and cosine median `0.9496`.
+
+The late policy produced an 8/8 C-frontier stress group. OLD_HIER was zero while
+Frontier norm was `4.9874`; C-only norm was `4.8476`, or `97.20%` of the full
+Frontier norm. This confirms C can dominate a uniform late-policy C failure, but
+the gradient remained finite, so it is a soft risk rather than a hard failure.
+The observed real format violation used only the fixed whole-sequence total
+`-0.09375`; format-only norm was `0.03504` (`11.02%` of full), and D/A/B/C were
+fully gated. Its completion came from the saved paired rollout and was not
+regenerated for the decomposition.
+
+LoRA and base checksums were unchanged for both policies, base gradients were
+absent, optimizer steps were exactly zero, and there were no alignment,
+format/hierarchy overlap, non-finite, OOM or runtime failures.
+
+Structured result:
+`results/gr_rec_nothink_frontier_v1_paired_gradient_audit_20260822.json`
+
+## Bounded Smoke24 (2026-08-22)
+
+Run `GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822` started from Fresh
+original BATA on four A800 GPUs and stopped automatically at 24/24 optimizer
+steps (12 fresh stochastic G8 rollouts, 24 real groups, 192 candidates). It used
+the frozen contract: temperature/top-p `1/1`, LR `1e-6`, beta `0`, epsilon `.2`,
+GRPO loss, two policy iterations, route multiplier `.5`, and Gold-A bridge
+lambda `.02`.
+
+Loss ranged `0.01942..0.08235` (mean `0.03390`); gradient norm
+`0.2471..1.6692` (mean `0.4843`); approximate KL `0..0.001444`; clip fraction
+`0..0.02941`. No sampled candidate violated strict format. Frontier candidate
+counts were Domain `65`, A `96`, B `28`, C `2`. One real group activated the
+Gold-A bridge; weighted bridge loss peaked at `0.10146`.
+
+The two rollouts containing a C-frontier candidate had maximum gradient norms
+with mean `1.0962`, versus `0.3717` across ten rollouts without C-frontier. The
+largest gradient (`1.6692`) occurred with one C-frontier candidate. This is a
+small-sample association (`n=2`), not evidence of instability or causality.
+
+The checkpoint-24 adapter differs from Fresh BATA (`LoRA L2 delta=0.08176`, max
+absolute delta `2.52e-5`), while base delta is zero by the frozen-base,
+LoRA-only optimizer and adapter-only checkpoint evidence. There were no NaN,
+Inf, OOM, non-finite metrics or runtime exceptions in the accepted run.
+
+An initial step-0 launch failed before rollout generation because the command
+omitted the machine's standard loopback NCCL/GLOO environment. That untouched
+engineering failure is archived separately and excluded from Smoke metrics; the
+retry used the established communication environment without changing any
+training or algorithm parameter.
+
+Structured result:
+`results/gr_rec_nothink_frontier_v1_smoke24_20260822.json`

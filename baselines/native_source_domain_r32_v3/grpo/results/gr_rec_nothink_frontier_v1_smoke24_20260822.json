@@ -1,0 +1,194 @@
+{
+  "experiment": "GR_REC_NoThinkOnly_Frontier_v1",
+  "phase": "4xA800 bounded Smoke24",
+  "generated_at": "2026-08-21T19:55:39.409450+00:00",
+  "run_id": "GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822",
+  "run_dir": "/data/GRPO/runs/GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822",
+  "checkpoint": "/data/GRPO/outputs/formal/GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822/checkpoint-24",
+  "initialization": "fresh original BATA adapter",
+  "completed_steps": 24,
+  "expected_steps": 24,
+  "rollout_count": 12,
+  "g8_group_count": 24,
+  "candidate_count": 192,
+  "metrics": {
+    "loss": {
+      "n": 24,
+      "min": 0.019415883347392082,
+      "max": 0.08234621584415436,
+      "mean": 0.03390448447316885,
+      "median": 0.028613132424652576
+    },
+    "grad_norm": {
+      "n": 24,
+      "min": 0.2471131682395935,
+      "max": 1.6691820621490479,
+      "mean": 0.48433656493822735,
+      "median": 0.4063548594713211
+    },
+    "approx_kl": {
+      "n": 24,
+      "min": 0.0,
+      "max": 0.0014442006358876824,
+      "mean": 0.0003487796978636955,
+      "median": 0.000142930744914338
+    },
+    "clip_fraction": {
+      "n": 24,
+      "min": 0.0,
+      "max": 0.029411764815449715,
+      "mean": 0.003574569709599018,
+      "median": 0.0
+    },
+    "reward_mean": {
+      "n": 24,
+      "min": -0.125,
+      "max": 0.75,
+      "mean": 0.05078125,
+      "median": 0.0
+    }
+  },
+  "format": {
+    "violation_candidate_count": 0,
+    "violation_candidate_rate": 0.0
+  },
+  "frontier_candidate_counts": {
+    "domain": 65,
+    "a": 96,
+    "b": 28,
+    "c": 2
+  },
+  "positive_stage_active_group_counts": {
+    "domain": 20,
+    "a": 15,
+    "b": 3,
+    "c": 1
+  },
+  "c_frontier_vs_grad": {
+    "rollouts": [
+      {
+        "rollout_id": 1,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.2578538656234741
+      },
+      {
+        "rollout_id": 2,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.30530211329460144
+      },
+      {
+        "rollout_id": 3,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.34482279419898987
+      },
+      {
+        "rollout_id": 4,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.2572353780269623
+      },
+      {
+        "rollout_id": 5,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.4450664818286896
+      },
+      {
+        "rollout_id": 6,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.3112328350543976
+      },
+      {
+        "rollout_id": 7,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.506662130355835
+      },
+      {
+        "rollout_id": 8,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.43369942903518677
+      },
+      {
+        "rollout_id": 9,
+        "c_frontier_candidate_count": 1,
+        "grad_norm_max": 1.6691820621490479
+      },
+      {
+        "rollout_id": 10,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.47422295808792114
+      },
+      {
+        "rollout_id": 11,
+        "c_frontier_candidate_count": 0,
+        "grad_norm_max": 0.3805358409881592
+      },
+      {
+        "rollout_id": 12,
+        "c_frontier_candidate_count": 1,
+        "grad_norm_max": 0.523175060749054
+      }
+    ],
+    "pearson_c_count_vs_rollout_max_grad": 0.7384365849453068,
+    "c_positive_rollout_count": 2,
+    "c_zero_rollout_count": 10,
+    "c_positive_grad_norm_max": {
+      "n": 2,
+      "min": 0.523175060749054,
+      "max": 1.6691820621490479,
+      "mean": 1.096178561449051,
+      "median": 1.096178561449051
+    },
+    "c_zero_grad_norm_max": {
+      "n": 10,
+      "min": 0.2572353780269623,
+      "max": 0.506662130355835,
+      "mean": 0.37166338264942167,
+      "median": 0.3626793175935745
+    },
+    "largest_grad_rollout": {
+      "rollout_id": 9,
+      "c_frontier_candidate_count": 1,
+      "grad_norm_max": 1.6691820621490479
+    }
+  },
+  "bridge": {
+    "active_group_count": 1,
+    "weighted_loss": {
+      "n": 48,
+      "min": 0.0,
+      "max": 0.10146000981330872,
+      "mean": 0.004221232918401559,
+      "median": 0.0
+    },
+    "lambda": 0.02
+  },
+  "parameter_evidence": {
+    "lora_delta": {
+      "tensor_count": 504,
+      "element_count": 87293952,
+      "l2": 0.081758090596467,
+      "max_abs": 2.5232453481294215e-05,
+      "changed": true
+    },
+    "base_delta": 0.0,
+    "base_delta_evidence": "base parameters were frozen; optimizer contained only trainable LoRA; checkpoint contains adapter-only LoRA tensors",
+    "checkpoint_keys_are_adapter_only": true
+  },
+  "safety": {
+    "nonfinite_metrics": [],
+    "log_errors": {
+      "nan_or_inf": false,
+      "oom": false,
+      "runtime_exception": false
+    },
+    "nan_or_inf": false,
+    "oom": false,
+    "runtime_exception": false,
+    "pass": true
+  },
+  "startup_incident": {
+    "archived_path": "/data/GRPO/archives/GR-REC-NOTHINK-ONLY-FRONTIER-V1-SMOKE24-20260822-startup-nccl-failed-step0",
+    "training_steps": 0,
+    "cause": "missing standard loopback NCCL/GLOO interface environment",
+    "excluded_from_smoke_metrics": true
+  }
+}

@@ -174,7 +174,10 @@ def isolated_gradient(model, parameters, objective):
 
 def cosine(left, right):
     denominator = torch.linalg.vector_norm(left) * torch.linalg.vector_norm(right)
-    return None if float(denominator) == 0 else float(torch.dot(left, right) / denominator)
+    if float(denominator) == 0:
+        return None
+    value = float(torch.dot(left, right) / denominator)
+    return max(-1.0, min(1.0, value))
 
 
 def make_batch(record, model, tokenizer, max_new_tokens):
