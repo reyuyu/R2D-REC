@@ -237,7 +237,8 @@
       "spearman": null
     },
     "quadrant_examples": {
-      "high_beam_high_cot": [
+      "high_beam_high_cot": [],
+      "high_beam_low_cot": [
         {
           "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
           "step": 0,
@@ -248,34 +249,34 @@
         {
           "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
           "step": 0,
-          "u_beam": 0.38776193503849,
-          "u_cot": 0.0,
-          "composite_reward": 0.23265716102309397
-        },
-        {
-          "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
-          "step": 0,
           "u_beam": 0.7755238700769802,
           "u_cot": 0.0,
           "composite_reward": 0.4653143220461881
         },
         {
-          "group_id": "f1bd212b32ec1e0144a7f62712c6f16c08df99284c0dee310314e0d548bd432c",
-          "step": 12,
-          "u_beam": 0.38776193503849,
+          "group_id": "768f6c067ee824c6e2daa1bf3effcd87467620dd605dd26904dba5d201bb29ff",
+          "step": 26,
+          "u_beam": 0.8170961137992823,
           "u_cot": 0.0,
-          "composite_reward": 0.23265716102309397
+          "composite_reward": 0.49025766827956935
         },
         {
-          "group_id": "f1bd212b32ec1e0144a7f62712c6f16c08df99284c0dee310314e0d548bd432c",
-          "step": 12,
-          "u_beam": 0.38776193503849,
+          "group_id": "768f6c067ee824c6e2daa1bf3effcd87467620dd605dd26904dba5d201bb29ff",
+          "step": 26,
+          "u_beam": 0.8170961137992823,
           "u_cot": 0.0,
-          "composite_reward": 0.23265716102309397
+          "composite_reward": 0.49025766827956935
+        },
+        {
+          "group_id": "768f6c067ee824c6e2daa1bf3effcd87467620dd605dd26904dba5d201bb29ff",
+          "step": 26,
+          "u_beam": 0.9086921794572079,
+          "u_cot": 0.0,
+          "composite_reward": 0.5452153076743247
         }
       ],
-      "high_beam_low_cot": [],
-      "low_beam_high_cot": [
+      "low_beam_high_cot": [],
+      "low_beam_low_cot": [
         {
           "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
           "step": 0,
@@ -284,11 +285,11 @@
           "composite_reward": 0.08586683575215842
         },
         {
-          "group_id": "775d2c1d73b635f501a0f4bc9da6024002fecb009894b9d6fbdb1cb3fbd0ba72",
-          "step": 2,
-          "u_beam": 0.14311139292026404,
+          "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+          "step": 0,
+          "u_beam": 0.38776193503849,
           "u_cot": 0.0,
-          "composite_reward": 0.08586683575215842
+          "composite_reward": 0.23265716102309397
         },
         {
           "group_id": "775d2c1d73b635f501a0f4bc9da6024002fecb009894b9d6fbdb1cb3fbd0ba72",
@@ -311,8 +312,7 @@
           "u_cot": 0.0,
           "composite_reward": 0.08586683575215842
         }
-      ],
-      "low_beam_low_cot": []
+      ]
     }
   },
   "representative_tradeoffs": [
@@ -344,8 +344,8 @@
   ],
   "runtime": {
     "calls": 1280,
-    "average_ms_per_candidate": 1.241574527375633,
-    "average_ms_per_g4": 4.966298109502532
+    "average_ms_per_candidate": 1.2394277422572486,
+    "average_ms_per_g4": 4.957710969028994
   },
   "gpu_used": false
 }

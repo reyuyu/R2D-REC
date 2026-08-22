@@ -153,8 +153,8 @@ def audit_history(groups: dict[str, dict], gold: dict[str, str], trace_path: Pat
         "u_beam_vs_total": correlation([row["u_beam"] for row in rows], [row["total"] for row in rows]),
         "u_cot_vs_total": correlation(u_cot, [row["total"] for row in rows]),
     }
-    beam_median = statistics.median(row["u_beam"] for row in rows)
-    cot_median = statistics.median(u_cot)
+    beam_threshold = 0.5
+    cot_threshold = 0.5
     quadrants = {}
     for beam_high, cot_high, name in (
         (True, True, "high_beam_high_cot"),
@@ -164,7 +164,7 @@ def audit_history(groups: dict[str, dict], gold: dict[str, str], trace_path: Pat
     ):
         matches = [
             row for row in rows
-            if (row["u_beam"] >= beam_median) == beam_high and (row["u_cot"] >= cot_median) == cot_high
+            if (row["u_beam"] >= beam_threshold) == beam_high and (row["u_cot"] >= cot_threshold) == cot_high
         ]
         quadrants[name] = [{
             "group_id": row["group_id"],
