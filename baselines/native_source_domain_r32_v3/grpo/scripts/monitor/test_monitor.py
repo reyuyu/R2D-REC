@@ -313,6 +313,8 @@ with tempfile.TemporaryDirectory() as temporary:
         "思考路线 Hit@32", "直答路线 Hit@32", "95% CI", "function renderCheckpointEval()",
         "/api/checkpoint-eval/catalog", "/api/checkpoint-eval/jobs",
     ))
+    static_html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
+    assert "routeBlock=(route,data)=>{if(!data||typeof data!==\"object\")return '';" in static_html
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 
