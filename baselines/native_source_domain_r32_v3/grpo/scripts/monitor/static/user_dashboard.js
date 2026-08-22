@@ -830,11 +830,18 @@
   }
 
   function renderUserTraceIndex() {
-    const current = Number($('rolloutSelect').value);
+    const current = $('rolloutSelect').value;
     const lane = route => {
       const traces = state.traces.filter(trace => trace.route === route).sort((a, b) => a.rollout_id - b.rollout_id);
-      const rolloutCount = state.rollouts.filter(rollout => rollout.route === route).length;
-      const links = traces.length ? traces.map(trace => `<button class="trace-link ${trace.rollout_id === current ? 'active' : ''}" type="button" data-rollout-id="${trace.rollout_id}" data-route="${route}">第 ${trace.step ?? '-'} 步 · #${trace.rollout_id} · ${trace.candidates?.length ?? 0} candidates</button>`).join('') : `<span class="trace-none">${rolloutCount ? `${rolloutCount} 条汇总 · candidate trace 未落盘` : '尚无记录'}</span>`;
+      const traceByRollout = new Map(traces.map(trace => [Number(trace.rollout_id), trace]));
+      const rollouts = state.rollouts.filter(rollout => rollout.route === route);
+      const links = rollouts.length ? rollouts.map(rollout => {
+        const key = userRolloutKey(rollout);
+        const trace = traceByRollout.get(Number(rollout.rollout_id));
+        const complete = Boolean(trace) || Array.isArray(rollout.credit_units);
+        const detail = trace ? `${trace.candidates?.length ?? 0} candidates` : complete ? '完整样本' : '仅汇总';
+        return `<button class="trace-link ${complete ? '' : 'summary-only '}${key === current ? 'active' : ''}" type="button" data-rollout-id="${escapeHtml(key)}" data-route="${route}">第 ${rollout.step ?? '-'} 步 · #${rollout.rollout_id ?? '-'} · ${detail}</button>`;
+      }).join('') : '<span class="trace-none">尚无记录</span>';
       return `<div class="trace-lane"><div class="trace-lane-title ${route === 'action' ? 'user-route-action' : 'user-route-chain'}">${routeName(route)}</div><div class="trace-links">${links}</div></div>`;
     };
     $('traceIndex').innerHTML = lane('action') + lane('chain');
@@ -920,10 +927,10 @@
     const current = select.value;
     const traceIds = new Set(state.traces.map(trace => Number(trace.rollout_id)));
     select.innerHTML = [...state.rollouts].reverse().map(rollout => {
-      const recorded = traceIds.has(Number(rollout.rollout_id));
+      const recorded = traceIds.has(Number(rollout.rollout_id)) || Array.isArray(rollout.credit_units);
       const key = userRolloutKey(rollout);
       const label = rollout.rollout_id != null ? `#${rollout.rollout_id}` : `Prompt ${rollout.prompt_step ?? rollout.step} · Candidate ${rollout.candidate_index ?? '-'}`;
-      return `<option value="${escapeHtml(key)}">${escapeHtml(label)} · ${escapeHtml(routeName(rollout.route))} · 第 ${rollout.step} 步${recorded ? ' · 有样本' : ''}</option>`;
+      return `<option value="${escapeHtml(key)}">${escapeHtml(label)} · ${escapeHtml(routeName(rollout.route))} · 第 ${rollout.step} 步 · ${recorded ? '完整样本' : '仅汇总'}</option>`;
     }).join('');
     if (current && [...select.options].some(option => option.value === current)) {
       select.value = current;

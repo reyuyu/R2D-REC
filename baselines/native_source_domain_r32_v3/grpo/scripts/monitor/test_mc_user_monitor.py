@@ -220,7 +220,7 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260822-mc-k4-rollout", html)
+        self.assertIn("20260822-history-rollout", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
@@ -240,6 +240,10 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("Action Mean F1", javascript)
         self.assertIn("state.manifest.K ?? 2", javascript)
         self.assertIn("userRolloutKey", javascript)
+        self.assertIn("完整样本", javascript)
+        self.assertIn("仅汇总", javascript)
+        self.assertIn("summary-only", javascript)
+        self.assertIn("button.dataset.rolloutId!=null", html)
         self.assertIn("full_action_alignment", javascript)
         self.assertIn("尚未执行 Recommendation guard evaluation", javascript)
         self.assertIn("state.checkpoints", javascript)
