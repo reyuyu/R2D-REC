@@ -1,6 +1,7 @@
 """Pure preflight condition evaluation; importing this module never touches CUDA."""
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 
@@ -39,6 +40,82 @@ def prepare_preflight_loss_context(trainer: Any) -> int:
         )
     trainer.current_gradient_accumulation_steps = steps
     return steps
+
+
+def masked_token_tuples(token_ids: Any, token_mask: Any) -> list[tuple[int, ...]]:
+    """Return each sequence with mask-zero padding removed."""
+    ids_rows = token_ids.detach().cpu().tolist() if hasattr(token_ids, "detach") else token_ids
+    mask_rows = token_mask.detach().cpu().tolist() if hasattr(token_mask, "detach") else token_mask
+    if len(ids_rows) != len(mask_rows):
+        raise ValueError("token ids and mask batch sizes differ")
+    output = []
+    for ids, mask in zip(ids_rows, mask_rows):
+        if len(ids) != len(mask):
+            raise ValueError("token ids and mask sequence lengths differ")
+        output.append(tuple(int(token) for token, keep in zip(ids, mask) if bool(keep)))
+    return output
+
+
+def raw_decode_diagnostics(
+    tokenizer: Any,
+    completion_ids: Any,
+    completion_mask: Any,
+    runtime_candidates: list[dict[str, Any]],
+    rank: int,
+) -> dict[str, Any]:
+    """Compare rank-local reward text with masked, unpadded completion ids."""
+    token_rows = masked_token_tuples(completion_ids, completion_mask)
+    candidates = sorted(
+        (row for row in runtime_candidates if int(row["rank"]) == int(rank)),
+        key=lambda row: int(row["local_index"]),
+    )
+    if len(candidates) != len(token_rows):
+        raise ValueError("rank-local runtime candidates do not match completion batch")
+    mismatches = []
+    for expected_index, (candidate, token_row) in enumerate(zip(candidates, token_rows)):
+        if int(candidate["local_index"]) != expected_index:
+            raise ValueError("rank-local runtime candidate indices are not contiguous")
+        decoded = tokenizer.decode(list(token_row), skip_special_tokens=False)
+        if decoded != candidate["completion"]:
+            mismatches.append({
+                "local_index": expected_index,
+                "runtime_completion": candidate["completion"],
+                "masked_decode": decoded,
+            })
+    return {
+        "candidate_count": len(candidates),
+        "mismatch_count": len(mismatches),
+        "pass": not mismatches,
+        "mismatches": mismatches,
+    }
+
+
+def float_vectors_close(left: list[float], right: list[float], tolerance: float = 2e-5) -> bool:
+    return len(left) == len(right) and all(
+        abs(float(a) - float(b)) < tolerance for a, b in zip(left, right)
+    )
+
+
+def sequence_advantage_signatures(batch: dict[str, Any]) -> Counter:
+    """Bind every advantage to its unpadded prompt and completion token ids."""
+    prompts = masked_token_tuples(batch["prompt_ids"], batch["prompt_mask"])
+    completions = masked_token_tuples(batch["completion_ids"], batch["completion_mask"])
+    advantages = batch["advantages"]
+    if hasattr(advantages, "detach"):
+        advantages = advantages.detach().float().cpu().tolist()
+    if not (len(prompts) == len(completions) == len(advantages)):
+        raise ValueError("sequence/advantage batch sizes differ")
+    return Counter(
+        (prompt, completion, float(advantage))
+        for prompt, completion, advantage in zip(prompts, completions, advantages)
+    )
+
+
+def post_shuffle_association_parity(
+    pre_shuffle: dict[str, Any], post_shuffle: dict[str, Any]
+) -> bool:
+    """Accept order changes only when sequence-to-advantage associations survive."""
+    return sequence_advantage_signatures(pre_shuffle) == sequence_advantage_signatures(post_shuffle)
 
 
 def sid_runtime_observation(generated_sid_candidate_count: int) -> dict[str, Any]:

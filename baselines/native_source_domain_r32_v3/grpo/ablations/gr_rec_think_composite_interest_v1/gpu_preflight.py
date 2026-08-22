@@ -19,10 +19,14 @@ from monitor.writer import monitor_from_env
 from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config
 
 from .composite_trainer import ThinkCompositeInterestRecGRPOTrainer
-from .interest_metric import composite_reward, population_advantages
+from .composite_trainer import slice_global
+from .interest_metric import composite_reward
 from .preflight_contract import (
     evaluate_preflight_conditions,
+    float_vectors_close,
+    post_shuffle_association_parity,
     prepare_preflight_loss_context,
+    raw_decode_diagnostics,
     sid_runtime_observation,
 )
 from .run_gr_rec_think_composite_interest_v1 import git_head, prepare_plan
@@ -36,6 +40,17 @@ class PreflightTrainer(ThinkCompositeInterestRecGRPOTrainer):
         result = super()._calculate_rewards(*args, **kwargs)
         self.preflight_runtime = self._composite_runtime
         return result
+
+    def _generate_and_score_completions(self, inputs):
+        output = super()._generate_and_score_completions(inputs)
+        self.preflight_pre_shuffle = {
+            key: output[key].detach().clone()
+            for key in (
+                "prompt_ids", "prompt_mask", "completion_ids",
+                "completion_mask", "advantages",
+            )
+        }
+        return output
 
 
 def checksum_trainable(model):
@@ -92,8 +107,38 @@ def main(argv=None):
     model.zero_grad(set_to_none=True)
     prepared = trainer._prepare_inputs(batch)
     runtime = trainer.preflight_runtime
-    local_advantages = prepared["advantages"].detach().float().cpu().tolist()
-    gathered_advantages = [value for part in gather(local_advantages) for value in part]
+    pre_shuffle = trainer.preflight_pre_shuffle
+    pre_advantages = pre_shuffle["advantages"].detach().float().cpu().tolist()
+    post_advantages = prepared["advantages"].detach().float().cpu().tolist()
+    expected_advantages = slice_global(
+        runtime["advantages"], rank, len(pre_advantages), world,
+    )
+    raw_decode = raw_decode_diagnostics(
+        tokenizer,
+        pre_shuffle["completion_ids"],
+        pre_shuffle["completion_mask"],
+        runtime["candidates"],
+        rank,
+    )
+    parity_row = {
+        "rank": rank,
+        "raw_decode_candidate_count": raw_decode["candidate_count"],
+        "raw_decode_mismatch_count": raw_decode["mismatch_count"],
+        "raw_decode_runtime_pass": raw_decode["pass"],
+        "raw_decode_mismatches": raw_decode["mismatches"],
+        "pre_shuffle_advantage_vector": pre_advantages,
+        "post_shuffle_advantage_vector": post_advantages,
+        "pre_shuffle_advantage_parity": float_vectors_close(
+            pre_advantages, expected_advantages,
+        ),
+        "post_shuffle_association_parity": post_shuffle_association_parity(
+            pre_shuffle, prepared,
+        ),
+        "advantage_order_changed": not float_vectors_close(
+            pre_advantages, post_advantages,
+        ),
+    }
+    parity_rows = gather(parity_row)
     gradient_accumulation_steps = prepare_preflight_loss_context(trainer)
     assert int(trainer.args.gradient_accumulation_steps) == 1
     with trainer.compute_loss_context_manager():
@@ -129,24 +174,33 @@ def main(argv=None):
         candidates = runtime["candidates"]
         reward_parity = all(abs(row["composite_reward"] - composite_reward(
             row["beam_raw"], row["cot_utility"])) < 1e-7 for row in candidates)
-        recomputed_advantages = []
-        for group in groups:
-            recomputed_advantages.extend(population_advantages(group["composite_reward_vector"]))
+        pre_shuffle_advantage_parity = all(
+            row["pre_shuffle_advantage_parity"] for row in parity_rows
+        )
+        post_shuffle_association_parity_pass = all(
+            row["post_shuffle_association_parity"] for row in parity_rows
+        )
         advantage_parity = (
-            len(gathered_advantages) == len(recomputed_advantages)
-            and all(abs(left - right) < 2e-5 for left, right in zip(gathered_advantages, recomputed_advantages))
+            pre_shuffle_advantage_parity and post_shuffle_association_parity_pass
+        )
+        advantage_order_changed = any(
+            row["advantage_order_changed"] for row in parity_rows
         )
         group_ids = [row["group_id"] for row in candidates]
         ddp_alignment = len(groups) == 4 and all(
             len(set(group_ids[start:start + 4])) == 1 for start in range(0, 16, 4)
         )
         generated_sid_count = sum(bool(extract_sids(row["completion"])) for row in candidates)
-        raw_decode_pass = all(
-            row["completion"] == tokenizer.decode(
-                prepared["completion_ids"][row["local_index"]].detach().cpu().tolist(),
-                skip_special_tokens=False,
-            ) if row["rank"] == 0 else True
-            for row in candidates
+        raw_decode_candidate_count = sum(
+            row["raw_decode_candidate_count"] for row in parity_rows
+        )
+        raw_decode_mismatch_count = sum(
+            row["raw_decode_mismatch_count"] for row in parity_rows
+        )
+        raw_decode_pass = (
+            raw_decode_candidate_count == len(candidates)
+            and raw_decode_mismatch_count == 0
+            and all(row["raw_decode_runtime_pass"] for row in parity_rows)
         )
         gold_leakage = any(row["gold_cot"] in render_prompt(tokenizer, row["prompt"])
                            for row in plan["records"][:4])
@@ -186,9 +240,28 @@ def main(argv=None):
             ),
             "preflight_loss_entry": "compute_loss",
             "preflight_compute_loss_context": True,
+            "raw_decode_validation_mode": "MASKED_UNPADDED",
+            "raw_decode_candidate_count": raw_decode_candidate_count,
+            "raw_decode_mismatch_count": raw_decode_mismatch_count,
             "raw_decode_runtime_pass": raw_decode_pass,
+            "raw_decode_rank_rows": [{
+                "rank": row["rank"],
+                "candidate_count": row["raw_decode_candidate_count"],
+                "mismatch_count": row["raw_decode_mismatch_count"],
+                "pass": row["raw_decode_runtime_pass"],
+                "mismatches": row["raw_decode_mismatches"],
+            } for row in parity_rows],
             **sid_observation,
             "online_reward_parity": reward_parity,
+            "pre_shuffle_advantage_parity": pre_shuffle_advantage_parity,
+            "post_shuffle_association_parity": post_shuffle_association_parity_pass,
+            "pre_shuffle_advantage_vector_by_rank": [
+                row["pre_shuffle_advantage_vector"] for row in parity_rows
+            ],
+            "post_shuffle_advantage_vector_by_rank": [
+                row["post_shuffle_advantage_vector"] for row in parity_rows
+            ],
+            "advantage_order_changed": advantage_order_changed,
             "online_advantage_parity": advantage_parity,
             "ddp_g4_alignment": ddp_alignment,
             "gold_leakage": gold_leakage,

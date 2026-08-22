@@ -15,7 +15,11 @@ import torch
 
 from .preflight_contract import (
     evaluate_preflight_conditions,
+    float_vectors_close,
+    masked_token_tuples,
+    post_shuffle_association_parity,
     prepare_preflight_loss_context,
+    raw_decode_diagnostics,
     sid_runtime_observation,
 )
 from .run_gr_rec_think_composite_interest_v1 import (
@@ -69,6 +73,58 @@ def passing_preflight(**overrides):
 
 
 class PreflightContractTests(unittest.TestCase):
+    class Tokenizer:
+        @staticmethod
+        def decode(token_ids, skip_special_tokens=False):
+            return ":".join(str(value) for value in token_ids)
+
+    def test_masked_raw_decode_ignores_right_padding(self):
+        result = raw_decode_diagnostics(
+            self.Tokenizer(),
+            torch.tensor([[1, 2, 3, 0, 0]]),
+            torch.tensor([[1, 1, 1, 0, 0]]),
+            [{"rank": 0, "local_index": 0, "completion": "1:2:3"}],
+            rank=0,
+        )
+        self.assertTrue(result["pass"])
+        self.assertEqual(result["mismatch_count"], 0)
+        self.assertEqual(masked_token_tuples(
+            [[1, 2, 3, 0, 0]], [[1, 1, 1, 0, 0]],
+        ), [(1, 2, 3)])
+
+    def test_unmasked_decode_reproduces_old_padding_mismatch(self):
+        decoded = self.Tokenizer.decode([1, 2, 3, 0, 0], skip_special_tokens=False)
+        self.assertNotEqual(decoded, "1:2:3")
+
+    @staticmethod
+    def parity_batch(order, advantages):
+        prompts = [[10 + value, 0] for value in order]
+        completions = [[20 + value, 0] for value in order]
+        masks = [[1, 0] for _ in order]
+        return {
+            "prompt_ids": torch.tensor(prompts),
+            "prompt_mask": torch.tensor(masks),
+            "completion_ids": torch.tensor(completions),
+            "completion_mask": torch.tensor(masks),
+            "advantages": torch.tensor(advantages, dtype=torch.float32),
+        }
+
+    def test_pre_shuffle_advantage_vector_parity(self):
+        self.assertTrue(float_vectors_close([0.1, 0.2, 0.3, 0.4], [0.1, 0.2, 0.3, 0.4]))
+
+    def test_synchronized_post_shuffle_preserves_associations(self):
+        pre = self.parity_batch([0, 1, 2, 3], [0.1, 0.2, 0.3, 0.4])
+        post = self.parity_batch([2, 0, 3, 1], [0.3, 0.1, 0.4, 0.2])
+        self.assertTrue(post_shuffle_association_parity(pre, post))
+        self.assertFalse(float_vectors_close(
+            pre["advantages"].tolist(), post["advantages"].tolist(),
+        ))
+
+    def test_advantage_only_shuffle_breaks_associations(self):
+        pre = self.parity_batch([0, 1, 2, 3], [0.1, 0.2, 0.3, 0.4])
+        broken = self.parity_batch([0, 1, 2, 3], [0.3, 0.1, 0.4, 0.2])
+        self.assertFalse(post_shuffle_association_parity(pre, broken))
+
     def test_preflight_loss_context_uses_frozen_accumulation(self):
         trainer = SimpleNamespace(args=SimpleNamespace(gradient_accumulation_steps=1))
         self.assertFalse(hasattr(trainer, "current_gradient_accumulation_steps"))
@@ -90,6 +146,14 @@ class PreflightContractTests(unittest.TestCase):
         self.assertIn("with trainer.compute_loss_context_manager():", source)
         self.assertNotIn("trainer._compute_loss(", source)
         self.assertNotIn("trainer.training_step(", source)
+
+    def test_preflight_captures_snapshot_without_production_trainer_change(self):
+        source = inspect.getsource(gpu_preflight.PreflightTrainer)
+        self.assertIn("self.preflight_pre_shuffle", source)
+        production_source = inspect.getsource(
+            gpu_preflight.ThinkCompositeInterestRecGRPOTrainer
+        )
+        self.assertNotIn("preflight_pre_shuffle", production_source)
 
     def test_sid_status_is_observed_and_nonblocking(self):
         self.assertEqual(sid_runtime_observation(0), {
