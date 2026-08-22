@@ -687,6 +687,16 @@
     return Number(step) === 0 ? 'BETA' : `Step ${step}`;
   }
 
+  function mcProbeQueueState(step, evaluated) {
+    if (evaluated.has(Number(step))) return {className: 'done', label: 'Done'};
+    const item = (state.userLightProbe?.items || []).find(value => Number(value.step) === Number(step));
+    const status = String(item?.status || 'waiting').toLowerCase();
+    if (status === 'ready') return {className: 'ready', label: 'Ready for Probe'};
+    if (status === 'evaluating') return {className: 'evaluating', label: 'Evaluating'};
+    if (status === 'pending') return {className: 'pending', label: 'Pending'};
+    return {className: 'waiting', label: 'Waiting'};
+  }
+
   function renderMcProbeSampleDetail() {
     const checkpoints = state.userLightProbe?.checkpoints || [];
     const routeSelect = $('mcProbeSampleRoute');
@@ -737,7 +747,10 @@
     $('mcProbeNotice').textContent = rows.length
       ? `固定 3+3、独立 inference-only sidecar、不参与训练。当前状态：${status}；结果为本地趋势代理，不是官方分数。`
       : '固定 3+3 inference-only sidecar 尚未写入 BETA 结果；该探针不参与 reward、loss 或 optimizer。';
-    $('mcProbeSchedule').innerHTML = schedule.map(step => `<span class="mc-probe-stage ${evaluated.has(step) ? 'done' : 'waiting'}"><strong>${mcProbeStepLabel(step)}</strong>${evaluated.has(step) ? ' ✓' : ' · Waiting'}</span>`).join('');
+    $('mcProbeSchedule').innerHTML = schedule.map(step => {
+      const queueState = mcProbeQueueState(step, evaluated);
+      return `<span class="mc-probe-stage ${queueState.className}"><strong>${mcProbeStepLabel(step)}</strong> · ${queueState.label}</span>`;
+    }).join('');
     $('mcProbeCharts').hidden = !rows.length;
     if (!rows.length) {
       $('mcProbeCards').innerHTML = '';

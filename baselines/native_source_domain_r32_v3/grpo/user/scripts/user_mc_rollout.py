@@ -1,4 +1,4 @@
-"""K=2 scored-rollout data contract for MC_USER_v1."""
+"""Scored-rollout data contract for MC_USER_v1."""
 
 from __future__ import annotations
 
@@ -77,11 +77,21 @@ def prepare_mc_scored_rollout(
     rows: Sequence[Mapping[str, Any]],
     completion_ids_list: Sequence[Any],
     tokenizer: Any,
+    candidates_per_prompt: int = K,
 ) -> dict[str, Any]:
-    """Decode and independently score exactly two candidates per prompt."""
+    """Decode and independently score a fixed candidate count per prompt."""
 
-    if len(completion_ids_list) != len(rows) * K:
-        raise ValueError("MC_USER_v1 rollout must contain exactly K=2 completions per prompt")
+    if (
+        not isinstance(candidates_per_prompt, int)
+        or isinstance(candidates_per_prompt, bool)
+        or candidates_per_prompt <= 0
+    ):
+        raise ValueError("candidates_per_prompt must be a positive integer")
+    if len(completion_ids_list) != len(rows) * candidates_per_prompt:
+        raise ValueError(
+            "MC_USER_v1 rollout completion count must equal "
+            "rows * candidates_per_prompt"
+        )
     if not rows:
         raise ValueError("MC_USER_v1 rollout requires at least one prompt")
     routes = {row.get("route") for row in rows}
@@ -91,7 +101,7 @@ def prepare_mc_scored_rollout(
     if route not in {"action", "chain"}:
         raise ValueError(f"unsupported MC_USER_v1 route: {route!r}")
 
-    expanded_rows = [row for row in rows for _ in range(K)]
+    expanded_rows = [row for row in rows for _ in range(candidates_per_prompt)]
     normalized_ids = [_as_id_list(ids) for ids in completion_ids_list]
     completions: list[str] = []
     marginal_results: list[dict[str, Any]] = []
@@ -146,7 +156,7 @@ def prepare_mc_scored_rollout(
     }
     return {
         "route": route,
-        "K": K,
+        "K": candidates_per_prompt,
         "token_span_space": "generated_completion_ids",
         "expanded_rows": expanded_rows,
         "completions": completions,

@@ -896,7 +896,19 @@ def create_app(
     def user_light_probe(run_id: str | None = None):
         selected = selected_run(run_id)
         result = read_json(selected / "evaluations" / "user_light_probe" / "results.json")
-        return {"available": False} if not isinstance(result, dict) else {"available": True, **result}
+        if isinstance(result, dict):
+            return {"available": True, **result}
+        queue = read_json(selected / "evaluations" / "user_light_probe" / "probe_queue.json")
+        if not isinstance(queue, dict):
+            return {"available": False}
+        items = queue.get("items", [])
+        schedule = [int(item["step"]) for item in items if isinstance(item, dict) and "step" in item]
+        return {
+            "available": True,
+            **queue,
+            "checkpoint_schedule": schedule,
+            "checkpoints": [],
+        }
 
     @app.get("/api/recommendation-guard")
     def recommendation_guard(run_id: str | None = None):

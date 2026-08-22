@@ -192,6 +192,19 @@ class MCPolicyBatchTests(unittest.TestCase):
         self.assertEqual(result["sample_ids"], ["A", "A"])
         self.assertEqual(result["candidate_indices"], [0, 1])
 
+    def test_rank_local_k1_produces_one_candidate(self):
+        tokenizer = BatchTokenizer()
+        row = action_row(tokenizer)
+        completion = json.dumps([A, X])
+        ids = tokenizer.encode(completion, add_special_tokens=False)
+        rollout = prepare_mc_scored_rollout(
+            [row], [ids], tokenizer, candidates_per_prompt=1
+        )
+        result = build(tokenizer, rollout)
+        self.assertEqual(result["candidate_count"], 1)
+        self.assertEqual(result["sample_ids"], ["A"])
+        self.assertEqual(result["candidate_indices"], [0])
+
     def test_two_prompt_order_and_padding_sides(self):
         tokenizer = BatchTokenizer()
         rows = [

@@ -151,6 +151,22 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertTrue(returned_guard["available"])
         self.assertEqual(returned_guard["checkpoints"][-1]["history_copy_rate"], 0.32)
 
+    def test_probe_queue_is_visible_before_sidecar_results(self):
+        queue = {
+            "status": "PENDING_TRAINING_CHECKPOINTS",
+            "items": [
+                {"step": 0, "status": "pending", "available_for_probe": True},
+                {"step": 128, "status": "ready", "available_for_probe": True},
+                {"step": 256, "status": "waiting", "available_for_probe": False},
+            ],
+        }
+        write_json(self.mc / "evaluations" / "user_light_probe" / "probe_queue.json", queue)
+        returned = self.client.get(f"/api/user-light-probe?run_id={self.mc.name}").json()
+        self.assertTrue(returned["available"])
+        self.assertEqual(returned["checkpoint_schedule"], [0, 128, 256])
+        self.assertEqual(returned["items"][1]["status"], "ready")
+        self.assertEqual(returned["checkpoints"], [])
+
     def test_live_probe_partial_result_preserves_waiting_schedule_and_samples(self):
         sample = {
             "sample_id": "fixed-action-1",
@@ -204,7 +220,7 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260822-mc-live-probe", html)
+        self.assertIn("20260822-mc-k4-queue", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)

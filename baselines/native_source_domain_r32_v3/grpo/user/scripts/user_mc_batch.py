@@ -20,8 +20,13 @@ def _render_prompt(tokenizer: Any, row: Mapping[str, Any]) -> str:
 
 
 def _validate_rollout(rollout: Mapping[str, Any]) -> int:
-    if rollout.get("K") != 2:
-        raise MCBatchError("MC policy batch requires K=2 rollout")
+    candidates_per_prompt = rollout.get("K")
+    if (
+        not isinstance(candidates_per_prompt, int)
+        or isinstance(candidates_per_prompt, bool)
+        or candidates_per_prompt <= 0
+    ):
+        raise MCBatchError("MC policy batch requires a positive integer K")
     if rollout.get("token_span_space") != "generated_completion_ids":
         raise MCBatchError("credit units must use generated_completion_ids token space")
 
@@ -33,8 +38,8 @@ def _validate_rollout(rollout: Mapping[str, Any]) -> int:
     if any(key not in rollout for key in required):
         raise MCBatchError("rollout is missing required scored-rollout fields")
     candidate_count = len(rollout["expanded_rows"])
-    if candidate_count == 0 or candidate_count % 2:
-        raise MCBatchError("K=2 rollout must contain a positive even candidate count")
+    if candidate_count == 0 or candidate_count % candidates_per_prompt:
+        raise MCBatchError("rollout candidate count must be a positive multiple of K")
     if len(rollout["completion_ids_list"]) != candidate_count:
         raise MCBatchError("completion candidate count does not match expanded_rows")
     if len(rollout["credit_units_per_candidate"]) != candidate_count:
@@ -42,11 +47,14 @@ def _validate_rollout(rollout: Mapping[str, Any]) -> int:
     if int(rollout.get("candidate_count", candidate_count)) != candidate_count:
         raise MCBatchError("rollout candidate_count is inconsistent")
 
-    for pair_start in range(0, candidate_count, 2):
-        first = rollout["expanded_rows"][pair_start]
-        second = rollout["expanded_rows"][pair_start + 1]
-        if first.get("sample_id") != second.get("sample_id") or first != second:
-            raise MCBatchError("expanded_rows do not preserve row0-c0,row0-c1 ordering")
+    for group_start in range(0, candidate_count, candidates_per_prompt):
+        first = rollout["expanded_rows"][group_start]
+        for offset in range(1, candidates_per_prompt):
+            other = rollout["expanded_rows"][group_start + offset]
+            if first.get("sample_id") != other.get("sample_id") or first != other:
+                raise MCBatchError(
+                    "expanded_rows do not preserve row-major candidate ordering"
+                )
     return candidate_count
 
 
@@ -89,7 +97,7 @@ def make_mc_policy_batch(
     rollout: Mapping[str, Any],
     device: str | torch.device = "cpu",
 ) -> dict[str, Any]:
-    """Convert a complete K=2 scored rollout into padded policy tensors."""
+    """Convert a complete scored rollout into padded policy tensors."""
 
     candidate_count = _validate_rollout(rollout)
     pad_token_id = tokenizer.pad_token_id
@@ -159,7 +167,9 @@ def make_mc_policy_batch(
         "candidate_count": candidate_count,
         "completion_lengths": completion_lengths,
         "sample_ids": [row["sample_id"] for row in rollout["expanded_rows"]],
-        "candidate_indices": [index % 2 for index in range(candidate_count)],
+        "candidate_indices": [
+            index % int(rollout["K"]) for index in range(candidate_count)
+        ],
     }
 
 

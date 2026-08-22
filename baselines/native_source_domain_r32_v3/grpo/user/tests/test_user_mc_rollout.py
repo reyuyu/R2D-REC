@@ -136,10 +136,23 @@ class MCRolloutContractTests(unittest.TestCase):
     def test_non_k2_counts_raise(self):
         tokenizer = CanonicalTokenizer()
         ids = tokenizer.encode(json.dumps([A]))
-        with self.assertRaisesRegex(ValueError, "K=2"):
+        with self.assertRaisesRegex(ValueError, "completion count"):
             prepare_mc_scored_rollout([action_row()], [ids], tokenizer)
-        with self.assertRaisesRegex(ValueError, "K=2"):
+        with self.assertRaisesRegex(ValueError, "completion count"):
             prepare_mc_scored_rollout([action_row()], [ids, ids, ids], tokenizer)
+
+    def test_rank_local_k1_is_supported_without_changing_default_k2(self):
+        tokenizer = CanonicalTokenizer()
+        completion = json.dumps([A, X])
+        result = prepare_mc_scored_rollout(
+            [action_row()],
+            encoded(tokenizer, completion),
+            tokenizer,
+            candidates_per_prompt=1,
+        )
+        self.assertEqual(result["K"], 1)
+        self.assertEqual(result["candidate_count"], 1)
+        self.assertEqual(result["expanded_rows"][0]["sample_id"], "action-1")
 
     def test_mixed_routes_raise(self):
         tokenizer = CanonicalTokenizer()
