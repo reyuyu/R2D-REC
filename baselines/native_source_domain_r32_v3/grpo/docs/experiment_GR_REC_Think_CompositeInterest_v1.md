@@ -487,3 +487,31 @@ no parameters were updated.
 Per the gate, this new failure was not modified or retried, Smoke12 was not
 started, and formal training remained unstarted. All workers exited and the four
 GPUs returned to approximately 5 MiB idle usage with no compute processes.
+
+## Preflight loss-context repair and final gated attempt (2026-08-23)
+
+Base main was `959cf6247c9f90e2d75caed750abcd50e3f6a0ee`. Commit
+`b9e6962ce83d636c7fb637eb876598795bd144cf` repairs only the manual
+preflight harness: it verifies the shared frozen
+`gradient_accumulation_steps=1`, initializes
+`current_gradient_accumulation_steps=1`, and enters the public
+`compute_loss` context before backward. It does not call `training_step` and
+does not change the formal trainer, reward, advantage, generation, Beam32,
+parser, monitor schema, Smoke12 math, or the 716-step formal contract. Targeted
+CPU tests passed 51/51 and Python compilation plus `git diff --check` passed.
+
+The one authorized four-GPU attempt launched from that exact commit with four
+idle A800 GPUs and fresh original BATA. Runtime import provenance, NCCL,
+generation, Beam32, Composite monitor writing, loss, and backward completed.
+The recorded finite loss was `1.30385160446167e-08`; aggregate LoRA gradient
+norm was `0.9871858095670214`, with 2016 LoRA gradient tensors and zero base
+gradient tensors. The trainable checksum was identical before and after, and
+optimizer steps remained zero.
+
+The complete hard gate nevertheless returned `PREFLIGHT_PASS=NO` because
+`raw_decode_runtime=false` and `online_advantage_parity=false`. Reward parity,
+DDP G4 alignment, Gold-leakage absence, finite loss/gradients, LoRA-gradient
+presence, base-gradient absence, checksum invariance, and NCCL/OOM/NaN/Inf
+guards all passed. Per the fixed gate, no further retry or modification was
+attempted, Smoke12 was not started, and formal training was not started. All
+four GPUs returned to approximately 5 MiB idle usage with no compute process.

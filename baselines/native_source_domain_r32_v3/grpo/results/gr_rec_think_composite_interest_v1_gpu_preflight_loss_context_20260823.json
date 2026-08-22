@@ -1,0 +1,464 @@
+{
+  "experiment": "GR_REC_Think_CompositeInterest_v1",
+  "gpu_validation_launch_commit": "b9e6962ce83d636c7fb637eb876598795bd144cf",
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+  "world_size": 4,
+  "grpo_trl_trainer_module_path": "/data/GRPO-think-composite-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "monitor_writer_module_path": "/data/GRPO-think-composite-v1/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "expected_grpo_trl_trainer_module_path": "/data/GRPO-think-composite-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "expected_monitor_writer_module_path": "/data/GRPO-think-composite-v1/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "monitor_write_composite_available": true,
+  "runtime_import_provenance": "PASS",
+  "nccl_bootstrap": {
+    "nccl_socket_ifname": "lo",
+    "world_size": 4,
+    "local_rank": 0,
+    "device": "cuda:0",
+    "initialized_here": true,
+    "local_rank_device_mapping": [
+      {
+        "local_rank": 0,
+        "device": "cuda:0"
+      },
+      {
+        "local_rank": 1,
+        "device": "cuda:1"
+      },
+      {
+        "local_rank": 2,
+        "device": "cuda:2"
+      },
+      {
+        "local_rank": 3,
+        "device": "cuda:3"
+      }
+    ]
+  },
+  "optimizer_steps": 0,
+  "zero_update": true,
+  "gradient_accumulation_steps": 1,
+  "current_gradient_accumulation_steps": 1,
+  "preflight_loss_entry": "compute_loss",
+  "preflight_compute_loss_context": true,
+  "raw_decode_runtime_pass": false,
+  "generated_sid_candidate_count": 16,
+  "sid_evidence_runtime_visible": true,
+  "sid_evidence_runtime_status": "VISIBLE",
+  "online_reward_parity": true,
+  "online_advantage_parity": false,
+  "ddp_g4_alignment": true,
+  "gold_leakage": false,
+  "loss": 1.30385160446167e-08,
+  "grad_norm": 0.9871858095670214,
+  "lora_grad_tensor_count": 2016,
+  "base_grad_tensor_count": 0,
+  "trainable_checksum_before": "2528bdd26ae82aa9182ee39f6a06ae4a0e7e91a7e1e87f0e3bbdaba14ac7f43d",
+  "trainable_checksum_after": "2528bdd26ae82aa9182ee39f6a06ae4a0e7e91a7e1e87f0e3bbdaba14ac7f43d",
+  "base_changed": false,
+  "rank_rows": [
+    {
+      "rank": 0,
+      "loss": 5.960464477539063e-08,
+      "grad_norm": 0.9815719226800004,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "grad_finite": true
+    },
+    {
+      "rank": 1,
+      "loss": -7.450580596923828e-09,
+      "grad_norm": 2.0455911008593866,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "grad_finite": true
+    },
+    {
+      "rank": 2,
+      "loss": 0.0,
+      "grad_norm": 0.0,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "grad_finite": true
+    },
+    {
+      "rank": 3,
+      "loss": 0.0,
+      "grad_norm": 0.9215802147286984,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "grad_finite": true
+    }
+  ],
+  "groups": [
+    {
+      "group_id": "d487a6259dc42229dcf8e3bcd51d37903cdcf127c51952d85f1a1420ae15623e",
+      "gold_interest_units": [
+        {
+          "index": 1,
+          "normalized_text": "畜牧养殖(牛产业)： 这是用户最核心且专业的兴趣。该兴趣始于对农业直播的首次打赏 ，并通过后续多次、重复性购买专业养殖用品(如育肥添加剂 、牛用项圈",
+          "grounded_evidence_sids": [
+            "<|living_begin|><s_a_4372><s_b_6776><s_c_6278>",
+            "<|prod_begin|><s_a_1809><s_b_7270><s_c_5008>"
+          ]
+        }
+      ],
+      "beam_raw_vector": [
+        0.0,
+        8.25,
+        0.0,
+        8.0
+      ],
+      "beam_utility_vector": [
+        0.0,
+        0.7851945058042877,
+        0.0,
+        0.7755238700769802
+      ],
+      "cot_utility_vector": [
+        0.8,
+        0.8,
+        0.0,
+        0.0
+      ],
+      "Q_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "composite_reward_vector": [
+        0.32000000000000006,
+        0.7911167034825727,
+        0.0,
+        0.4653143220461881
+      ],
+      "final_advantage_vector": [
+        -0.26049791985350573,
+        1.3955355003532994,
+        -1.3853374565306016,
+        0.2502998760308081
+      ],
+      "beam_all_equal": false,
+      "cot_all_equal": false,
+      "composite_all_equal": false,
+      "beam_active": true,
+      "cot_active": true,
+      "composite_active": true,
+      "composite_reward_mean": 0.3941077563821902,
+      "composite_reward_population_std": 0.2843850216994653,
+      "composite_zero_std": false,
+      "matched_candidate_count": 2,
+      "quality_active_candidate_count": 0,
+      "beam_top_set": [
+        1
+      ],
+      "beam_stable_winner": 1,
+      "composite_winner": 1,
+      "top_set_tie_break": false,
+      "strict_beam_reversal": false,
+      "pairwise_interest_similarity": 0.0,
+      "unique_interest_set_count": 4
+    },
+    {
+      "group_id": "53c70c30a5d9d9e8d00d02189d319cdac526524ae314fda4b72ccf8e4eb50dfa",
+      "gold_interest_units": [
+        {
+          "index": 1,
+          "normalized_text": "情感/剧情类内容：这是用户最核心的兴趣。用户在广告域有极高的交互深度，频繁进行广告-点击和广告-深度转化 , )，内容高度集中于家庭矛盾、情感纠葛、重生/穿越、古装宫廷等元素的短剧。此外，用户还主动搜索相关关键词(如“短剧热播”)，并观看相关主题的视频 ，表现出强烈的沉浸式消费特征",
+          "grounded_evidence_sids": [
+            "<|ad_begin|><s_a_655><s_b_3727><s_c_6108>",
+            "<|ad_begin|><s_a_7879><s_b_6234><s_c_4405>",
+            "<|video_begin|><s_a_2526><s_b_6234><s_c_5776>"
+          ]
+        },
+        {
+          "index": 2,
+          "normalized_text": "服饰穿搭：用户在此类目下表现出极强的消费意愿和活跃度。行为涵盖了从观看直播 、主动搜索特定主播和品类，到高频次的商品-购买 , )和视频-关注/长播 。兴趣覆盖女装(外套、内搭、鞋靴)、男装(卫衣、保暖内衣)和配饰，显示出对时尚潮流和家庭成员衣物的高度关注",
+          "grounded_evidence_sids": [
+            "<|living_begin|><s_a_6627><s_b_6234><s_c_3887>",
+            "<|prod_begin|><s_a_3257><s_b_5953><s_c_18>",
+            "<|prod_begin|><s_a_540><s_b_5451><s_c_8029>",
+            "<|video_begin|><s_a_5874><s_b_3166><s_c_6245>"
+          ]
+        },
+        {
+          "index": 3,
+          "normalized_text": "居家生活：用户对家庭生活品质有明确的追求。这体现在对食品零食 、家居用品 、厨房小家电 和子女教育 的持续消费和关注上。购买行为频繁，表明这是用户日常生活的刚性需求",
+          "grounded_evidence_sids": [
+            "<|prod_begin|><s_a_2323><s_b_1937><s_c_3711>",
+            "<|prod_begin|><s_a_3923><s_b_5461><s_c_2625>",
+            "<|prod_begin|><s_a_7669><s_b_3840><s_c_4518>",
+            "<|video_begin|><s_a_629><s_b_2504><s_c_4540>"
+          ]
+        }
+      ],
+      "beam_raw_vector": [
+        9.125,
+        8.0,
+        12.5,
+        8.0
+      ],
+      "beam_utility_vector": [
+        0.8170961137992823,
+        0.7755238700769802,
+        0.9186352629972442,
+        0.7755238700769802
+      ],
+      "cot_utility_vector": [
+        0.36000000000000004,
+        0.5599999999999999,
+        0.0,
+        0.0
+      ],
+      "Q_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "composite_reward_vector": [
+        0.6342576682795693,
+        0.6893143220461881,
+        0.5511811577983465,
+        0.4653143220461881
+      ],
+      "final_advantage_vector": [
+        0.5798649718276425,
+        1.2282180551949082,
+        -0.3984529614455044,
+        -1.4096300655770446
+      ],
+      "beam_all_equal": false,
+      "cot_all_equal": false,
+      "composite_all_equal": false,
+      "beam_active": true,
+      "cot_active": true,
+      "composite_active": true,
+      "composite_reward_mean": 0.585016867542573,
+      "composite_reward_population_std": 0.08481770175700926,
+      "composite_zero_std": false,
+      "matched_candidate_count": 2,
+      "quality_active_candidate_count": 0,
+      "beam_top_set": [
+        2
+      ],
+      "beam_stable_winner": 2,
+      "composite_winner": 1,
+      "top_set_tie_break": false,
+      "strict_beam_reversal": true,
+      "pairwise_interest_similarity": 0.0,
+      "unique_interest_set_count": 4
+    },
+    {
+      "group_id": "97c784270dfb4acf1f7f161ca2f0ed15d02f286d865f4443d7325040b1edea75",
+      "gold_interest_units": [
+        {
+          "index": 1,
+          "normalized_text": "儿童相关(教育、成长与服饰)： 这是用户最核心、交互深度最深的兴趣域。行为覆盖了从低价日用品到高价值耐用品的全链路。初期以购买应季服饰( 等)、日用品( )为主；近期则表现出对儿童教育硬件的强烈意向，对学习机、智能手表、护眼学习桌椅等商品进行了大量(超过20次)的点击和加购(如, )，并最终完成了部分高价值商品的购买。这表明用户正处于为孩子升级教育装备的决策阶段",
+          "grounded_evidence_sids": [
+            "<|prod_begin|><s_a_2121><s_b_7749><s_c_3169>",
+            "<|prod_begin|><s_a_5699><s_b_2771><s_c_1303>",
+            "<|prod_begin|><s_a_5997><s_b_1229><s_c_7119>"
+          ]
+        },
+        {
+          "index": 2,
+          "normalized_text": "家居日用与清洁： 用户是家庭生活用品的稳定消费者，表现为高频、计划性的购买行为。商品涵盖厨房清洁( )、个人护理( )、洗衣防护( )和一次性耗材等。用户的搜索行为(如对特定清洁品牌和功能的搜索)与后续购买行为高度一致，显示出明确的需求驱动和品牌认知",
+          "grounded_evidence_sids": [
+            "<|prod_begin|><s_a_1644><s_b_1713><s_c_1453>",
+            "<|prod_begin|><s_a_2183><s_b_2649><s_c_6918>",
+            "<|prod_begin|><s_a_4435><s_b_4743><s_c_4266>"
+          ]
+        },
+        {
+          "index": 3,
+          "normalized_text": "食品与本地生活： 用户对零食和餐饮优惠有持续关注。一方面，多次购买和加购带有特定KOL推荐标识的零食(如 )，表明其易受内容引导转化；另一方面，多次点击外卖平台( )和餐饮闪购( )的促销广告，显示出对高性价比餐饮优惠的偏好",
+          "grounded_evidence_sids": [
+            "<|ad_begin|><s_a_5229><s_b_2682><s_c_4469>",
+            "<|ad_begin|><s_a_5229><s_b_3447><s_c_162>",
+            "<|prod_begin|><s_a_1703><s_b_7547><s_c_1353>"
+          ]
+        }
+      ],
+      "beam_raw_vector": [
+        8.0,
+        8.0,
+        8.0,
+        8.0
+      ],
+      "beam_utility_vector": [
+        0.7755238700769802,
+        0.7755238700769802,
+        0.7755238700769802,
+        0.7755238700769802
+      ],
+      "cot_utility_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "Q_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "composite_reward_vector": [
+        0.4653143220461881,
+        0.4653143220461881,
+        0.4653143220461881,
+        0.4653143220461881
+      ],
+      "final_advantage_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "beam_all_equal": true,
+      "cot_all_equal": true,
+      "composite_all_equal": true,
+      "beam_active": false,
+      "cot_active": false,
+      "composite_active": false,
+      "composite_reward_mean": 0.4653143220461881,
+      "composite_reward_population_std": 0.0,
+      "composite_zero_std": true,
+      "matched_candidate_count": 0,
+      "quality_active_candidate_count": 0,
+      "beam_top_set": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "beam_stable_winner": 0,
+      "composite_winner": 0,
+      "top_set_tie_break": false,
+      "strict_beam_reversal": false,
+      "pairwise_interest_similarity": 0.0,
+      "unique_interest_set_count": 4
+    },
+    {
+      "group_id": "c033b4c98774e93d630decf58b0d85b376202f3d3937e5060230500c79870250",
+      "gold_interest_units": [
+        {
+          "index": 1,
+          "normalized_text": "健康养生与医疗保健：这是用户最核心、交互最深度的兴趣。该兴趣由早期购买保健品 开始，逐步深化至购买和点击理疗康复用品 , )，并最终在近期(2026年初)爆发。用户通过搜索、观看、点赞、收藏及评论等多种方式，深度探索中医食疗 、疼痛管理 、男性健康、耳部问题等细分领域，并关注相关专家直播，显示出极强的知识渴求和问题解决导向",
+          "grounded_evidence_sids": [
+            "<|prod_begin|><s_a_1435><s_b_4556><s_c_5809>",
+            "<|prod_begin|><s_a_2836><s_b_2387><s_c_2895>",
+            "<|prod_begin|><s_a_8174><s_b_1704><s_c_2261>",
+            "<|video_begin|><s_a_2012><s_b_2865><s_c_3770>",
+            "<|video_begin|><s_a_2012><s_b_5093><s_c_2306>"
+          ]
+        },
+        {
+          "index": 2,
+          "normalized_text": "商业知识与数字化技能：此兴趣主要体现在对直播内容的关注和打赏行为上。用户多次关注以“数字化转型”、“会员运营”、“商业变现”、“创业指导”为主题的主播 , )，并有付费打赏记录。这表明用户对此类知识有主动学习和价值认可的意愿，关注点在于提升个人商业认知或企业经营能力",
+          "grounded_evidence_sids": [
+            "<|living_begin|><s_a_4372><s_b_3569><s_c_6223>",
+            "<|living_begin|><s_a_77><s_b_5270><s_c_7951>"
+          ]
+        },
+        {
+          "index": 3,
+          "normalized_text": "汽车家居与实用工具：这是一个长期存在但交互深度较浅的兴趣。用户多次购买汽车配件 , )和家居五金/日用品 , )，体现了其作为一名车主和对居家生活品质有一定要求的务实特征。交互以直接购买为主，反映了其工具性和问题解决驱动的消费习惯",
+          "grounded_evidence_sids": [
+            "<|prod_begin|><s_a_1737><s_b_5198><s_c_6735>",
+            "<|prod_begin|><s_a_6488><s_b_5630><s_c_3483>",
+            "<|prod_begin|><s_a_7433><s_b_5176><s_c_6659>",
+            "<|prod_begin|><s_a_918><s_b_2347><s_c_2967>"
+          ]
+        },
+        {
+          "index": 4,
+          "normalized_text": "社会时事与文娱内容：此为用户的泛兴趣，主要通过短视频的点赞和长时观看体现。内容涵盖社会热点、名人轶事、历史军事及影视剪辑等。这类行为表明用户在闲暇时会通过短视频获取资讯和娱乐，但投入程度和主动探索性不如健康与商业领域",
+          "grounded_evidence_sids": []
+        }
+      ],
+      "beam_raw_vector": [
+        15.0,
+        15.0,
+        15.0,
+        15.0
+      ],
+      "beam_utility_vector": [
+        0.978602168472904,
+        0.978602168472904,
+        0.978602168472904,
+        0.978602168472904
+      ],
+      "cot_utility_vector": [
+        0.0,
+        0.16000000000000003,
+        0.16000000000000003,
+        0.16000000000000003
+      ],
+      "Q_vector": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "composite_reward_vector": [
+        0.5871613010837424,
+        0.6511613010837425,
+        0.6511613010837425,
+        0.6511613010837425
+      ],
+      "final_advantage_vector": [
+        -1.7258232792261587,
+        0.5752744264087196,
+        0.5752744264087196,
+        0.5752744264087196
+      ],
+      "beam_all_equal": true,
+      "cot_all_equal": false,
+      "composite_all_equal": false,
+      "beam_active": false,
+      "cot_active": true,
+      "composite_active": true,
+      "composite_reward_mean": 0.6351613010837425,
+      "composite_reward_population_std": 0.027712812921102063,
+      "composite_zero_std": false,
+      "matched_candidate_count": 3,
+      "quality_active_candidate_count": 0,
+      "beam_top_set": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "beam_stable_winner": 0,
+      "composite_winner": 1,
+      "top_set_tie_break": true,
+      "strict_beam_reversal": false,
+      "pairwise_interest_similarity": 0.0,
+      "unique_interest_set_count": 4
+    }
+  ],
+  "conditions": {
+    "raw_decode_runtime": false,
+    "online_reward_parity": true,
+    "online_advantage_parity": false,
+    "ddp_g4_alignment": true,
+    "gold_leakage_absent": true,
+    "finite_loss_and_grad": true,
+    "lora_has_gradient": true,
+    "base_has_no_gradient": true,
+    "trainable_checksum_unchanged": true,
+    "base_unchanged": true,
+    "nccl_error_absent": true,
+    "oom_absent": true,
+    "nan_absent": true,
+    "inf_absent": true
+  },
+  "preflight_pass": false,
+  "failure_reasons": [
+    "raw_decode_runtime",
+    "online_advantage_parity"
+  ]
+}
