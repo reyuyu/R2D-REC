@@ -367,3 +367,17 @@ The runner asserts the frozen Think-only contract and schedules checkpoints at
 `gr_rec_think_composite_interest_v1_runner_dry_run_20260822.json`.
 
 GPU used: NO. Model loaded: NO. Generation: NO. Optimizer step: NO. Training: NO.
+
+## GPU validation gate (2026-08-22)
+
+Launch provenance: `72856f3c927527f26338700a03fc6641de034788`.
+
+The authorized four-A800 zero-update preflight loaded the original 8B base and
+fresh original BATA adapter, then stopped at the first TRL prompt-length NCCL
+gather with `ncclSystemError` / socket connection abort. This occurred before
+candidate generation completed, reward calculation, backward or any optimizer
+operation. Optimizer steps remained zero and all GPU worker processes exited.
+
+Per the hard gate, Smoke12 was not started and no retry was attempted. The
+structured preflight and not-started Smoke result files preserve this status.
+Formal 720-step training remains unstarted.
