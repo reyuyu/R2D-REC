@@ -382,8 +382,8 @@ with tempfile.TemporaryDirectory() as temporary:
         "userProbeActionChart",
         "输入样本", "Ground Truth ·", "selected.prompt", "selected.gold_events",
         "renderUserSampleContext(trace, trace.route)",
-        "latestTrace", "· 有样本",
-        "/api/sample-context", "candidate trace 未落盘", "代表输入 1/",
+        "latestTrace", "完整样本",
+        "/api/sample-context", "未保存 candidate trace", "代表输入 1/",
         "captureMonitorScrollState", "restoreMonitorScrollState", "document.scrollingElement",
         "userRefreshInFlight", "populateRewardCompareOptions", "attachChartControls",
     ))
