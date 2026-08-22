@@ -382,12 +382,16 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
         raise MCK4Error("execute requires CUDA_VISIBLE_DEVICES=0,1,2,3")
     if int(os.environ.get("WORLD_SIZE", "0")) != WORLD_SIZE:
         raise MCK4Error("execute requires torchrun world_size=4")
-    dist.init_process_group(backend="nccl")
-    rank, local_rank = dist.get_rank(), int(os.environ["LOCAL_RANK"])
+    local_rank = int(os.environ["LOCAL_RANK"])
     if local_rank not in range(WORLD_SIZE):
         raise MCK4Error("LOCAL_RANK must be 0..3")
     torch.cuda.set_device(local_rank)
     device = torch.device(f"cuda:{local_rank}")
+    # This is a single-node job. Binding bootstrap traffic to loopback avoids
+    # the development container's unroutable external interface.
+    os.environ.setdefault("NCCL_SOCKET_IFNAME", "lo")
+    dist.init_process_group(backend="nccl", device_id=device)
+    rank = dist.get_rank()
     preflight, config, rows, run_dir = _load_execute_contract(args)
     dist.barrier()
     tokenizer = load_tokenizer(config["base_model"])
