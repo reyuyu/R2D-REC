@@ -22,6 +22,7 @@ from run_mc_user_formal_k4_ddp_v1 import (  # noqa: E402
     load_k4_config,
     probe_queue_value,
     update_probe_queue,
+    validate_ddp_owner_claims,
 )
 from run_mc_user_formal_v1 import select_formal_rows  # noqa: E402
 from user_mc_policy import compute_mc_model_loss  # noqa: E402
@@ -152,6 +153,23 @@ class K4ContractTests(unittest.TestCase):
         self.assertEqual(updated["items"][1]["status"], "ready")
         self.assertTrue(updated["items"][1]["available_for_probe"])
         self.assertEqual(queue["items"][1]["status"], "waiting")
+
+    def test_ddp_owner_claim_accepts_supported_process_layouts(self):
+        validate_ddp_owner_claims(
+            [{"nvidia_host_pids": [100 + rank]} for rank in range(4)]
+        )
+        validate_ddp_owner_claims(
+            [{"nvidia_host_pids": [100, 101, 102, 103]} for _ in range(4)]
+        )
+        with self.assertRaisesRegex(RuntimeError, "GPU_FOREIGN_PROCESS_AFTER_LOAD"):
+            validate_ddp_owner_claims(
+                [
+                    {"nvidia_host_pids": [100]},
+                    {"nvidia_host_pids": [101]},
+                    {"nvidia_host_pids": [102]},
+                    {"nvidia_host_pids": [103, 999]},
+                ]
+            )
 
 
 class K4DistributedParityTests(unittest.TestCase):

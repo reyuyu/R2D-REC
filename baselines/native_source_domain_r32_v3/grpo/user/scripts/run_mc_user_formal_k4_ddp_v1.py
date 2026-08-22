@@ -34,10 +34,9 @@ from run_mc_user_formal_v1 import (
 )
 from run_mc_user_generation_smoke import _candidate_overlap_metadata, stop_token_ids
 from run_mc_user_pilot_v1 import (
-    assert_gpu_process_owned,
+    _selected_gpu_processes,
     assert_only_lora_trainable,
     candidate_record,
-    claim_gpu_process_ownership,
     display_rollout_records,
 )
 from run_mc_user_real_smoke import (
@@ -369,6 +368,40 @@ def _gather(value: Mapping[str, Any]) -> list[dict[str, Any]]:
     return [dict(item) for item in gathered]
 
 
+def validate_ddp_owner_claims(claims: Sequence[Mapping[str, Any]]) -> None:
+    if len(claims) != WORLD_SIZE or any(not claim.get("nvidia_host_pids") for claim in claims):
+        raise MCK4Error("GPU_OWNER_NOT_VISIBLE")
+    pid_sets = [set(map(int, claim["nvidia_host_pids"])) for claim in claims]
+    one_process_per_gpu = all(len(pids) == 1 for pids in pid_sets) and len(
+        {next(iter(pids)) for pids in pid_sets}
+    ) == WORLD_SIZE
+    all_ranks_visible_per_gpu = all(pids == pid_sets[0] for pids in pid_sets) and len(
+        pid_sets[0]
+    ) == WORLD_SIZE
+    if not one_process_per_gpu and not all_ranks_visible_per_gpu:
+        raise MCK4Error("GPU_FOREIGN_PROCESS_AFTER_LOAD")
+
+
+def claim_ddp_gpu_process_ownership(gpu_id: int) -> dict[str, Any]:
+    gpu_uuid, processes = _selected_gpu_processes(gpu_id)
+    local_claim = {
+        "gpu_id": gpu_id,
+        "gpu_uuid": gpu_uuid,
+        "nvidia_host_pids": sorted(int(item["nvidia_host_pid"]) for item in processes),
+        "processes": processes,
+    }
+    claims = _gather(local_claim)
+    validate_ddp_owner_claims(claims)
+    return local_claim
+
+
+def assert_ddp_gpu_process_owned(claim: Mapping[str, Any]) -> None:
+    gpu_uuid, processes = _selected_gpu_processes(int(claim["gpu_id"]))
+    current_pids = sorted(int(item["nvidia_host_pid"]) for item in processes)
+    if gpu_uuid != claim["gpu_uuid"] or current_pids != list(claim["nvidia_host_pids"]):
+        raise MCK4Error("GPU_OWNERSHIP_CHANGED")
+
+
 def _rank_hashes(model: torch.nn.Module) -> list[dict[str, Any]]:
     lora_hash, lora_count = parameter_sha256(model, lora=True)
     gathered = _gather({"lora_hash": lora_hash, "lora_count": lora_count})
@@ -399,7 +432,8 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     trainable = validate_trainable(model)
     if len(trainable) != 504:
         raise MCK4Error("K4 formal requires 504 LoRA trainable tensors")
-    owner = claim_gpu_process_ownership(local_rank)
+    dist.barrier()
+    owner = claim_ddp_gpu_process_ownership(local_rank)
     initial_base_hash = parameter_sha256(model, lora=False)[0] if rank == 0 else None
     ddp = DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, broadcast_buffers=False, find_unused_parameters=False)
     _rank_hashes(ddp.module)
@@ -412,7 +446,7 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     queue = json.loads(queue_path.read_text(encoding="utf-8"))
     try:
         for prompt_step, row in enumerate(rows, 1):
-            assert_gpu_process_owned(local_rank, claimed_gpu_uuid=owner["gpu_uuid"], claimed_host_pid=owner["nvidia_host_pid"])
+            assert_ddp_gpu_process_owned(owner)
             seed = candidate_seed(int(config["selection_seed"]), prompt_step, str(row["sample_id"]), rank)
             set_generation_mode(ddp.module)
             torch.cuda.empty_cache()
