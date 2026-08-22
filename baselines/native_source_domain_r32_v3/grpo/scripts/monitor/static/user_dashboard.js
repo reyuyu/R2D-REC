@@ -858,14 +858,31 @@
   }
 
   function renderUserExplorer() {
-    const id = Number($('rolloutSelect').value);
+    const selectedKey = $('rolloutSelect').value;
     const route = $('routeSelect').value;
-    const rollout = state.rollouts.find(row => row.rollout_id === id && (!route || row.route === route));
+    const rollout = state.rollouts.find(row => userRolloutKey(row) === selectedKey && (!route || row.route === route));
     if (!rollout) {
       $('rolloutSummary').innerHTML = '<div class="empty">请选择一个 User rollout</div>';
       $('trace').innerHTML = '';
       return;
     }
+    if (isMcRun() && Array.isArray(rollout.credit_units)) {
+      const sampleId = String(rollout.sample_id || '');
+      const contextKey = sampleId ? `${state.activeRun}:${sampleId}` : '';
+      const context = contextKey ? userSampleContextCache.get(contextKey) : false;
+      if (sampleId && !userSampleContextCache.has(contextKey)) requestUserSampleContext(sampleId);
+      $('rolloutSummary').innerHTML = [
+        ['路由', routeName(rollout.route)], ['Prompt', String(rollout.prompt_step ?? rollout.step ?? '-')],
+        ['Candidate', String(rollout.candidate_index ?? '-')], ['Reward', fmt(rollout.full_reward ?? rollout.reward)],
+        [rollout.route === 'action' ? 'F1' : 'Action / Logic', rollout.route === 'action' ? fmt(rollout.f1) : `${fmt(rollout.full_action_alignment)} / ${fmt(rollout.full_logic_alignment)}`],
+        ['Completion tokens', String(rollout.generated_token_count ?? '-')],
+      ].map(([label, value]) => `<div class="stat"><div class="label">${label}</div><div class="value small">${escapeHtml(value)}</div></div>`).join('');
+      const contextHtml = context ? renderUserSampleContext(context, rollout.route) : '<div class="empty">正在读取输入样本与 Ground Truth...</div>';
+      $('trace').classList.add('user-trace');
+      $('trace').innerHTML = `${contextHtml}${renderMcTraceCandidate(rollout, `${rollout.prompt_step ?? rollout.step}-${rollout.candidate_index ?? 0}`)}`;
+      return;
+    }
+    const id = Number(rollout.rollout_id);
     const stats = [
       ['路由', routeName(rollout.route)], ['平均 Reward', fmt(rollout.reward_mean)], ['Reward Std', fmt(rollout.reward_std)],
       ['Zero-std', pct(rollout.zero_std_ratio)], ['Masked candidates', pct(rollout.masked_candidate_rate)],
@@ -893,19 +910,27 @@
     $('trace').innerHTML = `<div class="trace-head">${escapeHtml(trace.group_id || '-')} · ${escapeHtml(routeName(trace.route))}<span class="candidate-count ${candidates.length === expected ? '' : 'incomplete'}">${candidates.length}/${expected} candidates</span></div>${renderUserSampleContext(trace, trace.route)}${candidates.map(candidate => renderUserCandidate(candidate, trace.route)).join('') || '<div class="empty">trace 中没有 candidate</div>'}`;
   }
 
+  function userRolloutKey(row) {
+    if (row.rollout_id != null) return String(row.rollout_id);
+    return `mc:${row.prompt_step ?? row.step ?? 0}:${row.candidate_index ?? 0}`;
+  }
+
   function renderUserExplorerOptions() {
     const select = $('rolloutSelect');
     const current = select.value;
     const traceIds = new Set(state.traces.map(trace => Number(trace.rollout_id)));
     select.innerHTML = [...state.rollouts].reverse().map(rollout => {
       const recorded = traceIds.has(Number(rollout.rollout_id));
-      return `<option value="${rollout.rollout_id}">#${rollout.rollout_id} · ${escapeHtml(routeName(rollout.route))} · 第 ${rollout.step} 步${recorded ? ' · 有样本' : ''}</option>`;
+      const key = userRolloutKey(rollout);
+      const label = rollout.rollout_id != null ? `#${rollout.rollout_id}` : `Prompt ${rollout.prompt_step ?? rollout.step} · Candidate ${rollout.candidate_index ?? '-'}`;
+      return `<option value="${escapeHtml(key)}">${escapeHtml(label)} · ${escapeHtml(routeName(rollout.route))} · 第 ${rollout.step} 步${recorded ? ' · 有样本' : ''}</option>`;
     }).join('');
     if (current && [...select.options].some(option => option.value === current)) {
       select.value = current;
     } else {
       const latestTrace = [...state.traces].sort((a, b) => Number(b.rollout_id) - Number(a.rollout_id))[0];
       if (latestTrace) select.value = String(latestTrace.rollout_id);
+      else if (state.rollouts.length) select.value = userRolloutKey(state.rollouts.at(-1));
     }
     renderTraceIndex();
     renderExplorer();
@@ -922,7 +947,7 @@
     $('runKind').textContent = mc ? 'MC_USER_v1' : (user ? '懂用户 GRPO' : (state.capabilities.dsr ? 'DSR 实验' : '懂推荐 GRPO'));
     $('runKind').classList.toggle('user', user);
     $('runKind').classList.toggle('dsr', !user && Boolean(state.capabilities.dsr));
-    $('kindContext').textContent = mc ? 'Action / Chain · K2 · Marginal Credit' : (user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验');
+    $('kindContext').textContent = mc ? `Action / Chain · K${state.manifest.K ?? 2} · Marginal Credit` : (user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验');
     document.querySelector('#userAction .user-section-head p').textContent = mc
       ? '候选 SID 的正负 credit 仅由删除该 SID 后的 Action F1 边际变化决定'
       : 'wrong selection 由主 F1 处理；hallucination / duplicate 同时具有局部 token penalty';
