@@ -75,6 +75,10 @@
     return state.manifest.algorithm === 'mc_user_v1' || state.capabilities.mc_user === true;
   }
 
+  function isHybridMcRun() {
+    return state.manifest.algorithm === 'mc_user_hybrid_grpo_v1' || state.capabilities.mc_user_hybrid === true;
+  }
+
   function buildUserShell() {
     document.querySelector('.experiment-bar').insertAdjacentHTML('beforebegin', `
       <section class="run-kind-switcher" aria-label="GRPO 任务类型">
@@ -299,7 +303,11 @@
     configureOverviewCharts(mc);
     if (mc) {
       const summary = state.mcSummary || {};
-      metricCards('userOverviewCards', [
+      metricCards('userOverviewCards', isHybridMcRun() ? [
+        ['Group Reward Mean', fmt(current.group_reward_mean)], ['Reward Spread', fmt(current.group_reward_spread)],
+        ['Sequence Loss', fmt(current.sequence_loss)], ['Local Loss', fmt(current.local_loss)],
+        ['Total Loss', fmt(current.total_loss)], ['Grad Norm', fmt(current.grad_norm)],
+      ] : [
         ['Valid Candidate', pct(summary.valid_candidate_rate)], ['No-credit Prompt', pct(summary.no_credit_prompt_rate)],
         ['Projection Required', pct(summary.projection_required_rate)], ['Negative Rate · Action', pct(summary.action?.negative_candidate_rate)],
         ['Negative Rate · Chain', pct(summary.chain?.negative_candidate_rate)], ['Peak VRAM', summary.peak_vram_mib == null ? '-' : `${fmt(summary.peak_vram_mib, 0)} MiB`],
@@ -312,10 +320,17 @@
       const actionRows = state.metrics.filter(row => row.route === 'action');
       const chainRows = state.metrics.filter(row => row.route === 'chain');
       draw('userAdvantageChart', [
-        {data: mcTotalPoints(actionRows, 'positive_credit_mass'), color: '#16835f'},
-        {data: mcTotalPoints(actionRows, 'negative_credit_mass'), color: '#bd3f4c'},
-        {data: mcTotalPoints(chainRows, 'positive_credit_mass'), color: '#2d6cdf'},
-        {data: mcTotalPoints(chainRows, 'negative_credit_mass'), color: '#b36b08'},
+        ...(isHybridMcRun() ? [
+          {data: points(state.metrics, 'group_reward_mean'), color: '#16835f'},
+          {data: points(state.metrics, 'group_reward_std'), color: '#2d6cdf'},
+          {data: points(state.metrics, 'sequence_loss'), color: '#b36b08'},
+          {data: points(state.metrics, 'local_loss'), color: '#7654b5'},
+        ] : [
+          {data: mcTotalPoints(actionRows, 'positive_credit_mass'), color: '#16835f'},
+          {data: mcTotalPoints(actionRows, 'negative_credit_mass'), color: '#bd3f4c'},
+          {data: mcTotalPoints(chainRows, 'positive_credit_mass'), color: '#2d6cdf'},
+          {data: mcTotalPoints(chainRows, 'negative_credit_mass'), color: '#b36b08'},
+        ]),
       ]);
       draw('userMaskChart', [
         {data: mcCumulativeRouteRate('action', candidate => Number(candidate.negative_unit_count || 0) > 0), color: '#2d6cdf'},
@@ -363,12 +378,16 @@
         ['Candidate Mean F1', fmt(summary.mean_f1 ?? summary.mean_reward)], ['Mean SID Count', fmt(summary.mean_predicted_sid_count, 1)], ['Negative Candidate Rate', pct(summary.negative_candidate_rate)],
         ['Positive credit mass', fmt(summary.positive_credit_mass)], ['Negative credit mass', fmt(summary.negative_credit_mass)],
       ]);
-      setUserChartPanel('userActionScoreChart', 'Candidate Mean F1', ['Mean F1'], '当前 K=2 on-policy candidates 的 evaluator F1 均值；不等同于固定 Probe 泛化分数', ['#16835f']);
+      setUserChartPanel('userActionScoreChart', isHybridMcRun() ? 'F1 / Precision / Recall' : 'Candidate Mean F1', isHybridMcRun() ? ['F1', 'Precision', 'Recall'] : ['Mean F1'], '当前 on-policy candidates 的 evaluator 均值；不等同于固定 Probe 泛化分数', ['#16835f', '#2d6cdf', '#b36b08']);
       setUserChartPanel('userActionExactChart', 'Predicted SID Count', ['Mean SID count'], '', ['#2d6cdf']);
       setUserChartPanel('userWrongSelectionChart', 'Positive / Negative Credit Mass', ['Positive mass', 'Negative mass'], '', ['#16835f', '#bd3f4c']);
       setUserChartPanel('userActionConstraintChart', 'Positive / Negative Unit Count', ['Positive units', 'Negative units'], '', ['#16835f', '#bd3f4c']);
-      draw('userActionScoreChart', [{data: mcCandidatePoints(rows, 'f1'), color: colors[1]}]);
-      draw('userActionExactChart', [{data: mcCandidatePoints(rows, 'predicted_sid_unit_count'), color: colors[0]}]);
+      draw('userActionScoreChart', isHybridMcRun() ? [
+        {data: mcCandidatePoints(rows, 'f1'), color: colors[1]},
+        {data: mcCandidatePoints(rows, 'precision'), color: colors[0]},
+        {data: mcCandidatePoints(rows, 'recall'), color: colors[2]},
+      ] : [{data: mcCandidatePoints(rows, 'f1'), color: colors[1]}]);
+      draw('userActionExactChart', [{data: mcCandidatePoints(rows, isHybridMcRun() ? 'predicted_sid_count' : 'predicted_sid_unit_count'), color: colors[0]}]);
       draw('userWrongSelectionChart', [
         {data: mcTotalPoints(rows, 'positive_credit_mass'), color: colors[1]},
         {data: mcTotalPoints(rows, 'negative_credit_mass'), color: colors[3]},
@@ -493,10 +512,13 @@
       ? `<div class="mc-overlap-list">${overlap.map(item => `<span>shared token ${escapeHtml(String(item.token_index ?? item.shared_token ?? '-'))} · units ${escapeHtml((item.unit_indices || []).join(',') || '-')} · mixed-sign ${item.mixed_sign ? 'yes' : 'no'} · net ${fmt(item.net_coefficient)}</span>`).join('')}</div>`
       : (Number(candidate.overlap_token_count || 0) > 0 ? `<div class="mc-overlap-list"><span>${candidate.overlap_token_count} shared token(s) · mixed-sign ${candidate.mixed_sign_overlap_token_count || 0}</span></div>` : '');
     const evaluatorScore = candidate.route === 'action'
-      ? `F1 ${fmt(candidate.f1 ?? candidate.full_reward ?? candidate.reward)}`
+      ? `F1 ${fmt(candidate.f1 ?? candidate.full_reward ?? candidate.reward)} · P/R ${fmt(candidate.precision)} / ${fmt(candidate.recall)}`
       : `Action ${fmt(candidate.full_action_alignment)} · Logic ${fmt(candidate.full_logic_alignment)}`;
+    const hybridScore = isHybridMcRun()
+      ? ` · A ${fmt(candidate.sequence_advantage)} · Lseq ${fmt(candidate.sequence_loss)} · Llocal ${fmt(candidate.local_loss)} · Ltotal ${fmt(candidate.total_loss)}`
+      : '';
     return `<article class="mc-credit-candidate" data-candidate-key="${candidateKey}">
-      <header><strong>${escapeHtml(routeName(candidate.route))} · Prompt ${candidate.prompt_step ?? candidate.step ?? '-'} · Candidate ${candidate.candidate_index ?? '-'}</strong><span>Reward ${fmt(candidate.full_reward ?? candidate.reward)} · ${evaluatorScore} · ${units.length} units</span></header>
+      <header><strong>${escapeHtml(routeName(candidate.route))} · Prompt ${candidate.prompt_step ?? candidate.step ?? '-'} · Candidate ${candidate.candidate_index ?? '-'}</strong><span>Reward ${fmt(candidate.full_reward ?? candidate.reward)} · ${evaluatorScore}${hybridScore} · ${units.length} units</span></header>
       ${mcCreditSpanHtml(candidate)}
       <div class="mc-unit-list">${units.map((unit, index) => `<button type="button" class="mc-unit-chip credit-${escapeHtml(unit.credit_type || 'zero')}" data-unit-index="${index}">${escapeHtml(mcUnitLabel(unit))} · Δ ${fmt(unit.delta)}</button>`).join('') || '<span class="empty-inline">没有 marginal credit unit</span>'}</div>
       ${overlapHtml}<div class="mc-unit-detail" id="mcUnitDetail-${candidateKey}">${units.length ? mcUnitDetail(units[0]) : '该 candidate 没有 unit-level credit。'}</div>
@@ -885,6 +907,10 @@
         ['Candidate', String(rollout.candidate_index ?? '-')], ['Reward', fmt(rollout.full_reward ?? rollout.reward)],
         [rollout.route === 'action' ? 'F1' : 'Action / Logic', rollout.route === 'action' ? fmt(rollout.f1) : `${fmt(rollout.full_action_alignment)} / ${fmt(rollout.full_logic_alignment)}`],
         ['Completion tokens', String(rollout.generated_token_count ?? '-')],
+        ...(isHybridMcRun() ? [
+          ['Sequence A', fmt(rollout.sequence_advantage)], ['Sequence Loss', fmt(rollout.sequence_loss)],
+          ['Local Loss', fmt(rollout.local_loss)], ['Total Loss', fmt(rollout.total_loss)],
+        ] : []),
       ].map(([label, value]) => `<div class="stat"><div class="label">${label}</div><div class="value small">${escapeHtml(value)}</div></div>`).join('');
       const contextHtml = context
         ? renderUserSampleContext(context, rollout.route)
@@ -966,10 +992,10 @@
     document.querySelectorAll('.tab[data-kind="user"]').forEach(tab => tab.hidden = !user);
     const explorerTab = document.querySelector('.tab[data-view="explorer"]');
     explorerTab.textContent = user ? 'Rollout 样本' : '采样检视';
-    $('runKind').textContent = mc ? 'MC_USER_v1' : (user ? '懂用户 GRPO' : (state.capabilities.dsr ? 'DSR 实验' : '懂推荐 GRPO'));
+    $('runKind').textContent = isHybridMcRun() ? 'MC_USER Hybrid' : (mc ? 'MC_USER_v1' : (user ? '懂用户 GRPO' : (state.capabilities.dsr ? 'DSR 实验' : '懂推荐 GRPO')));
     $('runKind').classList.toggle('user', user);
     $('runKind').classList.toggle('dsr', !user && Boolean(state.capabilities.dsr));
-    $('kindContext').textContent = mc ? `Action / Chain · K${state.manifest.K ?? 2} · Marginal Credit` : (user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验');
+    $('kindContext').textContent = isHybridMcRun() ? `Action / Chain · K${state.manifest.K ?? 4} · GRPO + Marginal Credit` : (mc ? `Action / Chain · K${state.manifest.K ?? 2} · Marginal Credit` : (user ? 'Action / Chain · G4 · Token-local penalty' : 'Recommendation / DSR 训练实验'));
     document.querySelector('#userAction .user-section-head p').textContent = mc
       ? '候选 SID 的正负 credit 仅由删除该 SID 后的 Action F1 边际变化决定'
       : 'wrong selection 由主 F1 处理；hallucination / duplicate 同时具有局部 token penalty';

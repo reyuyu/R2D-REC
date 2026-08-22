@@ -79,6 +79,23 @@ class MCUserMonitorTests(unittest.TestCase):
             checkpoint.mkdir(parents=True)
             (checkpoint / "adapter_config.json").write_text("{}", encoding="utf-8")
             (checkpoint / "adapter_model.safetensors").write_bytes(b"adapter")
+        self.hybrid = self.user_runs / "mc_user_v1_hybrid_formal" / "MC-USER-HYBRID"
+        external = base / "external-checkpoints"
+        write_json(self.hybrid / "manifest.json", {
+            "run_id": self.hybrid.name, "run_kind": "user_grpo",
+            "algorithm": "mc_user_hybrid_grpo_v1", "K": 4, "max_steps": 512,
+            "checkpoint_root": str(external),
+        })
+        write_jsonl(self.hybrid / "metrics.jsonl", [{
+            "prompt_step": 1, "optimizer_step": 1, "route": "action",
+            "group_reward_mean": 0.4, "group_reward_spread": 0.5,
+            "sequence_loss": 0.1, "local_loss": -0.2, "total_loss": 0.04,
+            "candidates": [],
+        }])
+        checkpoint = external / self.hybrid.name / "checkpoints" / "prompt-step-0128"
+        checkpoint.mkdir(parents=True)
+        (checkpoint / "adapter_config.json").write_text("{}", encoding="utf-8")
+        (checkpoint / "adapter_model.safetensors").write_bytes(b"adapter")
         self.client = TestClient(
             create_app(runs_dir=self.runs, outputs_dir=self.outputs, user_runs_dir=self.user_runs)
         )
@@ -96,6 +113,17 @@ class MCUserMonitorTests(unittest.TestCase):
         metrics = self.client.get(f"/api/metrics?run_id={self.mc.name}").json()
         self.assertEqual(metrics[-1]["step"], 32)
         self.assertEqual(metrics[-1]["optimizer_step"], 31)
+
+    def test_hybrid_algorithm_metrics_and_external_checkpoint(self):
+        manifest = self.client.get(f"/api/manifest?run_id={self.hybrid.name}").json()
+        self.assertEqual(manifest["algorithm"], "mc_user_hybrid_grpo_v1")
+        capabilities = self.client.get(f"/api/capabilities?run_id={self.hybrid.name}").json()
+        self.assertTrue(capabilities["mc_user"])
+        self.assertTrue(capabilities["mc_user_hybrid"])
+        metrics = self.client.get(f"/api/metrics?run_id={self.hybrid.name}").json()
+        self.assertEqual(metrics[0]["total_loss"], 0.04)
+        checkpoints = self.client.get(f"/api/checkpoints?run_id={self.hybrid.name}").json()
+        self.assertEqual([row["step"] for row in checkpoints], [128])
 
     def test_checkpoint_discovery_and_legacy_regressions(self):
         checkpoints = self.client.get(f"/api/checkpoints?run_id={self.mc.name}").json()

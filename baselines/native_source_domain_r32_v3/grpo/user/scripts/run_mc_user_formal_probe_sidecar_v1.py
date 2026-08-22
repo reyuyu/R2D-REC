@@ -196,7 +196,14 @@ def checkpoint_spec(formal_run_dir: Path, beta_adapter: Path, step: int) -> dict
     if step == 0:
         return {"step": 0, "name": "BETA", "path": beta_adapter}
     name = f"prompt-step-{step:04d}"
-    return {"step": step, "name": name, "path": formal_run_dir / "checkpoints" / name}
+    manifest_path = formal_run_dir / "manifest.json"
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        checkpoint_root = manifest.get("checkpoint_root")
+    else:
+        checkpoint_root = None
+    root = Path(checkpoint_root) / formal_run_dir.name if checkpoint_root else formal_run_dir
+    return {"step": step, "name": name, "path": root / "checkpoints" / name}
 
 
 def checkpoint_complete(spec: Mapping[str, Any]) -> bool:

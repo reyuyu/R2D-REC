@@ -29,6 +29,8 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 RECOMMENDATION_RUN_KIND = "recommendation_grpo"
 USER_RUN_KIND = "user_grpo"
 MC_USER_ALGORITHM = "mc_user_v1"
+MC_USER_HYBRID_ALGORITHM = "mc_user_hybrid_grpo_v1"
+MC_USER_ALGORITHMS = {MC_USER_ALGORITHM, MC_USER_HYBRID_ALGORITHM}
 CHECKPOINT_NAME_RE = re.compile(r"checkpoint-(?:step)?(\d+)")
 PROMPT_CHECKPOINT_NAME_RE = re.compile(r"prompt-step-(\d+)")
 FINAL_CHECKPOINT_NAME = "full-epoch-final"
@@ -76,7 +78,7 @@ def checkpoint_name_allowed(name: str) -> bool:
 
 def is_mc_user_manifest(manifest: dict[str, Any]) -> bool:
     """Recognize explicit MC manifests and the immutable first Pilot32 manifest."""
-    if manifest.get("algorithm") == MC_USER_ALGORITHM:
+    if manifest.get("algorithm") in MC_USER_ALGORITHMS:
         return True
     config = manifest.get("config")
     prompts = manifest.get("prompts")
@@ -93,7 +95,8 @@ def is_mc_user_manifest(manifest: dict[str, Any]) -> bool:
 
 def normalized_algorithm(manifest: dict[str, Any]) -> str | None:
     if is_mc_user_manifest(manifest):
-        return MC_USER_ALGORITHM
+        value = manifest.get("algorithm")
+        return str(value) if value in MC_USER_ALGORITHMS else MC_USER_ALGORITHM
     value = manifest.get("algorithm")
     return str(value) if isinstance(value, str) and value else None
 
@@ -403,6 +406,13 @@ def create_app(
         local_checkpoints = selected / "checkpoints"
         if local_checkpoints.is_dir():
             candidates.append(local_checkpoints)
+        try:
+            manifest = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            declared_root = Path(str(manifest["checkpoint_root"])).expanduser().resolve()
+            if declared_root != Path("/data") and Path("/data") not in declared_root.parents:
+                candidates.append(declared_root / selected.name / "checkpoints")
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+            pass
         for approved_root in approved_outputs_roots:
             if not approved_root.is_dir():
                 continue
@@ -425,7 +435,14 @@ def create_app(
         for candidate in candidates:
             try:
                 path = candidate.resolve()
-                if approved_outputs_roots and not any(
+                declared_external = False
+                try:
+                    manifest = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+                    declared_root = Path(str(manifest["checkpoint_root"])).expanduser().resolve()
+                    declared_external = path == declared_root / selected.name / "checkpoints"
+                except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+                    pass
+                if approved_outputs_roots and not declared_external and not any(
                     path == root or root in path.parents for root in approved_outputs_roots
                 ):
                     if user_runs_root is None:
@@ -814,8 +831,8 @@ def create_app(
             algorithm = normalized_algorithm(data)
             if algorithm is not None:
                 data["algorithm"] = algorithm
-            if algorithm == MC_USER_ALGORITHM:
-                data.setdefault("display_name", "MC_USER_v1")
+            if algorithm in MC_USER_ALGORITHMS:
+                data.setdefault("display_name", "MC_USER Hybrid" if algorithm == MC_USER_HYBRID_ALGORITHM else "MC_USER_v1")
                 data.setdefault("max_steps", data.get("config", {}).get("prompt_count"))
             if "effective_max_steps" in data:
                 data["max_steps"] = data["effective_max_steps"]
@@ -847,8 +864,9 @@ def create_app(
         return {
             "run_kind": normalized_run_kind(manifest_data),
             "algorithm": algorithm,
-            "mc_user": algorithm == MC_USER_ALGORITHM,
-            "dual_step": algorithm == MC_USER_ALGORITHM,
+            "mc_user": algorithm in MC_USER_ALGORITHMS,
+            "mc_user_hybrid": algorithm == MC_USER_HYBRID_ALGORITHM,
+            "dual_step": algorithm in MC_USER_ALGORITHMS,
             "user_grpo": normalized_run_kind(manifest_data) == USER_RUN_KIND,
             "dsr": dsr,
             "probes": bool(
