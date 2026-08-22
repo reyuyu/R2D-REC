@@ -20,7 +20,11 @@ from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config
 
 from .composite_trainer import ThinkCompositeInterestRecGRPOTrainer
 from .interest_metric import composite_reward, population_advantages
-from .preflight_contract import evaluate_preflight_conditions, sid_runtime_observation
+from .preflight_contract import (
+    evaluate_preflight_conditions,
+    prepare_preflight_loss_context,
+    sid_runtime_observation,
+)
 from .run_gr_rec_think_composite_interest_v1 import git_head, prepare_plan
 from .runtime_import_provenance import assert_runtime_import_provenance
 from .single_node_nccl import configure_single_node_nccl
@@ -90,7 +94,10 @@ def main(argv=None):
     runtime = trainer.preflight_runtime
     local_advantages = prepared["advantages"].detach().float().cpu().tolist()
     gathered_advantages = [value for part in gather(local_advantages) for value in part]
-    loss = trainer._compute_loss(model, prepared)
+    gradient_accumulation_steps = prepare_preflight_loss_context(trainer)
+    assert int(trainer.args.gradient_accumulation_steps) == 1
+    with trainer.compute_loss_context_manager():
+        loss = trainer.compute_loss(model, prepared)
     trainer.accelerator.backward(loss)
     lora_grad_count = base_grad_count = 0
     grad_sq = 0.0
@@ -173,6 +180,12 @@ def main(argv=None):
             **import_provenance,
             "nccl_bootstrap": nccl_bootstrap,
             "optimizer_steps": 0, "zero_update": True,
+            "gradient_accumulation_steps": gradient_accumulation_steps,
+            "current_gradient_accumulation_steps": (
+                trainer.current_gradient_accumulation_steps
+            ),
+            "preflight_loss_entry": "compute_loss",
+            "preflight_compute_loss_context": True,
             "raw_decode_runtime_pass": raw_decode_pass,
             **sid_observation,
             "online_reward_parity": reward_parity,

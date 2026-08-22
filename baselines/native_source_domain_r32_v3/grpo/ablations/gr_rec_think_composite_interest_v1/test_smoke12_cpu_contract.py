@@ -13,7 +13,11 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 import torch
 
-from .preflight_contract import evaluate_preflight_conditions, sid_runtime_observation
+from .preflight_contract import (
+    evaluate_preflight_conditions,
+    prepare_preflight_loss_context,
+    sid_runtime_observation,
+)
 from .run_gr_rec_think_composite_interest_v1 import (
     CHECKPOINT_STEPS,
     PROBE_IDS,
@@ -65,6 +69,28 @@ def passing_preflight(**overrides):
 
 
 class PreflightContractTests(unittest.TestCase):
+    def test_preflight_loss_context_uses_frozen_accumulation(self):
+        trainer = SimpleNamespace(args=SimpleNamespace(gradient_accumulation_steps=1))
+        self.assertFalse(hasattr(trainer, "current_gradient_accumulation_steps"))
+        value = prepare_preflight_loss_context(trainer)
+        self.assertEqual(value, 1)
+        self.assertEqual(trainer.current_gradient_accumulation_steps, 1)
+
+    def test_shared_grpo_config_freezes_gradient_accumulation_to_one(self):
+        from scripts import run_grpo_trl_smoke
+
+        source = inspect.getsource(run_grpo_trl_smoke.make_grpo_config)
+        self.assertIn("gradient_accumulation_steps=1", source)
+
+    def test_preflight_uses_compute_loss_without_training_step(self):
+        source = inspect.getsource(gpu_preflight.main)
+        context_index = source.index("prepare_preflight_loss_context(trainer)")
+        loss_index = source.index("trainer.compute_loss(model, prepared)")
+        self.assertLess(context_index, loss_index)
+        self.assertIn("with trainer.compute_loss_context_manager():", source)
+        self.assertNotIn("trainer._compute_loss(", source)
+        self.assertNotIn("trainer.training_step(", source)
+
     def test_sid_status_is_observed_and_nonblocking(self):
         self.assertEqual(sid_runtime_observation(0), {
             "generated_sid_candidate_count": 0,

@@ -22,6 +22,25 @@ HARD_CONDITIONS = (
 )
 
 
+def prepare_preflight_loss_context(trainer: Any) -> int:
+    """Mirror the frozen Trainer loop state needed by a direct loss-only audit."""
+    value = getattr(getattr(trainer, "args", None), "gradient_accumulation_steps", None)
+    if isinstance(value, bool):
+        raise ValueError("gradient_accumulation_steps must be a positive integer")
+    try:
+        steps = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("gradient_accumulation_steps must be a positive integer") from exc
+    if steps <= 0 or value != steps:
+        raise ValueError("gradient_accumulation_steps must be a positive integer")
+    if steps != 1:
+        raise AssertionError(
+            f"frozen Composite gradient_accumulation_steps must be 1, got {steps}"
+        )
+    trainer.current_gradient_accumulation_steps = steps
+    return steps
+
+
 def sid_runtime_observation(generated_sid_candidate_count: int) -> dict[str, Any]:
     """Describe this batch without turning SID generation into a hard gate."""
     count = int(generated_sid_candidate_count)
