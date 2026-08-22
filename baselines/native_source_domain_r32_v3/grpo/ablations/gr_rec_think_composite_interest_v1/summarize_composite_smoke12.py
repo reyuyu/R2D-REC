@@ -38,8 +38,19 @@ def summarize_run(run_dir: Path) -> dict:
         read_jsonl(run_dir / "metrics.jsonl"),
         read_jsonl(run_dir / "rollouts.jsonl"),
         read_jsonl(run_dir / "composite_interest.jsonl"),
+        read_json(run_dir / "smoke_parameter_audit.json"),
     )
     return {**summary, **evaluate_smoke_conditions(summary)}
+
+
+def write_summary(run_dir: Path, output: Path | None = None) -> tuple[dict, Path]:
+    payload = summarize_run(run_dir)
+    destination = output or run_dir / "smoke12_summary.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return payload, destination
 
 
 def main(argv=None) -> int:
@@ -47,10 +58,7 @@ def main(argv=None) -> int:
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
-    payload = summarize_run(args.run_dir)
-    output = args.output or args.run_dir / "smoke12_summary.json"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    payload, output = write_summary(args.run_dir, args.output)
     print(json.dumps({"smoke_pass": payload["smoke_pass"], "output": str(output)}))
     return 0
 

@@ -49,6 +49,7 @@ PROBE_IDS = tuple(group_id for round_ids in PROBE_ROUNDS for group_id in round_i
 CHECKPOINT_STEPS = (200, 400, 600, 716)
 PROBE_STEPS = (0, 200, 400, 600, 716)
 RESULT_PATH = GRPO_ROOT / "results/gr_rec_think_composite_interest_v1_runner_dry_run_20260822.json"
+SMOKE_RESULT_PATH = GRPO_ROOT / "results/gr_rec_think_composite_interest_v1_smoke12_20260822.json"
 AUTO_SAVE_STEPS = 10000
 SAVE_TOTAL_LIMIT = len(CHECKPOINT_STEPS)
 
@@ -267,6 +268,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             "smoke_mode": contract["smoke_mode"],
             "fixed_probe_enabled": contract["enable_probes"],
             "checkpoint_saving_enabled": contract["enable_checkpoints"],
+            "smoke_parameter_audit_enabled": contract["smoke_mode"],
             "SMOKE_FIXED_PROBE_DISABLED_FOR_SPEED": (
                 "YES" if contract["smoke_mode"] and not contract["enable_probes"] else "NO"
             ),
@@ -306,7 +308,25 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             probe_steps=PROBE_STEPS,
         )
         trainer.add_callback(CompositeProbeCallback(probe_evaluator))
-    trainer.train()
+    parameter_audit = None
+    if contract["smoke_mode"]:
+        from .smoke12_parameter_audit import Smoke12ParameterAuditCallback
+        parameter_audit = Smoke12ParameterAuditCallback(
+            model, rank=rank, run_dir=monitor.run_dir
+        )
+        trainer.add_callback(parameter_audit)
+    try:
+        trainer.train()
+    except Exception:
+        if parameter_audit is not None and not parameter_audit.completed:
+            parameter_audit.write_runtime_error(trainer.state.global_step)
+        raise
+    if contract["smoke_mode"]:
+        import torch.distributed as dist
+        dist.barrier()
+        if rank == 0:
+            from .summarize_composite_smoke12 import write_summary
+            write_summary(monitor.run_dir, SMOKE_RESULT_PATH)
 
 
 def main(argv=None):

@@ -66,8 +66,10 @@ def summarize_composite_smoke(
     metrics: list[dict[str, Any]],
     rollouts: list[dict[str, Any]],
     composite_events: list[dict[str, Any]],
+    parameter_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Aggregate captured scalars and flags only; never recompute reward mathematics."""
+    parameter_audit = parameter_audit or {}
     groups = [group for event in composite_events for group in event.get("groups", [])]
     candidates = [candidate for event in composite_events for candidate in event.get("candidates", [])]
     optimizer_steps = len({int(row["step"]) for row in metrics if int(row.get("step", 0)) > 0})
@@ -102,9 +104,15 @@ def summarize_composite_smoke(
         value for row in metrics for value in row.values()
         if isinstance(value, (int, float)) and not isinstance(value, bool)
     ]
+    metrics_optimizer_steps = optimizer_steps
+    runtime_optimizer_steps = parameter_audit.get(
+        "runtime_optimizer_steps", parameter_audit.get("optimizer_steps")
+    )
     summary = {
         "synthetic": bool(manifest.get("synthetic", False)),
-        "optimizer_steps": optimizer_steps,
+        "optimizer_steps": metrics_optimizer_steps,
+        "metrics_optimizer_steps": metrics_optimizer_steps,
+        "runtime_optimizer_steps": runtime_optimizer_steps,
         "fresh_rollouts": len(rollout_ids),
         "g4_count": group_count,
         "candidate_count": len(candidates),
@@ -149,15 +157,24 @@ def summarize_composite_smoke(
             sum(bool(group.get("strict_beam_reversal")) for group in groups) / group_count
             if group_count else None
         ),
-        "BASE_DELTA": manifest.get("BASE_DELTA"),
-        "LORA_CHANGED": manifest.get("LORA_CHANGED"),
-        "lora_total_l2_delta": manifest.get("lora_total_l2_delta"),
-        "lora_max_abs_delta": manifest.get("lora_max_abs_delta"),
+        "BASE_DELTA": parameter_audit.get("BASE_DELTA"),
+        "BASE_CHANGED": parameter_audit.get("BASE_CHANGED"),
+        "base_version_changed_count": parameter_audit.get("base_version_changed_count"),
+        "base_requires_grad_count": parameter_audit.get("base_requires_grad_count"),
+        "LORA_CHANGED": parameter_audit.get("LORA_CHANGED"),
+        "lora_total_l2_delta": parameter_audit.get("lora_total_l2_delta"),
+        "lora_max_abs_delta": parameter_audit.get("lora_max_abs_delta"),
+        "lora_parameter_tensor_count": parameter_audit.get("lora_parameter_tensor_count"),
+        "parameter_audit_finite": bool(parameter_audit.get("finite")),
         "nan": bool(manifest.get("nan")) or any(math.isnan(value) for value in all_numbers),
         "inf": bool(manifest.get("inf")) or any(math.isinf(value) for value in all_numbers),
         "oom": bool(manifest.get("oom")),
         "nccl_error": bool(manifest.get("nccl_error")),
-        "runtime_error": bool(manifest.get("runtime_error")),
+        "runtime_error": (
+            bool(manifest.get("runtime_error"))
+            or bool(parameter_audit.get("runtime_error"))
+            or not bool(parameter_audit)
+        ),
         "nonzero_advantage_signal": nonzero_advantage,
     }
     summary["loss_finite"] = bool(_finite(row.get("loss") for row in metrics)) and not summary["nan"] and not summary["inf"]
@@ -167,7 +184,8 @@ def summarize_composite_smoke(
 
 def evaluate_smoke_conditions(summary: dict[str, Any]) -> dict[str, Any]:
     conditions = {
-        "optimizer_steps_12": summary.get("optimizer_steps") == 12,
+        "metrics_optimizer_steps_12": summary.get("metrics_optimizer_steps") == 12,
+        "runtime_optimizer_steps_12": summary.get("runtime_optimizer_steps") == 12,
         "fresh_rollouts_6": summary.get("fresh_rollouts") == 6,
         "g4_count_24": summary.get("g4_count") == 24,
         "candidate_count_96": summary.get("candidate_count") == 96,
@@ -179,6 +197,9 @@ def evaluate_smoke_conditions(summary: dict[str, Any]) -> dict[str, Any]:
         "loss_finite": bool(summary.get("loss_finite")),
         "grad_finite": bool(summary.get("grad_finite")),
         "base_delta_zero": summary.get("BASE_DELTA") == 0,
+        "base_unchanged": summary.get("BASE_CHANGED") is False,
+        "base_requires_grad_false": summary.get("base_requires_grad_count") == 0,
+        "parameter_audit_finite": bool(summary.get("parameter_audit_finite")),
         "lora_changed": summary.get("LORA_CHANGED") is True,
         "nonzero_advantage_signal": bool(summary.get("nonzero_advantage_signal")),
     }
@@ -192,10 +213,6 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
         "synthetic": True,
         "run_id": "GR-REC-THINK-COMPOSITE-INTEREST-V1-SMOKE12-SYNTHETIC",
         "experiment": "GR_REC_Think_CompositeInterest_v1",
-        "BASE_DELTA": 0,
-        "LORA_CHANGED": True,
-        "lora_total_l2_delta": 0.25,
-        "lora_max_abs_delta": 0.01,
         "nan": False,
         "inf": False,
         "oom": False,
@@ -284,4 +301,24 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
             "candidates": candidates,
             "advantages": [row["final_sequence_advantage"] for row in candidates],
         })
-    return {"manifest": manifest, "metrics": metrics, "rollouts": rollouts, "composite_events": events}
+    parameter_audit = {
+        "optimizer_steps": 12,
+        "runtime_optimizer_steps": 12,
+        "BASE_DELTA": 0,
+        "BASE_CHANGED": False,
+        "base_version_changed_count": 0,
+        "base_requires_grad_count": 0,
+        "LORA_CHANGED": True,
+        "lora_total_l2_delta": 0.25,
+        "lora_max_abs_delta": 0.01,
+        "lora_parameter_tensor_count": 2,
+        "finite": True,
+        "runtime_error": False,
+    }
+    return {
+        "manifest": manifest,
+        "metrics": metrics,
+        "rollouts": rollouts,
+        "composite_events": events,
+        "parameter_audit": parameter_audit,
+    }

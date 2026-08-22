@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+import torch
 
 from .preflight_contract import evaluate_preflight_conditions, sid_runtime_observation
 from .run_gr_rec_think_composite_interest_v1 import (
@@ -24,7 +25,10 @@ from .run_gr_rec_think_composite_interest_v1 import (
 )
 from . import gpu_preflight
 from .run_gr_rec_think_composite_interest_v1_smoke12 import future_launch_command
+from . import run_gr_rec_think_composite_interest_v1_smoke12 as smoke_runner
 from .single_node_nccl import configure_single_node_nccl
+from .smoke12_parameter_audit import Smoke12ParameterAuditCallback
+from .summarize_composite_smoke12 import summarize_run, write_summary
 from .smoke12_contract import (
     evaluate_smoke_conditions,
     smoke12_plan,
@@ -103,6 +107,10 @@ class SmokeContractTests(unittest.TestCase):
         self.assertIn('if contract["enable_probes"]:', source)
         self.assertIn("trainer.add_callback(MilestoneSaveCallback())", source)
         self.assertIn("trainer.add_callback(CompositeProbeCallback(probe_evaluator))", source)
+        self.assertIn('if contract["smoke_mode"]:', source)
+        self.assertIn("trainer.add_callback(parameter_audit)", source)
+        self.assertIn("smoke_mode=True", inspect.getsource(smoke_runner.main))
+        self.assertNotIn("Smoke12ParameterAuditCallback", inspect.getsource(smoke_runner.main))
 
     def test_preflight_source_does_not_hardcode_sid_visibility(self):
         source = inspect.getsource(gpu_preflight)
@@ -132,6 +140,7 @@ class SmokeSummaryTests(unittest.TestCase):
         self.summary = summarize_composite_smoke(
             self.fixture["manifest"], self.fixture["metrics"],
             self.fixture["rollouts"], self.fixture["composite_events"],
+            self.fixture["parameter_audit"],
         )
 
     def test_synthetic_fixture_and_summary(self):
@@ -149,11 +158,23 @@ class SmokeSummaryTests(unittest.TestCase):
         self.assertTrue(evaluate_smoke_conditions(self.summary)["smoke_pass"])
 
     def test_smoke_pass_evaluator_detects_failure(self):
-        broken = dict(self.summary, optimizer_steps=11, nccl_error=True)
+        broken = dict(self.summary, metrics_optimizer_steps=11, nccl_error=True)
         result = evaluate_smoke_conditions(broken)
         self.assertFalse(result["smoke_pass"])
-        self.assertIn("optimizer_steps_12", result["failure_reasons"])
+        self.assertIn("metrics_optimizer_steps_12", result["failure_reasons"])
         self.assertIn("nccl_error_absent", result["failure_reasons"])
+
+    def test_parameter_and_runtime_step_failures_are_hard(self):
+        cases = {
+            "lora_changed": {"LORA_CHANGED": False},
+            "base_unchanged": {"BASE_CHANGED": True, "BASE_DELTA": 1},
+            "runtime_optimizer_steps_12": {"runtime_optimizer_steps": 11},
+        }
+        for failure, override in cases.items():
+            with self.subTest(failure=failure):
+                result = evaluate_smoke_conditions(dict(self.summary, **override))
+                self.assertFalse(result["smoke_pass"])
+                self.assertIn(failure, result["failure_reasons"])
 
     def test_monitor_apis_consume_future_smoke_schema(self):
         monitor_dir = Path(__file__).parents[2] / "scripts" / "monitor"
@@ -170,6 +191,17 @@ class SmokeSummaryTests(unittest.TestCase):
                     "".join(json.dumps(row) + "\n" for row in self.fixture["composite_events"]),
                     encoding="utf-8",
                 )
+                (run / "metrics.jsonl").write_text(
+                    "".join(json.dumps(row) + "\n" for row in self.fixture["metrics"]),
+                    encoding="utf-8",
+                )
+                (run / "rollouts.jsonl").write_text(
+                    "".join(json.dumps(row) + "\n" for row in self.fixture["rollouts"]),
+                    encoding="utf-8",
+                )
+                (run / "smoke_parameter_audit.json").write_text(
+                    json.dumps(self.fixture["parameter_audit"]), encoding="utf-8"
+                )
                 client = TestClient(create_app(run_dir=run))
                 captured = client.get("/api/composite-interest").json()
                 summary = client.get("/api/composite-interest/summary").json()
@@ -179,6 +211,13 @@ class SmokeSummaryTests(unittest.TestCase):
                 self.assertTrue(summary["supported"])
                 self.assertEqual(sum(row["group_count"] for row in summary["rows"]), 24)
                 self.assertEqual(advantages["provenance"]["mode"], "captured")
+                smoke_summary = summarize_run(run)
+                self.assertTrue(smoke_summary["smoke_pass"])
+                self.assertEqual(smoke_summary["runtime_optimizer_steps"], 12)
+                self.assertTrue(smoke_summary["LORA_CHANGED"])
+                written, output = write_summary(run, run / "smoke12_summary.json")
+                self.assertTrue(written["smoke_pass"])
+                self.assertTrue(output.is_file())
         finally:
             sys.path.remove(str(monitor_dir))
 
@@ -201,6 +240,66 @@ class NcclMockTests(unittest.TestCase):
         self.assertEqual(result["nccl_socket_ifname"], "lo")
         self.assertEqual(calls, [("set_device", 0)])
         self.assertFalse(result["initialized_here"])
+
+
+class TinyParameterModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.base = torch.nn.Linear(2, 2, bias=False)
+        self.base.weight.requires_grad_(False)
+        self.lora_weight = torch.nn.Parameter(torch.zeros(2, 2))
+
+
+class ParameterAuditTests(unittest.TestCase):
+    def test_lora_delta_and_unchanged_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model = TinyParameterModel()
+            callback = Smoke12ParameterAuditCallback(model, rank=0, run_dir=directory)
+            callback.on_train_begin(None, None, None)
+            with torch.no_grad():
+                model.lora_weight.add_(0.5)
+            payload = callback.audit(12)
+            self.assertTrue(payload["LORA_CHANGED"])
+            self.assertGreater(payload["lora_total_l2_delta"], 0)
+            self.assertGreater(payload["lora_max_abs_delta"], 0)
+            self.assertFalse(payload["BASE_CHANGED"])
+            self.assertEqual(payload["BASE_DELTA"], 0)
+            self.assertEqual(payload["base_version_changed_count"], 0)
+            self.assertTrue(payload["finite"])
+
+    def test_unchanged_lora_is_reported(self):
+        with tempfile.TemporaryDirectory() as directory:
+            callback = Smoke12ParameterAuditCallback(
+                TinyParameterModel(), rank=0, run_dir=directory
+            )
+            callback.on_train_begin(None, None, None)
+            payload = callback.audit(12)
+            self.assertFalse(payload["LORA_CHANGED"])
+            self.assertEqual(payload["lora_total_l2_delta"], 0)
+            self.assertEqual(payload["lora_max_abs_delta"], 0)
+
+    def test_base_in_place_mutation_trips_sentinel(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model = TinyParameterModel()
+            callback = Smoke12ParameterAuditCallback(model, rank=0, run_dir=directory)
+            callback.on_train_begin(None, None, None)
+            with torch.no_grad():
+                model.base.weight.add_(1)
+            payload = callback.audit(12)
+            self.assertTrue(payload["BASE_CHANGED"])
+            self.assertNotEqual(payload["BASE_DELTA"], 0)
+            self.assertEqual(payload["base_version_changed_count"], 1)
+
+    def test_runtime_error_artifact_never_looks_complete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            callback = Smoke12ParameterAuditCallback(
+                TinyParameterModel(), rank=0, run_dir=directory
+            )
+            payload = callback.write_runtime_error(4)
+            self.assertTrue(payload["runtime_error"])
+            self.assertFalse(payload["finite"])
+            self.assertIsNone(payload["LORA_CHANGED"])
+            self.assertEqual(payload["runtime_optimizer_steps"], 4)
 
 
 if __name__ == "__main__":
