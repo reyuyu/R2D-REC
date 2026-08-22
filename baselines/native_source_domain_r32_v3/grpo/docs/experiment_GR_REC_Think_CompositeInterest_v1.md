@@ -195,11 +195,139 @@ The read-only adapter now requires an explicit eligible_group_ids set. Non-eligi
 
 Tests verify prompt parity and confirm Gold text is absent from model input prompts.
 
+## Real G4 composite activation audit
+
+Artifact: gr_rec_think_composite_interest_v1_g4_activation_audit_20260822.json.
+
+The immutable historical source is the 310 Think G4 traces from
+GR-REC-CLAMP-BRIDGE-V1-G8BASE-FORMAL1500-20260821. Every trace row remained an
+intact four-candidate group. Thirteen G4s were excluded by current Gold
+eligibility and four more because at least one candidate was parser-invalid.
+The audited cohort is 293 complete G4s / 1172 candidates.
+
+### Group-level activation
+
+- BEAM_ZERO_STD_RATE: 135/293 = 46.08%
+- U_cot all-zero: 102/293 = 34.81%
+- COT_VARIANCE_ACTIVE_G4_RATE: 181/293 = 61.77%
+- COMPOSITE_ZERO_STD_RATE: 54/293 = 18.43%
+- rescued Beam-zero groups: 81
+- RESCUED_ZERO_STD_RATE over all G4: 27.65%
+- RESCUED_ZERO_STD_RATE over Beam-zero G4: 60.00%
+
+Thus the frozen coverage reward supplies real within-G4 variance and rescues 60%
+of historical Beam zero-std groups. It does not remove collapse completely:
+54/293 groups remain Composite zero-std.
+
+For the 158 Beam-variance-active groups:
+- TOP_WINNER_CHANGED_RATE: 43/158 = 27.22%
+- ADVANTAGE_SIGN_CHANGED_RATE: 97/632 candidates = 15.35%
+- Beam/composite advantage cosine mean/P25/P50/P75:
+  .7363/.7051/.9680/1.0000
+- cosine min/max: -1.0000/1.0000
+
+The winner comparison uses stable lowest-candidate-id argmax for both vectors.
+
+### CoT structure activation
+
+Unique U_cot values per G4:
+- one value: 112/293 = 38.23%
+- at least two values: 181/293 = 61.77%
+- at least three values: 23/293 = 7.85%
+- four distinct values: 0
+
+Candidate matched-count distribution:
+- K=0: 806/1172 = 68.77%
+- K=1: 316/1172 = 26.96%
+- K=2: 44/1172 = 3.75%
+- K=3: 6/1172 = .51%
+- K>=4: 0
+
+Groups with at least one K>=1/K>=2/K>=3 candidate:
+191/37/6, or 65.19%/12.63%/2.05%. Twelve groups contain a full-coverage
+candidate; these have Gold interest counts below four.
+
+Q>0 occurs in 0/1172 candidates and 0/293 groups. Matched-candidate mean
+similarity has mean/P25/P50/P75/max .3603/.3236/.3497/.3857/.5694, below the
+frozen .60 quality floor. Therefore:
+
+QUALITY_BRANCH_HISTORICALLY_DORMANT = YES
+
+This is not a failure of the coverage branch and no threshold or quality-floor
+change was made.
+
+### Structure correlation
+
+Pearson/Spearman:
+- U_cot vs Raw N: .1786/.1960
+- U_cot vs Grounded N: .2061/.2295
+- U_cot vs grounding coverage: .1150/.0846
+- matched count vs Raw N: .2289/.2057
+- matched count vs Grounded N: .2486/.2354
+- U_cot vs completion length: .1462/.1562
+
+The relationship is modest, but U_cot and matched count are closer to Grounded N
+than Raw N or completion length. This is evidence against pure length reward,
+not proof of semantic quality.
+
+### One-interest shortcut
+
+Across all candidates, Raw N=1 has mean U_cot/matched/composite
+.0472/.1698/.2632. Raw N=3 gives .1109/.4326/.2471 and Raw N=4 gives
+.1130/.4842/.2638; the unconditional Composite means are confounded by Beam.
+
+Within Beam buckets, Raw N=3/4 minus Raw N=1 mean Composite reward is:
+- Beam 0: +.0226
+- Beam .5-near: +.0169
+- Beam 2-near: +.0299
+- Beam 8+: +.0392
+
+Each comparison has both cohorts present. Historical evidence therefore does not
+show a one-interest reward shortcut; multi-interest candidates receive higher
+Composite reward at comparable Beam levels.
+
+### Real collapse examples
+
+The JSON contains up to five compact group summaries for every requested class.
+Representative cases:
+- Beam equal, matched counts differ:
+  7b91df... has Beam [.5,.5,.5,.5], K [0,0,0,1], U_cot [0,0,0,.16].
+- Beam equal, Raw N differs:
+  b190ca... has Beam [2.25]*4, Raw N [1,1,4,4], K [0,0,2,1].
+- High Beam with low U_cot:
+  0d3b5e... has Beam [.5,8,2,8] and U_cot [0,0,0,0].
+- Low Beam with high U_cot:
+  cda568... has Beam [.5,.5,0,.5] and U_cot [.8,0,0,0].
+- Composite winner differs:
+  f1bd21... changes the stable winner with Beam [0,2,2,0] and
+  U_cot [.36,0,.16,.16].
+
+### Eligible-domain audit
+
+Original / eligible / projected-training counts:
+- video: 550 / 546 / 544, eligible 99.27%
+- prod: 382 / 355 / 354, eligible 92.93%
+- ad: 427 / 381 / 379, eligible 89.23%
+- living: 190 / 164 / 163, eligible 86.32%
+
+Overall eligibility is 93.35%. Missing-Gold exclusions are
+video/prod/ad/living = 0/24/43/24; parser-invalid exclusions are 4/3/3/2.
+
+DOMAIN_COHORT_SKEW_RISK = YES under the declared rule that a domain's eligible
+rate deviates from the overall rate by more than five percentage points. Video
+is overrepresented and living underrepresented. The projected training-domain
+counts use seed-20260818 post-probe shuffle and G4 tail truncation only for this
+audit; no runner was created.
+
+The four fixed probe IDs are unchanged and all remain eligible.
+
+
 ## Artifacts
 
 - gr_rec_think_composite_interest_v1_gold_cot_provenance_20260822.json
 - gr_rec_think_composite_interest_v1_similarity_calibration_20260822.json
 - gr_rec_think_composite_interest_v1_offline_metric_audit_20260822.json
+- gr_rec_think_composite_interest_v1_g4_activation_audit_20260822.json
 
 ## Remaining gate
 

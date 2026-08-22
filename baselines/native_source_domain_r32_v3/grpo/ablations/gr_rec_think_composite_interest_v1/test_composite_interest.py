@@ -5,6 +5,7 @@ import unittest
 
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.calibrate_similarity import auc_rank, counter_f1, lcs_f1, matching_count
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.data_adapter import DataProvenanceError, build_think_composite_dataset, planned_topology
+from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.g4_activation_audit import audit_reward_vectors
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.interest_metric import MATCH_QUALITY_FLOOR, MATCH_THRESHOLD, beam_utility, composite_reward, coverage_tier, evidence_similarity, maximum_weight_matching, pair_similarity, population_advantages, score_interest_cot
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_exact_clamp_v1.think_diagnostics import InterestUnit, extract_interest_units
 
@@ -146,6 +147,34 @@ class MetricTests(unittest.TestCase):
         std = math.sqrt(sum((x - mean) ** 2 for x in rewards) / 4)
         self.assertEqual(population_advantages(rewards), [(x - mean) / (std + 1e-4) for x in rewards])
         self.assertEqual(population_advantages([0.25] * 4), [0.0] * 4)
+
+
+class GroupActivationTests(unittest.TestCase):
+    def test_equal_beam_different_cot_rescues_advantage(self):
+        result = audit_reward_vectors([2.0] * 4, [0.0, 0.16, 0.36, 0.56])
+        self.assertEqual(result["A_beam_raw"], [0.0] * 4)
+        self.assertGreater(result["composite_population_std"], 0.0)
+        self.assertNotEqual(result["A_composite"], [0.0] * 4)
+
+    def test_equal_beam_equal_cot_stays_zero(self):
+        result = audit_reward_vectors([2.0] * 4, [0.16] * 4)
+        self.assertEqual(result["A_beam_raw"], [0.0] * 4)
+        self.assertEqual(result["A_composite"], [0.0] * 4)
+        self.assertEqual(result["composite_population_std"], 0.0)
+
+    def test_composite_order_and_population_correction_zero(self):
+        cot_values = [0.56, 0.0, 0.36, 0.16]
+        result = audit_reward_vectors([2.0] * 4, cot_values)
+        expected = [composite_reward(2.0, value) for value in cot_values]
+        self.assertEqual(result["composite_reward_vector"], expected)
+        self.assertEqual(
+            sorted(range(4), key=lambda index: result["composite_reward_vector"][index]),
+            [1, 3, 2, 0],
+        )
+        mean = sum(expected) / 4
+        expected_std = math.sqrt(sum((value - mean) ** 2 for value in expected) / 4)
+        self.assertAlmostEqual(result["composite_population_std"], expected_std)
+
 
 
 class CalibrationHelperTests(unittest.TestCase):
