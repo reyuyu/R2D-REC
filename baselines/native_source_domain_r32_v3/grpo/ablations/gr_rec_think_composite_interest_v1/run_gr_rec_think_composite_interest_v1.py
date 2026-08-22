@@ -246,6 +246,7 @@ def launch_training(args, plan):
             "fresh_original_bata": True, "dataset_path": str(args.grpo_data),
             "gold_source_path": str(args.gold_data), "gold_cot_reward_only": True,
             "sampler_audit": plan["topology"], "fixed_probe_ids": plan["probe_ids"],
+            "effective_max_steps": args.max_steps,
             "checkpoint_steps": list(CHECKPOINT_STEPS),
             "probe_steps": list(PROBE_STEPS),
             "probe_rounds": plan["probe_rounds"],

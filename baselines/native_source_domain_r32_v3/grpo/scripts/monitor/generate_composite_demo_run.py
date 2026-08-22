@@ -25,12 +25,12 @@ def candidate(group_id, index, beam, cot, matched, gold_n=2, parser=True, q=0.0)
     raw_n = index if index < 3 else 2
     grounded_n = min(raw_n, matched)
     pred = [
-        {"index": item, "normalized_text": f"候选兴趣 {item + 1}",
+        {"index": item + 1, "normalized_text": f"候选兴趣 {item + 1}",
          "grounded_evidence_sids": [f"sid-{item + 1}"] if item < grounded_n else []}
         for item in range(raw_n)
     ]
     details = [
-        {"pred_index": item, "gold_index": item, "text_similarity": 0.8,
+        {"pred_index": item + 1, "gold_index": item + 1, "text_similarity": 0.8,
          "evidence_similarity": 1.0, "combined_similarity": 0.86, "matched": True}
         for item in range(min(matched, raw_n, gold_n))
     ]
@@ -52,8 +52,8 @@ def candidate(group_id, index, beam, cot, matched, gold_n=2, parser=True, q=0.0)
         "parser_success": parser,
         "parser_failure_reason": None if parser else "demo_parser_failure",
         "pred_interest_units": pred, "match_details": details,
-        "unmatched_pred_indices": list(range(matched, raw_n)),
-        "unmatched_gold_indices": list(range(matched, gold_n)),
+        "unmatched_pred_indices": list(range(matched + 1, raw_n + 1)),
+        "unmatched_gold_indices": list(range(matched + 1, gold_n + 1)),
         "unmatched_pred_best_alternatives": [],
         "unmatched_gold_best_alternatives": [], "demo": True,
     }
@@ -77,8 +77,8 @@ def group(case, beam, cot, matches, parser_failure=False, q_active=False):
     metadata = {
         "group_id": group_id,
         "gold_interest_units": [
-            {"index": 0, "normalized_text": "汽车生活", "grounded_evidence_sids": ["sid-1"]},
-            {"index": 1, "normalized_text": "维修配件", "grounded_evidence_sids": ["sid-2"]},
+            {"index": 1, "normalized_text": "汽车生活", "grounded_evidence_sids": ["sid-1"]},
+            {"index": 2, "normalized_text": "维修配件", "grounded_evidence_sids": ["sid-2"]},
         ],
         "beam_raw_vector": beam,
         "beam_utility_vector": [row["beam_utility"] for row in candidates],

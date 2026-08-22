@@ -888,6 +888,7 @@ def create_app(
             "dsr": dsr,
             "probes": bool(
                 (isinstance(fixed_probe, dict) and fixed_probe.get("enabled"))
+                or bool(manifest_data.get("fixed_probe_ids"))
                 or (selected / "probes.jsonl").is_file()
             ),
             "checkpoints": checkpoint_available,
