@@ -515,3 +515,41 @@ presence, base-gradient absence, checksum invariance, and NCCL/OOM/NaN/Inf
 guards all passed. Per the fixed gate, no further retry or modification was
 attempted, Smoke12 was not started, and formal training was not started. All
 four GPUs returned to approximately 5 MiB idle usage with no compute process.
+
+## Masked decode/shuffle parity repair and Smoke12 (2026-08-23)
+
+Base main was `cd86109aeb05e8825487b14adcfb8100bc265743`. Commit
+`dac5a147fee1862a2dfae9008842122b92eb12ae` changes only the Preflight
+validation harness. It compares reward-side completion text with masked,
+unpadded token IDs on every rank, checks Composite advantage replacement before
+TRL shuffle, and compares the post-shuffle `(prompt, completion, advantage)`
+multiset rather than requiring the original order. The production trainer,
+reward, population advantage, generation, Beam32, parser, monitor schema,
+Smoke12 math, and Formal716 contract are unchanged. Targeted CPU tests passed
+57/57; compilation and `git diff --check` also passed.
+
+The final authorized four-GPU zero-update Preflight launched from that exact
+commit and passed every hard gate. Masked raw decode covered all 16 candidates
+with zero mismatches. Pre-shuffle advantage parity and post-shuffle association
+parity both passed. Advantage order did change, proving the former order-based
+comparison was invalid while the candidate associations remained intact. Loss
+was `1.30385160446167e-08`, aggregate LoRA gradient norm was
+`0.9871860893088333`, 2016 LoRA gradient tensors were present, and base gradient
+tensor count was zero. Trainable checksums matched before and after;
+`optimizer_steps=0` and `PREFLIGHT_PASS=YES`.
+
+Smoke12 then reloaded fresh original BATA and completed its frozen 12 optimizer
+steps, 6 fresh rollouts, 24 G4 groups, and 96 candidates with probes and
+checkpoints disabled. Mean loss was `-0.0001030747468272845`, mean gradient norm
+was `0.5001534099380175`, mean KL was `0.0008892684515255193`, and mean clip
+ratio was `0.010040404585500559`. Mean Beam raw score, CoT utility, and Composite
+reward were `3.0641276041666665`, `0.13291666666666668`, and
+`0.24953101228854105`. Parser failure rate was `0.010416666666666666`; grounding
+coverage mean was `0.8914786967418546`.
+
+The parameter audit reported `BASE_DELTA=0`, `BASE_CHANGED=false`, zero changed
+base versions, zero base parameters requiring gradients, `LORA_CHANGED=true`,
+LoRA total L2 delta `0.051735382818748316`, and maximum absolute delta
+`1.2249220162630081e-05`. NaN, Inf, OOM, NCCL, and runtime-error flags were all
+false. The existing evaluator returned `SMOKE_PASS=YES`. Formal716 training was
+not started, and all four GPUs returned to approximately 5 MiB idle usage.
