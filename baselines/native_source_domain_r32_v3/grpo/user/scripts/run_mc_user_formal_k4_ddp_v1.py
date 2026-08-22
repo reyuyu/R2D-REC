@@ -372,13 +372,7 @@ def validate_ddp_owner_claims(claims: Sequence[Mapping[str, Any]]) -> None:
     if len(claims) != WORLD_SIZE or any(not claim.get("nvidia_host_pids") for claim in claims):
         raise MCK4Error("GPU_OWNER_NOT_VISIBLE")
     pid_sets = [set(map(int, claim["nvidia_host_pids"])) for claim in claims]
-    one_process_per_gpu = all(len(pids) == 1 for pids in pid_sets) and len(
-        {next(iter(pids)) for pids in pid_sets}
-    ) == WORLD_SIZE
-    all_ranks_visible_per_gpu = all(pids == pid_sets[0] for pids in pid_sets) and len(
-        pid_sets[0]
-    ) == WORLD_SIZE
-    if not one_process_per_gpu and not all_ranks_visible_per_gpu:
+    if len(set().union(*pid_sets)) != WORLD_SIZE:
         raise MCK4Error("GPU_FOREIGN_PROCESS_AFTER_LOAD")
 
 

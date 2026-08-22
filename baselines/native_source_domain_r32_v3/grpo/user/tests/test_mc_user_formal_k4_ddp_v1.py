@@ -161,13 +161,21 @@ class K4ContractTests(unittest.TestCase):
         validate_ddp_owner_claims(
             [{"nvidia_host_pids": [100, 101, 102, 103]} for _ in range(4)]
         )
+        validate_ddp_owner_claims(
+            [
+                {"nvidia_host_pids": [100, 101]},
+                {"nvidia_host_pids": [101, 102]},
+                {"nvidia_host_pids": [102, 103]},
+                {"nvidia_host_pids": [100, 103]},
+            ]
+        )
         with self.assertRaisesRegex(RuntimeError, "GPU_FOREIGN_PROCESS_AFTER_LOAD"):
             validate_ddp_owner_claims(
                 [
-                    {"nvidia_host_pids": [100]},
+                    {"nvidia_host_pids": [100, 999]},
                     {"nvidia_host_pids": [101]},
                     {"nvidia_host_pids": [102]},
-                    {"nvidia_host_pids": [103, 999]},
+                    {"nvidia_host_pids": [103]},
                 ]
             )
 
