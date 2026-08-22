@@ -265,7 +265,8 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260822-rollout-context", html)
+        self.assertIn("user_dashboard.js?v=20260822-hybrid-advantage-v3", html)
+        self.assertIn("user_dashboard.css?v=20260822-hybrid-advantage-v3", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
@@ -283,6 +284,12 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("mcProbeSampleDetail", javascript)
         self.assertIn("relative_to_beta_delta", javascript)
         self.assertIn("Action Mean F1", javascript)
+        self.assertIn("Sequence A / token", javascript)
+        self.assertIn("Aux A / token", javascript)
+        self.assertIn("Combined A / token", javascript)
+        self.assertIn("Loss coefficient / token", javascript)
+        self.assertIn("localWeight * Number(candidateUnit.delta || 0) / unitIndices.length", javascript)
+        self.assertIn("-value / candidateCount", javascript)
         self.assertIn("state.manifest.K ?? 2", javascript)
         self.assertIn("userRolloutKey", javascript)
         self.assertIn("完整样本", javascript)

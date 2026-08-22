@@ -497,12 +497,39 @@
     return `Event ${unit.event_index ?? '-'} `;
   }
 
-  function mcUnitDetail(unit) {
+  function mcUnitEffectiveAdvantage(candidate, unit) {
     const indices = Array.isArray(unit.generated_token_indices) ? unit.generated_token_indices : [];
+    const completionTokens = Number(candidate.generated_token_count ?? candidate.completion_length ?? candidate.completion_token_count ?? 0);
+    const sequenceWeight = Number(state.manifest.sequence_weight ?? state.manifest.config?.sequence_weight ?? 1);
+    const localWeight = Number(state.manifest.local_weight ?? state.manifest.config?.local_weight ?? 0.3);
+    const candidateCount = Number(state.manifest.K ?? state.manifest.config?.K ?? 4);
+    const sequencePerToken = completionTokens > 0 ? sequenceWeight * Number(candidate.sequence_advantage || 0) / completionTokens : 0;
+    const localByToken = new Map();
+    for (const candidateUnit of candidate.credit_units || []) {
+      const unitIndices = Array.isArray(candidateUnit.generated_token_indices) ? candidateUnit.generated_token_indices : [];
+      if (!unitIndices.length) continue;
+      const contribution = localWeight * Number(candidateUnit.delta || 0) / unitIndices.length;
+      unitIndices.forEach(tokenIndex => localByToken.set(tokenIndex, (localByToken.get(tokenIndex) || 0) + contribution));
+    }
+    const localValues = indices.map(tokenIndex => localByToken.get(tokenIndex) || 0);
+    const combinedValues = localValues.map(value => sequencePerToken + value);
+    const lossCoefficientValues = combinedValues.map(value => -value / candidateCount);
+    return {sequencePerToken, localValues, combinedValues, lossCoefficientValues, localWeight, candidateCount};
+  }
+
+  function mcAdvantageRange(values) {
+    if (!values.length) return '-';
+    const minimum = Math.min(...values), maximum = Math.max(...values);
+    return Math.abs(maximum - minimum) < 1e-12 ? fmt(minimum, 6) : `${fmt(minimum, 6)} .. ${fmt(maximum, 6)}`;
+  }
+
+  function mcUnitDetail(unit, candidate) {
+    const indices = Array.isArray(unit.generated_token_indices) ? unit.generated_token_indices : [];
+    const effective = mcUnitEffectiveAdvantage(candidate, unit);
     const extras = unit.sid
       ? `<dt>SID</dt><dd>${escapeHtml(unit.sid)}</dd><dt>Occurrence</dt><dd>${unit.occurrence_index ?? unit.occurrence ?? '-'}</dd>`
       : `<dt>Event index</dt><dd>${unit.event_index ?? '-'}</dd><dt>Δ Action</dt><dd>${fmt(unit.delta_action_alignment ?? unit.delta_action)}</dd><dt>Δ Logic</dt><dd>${fmt(unit.delta_logic_alignment ?? unit.delta_logic)}</dd>`;
-    return `<dl class="mc-unit-detail-grid"><dt>Delta</dt><dd>${fmt(unit.delta)}</dd><dt>Credit type</dt><dd>${escapeHtml(unit.credit_type || 'zero')}</dd><dt>Token count</dt><dd>${indices.length}</dd>${extras}</dl>`;
+    return `<dl class="mc-unit-detail-grid"><dt>Delta</dt><dd>${fmt(unit.delta)}</dd><dt>Credit type</dt><dd>${escapeHtml(unit.credit_type || 'zero')}</dd><dt>Token count</dt><dd>${indices.length}</dd><dt>Sequence A / token</dt><dd>${fmt(effective.sequencePerToken, 6)}</dd><dt>Aux A / token</dt><dd>${mcAdvantageRange(effective.localValues)}</dd><dt>Combined A / token</dt><dd>${mcAdvantageRange(effective.combinedValues)}</dd><dt>Loss coefficient / token</dt><dd>${mcAdvantageRange(effective.lossCoefficientValues)}</dd><dt>Objective weights</dt><dd>sequence 1.0 · local ${fmt(effective.localWeight)} · K${effective.candidateCount} mean</dd>${extras}</dl>`;
   }
 
   function renderMcTraceCandidate(candidate, candidateKey) {
@@ -520,8 +547,8 @@
     return `<article class="mc-credit-candidate" data-candidate-key="${candidateKey}">
       <header><strong>${escapeHtml(routeName(candidate.route))} · Prompt ${candidate.prompt_step ?? candidate.step ?? '-'} · Candidate ${candidate.candidate_index ?? '-'}</strong><span>Reward ${fmt(candidate.full_reward ?? candidate.reward)} · ${evaluatorScore}${hybridScore} · ${units.length} units</span></header>
       ${mcCreditSpanHtml(candidate)}
-      <div class="mc-unit-list">${units.map((unit, index) => `<button type="button" class="mc-unit-chip credit-${escapeHtml(unit.credit_type || 'zero')}" data-unit-index="${index}">${escapeHtml(mcUnitLabel(unit))} · Δ ${fmt(unit.delta)}</button>`).join('') || '<span class="empty-inline">没有 marginal credit unit</span>'}</div>
-      ${overlapHtml}<div class="mc-unit-detail" id="mcUnitDetail-${candidateKey}">${units.length ? mcUnitDetail(units[0]) : '该 candidate 没有 unit-level credit。'}</div>
+      <div class="mc-unit-list">${units.map((unit, index) => `<button type="button" class="mc-unit-chip credit-${escapeHtml(unit.credit_type || 'zero')}" data-unit-index="${index}">${escapeHtml(mcUnitLabel(unit))} · Δ ${fmt(unit.delta)} · Aeff ${mcAdvantageRange(mcUnitEffectiveAdvantage(candidate, unit).combinedValues)}</button>`).join('') || '<span class="empty-inline">没有 marginal credit unit</span>'}</div>
+      ${overlapHtml}<div class="mc-unit-detail" id="mcUnitDetail-${candidateKey}">${units.length ? mcUnitDetail(units[0], candidate) : '该 candidate 没有 unit-level credit。'}</div>
     </article>`;
   }
 
@@ -554,11 +581,11 @@
       const root = document.querySelector(`[data-candidate-key="${key}"]`);
       root?.querySelectorAll('[data-unit-index]').forEach(button => button.onclick = () => {
         const unit = candidate.credit_units[Number(button.dataset.unitIndex)];
-        $(`mcUnitDetail-${key}`).innerHTML = mcUnitDetail(unit);
+        $(`mcUnitDetail-${key}`).innerHTML = mcUnitDetail(unit, candidate);
       });
       root?.querySelectorAll('[data-unit-indices]').forEach(button => button.onclick = () => {
         const unit = candidate.credit_units[Number(button.dataset.unitIndices.split(',')[0])];
-        $(`mcUnitDetail-${key}`).innerHTML = mcUnitDetail(unit);
+        $(`mcUnitDetail-${key}`).innerHTML = mcUnitDetail(unit, candidate);
       });
     });
   }
