@@ -4,7 +4,13 @@ Think G=4 / NoThink G=8 via route-homogeneous batches + dynamic num_generations.
 Population-std advantage override. No training performed in this file's tests."""
 # Set GRPO_DETAILED_MONITOR=0 to omit per-sample text and non-core statistics.
 import sys
-sys.path.insert(0, "/data/GRPO/scripts")
+from pathlib import Path
+
+CURRENT_SCRIPTS_DIR = Path(__file__).resolve().parent
+current_scripts = str(CURRENT_SCRIPTS_DIR)
+while current_scripts in sys.path:
+    sys.path.remove(current_scripts)
+sys.path.insert(0, current_scripts)
 import trl_import_fix  # must run before trl.trainer imports (no site-packages change)
 
 import collections

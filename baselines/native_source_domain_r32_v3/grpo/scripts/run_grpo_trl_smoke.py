@@ -21,7 +21,11 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-sys.path.insert(0, "/data/GRPO/scripts")
+CURRENT_SCRIPTS_DIR = Path(__file__).resolve().parent
+current_scripts = str(CURRENT_SCRIPTS_DIR)
+while current_scripts in sys.path:
+    sys.path.remove(current_scripts)
+sys.path.insert(0, current_scripts)
 import trl_import_fix  # noqa: F401
 from grpo_trl_trainer import (RecGRPOTrainer, build_route_dataset,
                               make_nothink_reward_func, make_think_reward_func,

@@ -22,6 +22,7 @@ from .composite_trainer import ThinkCompositeInterestRecGRPOTrainer
 from .interest_metric import composite_reward, population_advantages
 from .preflight_contract import evaluate_preflight_conditions, sid_runtime_observation
 from .run_gr_rec_think_composite_interest_v1 import git_head, prepare_plan
+from .runtime_import_provenance import assert_runtime_import_provenance
 from .single_node_nccl import configure_single_node_nccl
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_sids
 
@@ -54,6 +55,7 @@ def main(argv=None):
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-id", default="GR-REC-THINK-COMPOSITE-INTEREST-V1-PREFLIGHT-20260822")
     args = parser.parse_args(argv)
+    import_provenance = assert_runtime_import_provenance()
     nccl_bootstrap = configure_single_node_nccl(initialize=True)
     rank = nccl_bootstrap["local_rank"]
     world = nccl_bootstrap["world_size"]
@@ -168,6 +170,7 @@ def main(argv=None):
             "experiment": "GR_REC_Think_CompositeInterest_v1",
             "gpu_validation_launch_commit": git_head(),
             "base": BASE, "adapter": ADAPTER, "world_size": world,
+            **import_provenance,
             "nccl_bootstrap": nccl_bootstrap,
             "optimizer_steps": 0, "zero_update": True,
             "raw_decode_runtime_pass": raw_decode_pass,

@@ -28,6 +28,11 @@ from .run_gr_rec_think_composite_interest_v1_smoke12 import future_launch_comman
 from . import run_gr_rec_think_composite_interest_v1_smoke12 as smoke_runner
 from .single_node_nccl import configure_single_node_nccl
 from .smoke12_parameter_audit import Smoke12ParameterAuditCallback
+from .runtime_import_provenance import (
+    EXPECTED_SCRIPTS_DIR,
+    assert_runtime_import_provenance,
+    evaluate_runtime_import_provenance,
+)
 from .summarize_composite_smoke12 import summarize_run, write_summary
 from .smoke12_contract import (
     evaluate_smoke_conditions,
@@ -84,6 +89,44 @@ class PreflightContractTests(unittest.TestCase):
 
 
 class SmokeContractTests(unittest.TestCase):
+    def test_current_worktree_runtime_import_provenance(self):
+        result = assert_runtime_import_provenance()
+        self.assertEqual(result["runtime_import_provenance"], "PASS")
+        self.assertTrue(result["monitor_write_composite_available"])
+        self.assertEqual(
+            Path(result["monitor_writer_module_path"]),
+            EXPECTED_SCRIPTS_DIR / "monitor" / "writer.py",
+        )
+
+    def test_stale_monitor_provenance_fails_closed(self):
+        expected_trainer = EXPECTED_SCRIPTS_DIR / "grpo_trl_trainer.py"
+        stale = SimpleNamespace(
+            __file__="/stale/scripts/monitor/writer.py",
+            MonitorWriter=type("MonitorWriter", (), {}),
+        )
+        trainer = SimpleNamespace(__file__=str(expected_trainer))
+        result = evaluate_runtime_import_provenance(trainer, stale)
+        self.assertEqual(result["runtime_import_provenance"], "FAIL")
+        self.assertFalse(result["monitor_write_composite_available"])
+
+    def test_runtime_guard_precedes_nccl_and_model_load(self):
+        source = inspect.getsource(launch_training)
+        self.assertLess(
+            source.index("assert_runtime_import_provenance()"),
+            source.index("configure_single_node_nccl(initialize=True)"),
+        )
+        preflight_source = inspect.getsource(gpu_preflight.main)
+        self.assertLess(
+            preflight_source.index("assert_runtime_import_provenance()"),
+            preflight_source.index("configure_single_node_nccl(initialize=True)"),
+        )
+
+    def test_training_chain_has_no_stale_absolute_scripts_priority(self):
+        scripts_dir = Path(__file__).parents[2] / "scripts"
+        for filename in ("grpo_trl_trainer.py", "run_grpo_trl_smoke.py"):
+            source = (scripts_dir / filename).read_text(encoding="utf-8")
+            self.assertNotIn('sys.path.insert(0, "/data/GRPO/scripts")', source)
+            self.assertIn("Path(__file__).resolve().parent", source)
     def test_smoke_topology_and_launch_switches(self):
         plan = smoke12_plan()
         self.assertEqual(plan["optimizer_steps"], 12)

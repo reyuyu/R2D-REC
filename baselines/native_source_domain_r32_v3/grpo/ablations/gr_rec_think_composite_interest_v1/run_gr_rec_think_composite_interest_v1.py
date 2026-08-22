@@ -225,6 +225,8 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
         enable_checkpoints=enable_checkpoints,
         smoke_mode=smoke_mode,
     )
+    from .runtime_import_provenance import assert_runtime_import_provenance
+    import_provenance = assert_runtime_import_provenance()
     from .single_node_nccl import configure_single_node_nccl
     nccl_bootstrap = configure_single_node_nccl(initialize=True)
     import torch
@@ -253,6 +255,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
         monitor.write_manifest({
             "run_id": args.run_id, "experiment": EXPERIMENT,
             "git_commit": git_head(), "runner": Path(__file__).name,
+            **import_provenance,
             "world_size": nccl_bootstrap["world_size"],
             "nccl_bootstrap": nccl_bootstrap,
             "nccl_socket_ifname": nccl_bootstrap["nccl_socket_ifname"],
