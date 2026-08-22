@@ -20,6 +20,7 @@ from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config
 
 from .composite_trainer import ThinkCompositeInterestRecGRPOTrainer
 from .interest_metric import composite_reward, population_advantages
+from .preflight_contract import evaluate_preflight_conditions, sid_runtime_observation
 from .run_gr_rec_think_composite_interest_v1 import git_head, prepare_plan
 from .single_node_nccl import configure_single_node_nccl
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_sids
@@ -140,20 +141,29 @@ def main(argv=None):
         )
         gold_leakage = any(row["gold_cot"] in render_prompt(tokenizer, row["prompt"])
                            for row in plan["records"][:4])
-        finite = all(math.isfinite(row["loss"]) and math.isfinite(row["grad_norm"])
-                     and row["grad_finite"] for row in rank_rows)
-        conditions = {
-            "raw_decode_runtime": raw_decode_pass,
-            "online_reward_parity": reward_parity,
-            "online_advantage_parity": advantage_parity,
-            "ddp_g4_alignment": ddp_alignment,
-            "gold_leakage_absent": not gold_leakage,
-            "finite_loss_and_grad": finite,
-            "lora_has_gradient": all(row["lora_grad_tensor_count"] > 0 for row in rank_rows),
-            "base_has_no_gradient": all(row["base_grad_tensor_count"] == 0 for row in rank_rows),
-            "trainable_checksum_unchanged": checksum_before == checksum_after,
-            "base_unchanged": not base_changed,
-        }
+        loss_finite = all(math.isfinite(row["loss"]) for row in rank_rows)
+        grad_finite = all(
+            math.isfinite(row["grad_norm"]) and row["grad_finite"] for row in rank_rows
+        )
+        evaluation = evaluate_preflight_conditions(
+            raw_decode_runtime=raw_decode_pass,
+            online_reward_parity=reward_parity,
+            online_advantage_parity=advantage_parity,
+            ddp_g4_alignment=ddp_alignment,
+            gold_leakage=gold_leakage,
+            loss_finite=loss_finite,
+            grad_finite=grad_finite,
+            lora_has_gradient=all(row["lora_grad_tensor_count"] > 0 for row in rank_rows),
+            base_has_gradient=any(row["base_grad_tensor_count"] > 0 for row in rank_rows),
+            checksum_unchanged=checksum_before == checksum_after,
+            base_changed=base_changed,
+            nccl_error=False,
+            oom=False,
+            nan=False,
+            inf=False,
+        )
+        conditions = evaluation["conditions"]
+        sid_observation = sid_runtime_observation(generated_sid_count)
         payload = {
             "experiment": "GR_REC_Think_CompositeInterest_v1",
             "gpu_validation_launch_commit": git_head(),
@@ -161,8 +171,7 @@ def main(argv=None):
             "nccl_bootstrap": nccl_bootstrap,
             "optimizer_steps": 0, "zero_update": True,
             "raw_decode_runtime_pass": raw_decode_pass,
-            "sid_evidence_runtime_visible": True,
-            "generated_sid_candidate_count": generated_sid_count,
+            **sid_observation,
             "online_reward_parity": reward_parity,
             "online_advantage_parity": advantage_parity,
             "ddp_g4_alignment": ddp_alignment,
@@ -177,7 +186,8 @@ def main(argv=None):
             "rank_rows": rank_rows,
             "groups": groups,
             "conditions": conditions,
-            "preflight_pass": all(conditions.values()),
+            "preflight_pass": evaluation["preflight_pass"],
+            "failure_reasons": evaluation["failure_reasons"],
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

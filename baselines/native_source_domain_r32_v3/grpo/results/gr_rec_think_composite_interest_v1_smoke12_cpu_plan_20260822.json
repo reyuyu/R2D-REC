@@ -1,0 +1,26 @@
+{
+  "status": "CPU_PLAN_READY",
+  "gpu_used": false,
+  "preflight_harness_ready": true,
+  "smoke_runner_ready": true,
+  "smoke_optimizer_steps": 12,
+  "expected_fresh_rollouts": 6,
+  "expected_g4_groups": 24,
+  "expected_candidates": 96,
+  "smoke_probes_enabled": false,
+  "smoke_checkpoints_enabled": false,
+  "future_launch_command": [
+    "torchrun",
+    "--nproc_per_node=4",
+    "--master_addr=127.0.0.1",
+    "--master_port=<PORT>",
+    "-m",
+    "ablations.gr_rec_think_composite_interest_v1.run_gr_rec_think_composite_interest_v1_smoke12"
+  ],
+  "formal_max_steps": 716,
+  "formal_probes": 12,
+  "formal_probe_steps": [0, 200, 400, 600, 716],
+  "formal_checkpoint_steps": [200, 400, 600, 716],
+  "reward_changed": false,
+  "training_math_changed": false
+}

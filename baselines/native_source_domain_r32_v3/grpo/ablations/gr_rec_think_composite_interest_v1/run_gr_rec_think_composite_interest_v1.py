@@ -70,6 +70,16 @@ def checkpoint_save_config():
             "save_total_limit": SAVE_TOTAL_LIMIT}
 
 
+def launch_contract(*, enable_probes=True, enable_checkpoints=True, smoke_mode=False):
+    """Pure launch switches shared by formal training and the Smoke12 runner."""
+    return {
+        "enable_probes": bool(enable_probes),
+        "enable_checkpoints": bool(enable_checkpoints),
+        "smoke_mode": bool(smoke_mode),
+        "save_config": checkpoint_save_config() if enable_checkpoints else {"save_strategy": "no"},
+    }
+
+
 def should_save_checkpoint(step):
     return int(step) in CHECKPOINT_STEPS
 
@@ -207,8 +217,13 @@ def dry_run_report(args, plan):
     return report
 
 
-def launch_training(args, plan):
+def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, smoke_mode=False):
     """Future GPU entry point. It is unreachable from --dry-run."""
+    contract = launch_contract(
+        enable_probes=enable_probes,
+        enable_checkpoints=enable_checkpoints,
+        smoke_mode=smoke_mode,
+    )
     from .single_node_nccl import configure_single_node_nccl
     nccl_bootstrap = configure_single_node_nccl(initialize=True)
     import torch
@@ -218,7 +233,6 @@ def launch_training(args, plan):
     from monitor.writer import monitor_from_env
     from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config
     from transformers import TrainerCallback
-    from .composite_probe import CompositeProbeCallback, CompositeThinkProbeEvaluator
     from .composite_trainer import ThinkCompositeInterestRecGRPOTrainer
 
     rank = nccl_bootstrap["local_rank"]
@@ -231,7 +245,7 @@ def launch_training(args, plan):
     for name, parameter in model.named_parameters():
         parameter.requires_grad = "lora" in name.lower()
     cfg = make_grpo_config(
-        plan["output_dir"], args.max_steps, 1e-6, SEED, **checkpoint_save_config(),
+        plan["output_dir"], args.max_steps, 1e-6, SEED, **contract["save_config"],
     )
     monitor = monitor_from_env(args.run_id, rank)
     if monitor.enabled:
@@ -250,6 +264,15 @@ def launch_training(args, plan):
             "checkpoint_steps": list(CHECKPOINT_STEPS),
             "probe_steps": list(PROBE_STEPS),
             "probe_rounds": plan["probe_rounds"],
+            "smoke_mode": contract["smoke_mode"],
+            "fixed_probe_enabled": contract["enable_probes"],
+            "checkpoint_saving_enabled": contract["enable_checkpoints"],
+            "SMOKE_FIXED_PROBE_DISABLED_FOR_SPEED": (
+                "YES" if contract["smoke_mode"] and not contract["enable_probes"] else "NO"
+            ),
+            "SMOKE_CHECKPOINTS_DISABLED": (
+                "YES" if contract["smoke_mode"] and not contract["enable_checkpoints"] else "NO"
+            ),
             "frozen_contract": frozen_contract(),
         })
     beam32 = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
@@ -266,20 +289,23 @@ def launch_training(args, plan):
                 control.should_save = True
             return control
 
-    trainer.add_callback(MilestoneSaveCallback())
-    probe_beam32 = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
-    probe_evaluator = CompositeThinkProbeEvaluator(
-        trainer=trainer,
-        records=plan["probe_records"],
-        group_ids=plan["probe_ids"],
-        beam32_fn=probe_beam32,
-        monitor=monitor,
-        seed=SEED,
-        every_steps=1,
-        probe_rounds=plan["probe_rounds"],
-        probe_steps=PROBE_STEPS,
-    )
-    trainer.add_callback(CompositeProbeCallback(probe_evaluator))
+    if contract["enable_checkpoints"]:
+        trainer.add_callback(MilestoneSaveCallback())
+    if contract["enable_probes"]:
+        from .composite_probe import CompositeProbeCallback, CompositeThinkProbeEvaluator
+        probe_beam32 = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
+        probe_evaluator = CompositeThinkProbeEvaluator(
+            trainer=trainer,
+            records=plan["probe_records"],
+            group_ids=plan["probe_ids"],
+            beam32_fn=probe_beam32,
+            monitor=monitor,
+            seed=SEED,
+            every_steps=1,
+            probe_rounds=plan["probe_rounds"],
+            probe_steps=PROBE_STEPS,
+        )
+        trainer.add_callback(CompositeProbeCallback(probe_evaluator))
     trainer.train()
 
 
