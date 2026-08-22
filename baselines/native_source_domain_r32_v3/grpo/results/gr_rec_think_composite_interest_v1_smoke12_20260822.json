@@ -1,14 +1,16 @@
 {
   "experiment": "GR_REC_Think_CompositeInterest_v1",
-  "gpu_validation_launch_commit": "72856f3c927527f26338700a03fc6641de034788",
-  "run_id": "GR-REC-THINK-COMPOSITE-INTEREST-V1-SMOKE12-20260822",
-  "status": "NOT_STARTED_DUE_PREFLIGHT_RUNTIME_FAILURE",
+  "gpu_validation_launch_commit": "3f0120d7227bfc0c65f11eeee707ba595209d7f3",
+  "run_id": "GR-REC-THINK-COMPOSITE-INTEREST-V1-SMOKE12-20260823",
+  "status": "NOT_STARTED_DUE_PREFLIGHT_FAIL",
   "optimizer_steps": 0,
   "fresh_rollouts": 0,
   "g4_count": 0,
   "candidate_count": 0,
   "smoke_fixed_probe_disabled_for_speed": null,
+  "smoke_checkpoints_disabled": null,
+  "parameter_audit_generated": false,
   "smoke_pass": false,
-  "formal_training_started": false,
-  "blocking_preflight_result": "gr_rec_think_composite_interest_v1_gpu_preflight_20260822.json"
+  "blocking_preflight_result": "gr_rec_think_composite_interest_v1_gpu_preflight_20260822.json",
+  "formal_training_started": false
 }

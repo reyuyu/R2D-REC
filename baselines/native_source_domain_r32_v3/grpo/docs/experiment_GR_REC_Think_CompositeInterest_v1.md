@@ -436,3 +436,26 @@ checkpoint/probe milestones and `single_node_nccl_socket_ifname="lo"` without
 loading a model or initializing CUDA/NCCL.
 
 GPU used: NO. Training started: NO. Formal training started: NO.
+
+## Four-GPU gated validation attempt (2026-08-23)
+
+Exact launch commit: `3f0120d7227bfc0c65f11eeee707ba595209d7f3`.
+At launch, `HEAD` and `origin/main` matched exactly and the worktree was clean.
+All four A800 GPUs were idle. The single-node bootstrap used
+`NCCL_SOCKET_IFNAME=lo`, `WORLD_SIZE=4`, and the fixed rank-to-device mapping
+rank 0/1/2/3 to cuda 0/1/2/3. The original 8B base and fresh original BATA
+adapter were loaded independently on all ranks.
+
+The one authorized zero-update preflight attempt completed candidate generation,
+Beam32 scoring, raw completion decoding, Composite reward construction, and G4
+advantage construction. It then failed on every rank while writing the captured
+Composite monitor event: the runtime `MonitorWriter` raised `AttributeError` for
+`write_composite`. This occurred before loss and backward completed, so the
+existing hard-gate conditions could not be fully evaluated. Optimizer and
+scheduler steps remained zero; no parameter update was attempted.
+
+Therefore `PREFLIGHT_PASS=NO`. Per the gate, no retry was attempted, Smoke12 was
+not started, its parameter audit was not created, and 716-step formal training
+was not started. All worker processes exited and all four GPUs returned to about
+5 MiB idle usage with no compute processes. The structured preflight result and
+the blocked Smoke12 result preserve this outcome.
