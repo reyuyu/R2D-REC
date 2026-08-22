@@ -356,6 +356,34 @@ def formal_candidate_record(
     return record
 
 
+def candidate_evaluator_means(
+    route: str, candidates: Sequence[Mapping[str, Any]]
+) -> dict[str, float | None]:
+    """Return scorer diagnostics without feeding them into the MC objective."""
+    if not candidates:
+        raise MCFormalError("candidate evaluator diagnostics require candidates")
+    if route == "action":
+        return {
+            "candidate_mean_f1": sum(float(item["f1"]) for item in candidates)
+            / len(candidates),
+            "candidate_mean_action_alignment": None,
+            "candidate_mean_logic_alignment": None,
+        }
+    if route == "chain":
+        return {
+            "candidate_mean_f1": None,
+            "candidate_mean_action_alignment": sum(
+                float(item["full_action_alignment"]) for item in candidates
+            )
+            / len(candidates),
+            "candidate_mean_logic_alignment": sum(
+                float(item["full_logic_alignment"]) for item in candidates
+            )
+            / len(candidates),
+        }
+    raise MCFormalError(f"unsupported route: {route}")
+
+
 def run_formal_prompt_loop(
     rows: Sequence[Mapping[str, Any]],
     optimizer: torch.optim.Optimizer,
@@ -556,10 +584,12 @@ def execute_formal(
             units_per_candidate=units,
         ):
             _append_jsonl(rollouts_path, display_record)
+        evaluator_means = candidate_evaluator_means(route, candidates)
         return {
             "route": route,
             "sample_id": row["sample_id"],
             "candidates": candidates,
+            **evaluator_means,
             "active_unit_count": int(metadata["active_unit_count"]),
             "active_token_count": int(metadata["active_token_count"]),
             "active_token_assignment_count": int(

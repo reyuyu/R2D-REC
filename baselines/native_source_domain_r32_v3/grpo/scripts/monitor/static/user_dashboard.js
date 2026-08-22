@@ -146,7 +146,7 @@
         </section>
         <section class="panel section-gap"><h2>最新各类局部 Penalty</h2><div class="table-scroll"><table class="penalty-table"><thead><tr><th>Violation kind</th><th>适用路由</th><th>Masked tokens</th><th>Negative mass</th><th>Mass share</th></tr></thead><tbody id="userPenaltyRows"></tbody></table></div></section>
       </div><div class="wrap" id="userMcCredit" hidden>
-        <div class="user-section-head"><h2>Marginal Credit</h2><p>只展示训练时已落盘的 evaluator-aligned marginal credit</p></div>
+        <div class="user-section-head"><h2>Marginal Credit</h2><p>当前 on-policy 训练样本；这些 credit 直接参与本次参数更新</p></div>
         <div class="user-callout" id="mcCreditNotice"></div>
         <section class="user-metric-grid" id="mcCreditCards"></section>
         <section class="charts">
@@ -171,14 +171,16 @@
           <div id="userProbeDetail" class="user-probe-detail"></div>
         </section>
       </div><div class="wrap" id="userMcProbe" hidden>
-        <div class="user-section-head"><h2>Probe / 固定探针</h2><p>固定 3+3 paired 本地探针；用于趋势判断，不等于官方分数</p></div>
+        <div class="user-section-head"><h2>Probe / 固定探针</h2><p>固定 3+3、独立 inference-only sidecar；不参与训练，不等于官方分数</p></div>
         <div class="user-callout" id="mcProbeNotice"></div>
+        <div class="mc-probe-schedule" id="mcProbeSchedule"></div>
         <section class="user-metric-grid" id="mcProbeCards"></section>
         <section class="charts" id="mcProbeCharts">
           <div class="panel"><h2>Action F1 / User Proxy</h2><div class="legend"><span class="key" style="--c:#16835f">Action F1</span><span class="key" style="--c:#2d6cdf">User Proxy</span></div><canvas class="chart" id="mcProbeActionChart"></canvas></div>
           <div class="panel"><h2>Chain Total</h2><div class="legend"><span class="key" style="--c:#7654b5">Chain Total</span></div><canvas class="chart" id="mcProbeChainChart"></canvas></div>
         </section>
         <section class="panel section-gap"><h2>Paired Checkpoints</h2><div class="table-scroll" id="mcProbeTable"></div><div class="mc-probe-deltas" id="mcProbeDeltas"></div></section>
+        <section class="panel section-gap"><h2>固定样本详情</h2><div class="user-probe-controls"><label>路由<select id="mcProbeSampleRoute"><option value="action">Action</option><option value="chain">Chain</option></select></label><label>固定样本<select id="mcProbeSampleId"></select></label><label>Checkpoint<select id="mcProbeSampleStep"></select></label></div><div id="mcProbeSampleDetail" class="user-probe-detail"></div></section>
         <section class="panel section-gap"><h2>Recommendation Guard</h2><div id="mcRecommendationGuard"></div></section>
       </div></main>`);
   }
@@ -196,7 +198,7 @@
   }
 
   function mcCandidateMean(row, key) {
-    const values = (row.candidates || []).filter(candidate => candidate[key] != null).map(candidate => Number(candidate[key]));
+    const values = (row.candidates || []).map(candidate => key === 'f1' ? (candidate.f1 ?? candidate.reward) : candidate[key]).filter(value => value != null).map(Number);
     return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
   }
 
@@ -358,14 +360,14 @@
       const summary = state.mcSummary?.action || {};
       document.querySelector('#userAction .user-section-head h2').textContent = 'Action · SID Marginal Credit';
       metricCards('userActionCards', [
-        ['Mean Reward', fmt(summary.mean_reward)], ['Mean SID Count', fmt(summary.mean_predicted_sid_count, 1)], ['Negative Candidate Rate', pct(summary.negative_candidate_rate)],
+        ['Candidate Mean F1', fmt(summary.mean_f1 ?? summary.mean_reward)], ['Mean SID Count', fmt(summary.mean_predicted_sid_count, 1)], ['Negative Candidate Rate', pct(summary.negative_candidate_rate)],
         ['Positive credit mass', fmt(summary.positive_credit_mass)], ['Negative credit mass', fmt(summary.negative_credit_mass)],
       ]);
-      setUserChartPanel('userActionScoreChart', 'On-policy Action Reward', ['Mean reward'], '在线训练信号，不等同于固定 Probe 泛化分数', ['#16835f']);
+      setUserChartPanel('userActionScoreChart', 'Candidate Mean F1', ['Mean F1'], '当前 K=2 on-policy candidates 的 evaluator F1 均值；不等同于固定 Probe 泛化分数', ['#16835f']);
       setUserChartPanel('userActionExactChart', 'Predicted SID Count', ['Mean SID count'], '', ['#2d6cdf']);
       setUserChartPanel('userWrongSelectionChart', 'Positive / Negative Credit Mass', ['Positive mass', 'Negative mass'], '', ['#16835f', '#bd3f4c']);
       setUserChartPanel('userActionConstraintChart', 'Positive / Negative Unit Count', ['Positive units', 'Negative units'], '', ['#16835f', '#bd3f4c']);
-      draw('userActionScoreChart', [{data: mcCandidatePoints(rows, 'reward'), color: colors[1]}]);
+      draw('userActionScoreChart', [{data: mcCandidatePoints(rows, 'f1'), color: colors[1]}]);
       draw('userActionExactChart', [{data: mcCandidatePoints(rows, 'predicted_sid_unit_count'), color: colors[0]}]);
       draw('userWrongSelectionChart', [
         {data: mcTotalPoints(rows, 'positive_credit_mass'), color: colors[1]},
@@ -490,8 +492,11 @@
     const overlapHtml = Array.isArray(overlap) && overlap.length
       ? `<div class="mc-overlap-list">${overlap.map(item => `<span>shared token ${escapeHtml(String(item.token_index ?? item.shared_token ?? '-'))} · units ${escapeHtml((item.unit_indices || []).join(',') || '-')} · mixed-sign ${item.mixed_sign ? 'yes' : 'no'} · net ${fmt(item.net_coefficient)}</span>`).join('')}</div>`
       : (Number(candidate.overlap_token_count || 0) > 0 ? `<div class="mc-overlap-list"><span>${candidate.overlap_token_count} shared token(s) · mixed-sign ${candidate.mixed_sign_overlap_token_count || 0}</span></div>` : '');
+    const evaluatorScore = candidate.route === 'action'
+      ? `F1 ${fmt(candidate.f1 ?? candidate.full_reward ?? candidate.reward)}`
+      : `Action ${fmt(candidate.full_action_alignment)} · Logic ${fmt(candidate.full_logic_alignment)}`;
     return `<article class="mc-credit-candidate" data-candidate-key="${candidateKey}">
-      <header><strong>${escapeHtml(routeName(candidate.route))} · Prompt ${candidate.prompt_step ?? candidate.step ?? '-'} · Candidate ${candidate.candidate_index ?? '-'}</strong><span>Reward ${fmt(candidate.full_reward ?? candidate.reward)} · ${units.length} units</span></header>
+      <header><strong>${escapeHtml(routeName(candidate.route))} · Prompt ${candidate.prompt_step ?? candidate.step ?? '-'} · Candidate ${candidate.candidate_index ?? '-'}</strong><span>Reward ${fmt(candidate.full_reward ?? candidate.reward)} · ${evaluatorScore} · ${units.length} units</span></header>
       ${mcCreditSpanHtml(candidate)}
       <div class="mc-unit-list">${units.map((unit, index) => `<button type="button" class="mc-unit-chip credit-${escapeHtml(unit.credit_type || 'zero')}" data-unit-index="${index}">${escapeHtml(mcUnitLabel(unit))} · Δ ${fmt(unit.delta)}</button>`).join('') || '<span class="empty-inline">没有 marginal credit unit</span>'}</div>
       ${overlapHtml}<div class="mc-unit-detail" id="mcUnitDetail-${candidateKey}">${units.length ? mcUnitDetail(units[0]) : '该 candidate 没有 unit-level credit。'}</div>
@@ -501,15 +506,15 @@
   function renderMcCredit() {
     const summary = state.mcSummary || {}, action = summary.action || {}, chain = summary.chain || {};
     metricCards('mcCreditCards', [
-      ['Action Positive Mass', fmt(action.positive_credit_mass)], ['Action Negative Mass', fmt(action.negative_credit_mass)], ['Action Negative Rate', pct(action.negative_candidate_rate)],
-      ['Chain Positive Mass', fmt(chain.positive_credit_mass)], ['Chain Negative Mass', fmt(chain.negative_credit_mass)], ['Chain Negative Rate', pct(chain.negative_candidate_rate)],
+      ['Action Mean F1', fmt(action.mean_f1 ?? action.mean_reward)], ['Action Positive Mass', fmt(action.positive_credit_mass)], ['Action Negative Mass', fmt(action.negative_credit_mass)], ['Action Negative Rate', pct(action.negative_candidate_rate)],
+      ['Chain Action Align', fmt(chain.mean_action_alignment)], ['Chain Logic Align', fmt(chain.mean_logic_alignment)], ['Chain Positive Mass', fmt(chain.positive_credit_mass)], ['Chain Negative Mass', fmt(chain.negative_credit_mass)],
     ]);
     const actionRows = state.metrics.filter(row => row.route === 'action'), chainRows = state.metrics.filter(row => row.route === 'chain');
     draw('mcActionCreditChart', [{data: mcTotalPoints(actionRows, 'positive_credit_mass'), color: colors[1]}, {data: mcTotalPoints(actionRows, 'negative_credit_mass'), color: colors[3]}]);
     draw('mcChainCreditChart', [{data: mcTotalPoints(chainRows, 'positive_credit_mass'), color: colors[1]}, {data: mcTotalPoints(chainRows, 'negative_credit_mass'), color: colors[3]}]);
     const rows = Array.isArray(state.rollouts) ? state.rollouts.filter(row => Array.isArray(row.credit_units)) : [];
     $('mcCreditNotice').textContent = rows.length
-      ? `已落盘 ${rows.length} 个 candidate 的 unit-level marginal trace；这里只读展示，不重新计算 scorer 或 delta。`
+      ? `Rollout：当前训练样本 / on-policy / 参与训练。已落盘 ${rows.length} 个 candidate 的 unit-level marginal trace；前端只读，不重新计算 scorer 或 delta。`
       : '该历史 run 未落盘 unit-level marginal trace。可展示 aggregate credit；未来 MC run 已启用完整 trace。';
     $('mcCreditTracePanel').hidden = !rows.length;
     if (!rows.length) { $('mcCreditTrace').innerHTML = ''; return; }
@@ -673,17 +678,72 @@
     }).join('')}</div>`;
   }
 
+  function mcProbeSchedule() {
+    const schedule = state.userLightProbe?.checkpoint_schedule;
+    return Array.isArray(schedule) && schedule.length ? schedule.map(Number) : [0, 128, 256, 384, 512];
+  }
+
+  function mcProbeStepLabel(step) {
+    return Number(step) === 0 ? 'BETA' : `Step ${step}`;
+  }
+
+  function renderMcProbeSampleDetail() {
+    const checkpoints = state.userLightProbe?.checkpoints || [];
+    const routeSelect = $('mcProbeSampleRoute');
+    const sampleSelect = $('mcProbeSampleId');
+    const stepSelect = $('mcProbeSampleStep');
+    if (!checkpoints.length) {
+      sampleSelect.innerHTML = '<option value="">等待 BETA</option>';
+      stepSelect.innerHTML = '<option value="">等待 BETA</option>';
+      $('mcProbeSampleDetail').innerHTML = '<div class="empty mc-empty">BETA 固定探针完成后可查看 6 个固定样本及其真实 completion。</div>';
+      return;
+    }
+    const route = routeSelect.value || 'action';
+    const baselineSamples = (checkpoints.find(item => Number(item.step) === 0) || checkpoints[0]).samples || [];
+    const sampleIds = baselineSamples.filter(sample => sample.route === route).map(sample => String(sample.sample_id));
+    const oldSample = sampleSelect.value;
+    sampleSelect.innerHTML = sampleIds.map((sampleId, index) => `<option value="${escapeHtml(sampleId)}">${route === 'action' ? 'Action' : 'Chain'} ${index + 1} · ${escapeHtml(sampleId.slice(0, 12))}</option>`).join('') || '<option value="">暂无样本</option>';
+    if (sampleIds.includes(oldSample)) sampleSelect.value = oldSample;
+    const sampleId = sampleSelect.value;
+    const available = checkpoints.filter(checkpoint => (checkpoint.samples || []).some(sample => String(sample.sample_id) === sampleId));
+    const oldStep = stepSelect.value;
+    stepSelect.innerHTML = [...available].reverse().map(checkpoint => `<option value="${checkpoint.step}">${mcProbeStepLabel(checkpoint.step)}</option>`).join('') || '<option value="">等待评估</option>';
+    if (available.some(checkpoint => String(checkpoint.step) === oldStep)) stepSelect.value = oldStep;
+    const checkpoint = available.find(item => String(item.step) === stepSelect.value) || available.at(-1);
+    const sample = checkpoint?.samples?.find(item => String(item.sample_id) === sampleId);
+    if (!sample) {
+      $('mcProbeSampleDetail').innerHTML = '<div class="empty mc-empty">当前固定样本尚无评估结果。</div>';
+      return;
+    }
+    const candidates = sample.candidates || [];
+    const candidateHtml = candidates.map(candidate => {
+      const gold = new Set(candidate.gold_sids || sample.gold_sids || []);
+      const sidHtml = route === 'action'
+        ? `<div class="sid-list">Gold: ${escapeHtml([...(candidate.gold_sids || sample.gold_sids || [])].join('；') || '-')}<br>Pred: ${(candidate.pred_sids || []).map(sid => `<span class="${gold.has(sid) ? 'correct-inline' : ''}">${escapeHtml(sid)}</span>`).join('；') || '-'}</div>`
+        : '';
+      const score = route === 'action'
+        ? `F1 ${fmt(candidate.f1)} · P ${fmt(candidate.precision)} · R ${fmt(candidate.recall)}`
+        : `Total ${fmt(candidate.total_reward ?? candidate.reward)} · Action ${fmt(candidate.action_alignment)} · Logic ${fmt(candidate.logic_alignment)} · Events ${candidate.predicted_event_count ?? '-'}`;
+      return `<article class="mc-probe-candidate"><header><strong>Candidate ${candidate.candidate_id ?? '-'}</strong><span>${score} · ${candidate.completion_length ?? '-'} tokens</span></header><pre>${escapeHtml(candidate.completion || '')}</pre>${sidHtml}</article>`;
+    }).join('');
+    $('mcProbeSampleDetail').innerHTML = `${renderUserSampleContext(sample, route)}<div class="mc-probe-sample-meta"><strong>${mcProbeStepLabel(checkpoint.step)}</strong><span>Mean reward ${fmt(sample.mean_reward)}</span><span>Δ vs BETA ${signed(sample.relative_to_beta_delta)}</span><span>Seed ${sample.seed ?? '-'}</span></div>${candidateHtml}`;
+  }
+
   function renderMcProbe() {
     const rows = mcProbeRows();
+    const schedule = mcProbeSchedule();
+    const evaluated = new Set(rows.map(row => row.step));
+    const status = state.userLightProbe?.status || 'WAITING_FOR_BETA';
     $('mcProbeNotice').textContent = rows.length
-      ? '固定3+3 paired本地探针；用于趋势判断，不等于官方分数。'
-      : '尚未执行固定 paired User Light Probe。待评估：BETA → Step 8 → Step 16 → Step 32';
+      ? `固定 3+3、独立 inference-only sidecar、不参与训练。当前状态：${status}；结果为本地趋势代理，不是官方分数。`
+      : '固定 3+3 inference-only sidecar 尚未写入 BETA 结果；该探针不参与 reward、loss 或 optimizer。';
+    $('mcProbeSchedule').innerHTML = schedule.map(step => `<span class="mc-probe-stage ${evaluated.has(step) ? 'done' : 'waiting'}"><strong>${mcProbeStepLabel(step)}</strong>${evaluated.has(step) ? ' ✓' : ' · Waiting'}</span>`).join('');
     $('mcProbeCharts').hidden = !rows.length;
-    $('mcProbeTable').closest('.panel').hidden = !rows.length;
     if (!rows.length) {
       $('mcProbeCards').innerHTML = '';
-      $('mcProbeTable').innerHTML = '';
+      $('mcProbeTable').innerHTML = '<div class="empty mc-empty">等待 BETA 固定探针先完成。</div>';
       $('mcProbeDeltas').innerHTML = '';
+      renderMcProbeSampleDetail();
       renderMcRecommendationGuard();
       return;
     }
@@ -701,8 +761,13 @@
     ]);
     draw('mcProbeChainChart', [{data: rows.map(row => [row.step, Number(row.chain.total_reward)]), color: colors[4]}]);
     const headers = ['Checkpoint', 'Action F1', 'Precision', 'Recall', 'Chain Total', 'Chain Action', 'Chain Logic', 'User Proxy'];
-    $('mcProbeTable').innerHTML = `<table class="penalty-table mc-probe-table"><thead><tr>${headers.map(value => `<th>${value}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr><td>${row.step === 0 ? 'BETA' : row.step}</td><td>${fmt(row.action.f1)}</td><td>${fmt(row.action.precision)}</td><td>${fmt(row.action.recall)}</td><td>${fmt(row.chain.total_reward)}</td><td>${fmt(row.chain.action_alignment)}</td><td>${fmt(row.chain.logic_alignment)}</td><td>${fmt(row.proxy)}</td></tr>`).join('')}</tbody></table>`;
-    $('mcProbeDeltas').innerHTML = rows.slice(1).map(row => `<div><strong>Step ${row.step} vs BETA</strong><span>ΔAction ${signed(Number(row.action.f1) - Number(baseline.action.f1))}</span><span>ΔChain ${signed(Number(row.chain.total_reward) - Number(baseline.chain.total_reward))}</span><span>ΔChainAction ${signed(Number(row.chain.action_alignment) - Number(baseline.chain.action_alignment))}</span><span>ΔChainLogic ${signed(Number(row.chain.logic_alignment) - Number(baseline.chain.logic_alignment))}</span><span>ΔProxy ${signed(row.proxy - baseline.proxy)}</span></div>`).join('');
+    const byStep = new Map(rows.map(row => [row.step, row]));
+    $('mcProbeTable').innerHTML = `<table class="penalty-table mc-probe-table"><thead><tr>${headers.map(value => `<th>${value}</th>`).join('')}</tr></thead><tbody>${schedule.map(step => {
+      const row = byStep.get(step);
+      return row ? `<tr><td>${mcProbeStepLabel(step)}</td><td>${fmt(row.action.f1)}</td><td>${fmt(row.action.precision)}</td><td>${fmt(row.action.recall)}</td><td>${fmt(row.chain.total_reward)}</td><td>${fmt(row.chain.action_alignment)}</td><td>${fmt(row.chain.logic_alignment)}</td><td>${fmt(row.proxy)}</td></tr>` : `<tr class="mc-probe-waiting-row"><td>${mcProbeStepLabel(step)}</td><td colspan="7">Waiting for adapter-only checkpoint</td></tr>`;
+    }).join('')}</tbody></table>`;
+    $('mcProbeDeltas').innerHTML = rows.slice(1).map(row => `<div><strong>${mcProbeStepLabel(row.step)} vs BETA</strong><span>ΔAction ${signed(Number(row.action.f1) - Number(baseline.action.f1))}</span><span>ΔChain ${signed(Number(row.chain.total_reward) - Number(baseline.chain.total_reward))}</span><span>ΔChainAction ${signed(Number(row.chain.action_alignment) - Number(baseline.chain.action_alignment))}</span><span>ΔChainLogic ${signed(Number(row.chain.logic_alignment) - Number(baseline.chain.logic_alignment))}</span><span>ΔProxy ${signed(row.proxy - baseline.proxy)}</span></div>`).join('') || '<div class="empty-inline">BETA 已完成；等待首个 checkpoint 后计算 paired delta。</div>';
+    renderMcProbeSampleDetail();
     renderMcRecommendationGuard();
   }
 
@@ -1063,6 +1128,9 @@
   $('userProbeStep').onchange = renderUserProbe;
   $('mcCreditRoute').onchange = renderMcCredit;
   $('mcCreditPrompt').onchange = renderMcCredit;
+  $('mcProbeSampleRoute').onchange = renderMcProbeSampleDetail;
+  $('mcProbeSampleId').onchange = renderMcProbeSampleDetail;
+  $('mcProbeSampleStep').onchange = renderMcProbeSampleDetail;
   document.querySelectorAll('canvas.chart:not(.zoomed)').forEach(canvas => {
     if (!canvas.onclick) canvas.onclick = () => openChart(canvas.id);
     if (!canvas.onmousemove) canvas.onmousemove = showChartTooltip;

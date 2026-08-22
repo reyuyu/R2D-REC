@@ -165,6 +165,12 @@ def summarize_mc_metrics(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "negative_credit_mass": total(action, "negative_credit_mass"),
             "mean_predicted_sid_count": total(action, "predicted_sid_unit_count") / len(action) if action else 0.0,
             "mean_reward": total(action, "reward") / len(action) if action else 0.0,
+            "mean_f1": (
+                sum(float(item.get("f1", item["reward"])) for item in action)
+                / len(action)
+                if action
+                else 0.0
+            ),
         },
         "chain": {
             "candidate_count": len(chain),

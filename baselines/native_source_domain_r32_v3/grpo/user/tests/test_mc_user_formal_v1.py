@@ -23,6 +23,7 @@ from run_mc_user_formal_v1 import (  # noqa: E402
     MCFormalError,
     assert_run_target_writable,
     build_manifest,
+    candidate_evaluator_means,
     git_reproducibility_state,
     load_formal_config,
     public_preflight,
@@ -174,6 +175,23 @@ class ManifestAndMonitorTests(unittest.TestCase):
         self.assertEqual(manifest["FORMAL_RESUME"], "LIMITATION")
         self.assertTrue(is_mc_user_manifest(manifest))
         self.assertEqual(normalized_run_kind(manifest), "user_grpo")
+
+
+class EvaluatorDiagnosticTests(unittest.TestCase):
+    def test_candidate_means_are_route_specific_diagnostics(self):
+        action = candidate_evaluator_means("action", [{"f1": 0.2}, {"f1": 0.8}])
+        chain = candidate_evaluator_means(
+            "chain",
+            [
+                {"full_action_alignment": 0.4, "full_logic_alignment": 0.2},
+                {"full_action_alignment": 0.8, "full_logic_alignment": 0.6},
+            ],
+        )
+        self.assertEqual(action["candidate_mean_f1"], 0.5)
+        self.assertIsNone(action["candidate_mean_action_alignment"])
+        self.assertAlmostEqual(chain["candidate_mean_action_alignment"], 0.6)
+        self.assertAlmostEqual(chain["candidate_mean_logic_alignment"], 0.4)
+        self.assertIsNone(chain["candidate_mean_f1"])
 
 
 class LoopAndCheckpointTests(unittest.TestCase):

@@ -110,6 +110,7 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertAlmostEqual(summary["projection_required_rate"], 0.25)
         self.assertAlmostEqual(summary["overlap_candidate_rate"], 0.25)
         self.assertAlmostEqual(summary["action"]["negative_candidate_rate"], 0.5)
+        self.assertAlmostEqual(summary["action"]["mean_f1"], 0.4)
         self.assertAlmostEqual(summary["chain"]["mean_predicted_event_count"], 3.0)
         self.assertEqual(summary["peak_vram_mib"], 18400)
         self.assertEqual(self.client.get(f"/api/rollouts?run_id={self.mc.name}").json(), [])
@@ -150,10 +151,60 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertTrue(returned_guard["available"])
         self.assertEqual(returned_guard["checkpoints"][-1]["history_copy_rate"], 0.32)
 
+    def test_live_probe_partial_result_preserves_waiting_schedule_and_samples(self):
+        sample = {
+            "sample_id": "fixed-action-1",
+            "route": "action",
+            "seed": 20260820,
+            "prompt": "fixed input",
+            "gold_sids": ["video A1 B2 C3"],
+            "mean_reward": 0.5,
+            "relative_to_beta_delta": 0.0,
+            "candidates": [
+                {
+                    "candidate_id": index,
+                    "completion": "video A1 B2 C3",
+                    "completion_length": 4,
+                    "reward": 0.5,
+                    "f1": 0.5,
+                    "precision": 0.5,
+                    "recall": 0.5,
+                    "gold_sids": ["video A1 B2 C3"],
+                    "pred_sids": ["video A1 B2 C3"],
+                }
+                for index in range(4)
+            ],
+        }
+        probe = {
+            "status": "WAITING_FOR_CHECKPOINTS",
+            "mode": "FIXED_SAMPLES_INFERENCE_ONLY",
+            "checkpoint_schedule": [0, 128, 256, 384, 512],
+            "evaluated_steps": [0],
+            "waiting_steps": [128, 256, 384, 512],
+            "checkpoints": [
+                {
+                    "step": 0,
+                    "summary": {
+                        "action": {"f1": 0.5, "precision": 0.5, "recall": 0.5},
+                        "chain": {"total_reward": 0.4, "action_alignment": 0.4, "logic_alignment": 0.4},
+                        "overall_user_proxy": 0.9,
+                    },
+                    "samples": [sample],
+                }
+            ],
+        }
+        write_json(self.mc / "evaluations" / "user_light_probe" / "results.json", probe)
+        returned = self.client.get(f"/api/user-light-probe?run_id={self.mc.name}").json()
+        self.assertTrue(returned["available"])
+        self.assertEqual(returned["status"], "WAITING_FOR_CHECKPOINTS")
+        self.assertEqual(returned["evaluated_steps"], [0])
+        self.assertEqual(returned["waiting_steps"], [128, 256, 384, 512])
+        self.assertEqual(returned["checkpoints"][0]["samples"][0]["candidates"][3]["completion"], "video A1 B2 C3")
+
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260821-mc1b", html)
+        self.assertIn("20260822-mc-live-probe", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
@@ -164,7 +215,14 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("Chain · Event Marginal Credit", javascript)
         self.assertIn("该历史 run 未落盘 unit-level marginal trace", javascript)
         self.assertIn("generated_token_indices", javascript)
-        self.assertIn("尚未执行固定 paired User Light Probe", javascript)
+        self.assertIn("固定 3+3 inference-only sidecar 尚未写入 BETA", javascript)
+        self.assertIn("当前训练样本 / on-policy / 参与训练", javascript)
+        self.assertIn("checkpoint_schedule", javascript)
+        self.assertIn("Waiting for adapter-only checkpoint", javascript)
+        self.assertIn("mcProbeSampleDetail", javascript)
+        self.assertIn("relative_to_beta_delta", javascript)
+        self.assertIn("Action Mean F1", javascript)
+        self.assertIn("full_action_alignment", javascript)
         self.assertIn("尚未执行 Recommendation guard evaluation", javascript)
         self.assertIn("state.checkpoints", javascript)
         self.assertIn("`ckpt ${step}`", javascript)

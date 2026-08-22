@@ -96,6 +96,7 @@ class DisplayRolloutContractTests(unittest.TestCase):
         self.assertEqual(action["credit_units"][0]["delta"], -0.25)
         self.assertEqual(action["credit_units"][0]["occurrence_index"], 2)
         self.assertEqual(action["credit_units"][0]["generated_token_indices"], [1, 2])
+        self.assertEqual(action["f1"], 0.5)
 
         chain_unit = {
             "event_index": 1,
@@ -113,6 +114,8 @@ class DisplayRolloutContractTests(unittest.TestCase):
         self.assertEqual(chain["credit_units"][0]["delta_action"], 0.6)
         self.assertEqual(chain["credit_units"][0]["delta_logic"], 0.2)
         self.assertEqual(chain["full_reward"], 0.5)
+        self.assertEqual(chain["full_action_alignment"], 0.0)
+        self.assertEqual(chain["full_logic_alignment"], 0.0)
 
 
 def prompt_result(route, *, active=True, negative=False):
@@ -253,6 +256,7 @@ class MetricsTests(unittest.TestCase):
             "chain",
         )
         self.assertEqual(action["predicted_sid_unit_count"], 3)
+        self.assertEqual(action["f1"], 0.7)
         self.assertEqual(chain["predicted_event_count"], 2)
         self.assertEqual(chain["negative_unit_count"], 1)
         self.assertAlmostEqual(chain["negative_credit_mass"], 0.1)
@@ -269,6 +273,7 @@ class MetricsTests(unittest.TestCase):
             records.append(record)
         summary = summarize_metrics(records, 9.0)
         self.assertEqual(summary["chain"]["candidate_count"], 2)
+        self.assertEqual(summary["action"]["mean_f1"], 0.5)
         self.assertEqual(summary["chain"]["candidate_with_negative_unit_count"], 1)
         self.assertEqual(summary["chain"]["negative_candidate_rate"], 0.5)
         self.assertEqual(summary["chain"]["mean_predicted_event_count"], 3.0)

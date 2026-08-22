@@ -221,34 +221,46 @@ def score_generated_route(
         units = rollout["credit_units_per_candidate"][candidate_index]
         overlap = _candidate_overlap_metadata(units, len(exact_ids[candidate_index]))
         projection = rollout["projection_per_candidate"][candidate_index]
-        candidates.append(
-            {
-                "sample_id": row["sample_id"],
-                "candidate_index": candidate_index,
-                "generated_token_count": len(exact_ids[candidate_index]),
-                "completion": rollout["completions"][candidate_index],
-                "format_valid": bool(marginal["valid"]),
-                "full_reward": float(marginal["full_reward"]),
-                "positive_unit_count": sum(float(unit["delta"]) > 0 for unit in units),
-                "negative_unit_count": sum(float(unit["delta"]) < 0 for unit in units),
-                "zero_unit_count": sum(float(unit["delta"]) == 0 for unit in units),
-                "active_marginal_unit_count": sum(
-                    float(unit["delta"]) != 0 for unit in units
-                ),
-                "projection_required": bool(projection["projection_required"]),
-                "canonical_token_count": int(projection["canonical_token_count"]),
-                "overlap_token_count": int(overlap["overlap_token_count"]),
-                "same_sign_overlap_token_count": int(
-                    overlap["same_sign_overlap_token_count"]
-                ),
-                "mixed_sign_overlap_token_count": int(
-                    overlap["mixed_sign_overlap_token_count"]
-                ),
-                "max_active_units_per_token": int(
-                    overlap["max_active_units_per_token"]
-                ),
-            }
-        )
+        candidate_record = {
+            "sample_id": row["sample_id"],
+            "candidate_index": candidate_index,
+            "generated_token_count": len(exact_ids[candidate_index]),
+            "completion": rollout["completions"][candidate_index],
+            "format_valid": bool(marginal["valid"]),
+            "full_reward": float(marginal["full_reward"]),
+            "positive_unit_count": sum(float(unit["delta"]) > 0 for unit in units),
+            "negative_unit_count": sum(float(unit["delta"]) < 0 for unit in units),
+            "zero_unit_count": sum(float(unit["delta"]) == 0 for unit in units),
+            "active_marginal_unit_count": sum(
+                float(unit["delta"]) != 0 for unit in units
+            ),
+            "projection_required": bool(projection["projection_required"]),
+            "canonical_token_count": int(projection["canonical_token_count"]),
+            "overlap_token_count": int(overlap["overlap_token_count"]),
+            "same_sign_overlap_token_count": int(
+                overlap["same_sign_overlap_token_count"]
+            ),
+            "mixed_sign_overlap_token_count": int(
+                overlap["mixed_sign_overlap_token_count"]
+            ),
+            "max_active_units_per_token": int(
+                overlap["max_active_units_per_token"]
+            ),
+        }
+        if route == "action":
+            candidate_record["f1"] = float(marginal["full_reward"])
+        else:
+            candidate_record.update(
+                {
+                    "full_action_alignment": float(
+                        marginal.get("full_action_alignment", 0.0)
+                    ),
+                    "full_logic_alignment": float(
+                        marginal.get("full_logic_alignment", 0.0)
+                    ),
+                }
+            )
+        candidates.append(candidate_record)
     return {
         "route": route,
         "candidate_count": K,

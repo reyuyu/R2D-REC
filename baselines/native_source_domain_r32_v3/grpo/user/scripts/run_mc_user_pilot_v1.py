@@ -341,6 +341,7 @@ def candidate_record(
     }
     if route == "action":
         record["predicted_sid_unit_count"] = len(marginal["credits"]) if marginal["valid"] else 0
+        record["f1"] = float(candidate.get("f1", candidate["full_reward"]))
     else:
         record.update(
             {
@@ -409,6 +410,19 @@ def display_rollout_records(
                 "max_active_units_per_token": int(candidate["max_active_units_per_token"]),
             }
         )
+        if route == "action":
+            records[-1]["f1"] = float(candidate.get("f1", candidate["full_reward"]))
+        else:
+            records[-1].update(
+                {
+                    "full_action_alignment": float(
+                        candidate.get("full_action_alignment", 0.0)
+                    ),
+                    "full_logic_alignment": float(
+                        candidate.get("full_logic_alignment", 0.0)
+                    ),
+                }
+            )
     return records
 
 
@@ -467,6 +481,12 @@ def summarize_metrics(records: Sequence[Mapping[str, Any]], wall_seconds: float)
             "total_negative_credit_mass": total(action, "negative_credit_mass"),
             "mean_predicted_sid_count": total(action, "predicted_sid_unit_count") / len(action) if action else 0.0,
             "mean_reward": total(action, "reward") / len(action) if action else 0.0,
+            "mean_f1": (
+                sum(float(item.get("f1", item["reward"])) for item in action)
+                / len(action)
+                if action
+                else 0.0
+            ),
         },
         "chain": {
             "candidate_count": len(chain),
