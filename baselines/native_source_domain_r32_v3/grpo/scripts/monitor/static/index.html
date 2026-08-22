@@ -341,7 +341,7 @@ function diagnosticCards(id,items){
     const rows=state.dsrMetrics.filter(value=>value.route==='no_think'),row=rows.at(-1)||{};
     items=[["奖励全零率",pct(row.all_zero_group_rate)],["A 类集中度",fmt(row.group_a_concentration_mean)],["正确 A 命中率",pct(row.any_gold_a_hit_rate)],["主奖励信号密度",pct(1-Number(row.primary_zero_std_rate||0))],["救援激活率 / A 全相同率",`${pct(row.rescue_active_group_rate)} / ${pct(row.all_zero_same_a_rate)}`],["正确 AB 命中率 / 有效 SID 率",`${pct(row.any_gold_ab_hit_rate)} / ${pct(row.valid_sid_rate)}`]];
     draw('dsrStrataConcentrationChart',[{data:nestedPoints(rows,'gold_a_strata.sparse.a_concentration_mean'),color:colors[4]},{data:nestedPoints(rows,'gold_a_strata.dense.a_concentration_mean'),color:colors[5]}]);
-  }else if(id==='probeOverview'&&!isSimpleDsr()){
+  }else if(id==='probeOverview'&&!isSimpleDsr()&&state.manifest?.experiment!=='GR_REC_Think_CompositeInterest_v1'){
     for(const [index,option] of [...$('probeGroupSelect').options].entries()){
       const domain=state.probes.find(value=>value.group_id===option.value)?.target_domain;
       if(domain)option.textContent=`${domain} · 探针 ${index+1} · ${option.value.slice(0,12)}`;

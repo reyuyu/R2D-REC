@@ -136,8 +136,14 @@ def test_frontend_composite_contract_and_no_js_reward_math():
     for marker in ('renderCompositeThinkAdvantage', '暂无实采 Composite 数据', '实采',
                    'CoT Reward 救活零方差组', 'Beam 并列第一', 'Composite 改变 Beam 排名',
                    'Candidate 额外兴趣', 'Gold 兴趣未恢复', 'Think-only 12 probes',
-                   '0 / 200 / 400 / 600 / 716', 'compositeOverviewPanels'):
+                   '0 / 200 / 400 / 600 / 716', 'compositeOverviewPanels',
+                   'Beam 命中得分', 'CoT 兴趣命中得分', '最终 Composite 奖励',
+                   'Beam 命中均值', 'CoT 兴趣命中均值（U_cot）',
+                   '最终 Composite 均值 / 标准差'):
         assert marker in source
+    shell = (Path(__file__).parent / 'static' / 'index.html').read_text(encoding='utf-8')
+    assert "id==='probeOverview'&&!isSimpleDsr()&&state.manifest?.experiment!==" in shell
+    assert "GR_REC_Think_CompositeInterest_v1" in shell
     for forbidden in ('S_text', 'S_evidence', 'maximum_weight_matching', 'population_advantages'):
         assert forbidden not in source
 
