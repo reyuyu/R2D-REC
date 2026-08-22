@@ -12,7 +12,8 @@ from .composite_trainer import (
 )
 from .interest_metric import composite_reward, population_advantages
 from .run_gr_rec_think_composite_interest_v1 import (
-    AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_IDS, SAVE_TOTAL_LIMIT, SEED,
+    AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_DOMAIN_ORDER, PROBE_IDS, PROBE_ROUNDS,
+    PROBE_STEPS, SAVE_TOTAL_LIMIT, SEED,
     checkpoint_save_config, frozen_contract, launch_training,
     should_save_checkpoint,
 )
@@ -81,13 +82,14 @@ class TrainingChainTests(unittest.TestCase):
         self.assertNotIn("completion_text", source)
 
     def test_checkpoint_schedule_has_no_700(self):
-        self.assertEqual([step for step in range(1, 721) if should_save_checkpoint(step)],
+        self.assertEqual([step for step in range(1, 717) if should_save_checkpoint(step)],
                          list(CHECKPOINT_STEPS))
         self.assertFalse(should_save_checkpoint(700))
-        self.assertGreater(AUTO_SAVE_STEPS, 720)
+        self.assertFalse(should_save_checkpoint(720))
+        self.assertGreater(AUTO_SAVE_STEPS, 716)
         self.assertGreaterEqual(SAVE_TOTAL_LIMIT, len(CHECKPOINT_STEPS))
         self.assertEqual(checkpoint_save_config(), {
-            "save_strategy": "steps", "save_steps": 10000, "save_total_limit": 10,
+            "save_strategy": "steps", "save_steps": 10000, "save_total_limit": 4,
         })
 
     def test_formal_path_does_not_call_dry_run_report(self):
@@ -155,8 +157,13 @@ class TrainingChainTests(unittest.TestCase):
 
     def test_probe_and_checkpoint_contract(self):
         self.assertEqual(SEED, 20260818)
-        self.assertEqual(len(PROBE_IDS), 4)
-        self.assertEqual(CHECKPOINT_STEPS, (100, 200, 250, 300, 350, 400, 450, 500, 600, 720))
+        self.assertEqual(len(PROBE_IDS), 12)
+        self.assertEqual(len(set(PROBE_IDS)), 12)
+        self.assertEqual(CHECKPOINT_STEPS, (200, 400, 600, 716))
+        self.assertEqual(PROBE_STEPS, (0, 200, 400, 600, 716))
+        self.assertEqual(len(PROBE_ROUNDS), 3)
+        self.assertTrue(all(len(round_ids) == 4 for round_ids in PROBE_ROUNDS))
+        self.assertEqual(PROBE_DOMAIN_ORDER, ("video", "prod", "ad", "living"))
 
     def test_parser_parity_uses_shared_parser(self):
         self.assertTrue(extract_interest_units(GOOD, PROMPT).parser_success)

@@ -221,9 +221,9 @@ class DataGuardTests(unittest.TestCase):
 
     def test_eligible_topology(self):
         topology = planned_topology(group_count=1446)
-        self.assertEqual(topology.training_groups, 1440)
-        self.assertEqual(topology.fresh_rollouts, 360)
-        self.assertEqual(topology.optimizer_steps, 720)
+        self.assertEqual(topology.training_groups, 1432)
+        self.assertEqual(topology.fresh_rollouts, 358)
+        self.assertEqual(topology.optimizer_steps, 716)
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ class DatasetTopology:
     optimizer_steps: int
 
 
-def planned_topology(group_count: int = 1549, probe_count: int = 4, group_size: int = 4, num_iterations: int = 2) -> DatasetTopology:
+def planned_topology(group_count: int = 1549, probe_count: int = 12, group_size: int = 4, num_iterations: int = 2) -> DatasetTopology:
     post_probe = group_count - probe_count
     dropped = post_probe % group_size
     training = post_probe - dropped

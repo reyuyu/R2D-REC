@@ -1,9 +1,9 @@
 {
   "experiment": "GR_REC_Think_CompositeInterest_v1",
   "status": "CPU_DRY_RUN_PASS",
-  "timestamp": "2026-08-22T12:04:14.363919Z",
-  "base_main_sha": "7b8005aebe8610c0824624be344cececebceaaba",
-  "inspected_head": "3ff4662d383b2741e49c3e88c1f53035f454ac1a",
+  "timestamp": "2026-08-22T13:12:30.597444Z",
+  "base_main_sha": "72fa8ab9f16b742a8e8a49dd39ca9b0af2a257f3",
+  "inspected_head": "72fa8ab9f16b742a8e8a49dd39ca9b0af2a257f3",
   "gpu_used": false,
   "model_loaded": false,
   "generation_called": false,
@@ -20,38 +20,89 @@
     "original_think_groups": 1549,
     "exact_gold_join_groups": 1458,
     "parser_valid_gold_groups": 1446,
-    "fixed_probe_groups": 4,
-    "post_probe_groups": 1442,
+    "fixed_probe_groups": 12,
+    "post_probe_groups": 1434,
     "sampler_drop_groups": 2,
-    "training_groups": 1440,
-    "fresh_g4_rollouts": 360,
-    "optimizer_steps_num_iterations_2": 720
+    "training_groups": 1432,
+    "fresh_g4_rollouts": 358,
+    "optimizer_steps_num_iterations_2": 716
   },
   "seed": 20260818,
   "fixed_probe_group_ids": [
     "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc",
-    "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559",
     "994c3186e677aec015938e71f08257afcf9f235a5a35df24af7fa67849c752d5",
-    "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2"
+    "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2",
+    "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559",
+    "2458dad5cd2ecd2eda143dfba774f2e5285121d8ce5248870fabae4a537e01a8",
+    "39aae42039b948f6454107b7f698e359fe4b4387b75ffcaf6cefa2d2ff3e7478",
+    "30ad94963078a534372de6053a20d15f7d7b96e3b41a105e19cc8c93b15b1773",
+    "f514f18da46a72fefb5b82496606e4e583653fed1bf3bfb699d5f7a1424a8afa",
+    "57e5e21681ec27a96e5bc36cf95c0c502aba0e58f27989bdb440b46e725b5136",
+    "501e2511430d57ad1a042326c3cd2b48dd013eae9f28a72d1ad13e9f02ece62c",
+    "03d3105f399a06d8da8df0cf574374b283b751573d73c9e9dbd3f3636ecf8407",
+    "31208c4ebe2704c2293183595b1fcd7f51be18a2d2817fa02eb5b2b36017e93a"
   ],
+  "fixed_probe_domains": {
+    "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc": "video",
+    "994c3186e677aec015938e71f08257afcf9f235a5a35df24af7fa67849c752d5": "prod",
+    "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2": "ad",
+    "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559": "living",
+    "2458dad5cd2ecd2eda143dfba774f2e5285121d8ce5248870fabae4a537e01a8": "video",
+    "39aae42039b948f6454107b7f698e359fe4b4387b75ffcaf6cefa2d2ff3e7478": "prod",
+    "30ad94963078a534372de6053a20d15f7d7b96e3b41a105e19cc8c93b15b1773": "ad",
+    "f514f18da46a72fefb5b82496606e4e583653fed1bf3bfb699d5f7a1424a8afa": "living",
+    "57e5e21681ec27a96e5bc36cf95c0c502aba0e58f27989bdb440b46e725b5136": "video",
+    "501e2511430d57ad1a042326c3cd2b48dd013eae9f28a72d1ad13e9f02ece62c": "prod",
+    "03d3105f399a06d8da8df0cf574374b283b751573d73c9e9dbd3f3636ecf8407": "ad",
+    "31208c4ebe2704c2293183595b1fcd7f51be18a2d2817fa02eb5b2b36017e93a": "living"
+  },
+  "fixed_probe_rounds": [
+    [
+      "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc",
+      "994c3186e677aec015938e71f08257afcf9f235a5a35df24af7fa67849c752d5",
+      "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2",
+      "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559"
+    ],
+    [
+      "2458dad5cd2ecd2eda143dfba774f2e5285121d8ce5248870fabae4a537e01a8",
+      "39aae42039b948f6454107b7f698e359fe4b4387b75ffcaf6cefa2d2ff3e7478",
+      "30ad94963078a534372de6053a20d15f7d7b96e3b41a105e19cc8c93b15b1773",
+      "f514f18da46a72fefb5b82496606e4e583653fed1bf3bfb699d5f7a1424a8afa"
+    ],
+    [
+      "57e5e21681ec27a96e5bc36cf95c0c502aba0e58f27989bdb440b46e725b5136",
+      "501e2511430d57ad1a042326c3cd2b48dd013eae9f28a72d1ad13e9f02ece62c",
+      "03d3105f399a06d8da8df0cf574374b283b751573d73c9e9dbd3f3636ecf8407",
+      "31208c4ebe2704c2293183595b1fcd7f51be18a2d2817fa02eb5b2b36017e93a"
+    ]
+  ],
+  "probe_domain_counts": {
+    "video": 3,
+    "prod": 3,
+    "ad": 3,
+    "living": 3
+  },
   "fixed_probes_excluded_from_training": true,
+  "train_probe_overlap": 0,
   "sampler_dropped_group_ids": [
     "1f4dc9be5e440944e1301f3041fa032d29f83159fdf0dc5f0cb5a915a82b2d1a",
     "6fb0c9ee27af041dd9eb6707be5168c385bf83ed45e624a82272f147a419a240"
   ],
-  "effective_max_steps": 720,
+  "effective_max_steps": 716,
   "checkpoint_steps": [
-    100,
     200,
-    250,
-    300,
-    350,
     400,
-    450,
-    500,
     600,
-    720
+    716
   ],
+  "probe_steps": [
+    0,
+    200,
+    400,
+    600,
+    716
+  ],
+  "single_node_nccl_socket_ifname": "lo",
   "frozen_contract": {
     "route": "think_only",
     "g": 4,

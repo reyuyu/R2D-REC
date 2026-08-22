@@ -381,3 +381,58 @@ operation. Optimizer steps remained zero and all GPU worker processes exited.
 Per the hard gate, Smoke12 was not started and no retry was attempted. The
 structured preflight and not-started Smoke result files preserve this status.
 Formal 720-step training remains unstarted.
+
+## Single-node NCCL and 12-probe schedule revision (2026-08-22)
+
+Base main for this revision: `72fa8ab9f16b742a8e8a49dd39ca9b0af2a257f3`.
+The failed zero-step GPU preflight above remains historical evidence; this
+revision used CPU only and did not retry preflight, Smoke or formal training.
+
+Preflight, Smoke and formal execution now enter through the same minimal
+`configure_single_node_nccl()` bootstrap. For the explicitly single-node
+four-rank task it validates `WORLD_SIZE=4` and `LOCAL_RANK=0..3`, sets
+`NCCL_SOCKET_IFNAME=lo` before process-group initialization, binds the current
+CUDA device, and initializes NCCL with that device only when a process group
+does not already exist. The launch manifest records the interface, world size,
+current local rank/device and the complete local-rank/device mapping.
+
+The fixed Think probe cohort is frozen at seed 20260818 as three deterministic
+rounds. Every round maps ranks 0/1/2/3 to video/prod/ad/living respectively:
+
+- round 0: video `662e2114...55cbc`; prod `994c3186...752d5`; ad
+  `6aa980e4...cbdc2`; living `9d9852a4...8559`
+- round 1: video `2458dad5...e01a8`; prod `39aae420...e7478`; ad
+  `30ad9496...b1773`; living `f514f18d...a8afa`
+- round 2: video `57e5e216...b5136`; prod `501e2511...ce62c`; ad
+  `03d3105f...f8407`; living `31208c4e...7e93a`
+
+All 12 IDs are unique, exact-Gold provenance safe, parser-valid members of the
+1446-group eligible cohort, with exactly three probes per domain. Their
+intersection with the shuffled training cohort is empty.
+
+The revised full-epoch topology is:
+
+- eligible groups: 1446
+- fixed probes: 12
+- post-probe groups: 1434
+- deterministic G4 tail drop: 2
+- training groups: 1432
+- fresh G4 rollouts: 358
+- optimizer steps at `num_iterations=2`: 716
+
+Formal `max_steps` is therefore 716. Checkpoints are callback-only milestones
+at 200/400/600/716; Trainer auto-save remains 10000 and
+`save_total_limit=4`. Fixed probes run only at 0/200/400/600/716, with all 12
+groups required before a step is considered complete. The formal cost is 60
+group-level probe evaluations. Partial JSONL state does not skip a milestone.
+
+The Composite reward, `.30` match threshold, `.60` quality floor, parser, raw
+completion decode, DDP alignment, G4 population advantage, generation and
+Beam32 contracts are unchanged.
+
+Targeted CPU tests pass 59/59. The refreshed dry-run artifact reports the new
+topology, domain-balanced frozen probe mapping, `TRAIN_PROBE_OVERLAP=0`, explicit
+checkpoint/probe milestones and `single_node_nccl_socket_ifname="lo"` without
+loading a model or initializing CUDA/NCCL.
+
+GPU used: NO. Training started: NO. Formal training started: NO.
