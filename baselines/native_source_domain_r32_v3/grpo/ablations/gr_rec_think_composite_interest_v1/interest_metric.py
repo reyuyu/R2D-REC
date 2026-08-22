@@ -13,7 +13,8 @@ from ..gr_rec_think_exact_clamp_v1.think_diagnostics import (
     extract_interest_units,
 )
 
-MATCH_THRESHOLD = 0.60
+MATCH_THRESHOLD = 0.30
+MATCH_QUALITY_FLOOR = 0.60
 
 
 @dataclass(frozen=True)
@@ -70,7 +71,10 @@ def evidence_similarity(left: Iterable[str], right: Iterable[str]) -> float:
 
 
 def pair_similarity(candidate: InterestUnit, gold: InterestUnit) -> float:
-    return 0.7 * text_similarity(candidate.normalized_text, gold.normalized_text) + 0.3 * evidence_similarity(
+    text_score = text_similarity(candidate.normalized_text, gold.normalized_text)
+    if not gold.grounded_evidence_sids:
+        return text_score
+    return 0.7 * text_score + 0.3 * evidence_similarity(
         candidate.grounded_evidence_sids,
         gold.grounded_evidence_sids,
     )
@@ -82,7 +86,10 @@ def maximum_weight_matching(
     threshold: float = MATCH_THRESHOLD,
     similarity_fn=pair_similarity,
 ) -> tuple[PairMatch, ...]:
-    """Exact deterministic DP matching; interest lists are intentionally small."""
+    """Maximum-cardinality thresholded one-to-one matching.
+
+    Total similarity is the deterministic tie-break; interest lists are small.
+    """
     if not candidates or not gold:
         return ()
     weights = [[float(similarity_fn(candidate, target)) for target in gold] for candidate in candidates]
@@ -133,7 +140,7 @@ def score_parsed_interests(candidate: InterestParse, gold: InterestParse) -> Int
     coverage = matched / n_gold if n_gold else 0.0
     precision = matched / n_pred if n_pred else 0.0
     mean_similarity = sum(pair.similarity for pair in matches) / matched if matched else 0.0
-    quality = min(1.0, max(0.0, (mean_similarity - MATCH_THRESHOLD) / (1.0 - MATCH_THRESHOLD))) if matched else 0.0
+    quality = min(1.0, max(0.0, (mean_similarity - MATCH_QUALITY_FLOOR) / 0.40)) if matched else 0.0
     tier = coverage_tier(matched, n_gold)
     return InterestScore(
         parser_success=candidate.parser_success,

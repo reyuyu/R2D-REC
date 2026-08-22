@@ -27,24 +27,33 @@
     "video": 550
   },
   "gold_parser": {
-    "success": 1360,
+    "success": 1446,
     "evaluated": 1458,
-    "success_rate": 0.9327846364883402,
+    "success_rate": 0.9917695473251029,
+    "before_extension": {
+      "success": 1360,
+      "failure_reasons": {
+        "missing_interest_heading": 86,
+        "empty_interest_section": 12
+      }
+    },
+    "safe_heading_variants_recovered": 86,
+    "remaining_inline_prose_without_bullet_boundaries": 12,
     "interest_count": {
       "min": 0,
       "p25": 3.0,
       "p50": 4.0,
       "p75": 4.0,
-      "max": 5,
-      "mean": 3.209190672153635
+      "max": 9,
+      "mean": 3.467764060356653
     },
     "grounded_interest_count": {
       "min": 0,
-      "p25": 0.0,
+      "p25": 1.0,
       "p50": 3.0,
       "p75": 3.0,
       "max": 5,
-      "mean": 2.041838134430727
+      "mean": 2.1947873799725652
     },
     "cot_character_length": {
       "min": 235,
@@ -222,5 +231,12 @@
       "gold_interest_count": 3
     }
   ],
-  "data_provenance_ready": false
+  "eligibility": {
+    "policy": "exact safe Gold join and shared parser-valid non-empty interest units",
+    "eligible_think_groups": 1446,
+    "excluded_missing_gold": 91,
+    "excluded_parser_invalid": 12
+  },
+  "full_coverage_provenance_ready": false,
+  "data_provenance_ready": true
 }

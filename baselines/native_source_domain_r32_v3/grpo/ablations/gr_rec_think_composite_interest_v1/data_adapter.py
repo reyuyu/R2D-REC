@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from typing import Iterable, Mapping
+from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
+
 
 
 class DataProvenanceError(RuntimeError):
@@ -42,22 +44,30 @@ def build_think_composite_dataset(
     records: Iterable[Mapping],
     gold_by_group: Mapping[str, str],
     *,
-    provenance_ready: bool,
+    eligible_group_ids: Iterable[str],
 ) -> list[dict]:
-    """Join Gold after loading; never mutate or augment the generation prompt."""
-    if not provenance_ready:
-        raise DataProvenanceError("Gold CoT provenance is incomplete; formal dataset construction is blocked")
+    """Build only the explicitly audited, provenance-safe and parser-valid cohort."""
+    eligible = set(eligible_group_ids)
     output = []
     for source in records:
         if source.get("route") != "think":
             continue
         group_id = source["recommendation_group_id"]
+        if group_id not in eligible:
+            continue
         if group_id not in gold_by_group:
-            raise DataProvenanceError("missing Gold CoT for group " + group_id)
+            raise DataProvenanceError("eligible group is missing Gold CoT: " + group_id)
         record = copy.deepcopy(dict(source))
         original_prompt = record["prompt"]
-        record["gold_cot"] = gold_by_group[group_id]
+        gold_cot = gold_by_group[group_id]
+        parsed = extract_interest_units(gold_cot, original_prompt)
+        if not parsed.parser_success or not parsed.units:
+            raise DataProvenanceError("eligible group has parser-invalid Gold CoT: " + group_id)
+        record["gold_cot"] = gold_cot
         if record["prompt"] != original_prompt:
             raise AssertionError("Gold CoT changed the model input prompt")
         output.append(record)
+    if {record["recommendation_group_id"] for record in output} != eligible:
+        missing = eligible.difference(record["recommendation_group_id"] for record in output)
+        raise DataProvenanceError("eligible groups are absent from source records: " + ",".join(sorted(missing)))
     return output

@@ -3,8 +3,9 @@ from __future__ import annotations
 import math
 import unittest
 
+from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.calibrate_similarity import auc_rank, counter_f1, lcs_f1, matching_count
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.data_adapter import DataProvenanceError, build_think_composite_dataset, planned_topology
-from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.interest_metric import beam_utility, composite_reward, coverage_tier, evidence_similarity, maximum_weight_matching, pair_similarity, population_advantages, score_interest_cot
+from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.interest_metric import MATCH_QUALITY_FLOOR, MATCH_THRESHOLD, beam_utility, composite_reward, coverage_tier, evidence_similarity, maximum_weight_matching, pair_similarity, population_advantages, score_interest_cot
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_exact_clamp_v1.think_diagnostics import InterestUnit, extract_interest_units
 
 SID1 = "<|video_begin|><s_a_1><s_b_2><s_c_3>"
@@ -13,11 +14,11 @@ SID3 = "<|prod_begin|><s_a_7><s_b_8><s_c_9>"
 SID4 = "<|ad_begin|><s_a_10><s_b_11><s_c_12>"
 WRONG = "<|living_begin|><s_a_99><s_b_98><s_c_97>"
 PROMPT = "history " + " ".join((SID1, SID2, SID3, SID4))
+HEADING = "\u3010\u5174\u8da3\u5f52\u7eb3\u3011"
 
 
-def cot(items):
-    heading = "<think>\n#### 【兴趣归纳】\n"
-    return heading + "\n".join(str(i) + ". " + text for i, text in enumerate(items, 1)) + "\n</think>\n[]"
+def cot(items, heading=HEADING):
+    return "<think>\n" + heading + "\n" + "\n".join(str(i) + ". " + text for i, text in enumerate(items, 1)) + "\n</think>\n[]"
 
 
 GOLD_ITEMS = [
@@ -29,31 +30,59 @@ GOLD_ITEMS = [
 
 
 class ParserTests(unittest.TestCase):
-    def test_parser_extracts_units_and_grounding(self):
+    def test_canonical_parser_regression(self):
         parsed = extract_interest_units(cot(GOLD_ITEMS), PROMPT)
         self.assertTrue(parsed.parser_success)
         self.assertEqual(len(parsed.units), 4)
+        self.assertEqual(parsed.units[0].index, 1)
         self.assertEqual(parsed.units[0].grounded_evidence_sids, (SID1,))
-        self.assertNotIn(SID1, parsed.units[0].normalized_text)
+        self.assertEqual(parsed.units[0].normalized_text, "tactical game interest")
 
-    def test_parser_failure(self):
+    def test_safe_heading_colon_variant(self):
+        parsed = extract_interest_units(cot(GOLD_ITEMS, HEADING + "\uff1a"), PROMPT)
+        self.assertTrue(parsed.parser_success)
+        self.assertEqual(len(parsed.units), 4)
+
+    def test_safe_heading_internal_bold_variant(self):
+        heading = "\u3010**\u5174\u8da3\u5f52\u7eb3**\u3011"
+        self.assertTrue(extract_interest_units(cot(GOLD_ITEMS, heading), PROMPT).parser_success)
+
+    def test_safe_plain_markdown_heading_variant(self):
+        heading = "### \u5174\u8da3\u5f52\u7eb3"
+        self.assertTrue(extract_interest_units(cot(GOLD_ITEMS, heading), PROMPT).parser_success)
+
+    def test_inline_prose_is_not_silently_parsed(self):
+        text = "<think>\n" + HEADING + "\nfirst interest, second interest, third interest\n</think>"
+        parsed = extract_interest_units(text, PROMPT)
+        self.assertFalse(parsed.parser_success)
+        self.assertEqual(parsed.failure_reason, "empty_interest_section")
+
+    def test_missing_heading_failure(self):
         parsed = extract_interest_units("<think>missing heading</think>", PROMPT)
         self.assertFalse(parsed.parser_success)
         self.assertEqual(parsed.failure_reason, "missing_interest_heading")
 
-    def test_empty_interest_section(self):
-        parsed = extract_interest_units("<think>\n【兴趣归纳】\n</think>", PROMPT)
-        self.assertFalse(parsed.parser_success)
-        self.assertEqual(parsed.failure_reason, "empty_interest_section")
-
 
 class MetricTests(unittest.TestCase):
-    def test_identity_is_perfect(self):
+    def test_identity_with_evidence_is_perfect(self):
         score = score_interest_cot(cot(GOLD_ITEMS), cot(GOLD_ITEMS), PROMPT)
         self.assertEqual(score.matched_interest_count, 4)
         self.assertEqual(score.interest_coverage, 1.0)
         self.assertAlmostEqual(score.match_quality, 1.0)
         self.assertAlmostEqual(score.cot_utility, 1.0)
+
+    def test_identity_without_evidence_is_perfect(self):
+        items = ["tactical game", "beauty care"]
+        score = score_interest_cot(cot(items), cot(items), PROMPT)
+        self.assertEqual(score.matched_interest_count, 2)
+        self.assertAlmostEqual(score.mean_match_similarity, 1.0)
+        self.assertAlmostEqual(score.cot_utility, 1.0)
+
+    def test_gold_evidence_candidate_missing_is_penalized(self):
+        gold = extract_interest_units(cot([GOLD_ITEMS[0]]), PROMPT).units[0]
+        candidate = extract_interest_units(cot(["tactical game interest"]), PROMPT).units[0]
+        self.assertAlmostEqual(pair_similarity(candidate, gold), 0.7)
+        self.assertLess(pair_similarity(candidate, gold), pair_similarity(gold, gold))
 
     def test_reorder_is_invariant(self):
         identity = score_interest_cot(cot(GOLD_ITEMS), cot(GOLD_ITEMS), PROMPT)
@@ -72,11 +101,11 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(coverage_tier(4, 6), 0.70)
 
     def test_duplicate_cannot_consume_gold_twice(self):
-        score = score_interest_cot(cot([GOLD_ITEMS[0]] * 4), cot(GOLD_ITEMS), PROMPT)
+        score = score_interest_cot(cot(["unique alpha"] * 4), cot(["unique alpha"]), PROMPT)
         self.assertEqual(score.matched_interest_count, 1)
 
     def test_extra_interest_does_not_increase_matches(self):
-        score = score_interest_cot(cot(GOLD_ITEMS + ["unrelated astronomy"]), cot(GOLD_ITEMS), PROMPT)
+        score = score_interest_cot(cot(GOLD_ITEMS + ["unrelated interest"]), cot(GOLD_ITEMS), PROMPT)
         self.assertEqual(score.matched_interest_count, 4)
         self.assertEqual(score.interest_precision, 0.8)
 
@@ -91,15 +120,12 @@ class MetricTests(unittest.TestCase):
         wrong = extract_interest_units(cot(["tactical game interest " + WRONG]), PROMPT).units[0]
         self.assertLess(pair_similarity(wrong, good), pair_similarity(good, good))
 
-    def test_text_only_similarity_has_no_grounding_credit(self):
-        gold = extract_interest_units(cot([GOLD_ITEMS[0]]), PROMPT).units[0]
-        text_only = extract_interest_units(cot(["tactical game interest"]), PROMPT).units[0]
-        self.assertAlmostEqual(pair_similarity(text_only, gold), 0.7)
-
     def test_match_threshold_boundary(self):
         unit = InterestUnit(1, "x", "x", (), ())
-        self.assertEqual(len(maximum_weight_matching((unit,), (unit,), similarity_fn=lambda _a, _b: 0.59)), 0)
-        self.assertEqual(len(maximum_weight_matching((unit,), (unit,), similarity_fn=lambda _a, _b: 0.60)), 1)
+        self.assertEqual(MATCH_THRESHOLD, 0.30)
+        self.assertEqual(len(maximum_weight_matching((unit,), (unit,), similarity_fn=lambda _a, _b: 0.2999)), 0)
+        self.assertEqual(len(maximum_weight_matching((unit,), (unit,), similarity_fn=lambda _a, _b: 0.30)), 1)
+        self.assertEqual(MATCH_QUALITY_FLOOR, 0.60)
 
     def test_beam_mapping(self):
         expected = {0: 0.0, 0.5: math.log1p(0.5) / math.log(17), 2: math.log(3) / math.log(17), 8: math.log(9) / math.log(17), 16: 1.0, 32: 1.0}
@@ -114,35 +140,61 @@ class MetricTests(unittest.TestCase):
                 self.assertGreaterEqual(composite_reward(beam, cot_value), 0.0)
                 self.assertLessEqual(composite_reward(beam, cot_value), 1.0)
 
-    def test_population_advantage_exact(self):
+    def test_population_advantage_exact_and_equal_zero(self):
         rewards = [0.0, 1.0, 2.0, 3.0]
         mean = 1.5
         std = math.sqrt(sum((x - mean) ** 2 for x in rewards) / 4)
-        expected = [(x - mean) / (std + 1e-4) for x in rewards]
-        self.assertEqual(population_advantages(rewards), expected)
-
-    def test_equal_reward_advantages_are_zero(self):
+        self.assertEqual(population_advantages(rewards), [(x - mean) / (std + 1e-4) for x in rewards])
         self.assertEqual(population_advantages([0.25] * 4), [0.0] * 4)
 
 
+class CalibrationHelperTests(unittest.TestCase):
+    def test_lcs_and_rank_helpers(self):
+        self.assertEqual(lcs_f1("abc", "abc"), 1.0)
+        self.assertLess(lcs_f1("abc", "xyz"), 1.0)
+        self.assertEqual(auc_rank([1.0], [0.0]), 1.0)
+
+    def test_thresholded_matching_helper(self):
+        matrix = [[0.30, 0.0], [0.31, 0.0]]
+        self.assertEqual(matching_count(matrix, 0.30), 1)
+
+
 class DataGuardTests(unittest.TestCase):
-    def test_incomplete_provenance_fails_closed(self):
-        rows = [{"route": "think", "recommendation_group_id": "g", "prompt": "original"}]
+    def setUp(self):
+        self.rows = [
+            {"route": "think", "recommendation_group_id": "g1", "prompt": PROMPT, "all_gold_sids": []},
+            {"route": "think", "recommendation_group_id": "g2", "prompt": PROMPT, "all_gold_sids": []},
+            {"route": "no_think", "recommendation_group_id": "g1", "prompt": PROMPT, "all_gold_sids": []},
+        ]
+        self.valid_gold = cot([GOLD_ITEMS[0]])
+
+    def test_missing_gold_is_explicitly_excluded(self):
+        joined = build_think_composite_dataset(self.rows, {"g1": self.valid_gold}, eligible_group_ids={"g1"})
+        self.assertEqual([row["recommendation_group_id"] for row in joined], ["g1"])
+
+    def test_parser_invalid_gold_is_explicitly_excluded(self):
+        joined = build_think_composite_dataset(self.rows, {"g1": self.valid_gold, "g2": "invalid"}, eligible_group_ids={"g1"})
+        self.assertEqual(len(joined), 1)
+
+    def test_eligible_missing_gold_fails_closed(self):
         with self.assertRaises(DataProvenanceError):
-            build_think_composite_dataset(rows, {"g": "gold"}, provenance_ready=False)
+            build_think_composite_dataset(self.rows, {}, eligible_group_ids={"g1"})
+
+    def test_eligible_parser_invalid_gold_fails_closed(self):
+        with self.assertRaises(DataProvenanceError):
+            build_think_composite_dataset(self.rows, {"g1": "invalid"}, eligible_group_ids={"g1"})
 
     def test_prompt_parity_and_no_gold_leakage(self):
-        rows = [{"route": "think", "recommendation_group_id": "g", "prompt": "original", "all_gold_sids": []}]
-        joined = build_think_composite_dataset(rows, {"g": "SECRET GOLD"}, provenance_ready=True)
-        self.assertEqual(joined[0]["prompt"], rows[0]["prompt"])
-        self.assertNotIn("SECRET GOLD", joined[0]["prompt"])
-        self.assertEqual(joined[0]["gold_cot"], "SECRET GOLD")
+        joined = build_think_composite_dataset(self.rows, {"g1": self.valid_gold}, eligible_group_ids={"g1"})
+        self.assertEqual(joined[0]["prompt"], self.rows[0]["prompt"])
+        self.assertNotIn(self.valid_gold, joined[0]["prompt"])
+        self.assertEqual(joined[0]["gold_cot"], self.valid_gold)
 
-    def test_static_topology(self):
-        topology = planned_topology()
-        self.assertEqual(topology.training_groups, 1544)
-        self.assertEqual(topology.fresh_rollouts, 386)
-        self.assertEqual(topology.optimizer_steps, 772)
+    def test_eligible_topology(self):
+        topology = planned_topology(group_count=1446)
+        self.assertEqual(topology.training_groups, 1440)
+        self.assertEqual(topology.fresh_rollouts, 360)
+        self.assertEqual(topology.optimizer_steps, 720)
 
 
 if __name__ == "__main__":

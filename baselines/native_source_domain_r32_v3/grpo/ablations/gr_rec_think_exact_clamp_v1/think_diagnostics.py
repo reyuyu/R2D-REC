@@ -12,7 +12,8 @@ SID_RE = re.compile(
 )
 INTEREST_HEADING_RE = re.compile(
     r"(?im)^[ \t]*(?:#{1,6}[ \t]*)?(?:\*\*[ \t]*)?"
-    r"【[ \t]*兴趣归纳[ \t]*】(?:[ \t]*\*\*)?[ \t]*$"
+    r"(?:\u3010[ \t]*(?:\*\*)?[ \t]*\u5174\u8da3\u5f52\u7eb3[ \t]*(?:\*\*)?[ \t]*\u3011|"
+    r"\u5174\u8da3\u5f52\u7eb3)(?:[ \t]*\*\*)?[ \t]*[\uff1a:]?[ \t]*$"
 )
 NEXT_MAJOR_HEADING_RE = re.compile(
     r"(?im)^[ \t]*(?:(?:#{1,6})[ \t]+(?:\*\*)?[^\n]+|"

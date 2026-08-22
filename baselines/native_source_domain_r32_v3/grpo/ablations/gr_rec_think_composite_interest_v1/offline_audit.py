@@ -83,13 +83,21 @@ def audit_variants(groups: dict[str, dict], gold: dict[str, str], sample_size: i
         if not progress:
             break
     values = defaultdict(list)
+    real_negative_pool = []
+    for other_group_id in sorted(gold):
+        other_parsed = extract_interest_units(gold[other_group_id], groups[other_group_id]["prompt"])
+        if other_parsed.parser_success:
+            real_negative_pool.extend((other_group_id, unit.raw_text) for unit in other_parsed.units)
     wrong_sid = "<|video_begin|><s_a_99999><s_b_99999><s_c_99999>"
-    for group_id in selected:
+    for sample_index, group_id in enumerate(selected):
         record, gold_cot = groups[group_id], gold[group_id]
         parsed = extract_interest_units(gold_cot, record["prompt"])
         items = [unit.raw_text for unit in parsed.units]
         if not items:
             continue
+        available_negatives = [text for other_group_id, text in real_negative_pool if other_group_id != group_id]
+        extra_count = 1 + sample_index % 3
+        real_extras = rng.sample(available_negatives, extra_count)
         variants = {
             "identity": items,
             "reorder": list(reversed(items)),
@@ -97,7 +105,7 @@ def audit_variants(groups: dict[str, dict], gold: dict[str, str], sample_size: i
             "drop_half": items[:len(items) // 2],
             "one_interest": items[:1],
             "duplicate_one": [items[0]] * len(items),
-            "extra_unmatched": items + ["unrelated synthetic astronomy interest", "unrelated synthetic cooking interest"],
+            "extra_real_negative": items + real_extras,
             "remove_sid": [SID_RE.sub("", item) for item in items],
             "wrong_sid": [SID_RE.sub(wrong_sid, item) for item in items],
             "light_lexical": [item.replace("，", " ").replace("、", " ").replace("用户", "") for item in items],
@@ -116,10 +124,15 @@ def audit_history(groups: dict[str, dict], gold: dict[str, str], trace_path: Pat
                 continue
             group_id = trace["group_id"]
             prompt = groups[group_id]["prompt"]
+            gold_parsed = extract_interest_units(gold[group_id], prompt)
+            if not gold_parsed.parser_success:
+                continue
             for candidate in trace.get("candidates", []):
                 completion = candidate.get("completion") or ""
                 score = score_interest_cot(completion, gold[group_id], prompt)
                 parsed = extract_interest_units(completion, prompt)
+                if not parsed.parser_success:
+                    continue
                 raw_n = len(parsed.units)
                 grounded_n = sum(bool(unit.grounded_evidence_sids) for unit in parsed.units)
                 raw_reward = float(candidate.get("reward") or 0.0)

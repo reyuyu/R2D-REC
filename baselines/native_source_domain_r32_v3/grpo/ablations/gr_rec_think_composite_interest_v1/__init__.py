@@ -2,6 +2,7 @@
 
 from .interest_metric import (
     MATCH_THRESHOLD,
+    MATCH_QUALITY_FLOOR,
     beam_utility,
     composite_reward,
     population_advantages,
@@ -10,6 +11,7 @@ from .interest_metric import (
 
 __all__ = [
     "MATCH_THRESHOLD",
+    "MATCH_QUALITY_FLOOR",
     "beam_utility",
     "composite_reward",
     "population_advantages",

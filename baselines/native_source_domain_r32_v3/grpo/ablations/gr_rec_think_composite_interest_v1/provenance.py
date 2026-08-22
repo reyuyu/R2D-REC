@@ -7,16 +7,36 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import random
 import statistics
 
-from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
+from ..gr_rec_think_exact_clamp_v1.think_diagnostics import BULLET_RE, NEXT_MAJOR_HEADING_RE, extract_interest_units
 
 DEFAULT_GRPO = Path("/data/GRPO/data/rec_mp_grpo_v2/train.jsonl")
 DEFAULT_SOURCE = Path("/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl")
 JOIN_KEY = "aux_metadata_json.recommendation_group_id"
 
+LEGACY_HEADING_RE = re.compile(
+    r"(?im)^[ \t]*(?:#{1,6}[ \t]*)?(?:\*\*[ \t]*)?"
+    r"\u3010[ \t]*\u5174\u8da3\u5f52\u7eb3[ \t]*\u3011(?:[ \t]*\*\*)?[ \t]*$"
+)
 
+def legacy_parser_status(cot: str) -> str:
+    text = (cot or "").replace("\r\n", "\n").replace("\r", "\n")
+    heading = LEGACY_HEADING_RE.search(text)
+    if heading is None:
+        return "missing_interest_heading"
+    start = heading.end()
+    ends = []
+    think_close = text.find("</think>", start)
+    if think_close >= 0:
+        ends.append(think_close)
+    next_heading = NEXT_MAJOR_HEADING_RE.search(text, start)
+    if next_heading is not None:
+        ends.append(next_heading.start())
+    section = text[start:min(ends) if ends else len(text)].strip()
+    return "success" if any(BULLET_RE.finditer(section)) else "empty_interest_section"
 def _percentile(values: list[int], fraction: float) -> float | None:
     if not values:
         return None
@@ -82,6 +102,7 @@ def audit(grpo_path: Path = DEFAULT_GRPO, source_path: Path = DEFAULT_SOURCE, in
     missing = sorted(set(groups) - set(gold))
     interest_counts, grounded_counts, lengths = [], [], []
     parser_success = 0
+    legacy_parser_status_counts = Counter()
     domain_counts = Counter()
     sample_rows = []
     for group_id, record in groups.items():
@@ -89,6 +110,7 @@ def audit(grpo_path: Path = DEFAULT_GRPO, source_path: Path = DEFAULT_SOURCE, in
         if group_id not in gold:
             continue
         parsed = extract_interest_units(gold[group_id], record["prompt"])
+        legacy_parser_status_counts[legacy_parser_status(gold[group_id])] += 1
         parser_success += int(parsed.parser_success)
         interest_counts.append(len(parsed.units))
         grounded_counts.append(sum(bool(unit.grounded_evidence_sids) for unit in parsed.units))
@@ -132,13 +154,29 @@ def audit(grpo_path: Path = DEFAULT_GRPO, source_path: Path = DEFAULT_SOURCE, in
             "success": parser_success,
             "evaluated": len(gold),
             "success_rate": parser_success / len(gold) if gold else 0.0,
+            "before_extension": {
+                "success": legacy_parser_status_counts["success"],
+                "failure_reasons": {
+                    "missing_interest_heading": legacy_parser_status_counts["missing_interest_heading"],
+                    "empty_interest_section": legacy_parser_status_counts["empty_interest_section"],
+                },
+            },
+            "safe_heading_variants_recovered": parser_success - legacy_parser_status_counts["success"],
+            "remaining_inline_prose_without_bullet_boundaries": len(gold) - parser_success,
             "interest_count": distribution(interest_counts),
             "grounded_interest_count": distribution(grounded_counts),
             "cot_character_length": distribution(lengths),
         },
         "missing_group_ids": missing,
         "deterministic_samples": sample_rows,
-        "data_provenance_ready": not missing and ambiguous == 0,
+        "eligibility": {
+            "policy": "exact safe Gold join and shared parser-valid non-empty interest units",
+            "eligible_think_groups": parser_success,
+            "excluded_missing_gold": len(missing),
+            "excluded_parser_invalid": len(gold) - parser_success,
+        },
+        "full_coverage_provenance_ready": not missing and ambiguous == 0,
+        "data_provenance_ready": parser_success > 0 and ambiguous == 0,
     }
     return report
 

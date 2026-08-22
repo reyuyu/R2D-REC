@@ -1,0 +1,1895 @@
+{
+  "experiment": "GR_REC_Think_CompositeInterest_v1",
+  "seed": 20260822,
+  "negative_gold_interests_per_bucket": 5,
+  "decision": {
+    "lexical_metric_ready": true,
+    "selected_text_metric": "M1_char_bigram",
+    "selected_match_threshold": 0.3,
+    "quality_floor_unchanged": 0.6,
+    "basis": "highest same-vs-same-domain AUC and conservative real-negative false-match rates"
+  },
+  "cohort": {
+    "total_think_groups": 1549,
+    "exact_gold_join_groups": 1458,
+    "parser_valid_gold_groups": 1446,
+    "eligible_think_groups": 1446,
+    "excluded_missing_gold": 91,
+    "excluded_parser_invalid": 12,
+    "fixed_probe_group_ids": [
+      "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc",
+      "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559",
+      "994c3186e677aec015938e71f08257afcf9f235a5a35df24af7fa67849c752d5",
+      "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2"
+    ],
+    "fixed_probes_all_eligible": true,
+    "post_probe_groups": 1442,
+    "sampler_drop_groups": 2,
+    "training_groups": 1440,
+    "fresh_g4_rollouts": 360,
+    "optimizer_steps_num_iterations_2": 720
+  },
+  "historical_candidates": {
+    "eligible_trace_candidates": 1188,
+    "parser_valid_candidates": 1184,
+    "parser_success_rate": 0.9966329966329966
+  },
+  "selected_metric_historical": {
+    "metric": "M1_char_bigram",
+    "threshold": 0.3,
+    "parser_valid_candidate_count": 1184,
+    "nonzero_match_rate": 0.3125,
+    "mean_matched_count": 0.3606418918918919,
+    "matched_count_distribution": {
+      "0": 814,
+      "1": 319,
+      "2": 45,
+      "3": 6
+    },
+    "cot_utility_distribution": {
+      "count": 1184,
+      "mean": 0.09091216216216218,
+      "p01": 0.0,
+      "p05": 0.0,
+      "p10": 0.0,
+      "p25": 0.0,
+      "p50": 0.0,
+      "p75": 0.16000000000000003,
+      "p90": 0.36000000000000004,
+      "p95": 0.36000000000000004,
+      "p99": 0.8,
+      "max": 0.8
+    }
+  },
+  "tokenizer_path": "/data/models/onereason-8b-pretrain-competition",
+  "metrics": {
+    "M1_char_bigram": {
+      "same_group": {
+        "max_text": {
+          "count": 3212,
+          "mean": 0.19269134529848128,
+          "p01": 0.05033542976939203,
+          "p05": 0.0851063829787234,
+          "p10": 0.10374067421939763,
+          "p25": 0.13716228019098636,
+          "p50": 0.18564064801178204,
+          "p75": 0.2403977511559479,
+          "p90": 0.29505584220495074,
+          "p95": 0.3268183549124143,
+          "p99": 0.39980952380952367,
+          "max": 0.49019607843137253
+        },
+        "max_evidence": {
+          "count": 3212,
+          "mean": 0.13673253787576914,
+          "p01": 0.0,
+          "p05": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p50": 0.0,
+          "p75": 0.2857142857142857,
+          "p90": 0.5,
+          "p95": 0.6666666666666666,
+          "p99": 1.0,
+          "max": 1.0
+        },
+        "max_pair": {
+          "count": 3212,
+          "mean": 0.1922799057028444,
+          "p01": 0.035547932361214396,
+          "p05": 0.06423214285714285,
+          "p10": 0.08195869837296621,
+          "p25": 0.12080685488071674,
+          "p50": 0.1806474903924537,
+          "p75": 0.2509498207885305,
+          "p90": 0.32351179992955265,
+          "p95": 0.3650339786247225,
+          "p99": 0.43922996499195727,
+          "max": 0.5694117647058823
+        }
+      },
+      "same_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.07796335164858426,
+          "p01": 0.01443298969072165,
+          "p05": 0.02592592592592592,
+          "p10": 0.03333333333333333,
+          "p25": 0.04806866952789699,
+          "p50": 0.0691358024691358,
+          "p75": 0.09813084112149534,
+          "p90": 0.1336683417085427,
+          "p95": 0.15973218689023735,
+          "p99": 0.2213965553019298,
+          "max": 0.3984375
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.12697301025638094,
+          "p01": 0.05077088531360234,
+          "p05": 0.06511627906976744,
+          "p10": 0.07448396316290887,
+          "p25": 0.09248554913294797,
+          "p50": 0.11829471452370136,
+          "p75": 0.15195348837209302,
+          "p90": 0.18947368421052632,
+          "p95": 0.21897810218978103,
+          "p99": 0.2781326285154278,
+          "max": 0.3984375
+        }
+      },
+      "cross_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.07461922080604062,
+          "p01": 0.013526570048309176,
+          "p05": 0.02485207100591716,
+          "p10": 0.032,
+          "p25": 0.046445497630331754,
+          "p50": 0.06698564593301434,
+          "p75": 0.09395973154362415,
+          "p90": 0.12727272727272726,
+          "p95": 0.15209538766738298,
+          "p99": 0.20656368813976755,
+          "max": 0.3819444444444445
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.12075813500890394,
+          "p01": 0.04856597292382299,
+          "p05": 0.06315789473684211,
+          "p10": 0.07216494845360824,
+          "p25": 0.08860759493670885,
+          "p50": 0.11320754716981132,
+          "p75": 0.14400813516896122,
+          "p90": 0.179989417989418,
+          "p95": 0.2035007704160246,
+          "p99": 0.25719401727406754,
+          "max": 0.3819444444444445
+        }
+      },
+      "auc_same_vs_same_domain_negative_max": 0.7202267454393472,
+      "auc_same_vs_cross_domain_negative_max": 0.7441304808865882,
+      "threshold_sweep": {
+        "0.20": {
+          "historical_candidate_nonzero_match_rate": 0.7423986486486487,
+          "historical_candidate_mean_matched_count": 1.1097972972972974,
+          "same_group_interest_above_threshold_rate": 0.42528019925280197,
+          "same_domain_negative_pair_false_match_rate": 0.017372353673723535,
+          "same_domain_negative_any_false_match_rate": 0.07876712328767123,
+          "cross_domain_negative_pair_false_match_rate": 0.012204234122042341,
+          "cross_domain_negative_any_false_match_rate": 0.05666251556662515,
+          "matched_count_distribution": {
+            "0": 305,
+            "1": 540,
+            "2": 251,
+            "3": 80,
+            "4": 8
+          }
+        },
+        "0.25": {
+          "historical_candidate_nonzero_match_rate": 0.5236486486486487,
+          "historical_candidate_mean_matched_count": 0.6722972972972973,
+          "same_group_interest_above_threshold_rate": 0.25311332503113326,
+          "same_domain_negative_pair_false_match_rate": 0.0043586550435865505,
+          "same_domain_negative_any_false_match_rate": 0.021170610211706103,
+          "cross_domain_negative_pair_false_match_rate": 0.002552926525529265,
+          "cross_domain_negative_any_false_match_rate": 0.012764632627646327,
+          "matched_count_distribution": {
+            "0": 564,
+            "1": 474,
+            "2": 120,
+            "3": 22,
+            "4": 4
+          }
+        },
+        "0.30": {
+          "historical_candidate_nonzero_match_rate": 0.3125,
+          "historical_candidate_mean_matched_count": 0.3606418918918919,
+          "same_group_interest_above_threshold_rate": 0.13387297633872977,
+          "same_domain_negative_pair_false_match_rate": 0.00112079701120797,
+          "same_domain_negative_any_false_match_rate": 0.00560398505603985,
+          "cross_domain_negative_pair_false_match_rate": 0.000560398505603985,
+          "cross_domain_negative_any_false_match_rate": 0.002801992528019925,
+          "matched_count_distribution": {
+            "0": 814,
+            "1": 319,
+            "2": 45,
+            "3": 6
+          }
+        },
+        "0.35": {
+          "historical_candidate_nonzero_match_rate": 0.16469594594594594,
+          "historical_candidate_mean_matched_count": 0.17989864864864866,
+          "same_group_interest_above_threshold_rate": 0.06693648816936489,
+          "same_domain_negative_pair_false_match_rate": 0.00024906600249066,
+          "same_domain_negative_any_false_match_rate": 0.0012453300124533001,
+          "cross_domain_negative_pair_false_match_rate": 0.00012453300124533,
+          "cross_domain_negative_any_false_match_rate": 0.0006226650062266501,
+          "matched_count_distribution": {
+            "0": 989,
+            "1": 178,
+            "2": 16,
+            "3": 1
+          }
+        },
+        "0.40": {
+          "historical_candidate_nonzero_match_rate": 0.06418918918918919,
+          "historical_candidate_mean_matched_count": 0.06841216216216216,
+          "same_group_interest_above_threshold_rate": 0.025217932752179328,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1108,
+            "1": 71,
+            "2": 5
+          }
+        },
+        "0.45": {
+          "historical_candidate_nonzero_match_rate": 0.02364864864864865,
+          "historical_candidate_mean_matched_count": 0.02364864864864865,
+          "same_group_interest_above_threshold_rate": 0.008717310087173101,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1156,
+            "1": 28
+          }
+        },
+        "0.50": {
+          "historical_candidate_nonzero_match_rate": 0.0033783783783783786,
+          "historical_candidate_mean_matched_count": 0.0033783783783783786,
+          "same_group_interest_above_threshold_rate": 0.0012453300124533001,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1180,
+            "1": 4
+          }
+        },
+        "0.55": {
+          "historical_candidate_nonzero_match_rate": 0.0008445945945945946,
+          "historical_candidate_mean_matched_count": 0.0008445945945945946,
+          "same_group_interest_above_threshold_rate": 0.00031133250311332503,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1183,
+            "1": 1
+          }
+        },
+        "0.60": {
+          "historical_candidate_nonzero_match_rate": 0.0,
+          "historical_candidate_mean_matched_count": 0.0,
+          "same_group_interest_above_threshold_rate": 0.0,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1184
+          }
+        }
+      },
+      "review_examples": [
+        {
+          "candidate": "汽车生活与维修：此为用户最核心且交互最深的兴趣。用户不仅有频繁的汽车配件购买行为如 、 ，更在近期通过搜索(如 search_id=搜索汽车电瓶相关 等 4 次)主动探寻信息，并点击了多条汽车广告(如",
+          "gold": "汽车生活：这是用户最核心且交互最深的兴趣。用户不仅有多次购买汽车配件、保养品和应急工具的行为如 、 、 ，还频繁点击汽车广告(如",
+          "s_text": 0.47058823529411764,
+          "s_evidence": 0.8,
+          "s_pair": 0.5694117647058823,
+          "candidate_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "gold_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧及美女内容消费：此为用户最核心且稳定的兴趣。用户在广告域对以美女、性感、情感纠葛为主题的短剧有极高频次的深度转化和点击行为如 、 。该兴趣贯穿了广告的绝大部分点击历史，表明用户有很强的娱乐消遣需求",
+          "gold": "短剧/影视娱乐：此为用户最显著的兴趣。用户在广告域有大量对短剧的深度转化行为 , 等)，题材偏好广泛，涵盖职场权谋、古装、悬疑、都市情感等。交互深度极高，是用户主要的娱乐消费内容",
+          "s_text": 0.31693989071038253,
+          "s_evidence": 1.0,
+          "s_pair": 0.5218579234972678,
+          "candidate_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "gold_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧内容消费：这是用户近期最核心且活跃的兴趣。自2025年12月起，用户在广告域有大量的短剧点击和深度转化行为( 等)，内容高度集中于古装、穿越、逆袭、权谋等主题的短剧。这表明用户对此类快节奏、强情节的视频内容有极高的偏好和付费/深度互动意愿",
+          "gold": "短剧/微短剧(古装/玄幻/情感)： 此为用户近期爆发的、黏性极高的娱乐兴趣。在近一个月内，用户有数十次针对古装权谋、情感纠葛、玄幻修仙等主题短剧广告的深度转化 和点击行为，并主动搜索相关剧集，表明其已深度沉浸在此类快节奏、强情节的内容消费中",
+          "s_text": 0.30508474576271183,
+          "s_evidence": 1.0,
+          "s_pair": 0.5135593220338983,
+          "candidate_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "gold_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "健康养生：此兴趣在视频和搜索域表现突出。用户多次转发和长播关于中医知识 、健康科普 的内容，并搜索特定养生功效的食谱，显示出对传统养生方式的高度关注",
+          "gold": "健康养生与传统文化：该兴趣表现为高价值的内容消费。用户多次观看、转发关于中医理论、穴位讲解、草药知识及干支纪年等视频内容如 、 ，显示出对传统养生智慧的强烈认同和学习意愿。同时，购买口罩、点击保健品等行为也从侧面印证了其对健康议题的关注",
+          "s_text": 0.2903225806451613,
+          "s_evidence": 1.0,
+          "s_pair": 0.5032258064516129,
+          "candidate_group_id": "a88e7f254ed1a874ee3e5c2da321835a799e2ea2292ba5e0c17d38dd83b2bfe9",
+          "gold_group_id": "a88e7f254ed1a874ee3e5c2da321835a799e2ea2292ba5e0c17d38dd83b2bfe9",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "健康养生 (中高深度兴趣)：用户对健康养生类商品有持续的购买行为，覆盖药品 、保健品 、理疗贴 及个护日用品等多个方面。近期(2026年1月)，此兴趣信号从商品购买升级为内容消费，表现为对医疗科普 、养生知识 的视频收藏，显示出从“购买-使用”向“认知-预防”的兴趣演进",
+          "gold": "养生保健：这是用户最核心、持续时间最长的兴趣。从2022年起，用户有多次(超过10次)购买行为，涉及关节、皮肤、补肾、护眼、口腔护理等多个方面，表明其对身体健康及功效型产品有强烈且持续的需求",
+          "s_text": 0.1801801801801802,
+          "s_evidence": 0.0,
+          "s_pair": 0.1801801801801802,
+          "candidate_group_id": "6353f7d0933f0850323403c4a4315e2a9113dc38a79957aa06aa7cff60be4173",
+          "gold_group_id": "6353f7d0933f0850323403c4a4315e2a9113dc38a79957aa06aa7cff60be4173",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧/小说：此为用户当前最核心、交互最深的兴趣。从2025年12月起，用户通过广告深度转化 等数十次，表现出对“逆袭”、“神医”、“鉴宝”、“情感纠葛”等题材短剧的强烈偏好。这种兴趣从被动的广告点击转化为主动的高频搜索行为(如搜索某部短剧结局)，表明其已进入深度消费和追更阶段",
+          "gold": "短剧/影视娱乐：用户对此类内容有持续且深度的偏好。在广告域，用户对悬疑、逆袭、古装、情感等题材的短剧广告有大量点击和深度转化行为 , 等)，表明其是付费短剧的重度消费者",
+          "s_text": 0.2580645161290323,
+          "s_evidence": 0.0,
+          "s_pair": 0.1806451612903226,
+          "candidate_group_id": "9a47537bf616e4003b4c6dda13f0aa8d0ae4f5db408ab34c385c50b88b8cea15",
+          "gold_group_id": "9a47537bf616e4003b4c6dda13f0aa8d0ae4f5db408ab34c385c50b88b8cea15",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "家庭生活与情感陪伴： 该兴趣贯穿用户的行为历史，体现在其早期关注的直播类型中。用户对居家向、家庭温馨、接地气的生活唠嗑类主播有明显偏好，并多次进行关注和打赏( , 5079471732 等)。此外，用户的商品购买记录( , 25505148783930, 23523817306371 等)也清晰地勾勒出一个家庭角色的画",
+          "gold": "美女/颜值内容消费：这是用户的长期兴趣，早期表现为对高颜值、身材性感、性格真实的北方女主播进行关注和打赏 , )，近期则转化为对美女舞蹈、时尚穿搭等短视频内容的收藏和点赞",
+          "s_text": 0.08664259927797834,
+          "s_evidence": 0.4,
+          "s_pair": 0.18064981949458483,
+          "candidate_group_id": "8002d0daf096df8e5d36f940e1df8a0c7966ee594ea20a785077fb59d21ebaa4",
+          "gold_group_id": "8002d0daf096df8e5d36f940e1df8a0c7966ee594ea20a785077fb59d21ebaa4",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "育儿与家庭：该兴趣贯穿于多个领域，如购买儿童书籍 ，点击亲子内容 ，并购买家庭食品 ，表明用户可能是一位母亲",
+          "gold": "家庭生活与个人成长：交互深度中等。用户购买了多种食品、保健品及家居用品 ( 、 )，并集中购买了大量关于心理疗愈、家庭教育、个人思维提升及历史类的书籍 ( 、 )，同时对育儿、旅行等广告内容有点击行为，体现了对提升生活品质和精神世界的追求",
+          "s_text": 0.13580246913580246,
+          "s_evidence": 0.2857142857142857,
+          "s_pair": 0.1807760141093474,
+          "candidate_group_id": "8af5e4d8e98c7e4f25b9875aaa1ca712f12c3a7e288639c908e6a0c6c29916e3",
+          "gold_group_id": "8af5e4d8e98c7e4f25b9875aaa1ca712f12c3a7e288639c908e6a0c6c29916e3",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "服饰穿搭：这是用户最核心且交互最深的兴趣域。用户在秋、冬、春三季均有大量购买和点击行为，覆盖了女装(如T恤、外套、裤装)、鞋履(如靴、板鞋、棉鞋)、内衣、配饰(如发箍、戒指、手链)等多个子类目。交互深度极高，表现为多次重复购买",
+          "gold": "服饰穿搭：这是用户最核心、交互最深的兴趣域。用户有大量的搜索、加购、购买和点击行为，覆盖了连衣裙、上衣、裤/裙装、外套、鞋靴及配饰等多个细分类目。用户对材质(如“德绒”)、款式(如“小香风”、“复古”、“国风”)、功能(如“加绒保暖”、“显瘦”)均有明确偏好，显示出深度参与和持续关注的特点",
+          "s_text": 0.3984375,
+          "s_evidence": 0.0,
+          "s_pair": 0.3984375,
+          "candidate_group_id": "e513502df58316b9f08a5d6f7895fff3b6b6e4a64f3de38ce87dd64ab36cfde7",
+          "gold_group_id": "353742584edd7388f4e81ea1dbbca10653bc52e26e039e1c303f49ca37ef51b3",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "游戏(特别是休闲、益智、解压类)：这是用户最核心且交互最深的兴趣。用户在广告域有大量的点击和深度转化行为，覆盖了文字解谜、策略对抗、卡通风格、模拟经营等多种玩法。尤其对“赚钱”、“可提现”、“免费”等关键词高度敏感，表明其对低门槛、高回报的游戏广告有极强的吸引力",
+          "gold": "休闲游戏：这是用户最核心、交互最深的兴趣。用户在短时间内对大量卡通风格的休闲、益智、角色扮演、模拟经营类游戏广告产生了数十次深度转化和点击行为，表现出极高的接纳度和探索欲",
+          "s_text": 0.3831775700934579,
+          "s_evidence": 0.0,
+          "s_pair": 0.3831775700934579,
+          "candidate_group_id": "7b91df630c0a3b6d7232ae4564551cf7bc9db819af9738de06dcde9656fd2e2f",
+          "gold_group_id": "7d7d8eab4289196c347c339693b925e81dbee6bd626a6a61068982d718905fc1",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "高颜值女性内容：这是用户最核心、交互最深的兴趣。用户在直播域有大量对女性主播的关注和打赏行为(如 、 等)，偏好“精致妆容”、“好身材”、“长发”、“亲切互动”等标签。在视频域，用户对美女自拍、穿搭展示、舞蹈等内容有极高的长播和关注行为(如 、 )，并伴有点赞、评论等深度互动",
+          "gold": "女性娱乐内容：这是用户最核心且投入最深的兴趣。用户在直播域有大量(超过40次)的关注与打赏行为，内容高度集中于高颜值、才艺(唱歌/舞蹈)、情感互动类的女主播。该偏好也延伸至视频域(如观看美女自拍、时尚穿搭类视频)和广告域",
+          "s_text": 0.36363636363636365,
+          "s_evidence": 0.0,
+          "s_pair": 0.36363636363636365,
+          "candidate_group_id": "9ec8bb893646f73b028db73987f15664f0d6bca63ea55b606828c8fc025f86b5",
+          "gold_group_id": "03427e63ccff04fd14f6114ed48532cdd9e0b9bb6d32464778bc156e4ca75e94",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "亲子育儿：这是用户最核心且交互最深的兴趣。该兴趣贯穿了商品、搜索和视频等多个领域，表现出极高的粘性。用户有多次购买和点击儿童玩具 、儿童服饰、儿童零食等商品的行为，并多次搜索与儿童益智、早教相关的内容。同时，在视频域，用户对儿童玩具",
+          "gold": "服饰穿搭：这是用户最核心、交互深度最深的兴趣。该兴趣贯穿了商品、视频、搜索、直播等多个领域。用户有高达数十次的商品购买记录(...,...等)，集中于女装、女鞋及内衣，并对“显瘦”、“气质”、“套装”等风格有明显偏好。同时，用户在视频域有大量关注、点赞、收藏穿搭展示和直播带货的行为(...,...)，并通过搜索主动寻找",
+          "s_text": 0.3512544802867384,
+          "s_evidence": 0.0,
+          "s_pair": 0.3512544802867384,
+          "candidate_group_id": "9f805278be203114b25c02f0c3a36874f00e6aab7544c2723995c1b45c1afcf7",
+          "gold_group_id": "e9f52687a444a8c5f78c1ee81922e2079464473f5f6a9c2baf68ea4a2c725610",
+          "relation": "same_domain_wrong_group"
+        }
+      ]
+    },
+    "M2_char_unigram": {
+      "same_group": {
+        "max_text": {
+          "count": 3212,
+          "mean": 0.4321357332139984,
+          "p01": 0.23692808754559666,
+          "p05": 0.2801062801932367,
+          "p10": 0.3141831872463086,
+          "p25": 0.3703703703703704,
+          "p50": 0.4312035158891142,
+          "p75": 0.49549549549549543,
+          "p90": 0.5512367491166078,
+          "p95": 0.5816419703644373,
+          "p99": 0.6275604567051981,
+          "max": 0.6893939393939394
+        },
+        "max_evidence": {
+          "count": 3212,
+          "mean": 0.13673253787576914,
+          "p01": 0.0,
+          "p05": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p50": 0.0,
+          "p75": 0.2857142857142857,
+          "p90": 0.5,
+          "p95": 0.6666666666666666,
+          "p99": 1.0,
+          "max": 1.0
+        },
+        "max_pair": {
+          "count": 3212,
+          "mean": 0.3841906084157679,
+          "p01": 0.16943191418035533,
+          "p05": 0.21179219116705783,
+          "p10": 0.24499999999999997,
+          "p25": 0.29905634697395883,
+          "p50": 0.381274981027068,
+          "p75": 0.46402564102564103,
+          "p90": 0.5294117647058824,
+          "p95": 0.5656046104764844,
+          "p99": 0.6287222206621547,
+          "max": 0.7333333333333334
+        }
+      },
+      "same_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.24833904868594495,
+          "p01": 0.11313131313131311,
+          "p05": 0.14644160035004236,
+          "p10": 0.16559139784946234,
+          "p25": 0.19727272727272724,
+          "p50": 0.2388147497805092,
+          "p75": 0.29,
+          "p90": 0.3461538461538462,
+          "p95": 0.3805683122847302,
+          "p99": 0.45055449816013193,
+          "max": 0.6311111111111112
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.3300234250575448,
+          "p01": 0.18125263951734538,
+          "p05": 0.22727272727272727,
+          "p10": 0.24806784402867635,
+          "p25": 0.28242029636281996,
+          "p50": 0.32504416961130744,
+          "p75": 0.3721548738248392,
+          "p90": 0.41880033324076643,
+          "p95": 0.4485049019607843,
+          "p99": 0.5293648763853367,
+          "max": 0.6311111111111112
+        }
+      },
+      "cross_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.24390636726620607,
+          "p01": 0.1116564417177914,
+          "p05": 0.14456521739130435,
+          "p10": 0.1621951219512195,
+          "p25": 0.19393939393939394,
+          "p50": 0.23333333333333334,
+          "p75": 0.2856426182513139,
+          "p90": 0.3398823529411765,
+          "p95": 0.37419354838709673,
+          "p99": 0.44218940986652316,
+          "max": 0.6275862068965518
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.32403390030027124,
+          "p01": 0.18860103626943006,
+          "p05": 0.2213053970417057,
+          "p10": 0.24315789473684207,
+          "p25": 0.27741615704671746,
+          "p50": 0.3190568834537706,
+          "p75": 0.3655913978494623,
+          "p90": 0.4107074959261271,
+          "p95": 0.44115565185987715,
+          "p99": 0.5149960704544397,
+          "max": 0.6275862068965518
+        }
+      },
+      "auc_same_vs_same_domain_negative_max": 0.6517711543263199,
+      "auc_same_vs_cross_domain_negative_max": 0.6688819382949059,
+      "threshold_sweep": {
+        "0.20": {
+          "historical_candidate_nonzero_match_rate": 0.9907094594594594,
+          "historical_candidate_mean_matched_count": 2.4113175675675675,
+          "same_group_interest_above_threshold_rate": 0.960772104607721,
+          "same_domain_negative_pair_false_match_rate": 0.7342465753424657,
+          "same_domain_negative_any_false_match_rate": 0.9800747198007472,
+          "cross_domain_negative_pair_false_match_rate": 0.7173723536737235,
+          "cross_domain_negative_any_false_match_rate": 0.9785180572851806,
+          "matched_count_distribution": {
+            "0": 11,
+            "1": 425,
+            "2": 76,
+            "3": 410,
+            "4": 262
+          }
+        },
+        "0.25": {
+          "historical_candidate_nonzero_match_rate": 0.9712837837837838,
+          "historical_candidate_mean_matched_count": 2.2162162162162162,
+          "same_group_interest_above_threshold_rate": 0.887920298879203,
+          "same_domain_negative_pair_false_match_rate": 0.4359277708592777,
+          "same_domain_negative_any_false_match_rate": 0.8929016189290162,
+          "cross_domain_negative_pair_false_match_rate": 0.41046077210460774,
+          "cross_domain_negative_any_false_match_rate": 0.8776463262764632,
+          "matched_count_distribution": {
+            "0": 34,
+            "1": 415,
+            "2": 158,
+            "3": 415,
+            "4": 162
+          }
+        },
+        "0.30": {
+          "historical_candidate_nonzero_match_rate": 0.9180743243243243,
+          "historical_candidate_mean_matched_count": 1.8893581081081081,
+          "same_group_interest_above_threshold_rate": 0.74813200498132,
+          "same_domain_negative_pair_false_match_rate": 0.21805728518057285,
+          "same_domain_negative_any_false_match_rate": 0.6541095890410958,
+          "cross_domain_negative_pair_false_match_rate": 0.19937733499377336,
+          "cross_domain_negative_any_false_match_rate": 0.6151930261519303,
+          "matched_count_distribution": {
+            "0": 97,
+            "1": 431,
+            "2": 252,
+            "3": 314,
+            "4": 90
+          }
+        },
+        "0.35": {
+          "historical_candidate_nonzero_match_rate": 0.8268581081081081,
+          "historical_candidate_mean_matched_count": 1.5202702702702702,
+          "same_group_interest_above_threshold_rate": 0.5974470734744707,
+          "same_domain_negative_pair_false_match_rate": 0.09408468244084682,
+          "same_domain_negative_any_false_match_rate": 0.36021170610211706,
+          "cross_domain_negative_pair_false_match_rate": 0.0804483188044832,
+          "cross_domain_negative_any_false_match_rate": 0.325653798256538,
+          "matched_count_distribution": {
+            "0": 205,
+            "1": 442,
+            "2": 284,
+            "3": 222,
+            "4": 31
+          }
+        },
+        "0.40": {
+          "historical_candidate_nonzero_match_rate": 0.7035472972972973,
+          "historical_candidate_mean_matched_count": 1.1444256756756757,
+          "same_group_interest_above_threshold_rate": 0.4396014943960149,
+          "same_domain_negative_pair_false_match_rate": 0.03349937733499377,
+          "same_domain_negative_any_false_match_rate": 0.14850560398505605,
+          "cross_domain_negative_pair_false_match_rate": 0.02727272727272727,
+          "cross_domain_negative_any_false_match_rate": 0.12422166874221668,
+          "matched_count_distribution": {
+            "0": 351,
+            "1": 458,
+            "2": 241,
+            "3": 121,
+            "4": 13
+          }
+        },
+        "0.45": {
+          "historical_candidate_nonzero_match_rate": 0.5481418918918919,
+          "historical_candidate_mean_matched_count": 0.7804054054054054,
+          "same_group_interest_above_threshold_rate": 0.29420921544209216,
+          "same_domain_negative_pair_false_match_rate": 0.010149439601494396,
+          "same_domain_negative_any_false_match_rate": 0.04825653798256538,
+          "cross_domain_negative_pair_false_match_rate": 0.008717310087173101,
+          "cross_domain_negative_any_false_match_rate": 0.042652552926525526,
+          "matched_count_distribution": {
+            "0": 535,
+            "1": 426,
+            "2": 176,
+            "3": 42,
+            "4": 5
+          }
+        },
+        "0.50": {
+          "historical_candidate_nonzero_match_rate": 0.3640202702702703,
+          "historical_candidate_mean_matched_count": 0.44510135135135137,
+          "same_group_interest_above_threshold_rate": 0.1656288916562889,
+          "same_domain_negative_pair_false_match_rate": 0.003424657534246575,
+          "same_domain_negative_any_false_match_rate": 0.016811955168119553,
+          "cross_domain_negative_pair_false_match_rate": 0.0027397260273972603,
+          "cross_domain_negative_any_false_match_rate": 0.0136986301369863,
+          "matched_count_distribution": {
+            "0": 753,
+            "1": 345,
+            "2": 76,
+            "3": 10
+          }
+        },
+        "0.55": {
+          "historical_candidate_nonzero_match_rate": 0.17398648648648649,
+          "historical_candidate_mean_matched_count": 0.1883445945945946,
+          "same_group_interest_above_threshold_rate": 0.06942714819427148,
+          "same_domain_negative_pair_false_match_rate": 0.0013698630136986301,
+          "same_domain_negative_any_false_match_rate": 0.00684931506849315,
+          "cross_domain_negative_pair_false_match_rate": 0.0007471980074719801,
+          "cross_domain_negative_any_false_match_rate": 0.0037359900373599006,
+          "matched_count_distribution": {
+            "0": 978,
+            "1": 189,
+            "2": 17
+          }
+        },
+        "0.60": {
+          "historical_candidate_nonzero_match_rate": 0.0625,
+          "historical_candidate_mean_matched_count": 0.06503378378378379,
+          "same_group_interest_above_threshold_rate": 0.023972602739726026,
+          "same_domain_negative_pair_false_match_rate": 0.00024906600249066,
+          "same_domain_negative_any_false_match_rate": 0.0012453300124533001,
+          "cross_domain_negative_pair_false_match_rate": 0.00018679950186799502,
+          "cross_domain_negative_any_false_match_rate": 0.0009339975093399751,
+          "matched_count_distribution": {
+            "0": 1110,
+            "1": 71,
+            "2": 3
+          }
+        }
+      },
+      "review_examples": [
+        {
+          "candidate": "高颜值/情感互动直播：这是用户最核心、交互最深的兴趣。用户在近一个月内有超过20次的直播相关交互，其中“关注”和“打赏”行为尤为突出(如 , 1722761994 等)，且互动频率高，互动时间集中在晚上8-9点。用户对主播的“长相”、“身材”、“好身材”、“性感”等外在标签有极高偏好，并频繁搜索特定主播的直播间，表现出",
+          "gold": "美女直播内容： 这是用户近期最核心且交互最深的兴趣。自2025年8月起，用户密集地关注和打赏了多位主播( , 4639686559 等)。这些主播的标签高度重合，集中于“性感”、“丰满曲线”、“御姐”、“大长腿”等视觉吸引力强的特征，并偏好“情感互动”、“豪爽直率”的性格。高频次的关注和多次首次打赏行为，表明用户在该领",
+          "s_text": 0.6190476190476191,
+          "s_evidence": 1.0,
+          "s_pair": 0.7333333333333334,
+          "candidate_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "gold_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧内容消费：这是用户近期最核心且活跃的兴趣。自2025年12月起，用户在广告域有大量的短剧点击和深度转化行为( 等)，内容高度集中于古装、穿越、逆袭、权谋等主题的短剧。这表明用户对此类快节奏、强情节的视频内容有极高的偏好和付费/深度互动意愿",
+          "gold": "短剧/微短剧(古装/玄幻/情感)： 此为用户近期爆发的、黏性极高的娱乐兴趣。在近一个月内，用户有数十次针对古装权谋、情感纠葛、玄幻修仙等主题短剧广告的深度转化 和点击行为，并主动搜索相关剧集，表明其已深度沉浸在此类快节奏、强情节的内容消费中",
+          "s_text": 0.6134453781512604,
+          "s_evidence": 1.0,
+          "s_pair": 0.7294117647058822,
+          "candidate_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "gold_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "亲子与教育：此兴趣点稳定存在，主要体现在对儿童成长的关注上。用户购买了儿童益智类读物 、 )和玩具 ，这表明用户可能有孩子或关注幼儿教育，对能促进儿童动手能力和早期教育的产品有明确需求",
+          "gold": "家庭与亲子教育：用户对家庭成员，特别是儿童的成长和教育表现出明显关切。历史购买记录中包含儿童玩具 以及多套儿童启蒙教育读物 ， )，反映了用户在亲子互动和教育投入上的需求",
+          "s_text": 0.5730994152046784,
+          "s_evidence": 1.0,
+          "s_pair": 0.7011695906432749,
+          "candidate_group_id": "d511be25f87138f5580d625ad732ebb0fc6995d40e419dc07d22ef2c50fc872b",
+          "gold_group_id": "d511be25f87138f5580d625ad732ebb0fc6995d40e419dc07d22ef2c50fc872b",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "剧情/情感内容：用户对具有强烈情感冲突、家庭伦理或爱情纠葛的短剧内容有极高兴趣。在广告和视频域均有大量点击和长播行为如 、 ，内容多为戏剧化、快节奏的叙事",
+          "gold": "短剧/网文与情感内容：此兴趣表现出极高的粘性。用户在搜索域有高频、重复的短剧剧名搜索行为(如对“电影蚀骨囚爱”的20次搜索)，并点击了多条古装及悬疑言情类短剧广告如 。在视频域，她也关注或浏览了大量涉及人际冲突、家庭关系和情感纠葛的剧情类视频如 ，显示出对强情节、快节奏叙事内容的强烈偏好",
+          "s_text": 0.5622119815668203,
+          "s_evidence": 1.0,
+          "s_pair": 0.6935483870967742,
+          "candidate_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "gold_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "中老年健康养生：这是用户最核心且持续最久的兴趣。该兴趣贯穿始终，不仅有大量商品购买行为 、 )，还表现出强烈的探索意图，频繁点击相关保健品如 和养生服务 。内容偏好深度，关注点涵盖肠胃调理、血糖管理、骨关节健康、睡眠改善等多个细分领域",
+          "gold": "中老年健康养生：此为用户最核心且交互最深的类目。用户多次购买和点击各类膳食营养补充剂，覆盖肠胃调理 、血糖辅助管理 、改善睡眠 、补钙 等多个方面，呈现出高频复购和持续关注的深度互动模式",
+          "s_text": 0.5445544554455445,
+          "s_evidence": 0.0,
+          "s_pair": 0.38118811881188114,
+          "candidate_group_id": "119e3f527cc020d71c5beacacb45031def8f75c30ea6b041adbee0d4bd1ba93c",
+          "gold_group_id": "119e3f527cc020d71c5beacacb45031def8f75c30ea6b041adbee0d4bd1ba93c",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "品质生活与食品：用户对高性价比、品质感的商品表现出稳定兴趣。不仅有多次快递服务的购买记录( )，还购买了食品 和家居用品 ，显示出对生活品质的关注",
+          "gold": "家居日用：一个正在发展的兴趣点。用户购买了床上四件套 和厨房用具 ，并有加购同类商品的记录，说明其消费场景已从个人穿搭延伸至家庭生活",
+          "s_text": 0.3731343283582089,
+          "s_evidence": 0.4,
+          "s_pair": 0.38119402985074624,
+          "candidate_group_id": "15617a4b50054f1364eb61474c0dd0ecae0518132a4283e8abac0de9b2a75587",
+          "gold_group_id": "15617a4b50054f1364eb61474c0dd0ecae0518132a4283e8abac0de9b2a75587",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "情感与社交互动：用户对情感共鸣、人际陪伴类内容有明显偏好。这体现在其关注的直播内容(如情感故事、家庭温情、交友互动)以及广告互动(如美女、情感纠葛类短剧)和部分搜索行为(如搜索特定人物关系)上",
+          "gold": "真人直播与视频(美女/情感/地域)：这是用户最核心且交互最深的兴趣。用户在直播和视频领域有大量的关注、打赏、长播、转发等深度行为。其偏好高度集中于外形丰满、亲和接地气的女性创作者，内容多为生活分享、情感互动和才艺表演。地域上对中国西北地区(尤其是甘肃、陕西、宁夏)的主播有明显偏好",
+          "s_text": 0.38135593220338987,
+          "s_evidence": 0.0,
+          "s_pair": 0.38135593220338987,
+          "candidate_group_id": "9ec8bb893646f73b028db73987f15664f0d6bca63ea55b606828c8fc025f86b5",
+          "gold_group_id": "9ec8bb893646f73b028db73987f15664f0d6bca63ea55b606828c8fc025f86b5",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "二次元及动漫IP衍生内容：该兴趣与游戏兴趣高度关联。用户对《斗罗大陆》 、《原神》 等热门动漫及游戏IP的二创内容有持续的点赞、转发和收藏行为 ，显示出对角色剧情、视觉特效和跨IP联动内容的浓厚兴趣",
+          "gold": "动漫(特别是国产动漫)： 用户对国产动漫表现出浓厚兴趣，涵盖了玄幻修仙(如涉及“百炼成神”、“吞噬星空”等元素的内容)和经典怀旧(如涉及“叶罗丽”、“喜羊羊与灰太狼”、“熊出没”等元素的内容)等多个题材。交互行为以“收藏/长播”和“评论”为主，偏好角色解读、剧情分析和情感剪辑类内容",
+          "s_text": 0.38135593220338987,
+          "s_evidence": 0.0,
+          "s_pair": 0.38135593220338987,
+          "candidate_group_id": "9ff0e5ec3d7622a4496ce3dc4fe25a7e7c02c85e5002e2a3053ec5e30bbff9c3",
+          "gold_group_id": "9ff0e5ec3d7622a4496ce3dc4fe25a7e7c02c85e5002e2a3053ec5e30bbff9c3",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "男士潮流服饰：这是用户最核心且持续的兴趣。交互深度极高，体现在海量的商品点击(超过50次)和多次购买行为上。用户偏好多款“拼接”、“字母”、“撞色”等设计元素的男士T恤、夹克、棉服和羽绒服，以及男士内裤和卫衣",
+          "gold": "男士潮流服饰：这是用户最核心、交互最深的兴趣。用户在近三个月内进行了大量购买和点击，集中于男士外套(棉服、羽绒服、夹克)、卫衣、休闲裤等品类。商品标签多为“潮流”、“欧货”、“轻奢”、“百搭”、“设计师款”，显示出对时尚感和设计风格的明确偏好",
+          "s_text": 0.6311111111111112,
+          "s_evidence": 0.0,
+          "s_pair": 0.6311111111111112,
+          "candidate_group_id": "abcc6ab8622b93a3f9dccc751aeed70aaf077bcb340e88939868b0ed59f76df7",
+          "gold_group_id": "34e816613902361478cba0e069db7867edd3af328e296e98fcba13e3927467a6",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "短剧/影视内容：这是用户近期最核心且活跃的兴趣。在近一个月内，用户有超过60次的搜索和大量广告点击、深度转化行为，内容多为“情感纠葛”、“婚姻背叛”、“家庭伦理”等主题的短剧。其交互深度极高，表现出对“免费观看”、“后续剧情”等信息的高度敏感",
+          "gold": "短剧与情感故事：这是用户近期最显著且交互最深的兴趣。在最近一个月内，用户对以情感纠葛、家庭矛盾、女性成长、古风宫斗为主题的短剧广告表现出极高的兴趣，产生了数十次“深度转化”和“点击”行为。这表明用户对强情节、快节奏的叙事内容有强烈的消费偏好，并已形成持续性的观看习惯",
+          "s_text": 0.6220472440944883,
+          "s_evidence": 0.0,
+          "s_pair": 0.6220472440944883,
+          "candidate_group_id": "e251bb39b191186ec5758cf2e2cd1d3a20e316e797030a97ef0a868765d35cc8",
+          "gold_group_id": "3743448e4c4bb465df9443e391dcb67630439c6f98ebcfce436f2bc4f38cdc42",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "剧情/八卦类内容：这是用户在内容消费上的主要偏好。行为主要体现在广告点击和视频观看上，交互深度高。用户多次点击并深度转化了包含“美女”、“悬疑”、“情感纠葛”等元素的广告如 、 ，同时对名人轶事(如 、 )、影视剧解说(如",
+          "gold": "生活百态与情感短剧：这是一个稳定的内容消费兴趣。主要体现在广告-点击/深度转化行为上，用户对展现家庭关系、情感纠葛、生活冲突等元素的短剧式广告有较高的点击偏好。同时，用户也关注和转发了部分乡土生活、搞笑段子及名人轶事类视频",
+          "s_text": 0.6055045871559632,
+          "s_evidence": 0.0,
+          "s_pair": 0.6055045871559632,
+          "candidate_group_id": "d70eb3c9f062aea58824c83f2307c136d4da7589c60ea2d8f42ebc0aa36c1ec0",
+          "gold_group_id": "a6bb36361e0f106f617584d9e96530358c7f607617b45a92fbf716fffce35a9c",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "服饰穿搭：这是用户最核心且交互最深的兴趣域。用户在秋、冬、春三季均有大量购买和点击行为，覆盖了女装(如T恤、外套、裤装)、鞋履(如靴、板鞋、棉鞋)、内衣、配饰(如发箍、戒指、手链)等多个子类目。交互深度极高，表现为多次重复购买",
+          "gold": "服饰穿搭：这是用户最核心、交互最深的兴趣域。用户有大量的搜索、加购、购买和点击行为，覆盖了连衣裙、上衣、裤/裙装、外套、鞋靴及配饰等多个细分类目。用户对材质(如“德绒”)、款式(如“小香风”、“复古”、“国风”)、功能(如“加绒保暖”、“显瘦”)均有明确偏好，显示出深度参与和持续关注的特点",
+          "s_text": 0.6046511627906976,
+          "s_evidence": 0.0,
+          "s_pair": 0.6046511627906976,
+          "candidate_group_id": "e513502df58316b9f08a5d6f7895fff3b6b6e4a64f3de38ce87dd64ab36cfde7",
+          "gold_group_id": "353742584edd7388f4e81ea1dbbca10653bc52e26e039e1c303f49ca37ef51b3",
+          "relation": "same_domain_wrong_group"
+        }
+      ]
+    },
+    "M3_char_uni_bigram": {
+      "same_group": {
+        "max_text": {
+          "count": 3212,
+          "mean": 0.31201926327010016,
+          "p01": 0.1471239636794315,
+          "p05": 0.18750000000000003,
+          "p10": 0.21111801242236028,
+          "p25": 0.25443786982248523,
+          "p50": 0.30781440781440783,
+          "p75": 0.3673662646876933,
+          "p90": 0.4210349105085947,
+          "p95": 0.44988955823293164,
+          "p99": 0.5072232226116595,
+          "max": 0.5825242718446602
+        },
+        "max_evidence": {
+          "count": 3212,
+          "mean": 0.13673253787576914,
+          "p01": 0.0,
+          "p05": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p50": 0.0,
+          "p75": 0.2857142857142857,
+          "p90": 0.5,
+          "p95": 0.6666666666666666,
+          "p99": 1.0,
+          "max": 1.0
+        },
+        "max_pair": {
+          "count": 3212,
+          "mean": 0.28782919984428346,
+          "p01": 0.10543015230294944,
+          "p05": 0.13918298192771084,
+          "p10": 0.16395139865604,
+          "p25": 0.2112143487209644,
+          "p50": 0.28129414498141264,
+          "p75": 0.3551202740016992,
+          "p90": 0.42499289099526066,
+          "p95": 0.45905150576977194,
+          "p99": 0.5347759661835749,
+          "max": 0.6219409282700422
+        }
+      },
+      "same_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.16356651181463736,
+          "p01": 0.06912059555979441,
+          "p05": 0.08965412111017662,
+          "p10": 0.10230523357920616,
+          "p25": 0.125,
+          "p50": 0.1551546391752577,
+          "p75": 0.1935483870967742,
+          "p90": 0.23551474037455344,
+          "p95": 0.2663328323862302,
+          "p99": 0.32949348132487666,
+          "max": 0.5019455252918288
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.22590430756932509,
+          "p01": 0.11888054216021349,
+          "p05": 0.14672650727943454,
+          "p10": 0.16072325915290742,
+          "p25": 0.1875,
+          "p50": 0.21930577516753258,
+          "p75": 0.25759229853116317,
+          "p90": 0.2993906553091001,
+          "p95": 0.32593647444913265,
+          "p99": 0.39311452991452983,
+          "max": 0.5019455252918288
+        }
+      },
+      "cross_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.15967629947529768,
+          "p01": 0.06768933284457476,
+          "p05": 0.08855421686746986,
+          "p10": 0.10044725556621692,
+          "p25": 0.12232285690644305,
+          "p50": 0.15190681389711824,
+          "p75": 0.18877551020408162,
+          "p90": 0.22867333491028285,
+          "p95": 0.25757801058916296,
+          "p99": 0.31769213853765804,
+          "max": 0.5051903114186851
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.2200372178496919,
+          "p01": 0.11952824682092973,
+          "p05": 0.1446456939799331,
+          "p10": 0.1587218530823182,
+          "p25": 0.1832920792079208,
+          "p50": 0.2136142983230362,
+          "p75": 0.25038212405051496,
+          "p90": 0.28887931034482756,
+          "p95": 0.3168081761006289,
+          "p99": 0.37325259070387606,
+          "max": 0.5051903114186851
+        }
+      },
+      "auc_same_vs_same_domain_negative_max": 0.6924658600453778,
+      "auc_same_vs_cross_domain_negative_max": 0.7118343862291004,
+      "threshold_sweep": {
+        "0.20": {
+          "historical_candidate_nonzero_match_rate": 0.9493243243243243,
+          "historical_candidate_mean_matched_count": 1.9805743243243243,
+          "same_group_interest_above_threshold_rate": 0.7898505603985057,
+          "same_domain_negative_pair_false_match_rate": 0.21843088418430884,
+          "same_domain_negative_any_false_match_rate": 0.6606475716064757,
+          "cross_domain_negative_pair_false_match_rate": 0.1976961394769614,
+          "cross_domain_negative_any_false_match_rate": 0.6204856787048568,
+          "matched_count_distribution": {
+            "0": 60,
+            "1": 432,
+            "2": 258,
+            "3": 339,
+            "4": 95
+          }
+        },
+        "0.25": {
+          "historical_candidate_nonzero_match_rate": 0.8648648648648649,
+          "historical_candidate_mean_matched_count": 1.5625,
+          "same_group_interest_above_threshold_rate": 0.6155043586550436,
+          "same_domain_negative_pair_false_match_rate": 0.0713574097135741,
+          "same_domain_negative_any_false_match_rate": 0.28673723536737233,
+          "cross_domain_negative_pair_false_match_rate": 0.060398505603985055,
+          "cross_domain_negative_any_false_match_rate": 0.2534246575342466,
+          "matched_count_distribution": {
+            "0": 160,
+            "1": 469,
+            "2": 312,
+            "3": 215,
+            "4": 28
+          }
+        },
+        "0.30": {
+          "historical_candidate_nonzero_match_rate": 0.7246621621621622,
+          "historical_candidate_mean_matched_count": 1.1418918918918919,
+          "same_group_interest_above_threshold_rate": 0.4361768368617684,
+          "same_domain_negative_pair_false_match_rate": 0.02210460772104608,
+          "same_domain_negative_any_false_match_rate": 0.099626400996264,
+          "cross_domain_negative_pair_false_match_rate": 0.01631382316313823,
+          "cross_domain_negative_any_false_match_rate": 0.07658779576587796,
+          "matched_count_distribution": {
+            "0": 326,
+            "1": 490,
+            "2": 254,
+            "3": 102,
+            "4": 12
+          }
+        },
+        "0.35": {
+          "historical_candidate_nonzero_match_rate": 0.5380067567567568,
+          "historical_candidate_mean_matched_count": 0.7136824324324325,
+          "same_group_interest_above_threshold_rate": 0.2674346201743462,
+          "same_domain_negative_pair_false_match_rate": 0.005915317559153176,
+          "same_domain_negative_any_false_match_rate": 0.028331257783312577,
+          "cross_domain_negative_pair_false_match_rate": 0.00410958904109589,
+          "cross_domain_negative_any_false_match_rate": 0.020236612702366128,
+          "matched_count_distribution": {
+            "0": 547,
+            "1": 461,
+            "2": 148,
+            "3": 24,
+            "4": 4
+          }
+        },
+        "0.40": {
+          "historical_candidate_nonzero_match_rate": 0.32263513513513514,
+          "historical_candidate_mean_matched_count": 0.37584459459459457,
+          "same_group_interest_above_threshold_rate": 0.13978829389788294,
+          "same_domain_negative_pair_false_match_rate": 0.0016189290161892902,
+          "same_domain_negative_any_false_match_rate": 0.00809464508094645,
+          "cross_domain_negative_pair_false_match_rate": 0.00099626400996264,
+          "cross_domain_negative_any_false_match_rate": 0.0049813200498132005,
+          "matched_count_distribution": {
+            "0": 802,
+            "1": 324,
+            "2": 53,
+            "3": 5
+          }
+        },
+        "0.45": {
+          "historical_candidate_nonzero_match_rate": 0.15033783783783783,
+          "historical_candidate_mean_matched_count": 0.16216216216216217,
+          "same_group_interest_above_threshold_rate": 0.05977584059775841,
+          "same_domain_negative_pair_false_match_rate": 0.000560398505603985,
+          "same_domain_negative_any_false_match_rate": 0.002801992528019925,
+          "cross_domain_negative_pair_false_match_rate": 0.00018679950186799502,
+          "cross_domain_negative_any_false_match_rate": 0.0009339975093399751,
+          "matched_count_distribution": {
+            "0": 1006,
+            "1": 164,
+            "2": 14
+          }
+        },
+        "0.50": {
+          "historical_candidate_nonzero_match_rate": 0.05320945945945946,
+          "historical_candidate_mean_matched_count": 0.05574324324324324,
+          "same_group_interest_above_threshold_rate": 0.02054794520547945,
+          "same_domain_negative_pair_false_match_rate": 6.2266500622665e-05,
+          "same_domain_negative_any_false_match_rate": 0.00031133250311332503,
+          "cross_domain_negative_pair_false_match_rate": 6.2266500622665e-05,
+          "cross_domain_negative_any_false_match_rate": 0.00031133250311332503,
+          "matched_count_distribution": {
+            "0": 1121,
+            "1": 60,
+            "2": 3
+          }
+        },
+        "0.55": {
+          "historical_candidate_nonzero_match_rate": 0.015202702702702704,
+          "historical_candidate_mean_matched_count": 0.015202702702702704,
+          "same_group_interest_above_threshold_rate": 0.00560398505603985,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1166,
+            "1": 18
+          }
+        },
+        "0.60": {
+          "historical_candidate_nonzero_match_rate": 0.0033783783783783786,
+          "historical_candidate_mean_matched_count": 0.0033783783783783786,
+          "same_group_interest_above_threshold_rate": 0.0012453300124533001,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1180,
+            "1": 4
+          }
+        }
+      },
+      "review_examples": [
+        {
+          "candidate": "短剧内容消费：这是用户近期最核心且活跃的兴趣。自2025年12月起，用户在广告域有大量的短剧点击和深度转化行为( 等)，内容高度集中于古装、穿越、逆袭、权谋等主题的短剧。这表明用户对此类快节奏、强情节的视频内容有极高的偏好和付费/深度互动意愿",
+          "gold": "短剧/微短剧(古装/玄幻/情感)： 此为用户近期爆发的、黏性极高的娱乐兴趣。在近一个月内，用户有数十次针对古装权谋、情感纠葛、玄幻修仙等主题短剧广告的深度转化 和点击行为，并主动搜索相关剧集，表明其已深度沉浸在此类快节奏、强情节的内容消费中",
+          "s_text": 0.45991561181434604,
+          "s_evidence": 1.0,
+          "s_pair": 0.6219409282700422,
+          "candidate_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "gold_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "汽车生活与维修：此为用户最核心且交互最深的兴趣。用户不仅有频繁的汽车配件购买行为如 、 ，更在近期通过搜索(如 search_id=搜索汽车电瓶相关 等 4 次)主动探寻信息，并点击了多条汽车广告(如",
+          "gold": "汽车生活：这是用户最核心且交互最深的兴趣。用户不仅有多次购买汽车配件、保养品和应急工具的行为如 、 、 ，还频繁点击汽车广告(如",
+          "s_text": 0.5454545454545455,
+          "s_evidence": 0.8,
+          "s_pair": 0.6218181818181818,
+          "candidate_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "gold_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "高颜值/情感互动直播：这是用户最核心、交互最深的兴趣。用户在近一个月内有超过20次的直播相关交互，其中“关注”和“打赏”行为尤为突出(如 , 1722761994 等)，且互动频率高，互动时间集中在晚上8-9点。用户对主播的“长相”、“身材”、“好身材”、“性感”等外在标签有极高偏好，并频繁搜索特定主播的直播间，表现出",
+          "gold": "美女直播内容： 这是用户近期最核心且交互最深的兴趣。自2025年8月起，用户密集地关注和打赏了多位主播( , 4639686559 等)。这些主播的标签高度重合，集中于“性感”、“丰满曲线”、“御姐”、“大长腿”等视觉吸引力强的特征，并偏好“情感互动”、“豪爽直率”的性格。高频次的关注和多次首次打赏行为，表明用户在该领",
+          "s_text": 0.44179104477611936,
+          "s_evidence": 1.0,
+          "s_pair": 0.6092537313432835,
+          "candidate_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "gold_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧及美女内容消费：此为用户最核心且稳定的兴趣。用户在广告域对以美女、性感、情感纠葛为主题的短剧有极高频次的深度转化和点击行为如 、 。该兴趣贯穿了广告的绝大部分点击历史，表明用户有很强的娱乐消遣需求",
+          "gold": "短剧/影视娱乐：此为用户最显著的兴趣。用户在广告域有大量对短剧的深度转化行为 , 等)，题材偏好广泛，涵盖职场权谋、古装、悬疑、都市情感等。交互深度极高，是用户主要的娱乐消费内容",
+          "s_text": 0.43478260869565216,
+          "s_evidence": 1.0,
+          "s_pair": 0.6043478260869565,
+          "candidate_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "gold_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "居家生活与养生：这是一个贯穿始终的长期兴趣。用户在电商域有大量、高频的商品点击行为，主要集中在食品(尤其是红枣、咸鸭蛋、坚果等)、服饰鞋袜和家居用品上。同时，用户也关注了养生健康 、情感陪伴 、音乐 等类型的直播，表明其对提升生活品质、关注身心健康有持续性的需求",
+          "gold": "居家生活与实用消费：用户对生活消费领域有持续且明确的偏好。其商品点击行为(ec_id=...)高度集中于“中老年女装”、“妈妈鞋”、地方特色食品(如红枣、南瓜子)及高性价比日用品(如抽纸、拖鞋)，并多次搜索特定生活好物店铺，表现出以家庭为中心的实用主义消费观",
+          "s_text": 0.28125,
+          "s_evidence": 0.0,
+          "s_pair": 0.28125,
+          "candidate_group_id": "e251bb39b191186ec5758cf2e2cd1d3a20e316e797030a97ef0a868765d35cc8",
+          "gold_group_id": "e251bb39b191186ec5758cf2e2cd1d3a20e316e797030a97ef0a868765d35cc8",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "男性向网文/动漫 IP 改编内容：用户对具有爽点、强剧情和特定男性受众偏好的IP内容有明显兴趣。从早期的玄幻 到后期的古风 ，用户持续关注改编自男性向网络小说的内容，显示出对该类“爽文”叙事模式的稳定偏好",
+          "gold": "动画短剧与IP衍生内容：在内容形式上，用户明确偏好动画(动漫、漫剧)风格的短剧。同时，用户对《画江湖》系列、《原神》等知名IP的衍生短剧内容也有多次互动，显示出对成熟世界观和角色故事的接纳度",
+          "s_text": 0.28125,
+          "s_evidence": 0.0,
+          "s_pair": 0.28125,
+          "candidate_group_id": "ee03fa9cc0cc985c89f666dacef99576a9881d1ce6bc6974b9970d4be7d1559a",
+          "gold_group_id": "ee03fa9cc0cc985c89f666dacef99576a9881d1ce6bc6974b9970d4be7d1559a",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "生活日常与泛娱乐(深度：中等交互)：用户在视频域对生活记录、情感故事、搞笑短剧等内容有广泛兴趣。例如，用户点赞了多位年轻女性的自拍视频 , 186063532838)，收藏了运动 和生活 类视频，显示出其内容消费的多样性，但互动深度不及游戏和颜值类",
+          "gold": "游戏电竞：这是用户最核心且交互最深的兴趣。用户长期、高频地关注并打赏《王者荣耀》和《和平精英》等射击/MOBA类游戏主播。其偏好覆盖从“国服技术流”、“上分教学”到“幽默互动”、“节目效果”等多个维度，并通过广告点击 和视频消费 等行为，在多域中展现出对游戏内容(特别是战术、技巧和娱乐化呈现)的深度消费",
+          "s_text": 0.2304832713754647,
+          "s_evidence": 0.4,
+          "s_pair": 0.2813382899628253,
+          "candidate_group_id": "bba5b030faadcf76800e36c9700cbec005e87580580150452877df4458e57ba1",
+          "gold_group_id": "bba5b030faadcf76800e36c9700cbec005e87580580150452877df4458e57ba1",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "居家生活与DIY：用户对居家实用型商品有稳定需求。购买记录覆盖了厨房用具、建材 、五金工具 和服饰等，显示出其可能是一个家庭中的实际生活决策者。同时，用户对儿童玩具 和家居装饰(如灯笼)也有兴趣",
+          "gold": "实用生活与户外兴趣：用户展现出务实、爱动手的生活态度。早期购买过收纳、防水、五金工具等实用商品，并对弹弓、户外装备等有持续兴趣。近期则关注汽车及周边，如购买拖车绳、点击汽车广告等，体现了对实用技能和生活品质的追求",
+          "s_text": 0.2814070351758794,
+          "s_evidence": 0.0,
+          "s_pair": 0.2814070351758794,
+          "candidate_group_id": "0312b9185e0e74d3ecbf01ae7ee5a58c13b92ebb59d068ec9f93f5b638a12aae",
+          "gold_group_id": "0312b9185e0e74d3ecbf01ae7ee5a58c13b92ebb59d068ec9f93f5b638a12aae",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "服饰穿搭：这是用户最核心且交互最深的兴趣域。用户在秋、冬、春三季均有大量购买和点击行为，覆盖了女装(如T恤、外套、裤装)、鞋履(如靴、板鞋、棉鞋)、内衣、配饰(如发箍、戒指、手链)等多个子类目。交互深度极高，表现为多次重复购买",
+          "gold": "服饰穿搭：这是用户最核心、交互最深的兴趣域。用户有大量的搜索、加购、购买和点击行为，覆盖了连衣裙、上衣、裤/裙装、外套、鞋靴及配饰等多个细分类目。用户对材质(如“德绒”)、款式(如“小香风”、“复古”、“国风”)、功能(如“加绒保暖”、“显瘦”)均有明确偏好，显示出深度参与和持续关注的特点",
+          "s_text": 0.5019455252918288,
+          "s_evidence": 0.0,
+          "s_pair": 0.5019455252918288,
+          "candidate_group_id": "e513502df58316b9f08a5d6f7895fff3b6b6e4a64f3de38ce87dd64ab36cfde7",
+          "gold_group_id": "353742584edd7388f4e81ea1dbbca10653bc52e26e039e1c303f49ca37ef51b3",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "游戏(特别是休闲、益智、解压类)：这是用户最核心且交互最深的兴趣。用户在广告域有大量的点击和深度转化行为，覆盖了文字解谜、策略对抗、卡通风格、模拟经营等多种玩法。尤其对“赚钱”、“可提现”、“免费”等关键词高度敏感，表明其对低门槛、高回报的游戏广告有极强的吸引力",
+          "gold": "休闲游戏：这是用户最核心、交互最深的兴趣。用户在短时间内对大量卡通风格的休闲、益智、角色扮演、模拟经营类游戏广告产生了数十次深度转化和点击行为，表现出极高的接纳度和探索欲",
+          "s_text": 0.4837209302325581,
+          "s_evidence": 0.0,
+          "s_pair": 0.4837209302325581,
+          "candidate_group_id": "7b91df630c0a3b6d7232ae4564551cf7bc9db819af9738de06dcde9656fd2e2f",
+          "gold_group_id": "7d7d8eab4289196c347c339693b925e81dbee6bd626a6a61068982d718905fc1",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "高颜值女性内容：这是用户最核心、交互最深的兴趣。用户在直播域有大量对女性主播的关注和打赏行为(如 、 等)，偏好“精致妆容”、“好身材”、“长发”、“亲切互动”等标签。在视频域，用户对美女自拍、穿搭展示、舞蹈等内容有极高的长播和关注行为(如 、 )，并伴有点赞、评论等深度互动",
+          "gold": "女性娱乐内容：这是用户最核心且投入最深的兴趣。用户在直播域有大量(超过40次)的关注与打赏行为，内容高度集中于高颜值、才艺(唱歌/舞蹈)、情感互动类的女主播。该偏好也延伸至视频域(如观看美女自拍、时尚穿搭类视频)和广告域",
+          "s_text": 0.4732510288065844,
+          "s_evidence": 0.0,
+          "s_pair": 0.4732510288065844,
+          "candidate_group_id": "9ec8bb893646f73b028db73987f15664f0d6bca63ea55b606828c8fc025f86b5",
+          "gold_group_id": "03427e63ccff04fd14f6114ed48532cdd9e0b9bb6d32464778bc156e4ca75e94",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "男士潮流服饰：这是用户最核心且持续的兴趣。交互深度极高，体现在海量的商品点击(超过50次)和多次购买行为上。用户偏好多款“拼接”、“字母”、“撞色”等设计元素的男士T恤、夹克、棉服和羽绒服，以及男士内裤和卫衣",
+          "gold": "男士潮流服饰：这是用户最核心、交互最深的兴趣。用户在近三个月内进行了大量购买和点击，集中于男士外套(棉服、羽绒服、夹克)、卫衣、休闲裤等品类。商品标签多为“潮流”、“欧货”、“轻奢”、“百搭”、“设计师款”，显示出对时尚感和设计风格的明确偏好",
+          "s_text": 0.47321428571428575,
+          "s_evidence": 0.0,
+          "s_pair": 0.47321428571428575,
+          "candidate_group_id": "abcc6ab8622b93a3f9dccc751aeed70aaf077bcb340e88939868b0ed59f76df7",
+          "gold_group_id": "34e816613902361478cba0e069db7867edd3af328e296e98fcba13e3927467a6",
+          "relation": "same_domain_wrong_group"
+        }
+      ]
+    },
+    "M4_subtoken": {
+      "same_group": {
+        "max_text": {
+          "count": 3212,
+          "mean": 0.34625788011682107,
+          "p01": 0.16530581039755352,
+          "p05": 0.21428571428571427,
+          "p10": 0.23728813559322032,
+          "p25": 0.2857142857142857,
+          "p50": 0.3409971811134602,
+          "p75": 0.4024040787466042,
+          "p90": 0.4615384615384615,
+          "p95": 0.5,
+          "p99": 0.5555555555555556,
+          "max": 0.6461538461538462
+        },
+        "max_evidence": {
+          "count": 3212,
+          "mean": 0.13673253787576914,
+          "p01": 0.0,
+          "p05": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p50": 0.0,
+          "p75": 0.2857142857142857,
+          "p90": 0.5,
+          "p95": 0.6666666666666666,
+          "p99": 1.0,
+          "max": 1.0
+        },
+        "max_pair": {
+          "count": 3212,
+          "mean": 0.3152135278256205,
+          "p01": 0.12021417297979796,
+          "p05": 0.16153846153846152,
+          "p10": 0.18618111753371872,
+          "p25": 0.23648648648648646,
+          "p50": 0.30926607304928,
+          "p75": 0.3837502936340146,
+          "p90": 0.4528634384483441,
+          "p95": 0.49418558343289515,
+          "p99": 0.5643229291716683,
+          "max": 0.6544303797468354
+        }
+      },
+      "same_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.1872436859468347,
+          "p01": 0.07350978939448762,
+          "p05": 0.1021897810218978,
+          "p10": 0.11748251748251748,
+          "p25": 0.14411764705882354,
+          "p50": 0.17888888888888888,
+          "p75": 0.22188124750099955,
+          "p90": 0.2684563758389262,
+          "p95": 0.3015075376884422,
+          "p99": 0.3701177478056091,
+          "max": 0.5714285714285715
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.25701844282913894,
+          "p01": 0.1372549019607843,
+          "p05": 0.16911140583554374,
+          "p10": 0.1854416340860129,
+          "p25": 0.2145985401459854,
+          "p50": 0.2512820512820513,
+          "p75": 0.2926829268292683,
+          "p90": 0.3363555913113435,
+          "p95": 0.3682434614142718,
+          "p99": 0.445574603174603,
+          "max": 0.5714285714285715
+        }
+      },
+      "cross_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.18365726725423487,
+          "p01": 0.07199156812339332,
+          "p05": 0.09911504424778761,
+          "p10": 0.11391375939075848,
+          "p25": 0.1421062311483852,
+          "p50": 0.17616237175307964,
+          "p75": 0.21770975056689343,
+          "p90": 0.26143790849673204,
+          "p95": 0.29241167579822397,
+          "p99": 0.3595505617977528,
+          "max": 0.5538461538461538
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.25136436434377457,
+          "p01": 0.14144191919191917,
+          "p05": 0.16854761904761903,
+          "p10": 0.18309859154929575,
+          "p25": 0.2104442933242661,
+          "p50": 0.2446043165467626,
+          "p75": 0.28571428571428564,
+          "p90": 0.3272498570611778,
+          "p95": 0.35795321637426897,
+          "p99": 0.42962219598583223,
+          "max": 0.5538461538461538
+        }
+      },
+      "auc_same_vs_same_domain_negative_max": 0.675087748852761,
+      "auc_same_vs_cross_domain_negative_max": 0.6935603702026492,
+      "threshold_sweep": {
+        "0.20": {
+          "historical_candidate_nonzero_match_rate": 0.9695945945945946,
+          "historical_candidate_mean_matched_count": 2.16722972972973,
+          "same_group_interest_above_threshold_rate": 0.8664383561643836,
+          "same_domain_negative_pair_false_match_rate": 0.35909090909090907,
+          "same_domain_negative_any_false_match_rate": 0.8290784557907845,
+          "cross_domain_negative_pair_false_match_rate": 0.34657534246575344,
+          "cross_domain_negative_any_false_match_rate": 0.8138231631382317,
+          "matched_count_distribution": {
+            "0": 36,
+            "1": 419,
+            "2": 188,
+            "3": 393,
+            "4": 148
+          }
+        },
+        "0.25": {
+          "historical_candidate_nonzero_match_rate": 0.9037162162162162,
+          "historical_candidate_mean_matched_count": 1.7694256756756757,
+          "same_group_interest_above_threshold_rate": 0.7026774595267746,
+          "same_domain_negative_pair_false_match_rate": 0.1489414694894147,
+          "same_domain_negative_any_false_match_rate": 0.512453300124533,
+          "cross_domain_negative_pair_false_match_rate": 0.13156911581569117,
+          "cross_domain_negative_any_false_match_rate": 0.46295143212951434,
+          "matched_count_distribution": {
+            "0": 114,
+            "1": 449,
+            "2": 271,
+            "3": 296,
+            "4": 54
+          }
+        },
+        "0.30": {
+          "historical_candidate_nonzero_match_rate": 0.7972972972972973,
+          "historical_candidate_mean_matched_count": 1.352195945945946,
+          "same_group_interest_above_threshold_rate": 0.5305105853051059,
+          "same_domain_negative_pair_false_match_rate": 0.052054794520547946,
+          "same_domain_negative_any_false_match_rate": 0.21793275217932753,
+          "cross_domain_negative_pair_false_match_rate": 0.04103362391033624,
+          "cross_domain_negative_any_false_match_rate": 0.17870485678704856,
+          "matched_count_distribution": {
+            "0": 240,
+            "1": 484,
+            "2": 280,
+            "3": 163,
+            "4": 17
+          }
+        },
+        "0.35": {
+          "historical_candidate_nonzero_match_rate": 0.6452702702702703,
+          "historical_candidate_mean_matched_count": 0.9527027027027027,
+          "same_group_interest_above_threshold_rate": 0.3642590286425903,
+          "same_domain_negative_pair_false_match_rate": 0.01606475716064757,
+          "same_domain_negative_any_false_match_rate": 0.074719800747198,
+          "cross_domain_negative_pair_false_match_rate": 0.012266500622665006,
+          "cross_domain_negative_any_false_match_rate": 0.05759651307596513,
+          "matched_count_distribution": {
+            "0": 420,
+            "1": 484,
+            "2": 203,
+            "3": 70,
+            "4": 7
+          }
+        },
+        "0.40": {
+          "historical_candidate_nonzero_match_rate": 0.44172297297297297,
+          "historical_candidate_mean_matched_count": 0.5456081081081081,
+          "same_group_interest_above_threshold_rate": 0.20454545454545456,
+          "same_domain_negative_pair_false_match_rate": 0.0049190535491905356,
+          "same_domain_negative_any_false_match_rate": 0.02459526774595268,
+          "cross_domain_negative_pair_false_match_rate": 0.0038605230386052304,
+          "cross_domain_negative_any_false_match_rate": 0.018991282689912826,
+          "matched_count_distribution": {
+            "0": 661,
+            "1": 412,
+            "2": 100,
+            "3": 10,
+            "4": 1
+          }
+        },
+        "0.45": {
+          "historical_candidate_nonzero_match_rate": 0.25506756756756754,
+          "historical_candidate_mean_matched_count": 0.2846283783783784,
+          "same_group_interest_above_threshold_rate": 0.10554171855541719,
+          "same_domain_negative_pair_false_match_rate": 0.0017434620174346202,
+          "same_domain_negative_any_false_match_rate": 0.008717310087173101,
+          "cross_domain_negative_pair_false_match_rate": 0.0011830635118306352,
+          "cross_domain_negative_any_false_match_rate": 0.005915317559153176,
+          "matched_count_distribution": {
+            "0": 882,
+            "1": 268,
+            "2": 33,
+            "3": 1
+          }
+        },
+        "0.50": {
+          "historical_candidate_nonzero_match_rate": 0.12077702702702703,
+          "historical_candidate_mean_matched_count": 0.1258445945945946,
+          "same_group_interest_above_threshold_rate": 0.04638854296388543,
+          "same_domain_negative_pair_false_match_rate": 0.00043586550435865506,
+          "same_domain_negative_any_false_match_rate": 0.0021793275217932753,
+          "cross_domain_negative_pair_false_match_rate": 0.00037359900373599005,
+          "cross_domain_negative_any_false_match_rate": 0.0018679950186799503,
+          "matched_count_distribution": {
+            "0": 1041,
+            "1": 137,
+            "2": 6
+          }
+        },
+        "0.55": {
+          "historical_candidate_nonzero_match_rate": 0.037162162162162164,
+          "historical_candidate_mean_matched_count": 0.03800675675675676,
+          "same_group_interest_above_threshold_rate": 0.014009962640099627,
+          "same_domain_negative_pair_false_match_rate": 6.2266500622665e-05,
+          "same_domain_negative_any_false_match_rate": 0.00031133250311332503,
+          "cross_domain_negative_pair_false_match_rate": 6.2266500622665e-05,
+          "cross_domain_negative_any_false_match_rate": 0.00031133250311332503,
+          "matched_count_distribution": {
+            "0": 1140,
+            "1": 43,
+            "2": 1
+          }
+        },
+        "0.60": {
+          "historical_candidate_nonzero_match_rate": 0.011824324324324325,
+          "historical_candidate_mean_matched_count": 0.011824324324324325,
+          "same_group_interest_above_threshold_rate": 0.0043586550435865505,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1170,
+            "1": 14
+          }
+        }
+      },
+      "review_examples": [
+        {
+          "candidate": "高颜值/情感互动直播：这是用户最核心、交互最深的兴趣。用户在近一个月内有超过20次的直播相关交互，其中“关注”和“打赏”行为尤为突出(如 , 1722761994 等)，且互动频率高，互动时间集中在晚上8-9点。用户对主播的“长相”、“身材”、“好身材”、“性感”等外在标签有极高偏好，并频繁搜索特定主播的直播间，表现出",
+          "gold": "美女直播内容： 这是用户近期最核心且交互最深的兴趣。自2025年8月起，用户密集地关注和打赏了多位主播( , 4639686559 等)。这些主播的标签高度重合，集中于“性感”、“丰满曲线”、“御姐”、“大长腿”等视觉吸引力强的特征，并偏好“情感互动”、“豪爽直率”的性格。高频次的关注和多次首次打赏行为，表明用户在该领",
+          "s_text": 0.5063291139240507,
+          "s_evidence": 1.0,
+          "s_pair": 0.6544303797468354,
+          "candidate_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "gold_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧内容消费：这是用户近期最核心且活跃的兴趣。自2025年12月起，用户在广告域有大量的短剧点击和深度转化行为( 等)，内容高度集中于古装、穿越、逆袭、权谋等主题的短剧。这表明用户对此类快节奏、强情节的视频内容有极高的偏好和付费/深度互动意愿",
+          "gold": "短剧/微短剧(古装/玄幻/情感)： 此为用户近期爆发的、黏性极高的娱乐兴趣。在近一个月内，用户有数十次针对古装权谋、情感纠葛、玄幻修仙等主题短剧广告的深度转化 和点击行为，并主动搜索相关剧集，表明其已深度沉浸在此类快节奏、强情节的内容消费中",
+          "s_text": 0.5029239766081871,
+          "s_evidence": 1.0,
+          "s_pair": 0.6520467836257309,
+          "candidate_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "gold_group_id": "40c5143f486f8e047652ac44f19dfdeb02309aa136d72761d9986c675ec92f2e",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "剧情/情感内容：用户对具有强烈情感冲突、家庭伦理或爱情纠葛的短剧内容有极高兴趣。在广告和视频域均有大量点击和长播行为如 、 ，内容多为戏剧化、快节奏的叙事",
+          "gold": "短剧/网文与情感内容：此兴趣表现出极高的粘性。用户在搜索域有高频、重复的短剧剧名搜索行为(如对“电影蚀骨囚爱”的20次搜索)，并点击了多条古装及悬疑言情类短剧广告如 。在视频域，她也关注或浏览了大量涉及人际冲突、家庭关系和情感纠葛的剧情类视频如 ，显示出对强情节、快节奏叙事内容的强烈偏好",
+          "s_text": 0.5,
+          "s_evidence": 1.0,
+          "s_pair": 0.6499999999999999,
+          "candidate_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "gold_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧与剧情内容：这是用户近期最核心且活跃的兴趣点。从2025年12月开始，用户对短剧广告表现出极高的互动意愿，产生了数十次“深度转化”和“点击”行为。内容高度集中于古装权谋、情感纠葛、逆袭爽文、都市悬疑等强情节、快节奏的类型。这表明用户是此类内容的重度消费者，有极强的“追剧”粘性",
+          "gold": "短剧/网文内容消费：这是用户近期最核心且活跃的兴趣。从2025年12月起，用户与大量短剧广告产生了高频的“深度转化”和“点击”行为(超过50次)。内容主题高度集中于“逆袭爽文”(如神豪、赘婿、战神归来)、“古风权谋”(如女帝、宫廷斗争)和“都市情感纠葛”(如高冷总裁、校花)，显示出用户对这类快节奏、强冲突、满足幻想的剧",
+          "s_text": 0.6460176991150441,
+          "s_evidence": 0.0,
+          "s_pair": 0.6460176991150441,
+          "candidate_group_id": "52c32bfb5625ef95187ec270d08715cc2634b2bf1558691bab126a42d88b5a61",
+          "gold_group_id": "52c32bfb5625ef95187ec270d08715cc2634b2bf1558691bab126a42d88b5a61",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧/网文内容：此为用户最核心且稳定的兴趣。自2025年11月起，用户在广告域产生了大量“深度转化”和“点击”行为，内容高度集中于短剧。偏好题材包括都市情感纠葛、职场逆袭、古风奇幻、悬疑解密等。用户还通过高频搜索(如 的搜索记录)主动寻找特定剧集，表现出极高的粘性和付费意愿",
+          "gold": "短剧/影视娱乐：用户对此类内容有持续且深度的偏好。在广告域，用户对悬疑、逆袭、古装、情感等题材的短剧广告有大量点击和深度转化行为 , 等)，表明其是付费短剧的重度消费者",
+          "s_text": 0.44155844155844154,
+          "s_evidence": 0.0,
+          "s_pair": 0.3090909090909091,
+          "candidate_group_id": "9a47537bf616e4003b4c6dda13f0aa8d0ae4f5db408ab34c385c50b88b8cea15",
+          "gold_group_id": "9a47537bf616e4003b4c6dda13f0aa8d0ae4f5db408ab34c385c50b88b8cea15",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "居家生活：用户表现出对家庭生活的强烈关注。在电商域，其购买行为包含食品 、 和厨房用品 ，体现了家庭消费的角色。在视频域，用户关注了美食烹饪 和家居好物 相关内容，显示出从消费到内容兴趣的延伸",
+          "gold": "生活百态：这是一个宽泛但持续的兴趣域。用户通过直播-关注( 、 )展现了对音乐才艺、温馨陪伴和家庭向内容的偏好。同时，通过搜索行为关注网络红人动态，并通过观看美食制作 、生活趣事 等视频，表现出对多元化生活娱乐内容的广泛兴趣",
+          "s_text": 0.3464566929133858,
+          "s_evidence": 0.2222222222222222,
+          "s_pair": 0.3091863517060367,
+          "candidate_group_id": "ab21dcaf40caf7a6ec7006fc737ebdf65cb9a90ef60455960bbe8c37d6ed2581",
+          "gold_group_id": "ab21dcaf40caf7a6ec7006fc737ebdf65cb9a90ef60455960bbe8c37d6ed2581",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "零食美食：这是一个显著的消费兴趣。用户多次购买速食、烘焙点心及零食如 、 ，并收藏/点赞零食测评类视频 ，显示出对美食内容的持续关注",
+          "gold": "居家日用与速食零食：该兴趣主要体现在商品消费上，具有高复购和高性价比的特点。用户多次购买洗衣液如 、纸巾等生活必需品，以及方便速食和代餐零食如 ，并在临近节日时大量点击年货礼盒如 ，是典型的居家生活消费者",
+          "s_text": 0.29906542056074764,
+          "s_evidence": 0.3333333333333333,
+          "s_pair": 0.30934579439252335,
+          "candidate_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "gold_group_id": "04f58f9015b737d4fbe324ffc51bc79a4d393e1cfb4eff30c9ee27681b1e7063",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "高颜值/才艺型女性主播：这是用户最核心、交互最深的兴趣。用户在直播域有大量关注和打赏行为，集中于外形靓丽(如“精致妆容”、“曲线身材”)、拥有“御姐”、“甜酷”等标签，并具备舞蹈、唱歌、互动才艺(如“情感连麦”)的女性主播。这表明用户对主播的视觉吸引力和互动陪伴感有强烈偏好",
+          "gold": "美女直播内容： 这是用户近期最核心且交互最深的兴趣。自2025年8月起，用户密集地关注和打赏了多位主播( , 4639686559 等)。这些主播的标签高度重合，集中于“性感”、“丰满曲线”、“御姐”、“大长腿”等视觉吸引力强的特征，并偏好“情感互动”、“豪爽直率”的性格。高频次的关注和多次首次打赏行为，表明用户在该领",
+          "s_text": 0.44239631336405527,
+          "s_evidence": 0.0,
+          "s_pair": 0.30967741935483867,
+          "candidate_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "gold_group_id": "9430421bb9d6902f8397178a9d9aaa3ab1988ae368b6b87df56f504215b4112c",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "男士潮流服饰：这是用户最核心且持续的兴趣。交互深度极高，体现在海量的商品点击(超过50次)和多次购买行为上。用户偏好多款“拼接”、“字母”、“撞色”等设计元素的男士T恤、夹克、棉服和羽绒服，以及男士内裤和卫衣",
+          "gold": "男士潮流服饰：这是用户最核心、交互最深的兴趣。用户在近三个月内进行了大量购买和点击，集中于男士外套(棉服、羽绒服、夹克)、卫衣、休闲裤等品类。商品标签多为“潮流”、“欧货”、“轻奢”、“百搭”、“设计师款”，显示出对时尚感和设计风格的明确偏好",
+          "s_text": 0.5714285714285715,
+          "s_evidence": 0.0,
+          "s_pair": 0.5714285714285715,
+          "candidate_group_id": "abcc6ab8622b93a3f9dccc751aeed70aaf077bcb340e88939868b0ed59f76df7",
+          "gold_group_id": "34e816613902361478cba0e069db7867edd3af328e296e98fcba13e3927467a6",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "服饰穿搭：这是用户最核心且交互最深的兴趣域。用户在秋、冬、春三季均有大量购买和点击行为，覆盖了女装(如T恤、外套、裤装)、鞋履(如靴、板鞋、棉鞋)、内衣、配饰(如发箍、戒指、手链)等多个子类目。交互深度极高，表现为多次重复购买",
+          "gold": "服饰穿搭：这是用户最核心、交互最深的兴趣域。用户有大量的搜索、加购、购买和点击行为，覆盖了连衣裙、上衣、裤/裙装、外套、鞋靴及配饰等多个细分类目。用户对材质(如“德绒”)、款式(如“小香风”、“复古”、“国风”)、功能(如“加绒保暖”、“显瘦”)均有明确偏好，显示出深度参与和持续关注的特点",
+          "s_text": 0.5297297297297296,
+          "s_evidence": 0.0,
+          "s_pair": 0.5297297297297296,
+          "candidate_group_id": "e513502df58316b9f08a5d6f7895fff3b6b6e4a64f3de38ce87dd64ab36cfde7",
+          "gold_group_id": "353742584edd7388f4e81ea1dbbca10653bc52e26e039e1c303f49ca37ef51b3",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "游戏(特别是休闲、益智、解压类)：这是用户最核心且交互最深的兴趣。用户在广告域有大量的点击和深度转化行为，覆盖了文字解谜、策略对抗、卡通风格、模拟经营等多种玩法。尤其对“赚钱”、“可提现”、“免费”等关键词高度敏感，表明其对低门槛、高回报的游戏广告有极强的吸引力",
+          "gold": "休闲游戏：这是用户最核心、交互最深的兴趣。用户在短时间内对大量卡通风格的休闲、益智、角色扮演、模拟经营类游戏广告产生了数十次深度转化和点击行为，表现出极高的接纳度和探索欲",
+          "s_text": 0.5223880597014925,
+          "s_evidence": 0.0,
+          "s_pair": 0.5223880597014925,
+          "candidate_group_id": "7b91df630c0a3b6d7232ae4564551cf7bc9db819af9738de06dcde9656fd2e2f",
+          "gold_group_id": "7d7d8eab4289196c347c339693b925e81dbee6bd626a6a61068982d718905fc1",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "剧情/八卦类内容：这是用户在内容消费上的主要偏好。行为主要体现在广告点击和视频观看上，交互深度高。用户多次点击并深度转化了包含“美女”、“悬疑”、“情感纠葛”等元素的广告如 、 ，同时对名人轶事(如 、 )、影视剧解说(如",
+          "gold": "生活百态与情感短剧：这是一个稳定的内容消费兴趣。主要体现在广告-点击/深度转化行为上，用户对展现家庭关系、情感纠葛、生活冲突等元素的短剧式广告有较高的点击偏好。同时，用户也关注和转发了部分乡土生活、搞笑段子及名人轶事类视频",
+          "s_text": 0.5211267605633804,
+          "s_evidence": 0.0,
+          "s_pair": 0.5211267605633804,
+          "candidate_group_id": "d70eb3c9f062aea58824c83f2307c136d4da7589c60ea2d8f42ebc0aa36c1ec0",
+          "gold_group_id": "a6bb36361e0f106f617584d9e96530358c7f607617b45a92fbf716fffce35a9c",
+          "relation": "same_domain_wrong_group"
+        }
+      ]
+    },
+    "M5_char_lcs": {
+      "same_group": {
+        "max_text": {
+          "count": 3212,
+          "mean": 0.2670043669089275,
+          "p01": 0.13390570444192662,
+          "p05": 0.16580310880829016,
+          "p10": 0.1834951026016044,
+          "p25": 0.21649484536082475,
+          "p50": 0.25882352941176473,
+          "p75": 0.31137724550898205,
+          "p90": 0.36278613771089835,
+          "p95": 0.39579284452296815,
+          "p99": 0.4693558295479124,
+          "max": 0.6346153846153846
+        },
+        "max_evidence": {
+          "count": 3212,
+          "mean": 0.13673253787576914,
+          "p01": 0.0,
+          "p05": 0.0,
+          "p10": 0.0,
+          "p25": 0.0,
+          "p50": 0.0,
+          "p75": 0.2857142857142857,
+          "p90": 0.5,
+          "p95": 0.6666666666666666,
+          "p99": 1.0,
+          "max": 1.0
+        },
+        "max_pair": {
+          "count": 3212,
+          "mean": 0.2517548187537226,
+          "p01": 0.09857167728405808,
+          "p05": 0.12329553231009872,
+          "p10": 0.14166666666666666,
+          "p25": 0.18176904176904177,
+          "p50": 0.24298293040858887,
+          "p75": 0.3090909090909091,
+          "p90": 0.37637341979888805,
+          "p95": 0.4216741840050438,
+          "p99": 0.4936041666666664,
+          "max": 0.6103225806451613
+        }
+      },
+      "same_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.14498057916936644,
+          "p01": 0.0671555929803484,
+          "p05": 0.08484848484848484,
+          "p10": 0.09395400229170077,
+          "p25": 0.11155378486055777,
+          "p50": 0.13695652173913042,
+          "p75": 0.16969696969696968,
+          "p90": 0.20740740740740737,
+          "p95": 0.23255813953488372,
+          "p99": 0.294545902716915,
+          "max": 0.44878048780487806
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.19969298689571552,
+          "p01": 0.11034388108028552,
+          "p05": 0.13282236917113216,
+          "p10": 0.14452234745433346,
+          "p25": 0.16504116061870133,
+          "p50": 0.19230769230769232,
+          "p75": 0.225,
+          "p90": 0.2641509433962264,
+          "p95": 0.2936405316299196,
+          "p99": 0.35232275132275126,
+          "max": 0.44878048780487806
+        }
+      },
+      "cross_domain_negative": {
+        "pair": {
+          "count": 16060,
+          "mean": 0.14223818919986206,
+          "p01": 0.06681548922892666,
+          "p05": 0.0835820895522388,
+          "p10": 0.09281767955801104,
+          "p25": 0.10980392156862744,
+          "p50": 0.13513513513513511,
+          "p75": 0.1659865123670592,
+          "p90": 0.20222471910112358,
+          "p95": 0.22748815165876776,
+          "p99": 0.28305419143620225,
+          "max": 0.4280936454849498
+        },
+        "per_interest_max_pair": {
+          "count": 3212,
+          "mean": 0.19553982974903017,
+          "p01": 0.11305145823789892,
+          "p05": 0.1326433941997852,
+          "p10": 0.1437125748502994,
+          "p25": 0.16211748939021667,
+          "p50": 0.18867924528301888,
+          "p75": 0.22128531566096965,
+          "p90": 0.2564102564102564,
+          "p95": 0.2814728984729472,
+          "p99": 0.3352055372249373,
+          "max": 0.4280936454849498
+        }
+      },
+      "auc_same_vs_same_domain_negative_max": 0.6747268377147342,
+      "auc_same_vs_cross_domain_negative_max": 0.6906704155804277,
+      "threshold_sweep": {
+        "0.20": {
+          "historical_candidate_nonzero_match_rate": 0.9130067567567568,
+          "historical_candidate_mean_matched_count": 1.697635135135135,
+          "same_group_interest_above_threshold_rate": 0.6759028642590287,
+          "same_domain_negative_pair_false_match_rate": 0.11967621419676214,
+          "same_domain_negative_any_false_match_rate": 0.43711083437110837,
+          "cross_domain_negative_pair_false_match_rate": 0.10653798256537983,
+          "cross_domain_negative_any_false_match_rate": 0.40940224159402244,
+          "matched_count_distribution": {
+            "0": 103,
+            "1": 492,
+            "2": 298,
+            "3": 242,
+            "4": 49
+          }
+        },
+        "0.25": {
+          "historical_candidate_nonzero_match_rate": 0.7837837837837838,
+          "historical_candidate_mean_matched_count": 1.214527027027027,
+          "same_group_interest_above_threshold_rate": 0.46948941469489414,
+          "same_domain_negative_pair_false_match_rate": 0.033188044831880446,
+          "same_domain_negative_any_false_match_rate": 0.14632627646326277,
+          "cross_domain_negative_pair_false_match_rate": 0.02696139476961395,
+          "cross_domain_negative_any_false_match_rate": 0.12266500622665007,
+          "matched_count_distribution": {
+            "0": 256,
+            "1": 546,
+            "2": 263,
+            "3": 110,
+            "4": 9
+          }
+        },
+        "0.30": {
+          "historical_candidate_nonzero_match_rate": 0.5701013513513513,
+          "historical_candidate_mean_matched_count": 0.7466216216216216,
+          "same_group_interest_above_threshold_rate": 0.2808219178082192,
+          "same_domain_negative_pair_false_match_rate": 0.008655043586550436,
+          "same_domain_negative_any_false_match_rate": 0.0410958904109589,
+          "cross_domain_negative_pair_false_match_rate": 0.006039850560398506,
+          "cross_domain_negative_any_false_match_rate": 0.029265255292652552,
+          "matched_count_distribution": {
+            "0": 509,
+            "1": 502,
+            "2": 140,
+            "3": 30,
+            "4": 3
+          }
+        },
+        "0.35": {
+          "historical_candidate_nonzero_match_rate": 0.3302364864864865,
+          "historical_candidate_mean_matched_count": 0.3876689189189189,
+          "same_group_interest_above_threshold_rate": 0.14508094645080946,
+          "same_domain_negative_pair_false_match_rate": 0.002303860523038605,
+          "same_domain_negative_any_false_match_rate": 0.0112079701120797,
+          "cross_domain_negative_pair_false_match_rate": 0.001556662515566625,
+          "cross_domain_negative_any_false_match_rate": 0.007471980074719801,
+          "matched_count_distribution": {
+            "0": 793,
+            "1": 331,
+            "2": 53,
+            "3": 6,
+            "4": 1
+          }
+        },
+        "0.40": {
+          "historical_candidate_nonzero_match_rate": 0.17314189189189189,
+          "historical_candidate_mean_matched_count": 0.19087837837837837,
+          "same_group_interest_above_threshold_rate": 0.07098381070983811,
+          "same_domain_negative_pair_false_match_rate": 0.00043586550435865506,
+          "same_domain_negative_any_false_match_rate": 0.0021793275217932753,
+          "cross_domain_negative_pair_false_match_rate": 0.00018679950186799502,
+          "cross_domain_negative_any_false_match_rate": 0.0009339975093399751,
+          "matched_count_distribution": {
+            "0": 979,
+            "1": 186,
+            "2": 17,
+            "3": 2
+          }
+        },
+        "0.45": {
+          "historical_candidate_nonzero_match_rate": 0.07179054054054054,
+          "historical_candidate_mean_matched_count": 0.07685810810810811,
+          "same_group_interest_above_threshold_rate": 0.028331257783312577,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1099,
+            "1": 79,
+            "2": 6
+          }
+        },
+        "0.50": {
+          "historical_candidate_nonzero_match_rate": 0.024493243243243243,
+          "historical_candidate_mean_matched_count": 0.024493243243243243,
+          "same_group_interest_above_threshold_rate": 0.009028642590286426,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1155,
+            "1": 29
+          }
+        },
+        "0.55": {
+          "historical_candidate_nonzero_match_rate": 0.0059121621621621625,
+          "historical_candidate_mean_matched_count": 0.0059121621621621625,
+          "same_group_interest_above_threshold_rate": 0.0021793275217932753,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1177,
+            "1": 7
+          }
+        },
+        "0.60": {
+          "historical_candidate_nonzero_match_rate": 0.0008445945945945946,
+          "historical_candidate_mean_matched_count": 0.0008445945945945946,
+          "same_group_interest_above_threshold_rate": 0.00031133250311332503,
+          "same_domain_negative_pair_false_match_rate": 0.0,
+          "same_domain_negative_any_false_match_rate": 0.0,
+          "cross_domain_negative_pair_false_match_rate": 0.0,
+          "cross_domain_negative_any_false_match_rate": 0.0,
+          "matched_count_distribution": {
+            "0": 1183,
+            "1": 1
+          }
+        }
+      },
+      "review_examples": [
+        {
+          "candidate": "汽车生活与维修：此为用户最核心且交互最深的兴趣。用户不仅有频繁的汽车配件购买行为如 、 ，更在近期通过搜索(如 search_id=搜索汽车电瓶相关 等 4 次)主动探寻信息，并点击了多条汽车广告(如",
+          "gold": "汽车生活：这是用户最核心且交互最深的兴趣。用户不仅有多次购买汽车配件、保养品和应急工具的行为如 、 、 ，还频繁点击汽车广告(如",
+          "s_text": 0.5290322580645161,
+          "s_evidence": 0.8,
+          "s_pair": 0.6103225806451613,
+          "candidate_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "gold_group_id": "2b0694cf30a85bc0eedffb8ae9503a0f1427a3be9191f6bbcbc6f0138735d813",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "亲子育儿：这是用户最核心且持续的兴趣。行为涵盖了商品域(点击儿童玩具、服饰、零食等",
+          "gold": "亲子育儿：这是用户最核心且交互深度最深的兴趣。该兴趣贯穿所有行为域：在商品域，用户频繁点击儿童玩具( 、 )、儿童服饰 和儿童零食(",
+          "s_text": 0.6346153846153846,
+          "s_evidence": 0.5,
+          "s_pair": 0.5942307692307691,
+          "candidate_group_id": "f661b093b07ab1fca0d1df8e7df6cb1897b971942c01234050b09084d6c659a3",
+          "gold_group_id": "f661b093b07ab1fca0d1df8e7df6cb1897b971942c01234050b09084d6c659a3",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧及美女内容消费：此为用户最核心且稳定的兴趣。用户在广告域对以美女、性感、情感纠葛为主题的短剧有极高频次的深度转化和点击行为如 、 。该兴趣贯穿了广告的绝大部分点击历史，表明用户有很强的娱乐消遣需求",
+          "gold": "短剧/影视娱乐：此为用户最显著的兴趣。用户在广告域有大量对短剧的深度转化行为 , 等)，题材偏好广泛，涵盖职场权谋、古装、悬疑、都市情感等。交互深度极高，是用户主要的娱乐消费内容",
+          "s_text": 0.4,
+          "s_evidence": 1.0,
+          "s_pair": 0.58,
+          "candidate_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "gold_group_id": "4ce3f3bc24f8b764ef54183a4befdd579b5c0d093ac5f23dc0e266aa16390bf6",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "家庭情感与短剧：这是用户最核心且交互最深的兴趣。用户对以家庭矛盾、情感纠葛、婚姻关系为主题的短剧内容表现出极高兴趣，产生了大量长播、收藏 、 )及转发 等深度互动。这表明用户不仅消费此类内容，还倾向于将其作为消遣和情感寄托",
+          "gold": "家庭情感与乡村生活：这是用户最核心且交互最深的兴趣。用户对展现农村质朴生活、家庭成员间亲情纽带、母爱孝道、婚姻关系及生活挑战的内容表现出极高热情，有多次收藏 如 、转发 如 及关注 (如",
+          "s_text": 0.47959183673469385,
+          "s_evidence": 0.8,
+          "s_pair": 0.5757142857142856,
+          "candidate_group_id": "872e659df893d28221155adfa4c3ec5372e0e787e7602113555c1174db165e31",
+          "gold_group_id": "872e659df893d28221155adfa4c3ec5372e0e787e7602113555c1174db165e31",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "休闲内容与泛娱乐：此兴趣表现为碎片化的浏览行为。用户在特定时间段内集中点击了多部短剧广告 、 ，并对幽默段子、社会新闻类视频进行了点赞 和转发 ，表明这是其在信息流中主要的消遣方式",
+          "gold": "本地生活与资讯(青海及周边地区)：用户对地域内容有明显偏好。在直播域关注了多位来自青海、甘肃等地区的主播( 等)；在视频域也对青海本地的招聘信息 、农业活动 等内容进行了点赞和转发，表现出强烈的归属感和关注度",
+          "s_text": 0.22459893048128343,
+          "s_evidence": 0.2857142857142857,
+          "s_pair": 0.2429335370511841,
+          "candidate_group_id": "fdb826d9260241b8661b2b33f8964fe8b7cf09615a79dcdd04cda55d1d67758d",
+          "gold_group_id": "fdb826d9260241b8661b2b33f8964fe8b7cf09615a79dcdd04cda55d1d67758d",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "居家生活与收纳整理：此为用户最核心且稳定的兴趣。用户在商品域有多次购买和大量点击行为( , , 等)，集中在厨房、卫浴、桌面等场景的实用小工具、收纳用品及清洁耗材。这表明用户有强烈的改善居住环境、提升生活便利性的需求",
+          "gold": "居家生活与日用百货：这是用户最核心且交互深度最深的类目。用户有超过30次商品购买行为，其中大部分为清洁用品、厨房收纳、家居小物等，并在单日内有近50次对此类商品的点击行为如 。此外，用户关注的直播中也包含生活用品带货如 ，表明其对提升家居生活品质和实用性的内容有持续、强烈的需求",
+          "s_text": 0.34710743801652894,
+          "s_evidence": 0.0,
+          "s_pair": 0.24297520661157024,
+          "candidate_group_id": "431316e84cf54056e36bf4d2544263d9f88d5364636119f3de36199c2b33afe0",
+          "gold_group_id": "431316e84cf54056e36bf4d2544263d9f88d5364636119f3de36199c2b33afe0",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "汽车与数码产品：用户在此类目下的行为虽不如前两类密集，但意图明确。例如，通过 search_id=xxx 搜索特定手机型号和配件，以及点击汽车置换服务广告 。这表明用户处于产品研究或决策阶段，交互深度高",
+          "gold": "特定创作者或主播：用户的搜索行为表现出高度的集中性和重复性，多次主动搜索“晓惠629”、“老二【629】”、“小奶豆”等特定账号。这表明用户对个别视频创作者或主播有很强的关注和追随倾向，构成了其主动探索内容的核心驱动力，交互深度极高",
+          "s_text": 0.24299065420560748,
+          "s_evidence": 0.0,
+          "s_pair": 0.24299065420560748,
+          "candidate_group_id": "094aa17d53a6e2779e498f4aa79762e9b7ea9145c9f344103906e9c789baeb7e",
+          "gold_group_id": "094aa17d53a6e2779e498f4aa79762e9b7ea9145c9f344103906e9c789baeb7e",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "女性向剧情/社交内容：用户对以女性视角展开的、强调情感互动和生活美学的内容有明显偏好。这体现在对多个以“女性角色”、“情感纠葛”、“生活故事”为标签的广告 , )的深度转化行为上，交互深度同样很高",
+          "gold": "休闲游戏：这是用户最核心、交互最深的兴趣。用户在短时间内对大量卡通风格的休闲、益智、角色扮演、模拟经营类游戏广告产生了数十次深度转化和点击行为，表现出极高的接纳度和探索欲",
+          "s_text": 0.2430939226519337,
+          "s_evidence": 0.0,
+          "s_pair": 0.2430939226519337,
+          "candidate_group_id": "7d7d8eab4289196c347c339693b925e81dbee6bd626a6a61068982d718905fc1",
+          "gold_group_id": "7d7d8eab4289196c347c339693b925e81dbee6bd626a6a61068982d718905fc1",
+          "relation": "same_group"
+        },
+        {
+          "candidate": "短剧/影视娱乐：这是用户最核心、交互最深的兴趣。用户在短期内(2025年12月至2026年2月)对短剧广告表现出极高的消费粘性，有数十次“深度转化”和“点击”行为。内容偏好高度集中于古装、穿越、系统、逆袭、情感纠葛等“爽文”元素 、 、",
+          "gold": "家庭情感与都市短剧：此为用户最核心且交互深度最深的兴趣。用户在近两个月内有超过50次的广告深度转化与点击行为，内容高度集中于家庭矛盾、情感纠葛、婚姻危机、女性成长逆袭等主题的短剧",
+          "s_text": 0.44878048780487806,
+          "s_evidence": 0.0,
+          "s_pair": 0.44878048780487806,
+          "candidate_group_id": "52c32bfb5625ef95187ec270d08715cc2634b2bf1558691bab126a42d88b5a61",
+          "gold_group_id": "a6f65346c97e3fc81e9a927d722e9f2fe534fdea9f220d9cda11652fe6efdbc8",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "服饰穿搭：这是用户最核心且交互最深的兴趣域。用户在秋、冬、春三季均有大量购买和点击行为，覆盖了女装(如T恤、外套、裤装)、鞋履(如靴、板鞋、棉鞋)、内衣、配饰(如发箍、戒指、手链)等多个子类目。交互深度极高，表现为多次重复购买",
+          "gold": "服饰穿搭：这是用户最核心、交互最深的兴趣域。用户有大量的搜索、加购、购买和点击行为，覆盖了连衣裙、上衣、裤/裙装、外套、鞋靴及配饰等多个细分类目。用户对材质(如“德绒”)、款式(如“小香风”、“复古”、“国风”)、功能(如“加绒保暖”、“显瘦”)均有明确偏好，显示出深度参与和持续关注的特点",
+          "s_text": 0.43410852713178294,
+          "s_evidence": 0.0,
+          "s_pair": 0.43410852713178294,
+          "candidate_group_id": "e513502df58316b9f08a5d6f7895fff3b6b6e4a64f3de38ce87dd64ab36cfde7",
+          "gold_group_id": "353742584edd7388f4e81ea1dbbca10653bc52e26e039e1c303f49ca37ef51b3",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "高颜值女性内容：这是用户最核心、交互最深的兴趣。用户在直播域有大量对女性主播的关注和打赏行为(如 、 等)，偏好“精致妆容”、“好身材”、“长发”、“亲切互动”等标签。在视频域，用户对美女自拍、穿搭展示、舞蹈等内容有极高的长播和关注行为(如 、 )，并伴有点赞、评论等深度互动",
+          "gold": "女性娱乐内容：这是用户最核心且投入最深的兴趣。用户在直播域有大量(超过40次)的关注与打赏行为，内容高度集中于高颜值、才艺(唱歌/舞蹈)、情感互动类的女主播。该偏好也延伸至视频域(如观看美女自拍、时尚穿搭类视频)和广告域",
+          "s_text": 0.4262295081967213,
+          "s_evidence": 0.0,
+          "s_pair": 0.4262295081967213,
+          "candidate_group_id": "9ec8bb893646f73b028db73987f15664f0d6bca63ea55b606828c8fc025f86b5",
+          "gold_group_id": "03427e63ccff04fd14f6114ed48532cdd9e0b9bb6d32464778bc156e4ca75e94",
+          "relation": "same_domain_wrong_group"
+        },
+        {
+          "candidate": "美妆护肤：此为用户的核心消费兴趣。用户在美妆护肤领域有多次购买行为，覆盖了从护肤套装 、眼部护理 到彩妆 、美发 等多个细分品类。这表明用户对个人形象和护理有持续且深入的投入，是平台上的高价值消费用户",
+          "gold": "美妆护肤：此为用户深度参与的核心类目。用户在电商域有大量且持续的购买行为，覆盖了从底妆、眼妆到美白、抗皱、保湿等多个护肤及彩妆细分品类。同时，在视频域，用户收藏、长播了护肤品介绍、美妆教程等内容，并与后续的购买行为形成了明确的转化链路，表现出极高的兴趣深度和消费意愿",
+          "s_text": 0.4192139737991266,
+          "s_evidence": 0.0,
+          "s_pair": 0.4192139737991266,
+          "candidate_group_id": "cb6c9d895193d6f150afb9ffdc093e01147bda16c92b8c936cd9b0de9e1a04e9",
+          "gold_group_id": "38bcd5f6e39b057b26f9c0c0632787842b15f3d080e0063d78e8fe4cfbe54a74",
+          "relation": "same_domain_wrong_group"
+        }
+      ]
+    }
+  },
+  "gpu_used": false
+}
