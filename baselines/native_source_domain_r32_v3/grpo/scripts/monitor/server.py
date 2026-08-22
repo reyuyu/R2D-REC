@@ -349,8 +349,13 @@ def create_app(
                 dataset = Path(declaration["dataset"]).expanduser().resolve()
                 expected_sha = str(declaration["sha256"])
             elif source_kind == "train":
-                dataset = Path(manifest_data["dataset"]).expanduser().resolve()
-                expected_sha = str(manifest_data["dataset_sha"][dataset.name])
+                dataset_value = manifest_data.get("dataset") or manifest_data.get("train_data")
+                dataset = Path(dataset_value).expanduser().resolve()
+                dataset_sha = manifest_data.get("dataset_sha")
+                if isinstance(dataset_sha, dict):
+                    expected_sha = str(dataset_sha[dataset.name])
+                else:
+                    expected_sha = str(manifest_data["train_sha256"])
             else:
                 return {}
             stat = dataset.stat()

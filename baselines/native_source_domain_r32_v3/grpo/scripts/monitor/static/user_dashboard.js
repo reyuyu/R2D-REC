@@ -835,14 +835,16 @@
       const traces = state.traces.filter(trace => trace.route === route).sort((a, b) => a.rollout_id - b.rollout_id);
       const traceByRollout = new Map(traces.map(trace => [Number(trace.rollout_id), trace]));
       const rollouts = state.rollouts.filter(rollout => rollout.route === route);
-      const links = rollouts.length ? rollouts.map(rollout => {
-        const key = userRolloutKey(rollout);
-        const trace = traceByRollout.get(Number(rollout.rollout_id));
-        const complete = Boolean(trace) || Array.isArray(rollout.credit_units);
-        const detail = trace ? `${trace.candidates?.length ?? 0} candidates` : complete ? '完整样本' : '仅汇总';
-        return `<button class="trace-link ${complete ? '' : 'summary-only '}${key === current ? 'active' : ''}" type="button" data-rollout-id="${escapeHtml(key)}" data-route="${route}">第 ${rollout.step ?? '-'} 步 · #${rollout.rollout_id ?? '-'} · ${detail}</button>`;
-      }).join('') : '<span class="trace-none">尚无记录</span>';
-      return `<div class="trace-lane"><div class="trace-lane-title ${route === 'action' ? 'user-route-action' : 'user-route-chain'}">${routeName(route)}</div><div class="trace-links">${links}</div></div>`;
+      if (!rollouts.length) return `<div class="trace-lane"><div class="trace-lane-title ${route === 'action' ? 'user-route-action' : 'user-route-chain'}">${routeName(route)}</div><span class="trace-none">尚无记录</span></div>`;
+      const selected = rollouts.find(rollout => userRolloutKey(rollout) === current);
+      const rollout = selected || rollouts.at(-1);
+      const key = userRolloutKey(rollout);
+      const trace = traceByRollout.get(Number(rollout.rollout_id));
+      const complete = Boolean(trace) || Array.isArray(rollout.credit_units);
+      const completeCount = rollouts.filter(row => traceByRollout.has(Number(row.rollout_id)) || Array.isArray(row.credit_units)).length;
+      const detail = trace ? `${trace.candidates?.length ?? 0} candidates` : complete ? '完整样本' : '仅汇总';
+      const button = `<button class="trace-link ${complete ? '' : 'summary-only '}${key === current ? 'active' : ''}" type="button" data-rollout-id="${escapeHtml(key)}" data-route="${route}">第 ${rollout.step ?? '-'} 步 · #${rollout.rollout_id ?? '-'} · ${detail}</button>`;
+      return `<div class="trace-lane"><div class="trace-lane-title ${route === 'action' ? 'user-route-action' : 'user-route-chain'}">${routeName(route)}</div><div class="trace-lane-compact"><div class="trace-links">${button}</div><span class="trace-count">共 ${rollouts.length} 条 · ${completeCount} 条完整</span></div></div>`;
     };
     $('traceIndex').innerHTML = lane('action') + lane('chain');
   }
@@ -884,19 +886,33 @@
         [rollout.route === 'action' ? 'F1' : 'Action / Logic', rollout.route === 'action' ? fmt(rollout.f1) : `${fmt(rollout.full_action_alignment)} / ${fmt(rollout.full_logic_alignment)}`],
         ['Completion tokens', String(rollout.generated_token_count ?? '-')],
       ].map(([label, value]) => `<div class="stat"><div class="label">${label}</div><div class="value small">${escapeHtml(value)}</div></div>`).join('');
-      const contextHtml = context ? renderUserSampleContext(context, rollout.route) : '<div class="empty">正在读取输入样本与 Ground Truth...</div>';
+      const contextHtml = context
+        ? renderUserSampleContext(context, rollout.route)
+        : context === false
+          ? '<div class="empty">该记录没有可恢复的输入样本与 Ground Truth。</div>'
+          : '<div class="empty">正在读取输入样本与 Ground Truth...</div>';
       $('trace').classList.add('user-trace');
       $('trace').innerHTML = `${contextHtml}${renderMcTraceCandidate(rollout, `${rollout.prompt_step ?? rollout.step}-${rollout.candidate_index ?? 0}`)}`;
       return;
     }
     const id = Number(rollout.rollout_id);
+    const trace = state.traces.find(row => row.rollout_id === id && (!route || row.route === route));
+    const candidates = Array.isArray(trace?.candidates) ? trace.candidates : [];
+    const meanCandidateValue = key => {
+      const values = candidates.map(candidate => Number(candidate[key])).filter(Number.isFinite);
+      return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+    };
+    const actionF1 = meanCandidateValue('f1');
+    const chainAction = meanCandidateValue('action_alignment');
+    const chainLogic = meanCandidateValue('logic_alignment');
     const stats = [
       ['路由', routeName(rollout.route)], ['平均 Reward', fmt(rollout.reward_mean)], ['Reward Std', fmt(rollout.reward_std)],
       ['Zero-std', pct(rollout.zero_std_ratio)], ['Masked candidates', pct(rollout.masked_candidate_rate)],
       ['Masked tokens', pct(rollout.masked_token_rate)], ['平均长度', fmt(rollout.completion_length_mean, 1)], ['G', String(rollout.g ?? state.manifest.G ?? 4)],
     ];
+    if (rollout.route === 'action') stats.splice(2, 0, ['平均 F1', actionF1 == null ? '未落盘' : fmt(actionF1)]);
+    if (rollout.route === 'chain') stats.splice(2, 0, ['平均 Action / Logic', chainAction == null || chainLogic == null ? '未落盘' : `${fmt(chainAction)} / ${fmt(chainLogic)}`]);
     $('rolloutSummary').innerHTML = stats.map(([label, value]) => `<div class="stat"><div class="label">${label}</div><div class="value small">${escapeHtml(value)}</div></div>`).join('');
-    const trace = state.traces.find(row => row.rollout_id === id && (!route || row.route === route));
     if (!trace) {
       const sampleIds = Array.isArray(rollout.group_ids) ? rollout.group_ids : [];
       const sampleId = sampleIds[0];
@@ -911,7 +927,6 @@
       $('trace').innerHTML = `<div class="empty">该时间步保存了 rollout 汇总，但未保存 candidate trace，因此没有历史候选输出可展示。</div>${contextHtml}`;
       return;
     }
-    const candidates = Array.isArray(trace.candidates) ? trace.candidates : [];
     const expected = Number(state.manifest.G || 4);
     $('trace').classList.add('user-trace');
     $('trace').innerHTML = `<div class="trace-head">${escapeHtml(trace.group_id || '-')} · ${escapeHtml(routeName(trace.route))}<span class="candidate-count ${candidates.length === expected ? '' : 'incomplete'}">${candidates.length}/${expected} candidates</span></div>${renderUserSampleContext(trace, trace.route)}${candidates.map(candidate => renderUserCandidate(candidate, trace.route)).join('') || '<div class="empty">trace 中没有 candidate</div>'}`;

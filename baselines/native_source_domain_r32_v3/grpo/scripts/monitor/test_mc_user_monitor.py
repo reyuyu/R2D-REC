@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -133,6 +134,22 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertEqual(returned[0]["credit_units"], row["credit_units"])
         self.assertEqual(returned[0]["overlap_metadata"], row["overlap_metadata"])
 
+    def test_formal_train_contract_exposes_sample_context(self):
+        sample_id = "b" * 64
+        dataset = Path(self.temporary.name) / "formal_train.jsonl"
+        write_jsonl(dataset, [{"sample_id": sample_id, "prompt": "fixed train prompt", "gold_sids": ["video A1 B2 C3"], "gold_events": []}])
+        formal = self.user_runs / "mc_user_v1_formal" / "MC-USER-FORMAL-TEST"
+        write_json(formal / "manifest.json", {
+            "run_id": formal.name,
+            "run_kind": "user_grpo",
+            "algorithm": "mc_user_v1",
+            "train_data": str(dataset),
+            "train_sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
+        })
+        returned = self.client.get(f"/api/sample-context?run_id={formal.name}&sample_id={sample_id}")
+        self.assertEqual(returned.status_code, 200)
+        self.assertEqual(returned.json()["prompt"], "fixed train prompt")
+
     def test_future_probe_and_recommendation_guard_are_read_only(self):
         probe = {
             "status": "PASS",
@@ -220,7 +237,7 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("20260822-history-rollout", html)
+        self.assertIn("20260822-rollout-context", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
@@ -243,6 +260,11 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("完整样本", javascript)
         self.assertIn("仅汇总", javascript)
         self.assertIn("summary-only", javascript)
+        self.assertIn("trace-lane-compact", javascript)
+        self.assertIn("completeCount", javascript)
+        self.assertIn("平均 F1", javascript)
+        self.assertIn("平均 Action / Logic", javascript)
+        self.assertIn("没有可恢复的输入样本与 Ground Truth", javascript)
         self.assertIn("button.dataset.rolloutId!=null", html)
         self.assertIn("full_action_alignment", javascript)
         self.assertIn("尚未执行 Recommendation guard evaluation", javascript)
