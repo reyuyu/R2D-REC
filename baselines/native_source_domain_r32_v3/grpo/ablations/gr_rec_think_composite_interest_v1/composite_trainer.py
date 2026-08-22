@@ -22,12 +22,10 @@ from .interest_metric import diversity_monitor, monitor_record, population_advan
 GROUP_SIZE = 4
 
 
-def completion_text(value):
-    if isinstance(value, str):
-        return value
-    if isinstance(value, list) and value and isinstance(value[0], dict):
-        return str(value[0].get("content") or "")
-    return str(value or "")
+def decode_reward_completion(tokenizer, candidate_ids):
+    """Decode reward-side CoT without stripping SID or </think> tokens."""
+    return tokenizer.decode(candidate_ids, skip_special_tokens=False)
+
 
 
 def assert_gold_isolation(item, rendered_prompt=None, decoded_input=None):
@@ -158,14 +156,16 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
         rewards_per_func = super()._calculate_rewards(inputs, prompts, completions, completion_ids)
         weighted = (rewards_per_func * self.reward_weights.to(
             self.accelerator.device).unsqueeze(0)).nansum(dim=1).tolist()
+        raw_completions = [decode_reward_completion(self.processing_class, candidate_ids)
+                           for candidate_ids in completion_ids]
         local_records = [{
             "group_id": item["recommendation_group_id"],
             "rank": self.accelerator.process_index,
             "local_index": index,
             "prompt": item["prompt"],
             "gold_cot": item["gold_cot"],
-            "completion": completion_text(completion),
-        } for index, (item, completion) in enumerate(zip(inputs, completions))]
+            "completion": raw_completion,
+        } for index, (item, raw_completion) in enumerate(zip(inputs, raw_completions))]
         self._composite_runtime = build_global_runtime(gather_object(local_records), weighted)
         return rewards_per_func
 

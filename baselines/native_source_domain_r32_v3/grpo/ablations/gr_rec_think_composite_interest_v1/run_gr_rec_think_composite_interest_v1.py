@@ -32,6 +32,29 @@ PROBE_IDS = (
 )
 CHECKPOINT_STEPS = (100, 200, 250, 300, 350, 400, 450, 500, 600, 720)
 RESULT_PATH = GRPO_ROOT / "results/gr_rec_think_composite_interest_v1_runner_dry_run_20260822.json"
+AUTO_SAVE_STEPS = 10000
+SAVE_TOTAL_LIMIT = len(CHECKPOINT_STEPS)
+
+
+def frozen_contract():
+    return {
+        "route": "think_only", "g": 4, "temperature": 0.9, "top_p": 0.95,
+        "learning_rate": 1e-6, "beta": 0.0, "epsilon": 0.2,
+        "loss_type": "grpo", "num_iterations": 2,
+        "steps_per_generation": 1, "route_multiplier": 1.0,
+        "stop_token": "</think>", "beam_num_beams": 32,
+        "reward": "0.60*U_beam+0.40*U_cot",
+        "advantage": "(R-mean)/(population_std+1e-4); correction=0",
+    }
+
+
+def checkpoint_save_config():
+    return {"save_strategy": "steps", "save_steps": AUTO_SAVE_STEPS,
+            "save_total_limit": SAVE_TOTAL_LIMIT}
+
+
+def should_save_checkpoint(step):
+    return int(step) in CHECKPOINT_STEPS
 
 
 def parser():
@@ -134,15 +157,7 @@ def dry_run_report(args, plan):
         "sampler_dropped_group_ids": plan["dropped_group_ids"],
         "effective_max_steps": args.max_steps,
         "checkpoint_steps": list(CHECKPOINT_STEPS),
-        "frozen_contract": {
-            "route": "think_only", "g": 4, "temperature": 0.9, "top_p": 0.95,
-            "learning_rate": 1e-6, "beta": 0.0, "epsilon": 0.2,
-            "loss_type": "grpo", "num_iterations": 2,
-            "steps_per_generation": 1, "route_multiplier": 1.0,
-            "stop_token": "</think>", "beam_num_beams": 32,
-            "reward": "0.60*U_beam+0.40*U_cot",
-            "advantage": "(R-mean)/(population_std+1e-4); correction=0",
-        },
+        "frozen_contract": frozen_contract(),
         "gold_cot_contract": "reward_only; absent from prompt/input_ids/generation/beam",
     }
     RESULT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -173,8 +188,9 @@ def launch_training(args, plan):
     model, tokenizer, _ = load_model(f"cuda:{rank}")
     for name, parameter in model.named_parameters():
         parameter.requires_grad = "lora" in name.lower()
-    cfg = make_grpo_config(plan["output_dir"], args.max_steps, 1e-6, SEED,
-                           save_strategy="steps", save_steps=100, save_total_limit=10)
+    cfg = make_grpo_config(
+        plan["output_dir"], args.max_steps, 1e-6, SEED, **checkpoint_save_config(),
+    )
     monitor = monitor_from_env(args.run_id, rank)
     if monitor.enabled:
         monitor.write_manifest({
@@ -186,7 +202,7 @@ def launch_training(args, plan):
             "gold_source_path": str(args.gold_data), "gold_cot_reward_only": True,
             "sampler_audit": plan["topology"], "fixed_probe_ids": plan["probe_ids"],
             "checkpoint_steps": list(CHECKPOINT_STEPS),
-            "frozen_contract": dry_run_report(args, plan)["frozen_contract"],
+            "frozen_contract": frozen_contract(),
         })
     beam32 = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
     trainer = ThinkCompositeInterestRecGRPOTrainer(
@@ -198,7 +214,7 @@ def launch_training(args, plan):
 
     class MilestoneSaveCallback(TrainerCallback):
         def on_step_end(self, training_args, state, control, **kwargs):
-            if int(state.global_step) in CHECKPOINT_STEPS:
+            if should_save_checkpoint(state.global_step):
                 control.should_save = True
             return control
 

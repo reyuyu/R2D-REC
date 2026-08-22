@@ -7,10 +7,15 @@ import unittest
 
 from .composite_trainer import (
     ThinkCompositeInterestRecGRPOTrainer, assert_gold_isolation,
-    build_global_runtime, classify_winner, score_candidate, slice_global,
+    build_global_runtime, classify_winner, decode_reward_completion,
+    score_candidate, slice_global,
 )
 from .interest_metric import composite_reward, population_advantages
-from .run_gr_rec_think_composite_interest_v1 import CHECKPOINT_STEPS, PROBE_IDS, SEED
+from .run_gr_rec_think_composite_interest_v1 import (
+    AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_IDS, SAVE_TOTAL_LIMIT, SEED,
+    checkpoint_save_config, frozen_contract, launch_training,
+    should_save_checkpoint,
+)
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
 
 SID = "<|video_begin|><s_a_1><s_b_2><s_c_3>"
@@ -27,7 +32,68 @@ def records(completions, group_id="g1"):
             for index, completion in enumerate(completions)]
 
 
+class SpecialTokenFixture:
+    def decode(self, candidate_ids, skip_special_tokens=False):
+        self.last_skip_special_tokens = skip_special_tokens
+        if skip_special_tokens:
+            return "<think>\n" + HEADING + "\n1. tactical game\n"
+        return GOOD
+
+
 class TrainingChainTests(unittest.TestCase):
+    def test_raw_reward_decode_preserves_sid_and_grounding(self):
+        tokenizer = SpecialTokenFixture()
+        raw = decode_reward_completion(tokenizer, [1, 2, 3])
+        parsed = extract_interest_units(raw, PROMPT)
+        self.assertFalse(tokenizer.last_skip_special_tokens)
+        self.assertEqual(parsed.units[0].grounded_evidence_sids, (SID,))
+        self.assertEqual(score_candidate(raw, GOLD, PROMPT, 2.0)["grounded_n"], 1)
+
+    def test_special_token_stripping_fixture_loses_evidence(self):
+        tokenizer = SpecialTokenFixture()
+        stripped = tokenizer.decode([1, 2, 3], skip_special_tokens=True)
+        parsed = extract_interest_units(stripped, PROMPT)
+        self.assertEqual(parsed.units[0].grounded_evidence_sids, ())
+        self.assertLess(
+            score_candidate(stripped, GOLD, PROMPT, 2.0)["mean_match_similarity"],
+            score_candidate(GOOD, GOLD, PROMPT, 2.0)["mean_match_similarity"],
+        )
+
+    def test_training_probe_raw_decode_parity(self):
+        from grpo_probe import FixedProbeEvaluator
+        tokenizer = SpecialTokenFixture()
+        training_text = decode_reward_completion(tokenizer, [1, 2, 3])
+        probe_text = tokenizer.decode([1, 2, 3], skip_special_tokens=False)
+        self.assertEqual(training_text, probe_text)
+        self.assertIn("skip_special_tokens=False", inspect.getsource(FixedProbeEvaluator._think))
+
+    def test_online_reward_score_matches_direct_raw_score(self):
+        tokenizer = SpecialTokenFixture()
+        online_text = decode_reward_completion(tokenizer, [1, 2, 3])
+        self.assertEqual(
+            score_candidate(online_text, GOLD, PROMPT, 2.0),
+            score_candidate(GOOD, GOLD, PROMPT, 2.0),
+        )
+
+    def test_trainer_reward_path_uses_raw_ids(self):
+        source = inspect.getsource(ThinkCompositeInterestRecGRPOTrainer._calculate_rewards)
+        self.assertIn("decode_reward_completion", source)
+        self.assertNotIn("completion_text", source)
+
+    def test_checkpoint_schedule_has_no_700(self):
+        self.assertEqual([step for step in range(1, 721) if should_save_checkpoint(step)],
+                         list(CHECKPOINT_STEPS))
+        self.assertFalse(should_save_checkpoint(700))
+        self.assertGreater(AUTO_SAVE_STEPS, 720)
+        self.assertGreaterEqual(SAVE_TOTAL_LIMIT, len(CHECKPOINT_STEPS))
+        self.assertEqual(checkpoint_save_config(), {
+            "save_strategy": "steps", "save_steps": 10000, "save_total_limit": 10,
+        })
+
+    def test_formal_path_does_not_call_dry_run_report(self):
+        self.assertNotIn("dry_run_report", inspect.getsource(launch_training))
+        self.assertEqual(frozen_contract()["reward"], "0.60*U_beam+0.40*U_cot")
+
     def test_candidate_parser_failure_is_zero_not_exception(self):
         row = score_candidate("invalid", GOLD, PROMPT, 2.0)
         self.assertFalse(row["parser_success"])
