@@ -1,0 +1,73 @@
+{
+  "experiment": "GR_REC_Think_CompositeInterest_v1",
+  "status": "CPU_DRY_RUN_PASS",
+  "timestamp": "2026-08-22T11:25:55.669674Z",
+  "base_main_sha": "7b8005aebe8610c0824624be344cececebceaaba",
+  "inspected_head": "7b8005aebe8610c0824624be344cececebceaaba",
+  "gpu_used": false,
+  "model_loaded": false,
+  "generation_called": false,
+  "optimizer_step_called": false,
+  "training_started": false,
+  "paths": {
+    "base_model": "/data/models/onereason-8b-pretrain-competition",
+    "fresh_original_bata_adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+    "grpo_data": "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl",
+    "gold_data": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+    "future_output_dir": "/data/GRPO/outputs/formal/GR-REC-THINK-COMPOSITE-INTEREST-V1"
+  },
+  "topology": {
+    "original_think_groups": 1549,
+    "exact_gold_join_groups": 1458,
+    "parser_valid_gold_groups": 1446,
+    "fixed_probe_groups": 4,
+    "post_probe_groups": 1442,
+    "sampler_drop_groups": 2,
+    "training_groups": 1440,
+    "fresh_g4_rollouts": 360,
+    "optimizer_steps_num_iterations_2": 720
+  },
+  "seed": 20260818,
+  "fixed_probe_group_ids": [
+    "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc",
+    "9d9852a42bddfd801f85ee92a72da13a2145f3e3eb9e80cab93bd248ac428559",
+    "994c3186e677aec015938e71f08257afcf9f235a5a35df24af7fa67849c752d5",
+    "6aa980e4a7c35366d33d2c2f61a28def8e24b906b9fa90fe1c673b03cc8cbdc2"
+  ],
+  "fixed_probes_excluded_from_training": true,
+  "sampler_dropped_group_ids": [
+    "1f4dc9be5e440944e1301f3041fa032d29f83159fdf0dc5f0cb5a915a82b2d1a",
+    "6fb0c9ee27af041dd9eb6707be5168c385bf83ed45e624a82272f147a419a240"
+  ],
+  "effective_max_steps": 720,
+  "checkpoint_steps": [
+    100,
+    200,
+    250,
+    300,
+    350,
+    400,
+    450,
+    500,
+    600,
+    720
+  ],
+  "frozen_contract": {
+    "route": "think_only",
+    "g": 4,
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "learning_rate": 1e-06,
+    "beta": 0.0,
+    "epsilon": 0.2,
+    "loss_type": "grpo",
+    "num_iterations": 2,
+    "steps_per_generation": 1,
+    "route_multiplier": 1.0,
+    "stop_token": "</think>",
+    "beam_num_beams": 32,
+    "reward": "0.60*U_beam+0.40*U_cot",
+    "advantage": "(R-mean)/(population_std+1e-4); correction=0"
+  },
+  "gold_cot_contract": "reward_only; absent from prompt/input_ids/generation/beam"
+}

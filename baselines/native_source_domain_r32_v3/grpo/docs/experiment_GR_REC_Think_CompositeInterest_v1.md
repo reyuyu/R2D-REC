@@ -332,3 +332,38 @@ The four fixed probe IDs are unchanged and all remain eligible.
 ## Remaining gate
 
 LEXICAL_METRIC_READY is YES for M1 at threshold .30. This does not authorize GPU work. The next phase still requires explicit code review and a separately authorized runner implementation.
+
+## Production training-chain integration (2026-08-22)
+
+Base main: `7b8005aebe8610c0824624be344cececebceaaba`.
+
+The stable Think generation, exact `</think>` stop, G4 sampling and Beam32 path
+remain inherited from `RecGRPOTrainer`. The thin experiment subclass reads
+reward-only `gold_cot` after generation, computes the frozen Composite reward,
+gathers metadata in the same DDP order as rewards, normalizes each contiguous
+global G4 with population std (`correction=0`) plus `1e-4`, and replaces only
+the final sequence advantage. It does not override `_compute_loss` and does not
+import or call ExactClamp.
+
+Gold leakage is fail-closed across raw/rendered prompts and decoded input IDs.
+Candidate parser failure yields `U_cot=0`; invalid Gold, non-finite values,
+range violations, DDP misalignment and group-contiguity drift are hard errors.
+Beam32 never receives Gold CoT.
+
+`composite_interest.jsonl` records every candidate's Beam raw/utility, Gold,
+predicted and matched counts, coverage, precision, match similarity, tier,
+quality, U_cot, Composite reward, Raw N, Grounded N, grounding coverage and
+final advantage. Group rows preserve complete vectors, diversity fields and
+separate top-set tie-break versus strict Beam reversal labels. Fixed Think
+probes reuse the production generation and Beam functions and never optimize.
+
+Actual CPU dry-run source chain: 1549 original Think, 1458 exact Gold joins,
+1446 parser-valid eligible, four fixed probes excluded, 1442 post-probe, two
+deterministically tail-dropped, 1440 training groups, 360 fresh G4 rollouts and
+720 optimizer steps at two iterations.
+
+The runner asserts the frozen Think-only contract and schedules checkpoints at
+100/200/250/300/350/400/450/500/600/720. CPU tests pass 43/43. Dry-run artifact:
+`gr_rec_think_composite_interest_v1_runner_dry_run_20260822.json`.
+
+GPU used: NO. Model loaded: NO. Generation: NO. Optimizer step: NO. Training: NO.

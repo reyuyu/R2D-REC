@@ -168,6 +168,16 @@ class MonitorWriter:
             return False
         return self._append("probes.jsonl", {"type": "probe", **event})
 
+    def write_composite(self, event: Mapping[str, Any]) -> bool:
+        """Write experiment reward evidence without changing base rollout rows."""
+        rollout_id = int(event.get("rollout_id") or 0)
+        if self.rank != 0 or rollout_id % self.rollout_every:
+            return False
+        return self._append(
+            "composite_interest.jsonl",
+            {"type": "composite_interest", **event},
+        )
+
 
 def monitor_from_env(run_id: str, rank: int) -> MonitorWriter:
     enabled = os.environ.get("GRPO_MONITOR", "0").strip() == "1"
