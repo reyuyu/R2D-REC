@@ -1,7 +1,9 @@
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -23,6 +25,7 @@ from run_mc_user_formal_v1 import (  # noqa: E402
     build_manifest,
     git_reproducibility_state,
     load_formal_config,
+    public_preflight,
     run_cli,
     run_formal_prompt_loop,
     run_preflight,
@@ -296,9 +299,65 @@ class SafetyGateTests(unittest.TestCase):
                 )
             model_loader.assert_not_called()
             self.assertEqual(result["status"], "READY_TO_EXECUTE")
+            self.assertIsInstance(result["run_dir"], str)
+            self.assertEqual(Path(result["run_dir"]), Path(directory) / "formal-test")
             self.assertEqual(len(result["manifest"]["prompts"]), 512)
             self.assertTrue((Path(directory) / "formal-test" / "manifest.json").is_file())
-            self.assertTrue((Path(directory) / "formal-test" / "preflight.json").is_file())
+            preflight_path = Path(directory) / "formal-test" / "preflight.json"
+            self.assertTrue(preflight_path.is_file())
+            stored = json.loads(preflight_path.read_text(encoding="utf-8"))
+            self.assertIsInstance(stored["run_dir"], str)
+            self.assertEqual(stored["run_dir"], result["run_dir"])
+
+            public = public_preflight(result)
+            self.assertIsInstance(public["run_dir"], str)
+            json.dumps(public)
+            for value in public.values():
+                json.dumps(value)
+
+    def test_real_preflight_contract_prints_json_and_ready(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output_root = Path(directory)
+
+            def real_preflight(args):
+                args.output_root = output_root
+                with patch(
+                    "run_mc_user_formal_v1.validate_paths",
+                    return_value={"train_sha256": FROZEN_CONFIG["train_sha256"]},
+                ), patch(
+                    "run_mc_user_formal_v1.read_jsonl", return_value=dataset_rows()
+                ):
+                    return run_preflight(
+                        args,
+                        gpu_checker=Mock(return_value={"index": 0}),
+                        git_checker=Mock(
+                            return_value={
+                                "git_commit": "abc123",
+                                "working_tree_clean": True,
+                            }
+                        ),
+                    )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                output = run_cli(
+                    [
+                        "--config",
+                        str(CONFIG_PATH),
+                        "--gpu-id",
+                        "0",
+                        "--run-id",
+                        "formal-cli-test",
+                    ],
+                    preflight_fn=real_preflight,
+                    execute_fn=Mock(),
+                )
+
+            rendered = stdout.getvalue()
+            self.assertIn('"status": "READY_TO_EXECUTE"', rendered)
+            self.assertTrue(rendered.rstrip().endswith("READY_TO_EXECUTE"))
+            self.assertIsInstance(output["run_dir"], str)
+            json.dumps(output)
 
     def test_without_execute_never_calls_execute_path(self):
         preflight = Mock(
@@ -388,6 +447,7 @@ class SafetyGateTests(unittest.TestCase):
         self.assertIn("assert_gpu_process_owned", source)
         self.assertIn("assert_only_lora_trainable", source)
         self.assertIn("validate_exact_policy_ids", source)
+        self.assertIn('run_dir = Path(preflight["run_dir"])', source)
         self.assertNotIn("random.shuffle", source)
         for forbidden in (
             "old_per_token_logps",

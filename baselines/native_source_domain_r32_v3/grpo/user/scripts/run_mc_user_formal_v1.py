@@ -332,7 +332,7 @@ def run_preflight(
         "manifest": manifest,
         "rows": rows,
         "paths": paths,
-        "run_dir": run_dir,
+        "run_dir": str(run_dir),
     }
 
 
