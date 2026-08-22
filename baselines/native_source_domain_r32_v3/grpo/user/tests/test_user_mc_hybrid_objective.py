@@ -49,7 +49,7 @@ class MCHybridObjectiveTests(unittest.TestCase):
             [[unit(0.4, [0])], [unit(-0.2, [1])]],
             torch.ones_like(logps),
         )
-        expected = metadata["sequence_loss"] - 0.3 * metadata["local_loss"]
+        expected = metadata["sequence_loss"] + 0.3 * metadata["local_loss"]
         self.assertTrue(torch.equal(metadata["total_loss"], expected))
         self.assertEqual(metadata["sequence_weight"], 1.0)
         self.assertEqual(metadata["local_weight"], 0.3)
@@ -72,18 +72,29 @@ class MCHybridObjectiveTests(unittest.TestCase):
         self.assertEqual(float(logps.grad[1, 2]), 0.0)
 
     def test_local_loss_matches_existing_objective_exactly(self):
-        logps = torch.tensor(
+        values = torch.tensor(
             [[-1.0, -2.0, -3.0], [-4.0, -5.0, -6.0]], dtype=torch.float64
         )
         units = [[unit(0.4, [0, 1])], [unit(-0.3, [1, 2])]]
-        mask = torch.ones_like(logps)
-        direct_loss, direct_metadata = mc_unit_credit_loss(logps, units, mask)
-        _, hybrid_metadata = mc_hybrid_objective(logps, [0.7, 0.1], units, mask)
+        direct_logps = values.clone().requires_grad_(True)
+        hybrid_logps = values.clone().requires_grad_(True)
+        mask = torch.ones_like(values)
+        direct_loss, direct_metadata = mc_unit_credit_loss(direct_logps, units, mask)
+        hybrid_loss, hybrid_metadata = mc_hybrid_objective(
+            hybrid_logps, [0.5, 0.5], units, mask
+        )
         self.assertTrue(torch.equal(hybrid_metadata["local_loss"], direct_loss))
         nested = hybrid_metadata["local_objective_metadata"]
         self.assertEqual(nested.keys(), direct_metadata.keys())
         self.assertTrue(torch.equal(nested["candidate_losses"], direct_metadata["candidate_losses"]))
         self.assertEqual(nested["active_unit_count"], direct_metadata["active_unit_count"])
+        direct_loss.backward()
+        hybrid_loss.backward()
+        self.assertLess(float(direct_logps.grad[0, 0]), 0.0)
+        self.assertLess(float(hybrid_logps.grad[0, 0]), 0.0)
+        self.assertTrue(
+            torch.allclose(hybrid_logps.grad, 0.3 * direct_logps.grad, rtol=0.0, atol=1e-15)
+        )
 
 
 if __name__ == "__main__":

@@ -71,7 +71,7 @@ def mc_hybrid_objective(
         credit_units_per_candidate,
         completion_mask,
     )
-    total_loss = sequence_weight * sequence_loss - local_weight * local_loss
+    total_loss = sequence_weight * sequence_loss + local_weight * local_loss
     metadata = {
         "group_reward_mean": float(reward_mean),
         "group_reward_std": float(reward_std),
