@@ -9,7 +9,8 @@ from transformers import TrainerCallback
 
 from grpo_probe import FixedProbeEvaluator
 from .composite_trainer import score_candidate
-from .interest_metric import population_advantages
+from .interest_metric import display_interest_unit, population_advantages
+from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
 
 
 class CompositeThinkProbeEvaluator(FixedProbeEvaluator):
@@ -36,12 +37,15 @@ class CompositeThinkProbeEvaluator(FixedProbeEvaluator):
     def _think(self):
         result = super()._think()
         gold_cot = self.records[result["group_id"]]["gold_cot"]
+        gold = extract_interest_units(gold_cot, result["prompt"])
+        result["gold_interest_units"] = [display_interest_unit(unit) for unit in gold.units]
         scored = [
             score_candidate(item["completion"], gold_cot, result["prompt"], item["reward"])
             for item in result["candidates"]
         ]
         advantages = population_advantages([item["composite_reward"] for item in scored])
-        for candidate, score, advantage in zip(result["candidates"], scored, advantages):
+        for candidate_id, (candidate, score, advantage) in enumerate(zip(result["candidates"], scored, advantages)):
+            candidate.setdefault("candidate_id", candidate_id)
             candidate.update(score)
             candidate["final_sequence_advantage"] = advantage
         return result
@@ -85,6 +89,7 @@ class CompositeThinkProbeEvaluator(FixedProbeEvaluator):
                         "group_id": part["group_id"],
                         "target_domain": part.get("target_domain"),
                         "gold_sids": part["gold_sids"],
+                        "gold_interest_units": part["gold_interest_units"],
                         "think_prompt": part["prompt"],
                         "probe_route": "think_only",
                         "think": {

@@ -80,6 +80,74 @@ def pair_similarity(candidate: InterestUnit, gold: InterestUnit) -> float:
     )
 
 
+def display_interest_unit(unit: InterestUnit) -> dict:
+    """Compact monitor representation; never enters reward calculation."""
+    return {
+        "index": int(unit.index),
+        "normalized_text": unit.normalized_text,
+        "grounded_evidence_sids": list(unit.grounded_evidence_sids),
+    }
+
+
+def matching_diagnostics(
+    candidate: InterestParse,
+    gold: InterestParse,
+    matches: Sequence[PairMatch],
+) -> dict:
+    """Explain the frozen matching with the same Python metric primitives."""
+    matched_pred = {pair.candidate_index for pair in matches}
+    matched_gold = {pair.gold_index for pair in matches}
+
+    def comparison(pred_index: int, gold_index: int) -> dict:
+        pred_unit, gold_unit = candidate.units[pred_index], gold.units[gold_index]
+        text = text_similarity(pred_unit.normalized_text, gold_unit.normalized_text)
+        evidence = evidence_similarity(
+            pred_unit.grounded_evidence_sids,
+            gold_unit.grounded_evidence_sids,
+        )
+        combined = pair_similarity(pred_unit, gold_unit)
+        return {
+            "pred_index": int(pred_unit.index),
+            "gold_index": int(gold_unit.index),
+            "text_similarity": text,
+            "evidence_similarity": evidence,
+            "combined_similarity": combined,
+            "above_threshold": combined >= MATCH_THRESHOLD,
+        }
+
+    details = []
+    for pair in matches:
+        detail = comparison(pair.candidate_index, pair.gold_index)
+        if not math.isclose(
+            detail["combined_similarity"], pair.similarity, abs_tol=1e-12
+        ):
+            raise RuntimeError("matching display diagnostic drift")
+        details.append({**detail, "matched": True})
+
+    def best_for_pred(pred_index: int) -> dict | None:
+        options = [comparison(pred_index, gold_index) for gold_index in range(len(gold.units))]
+        return max(options, key=lambda row: (row["combined_similarity"], -row["gold_index"])) if options else None
+
+    def best_for_gold(gold_index: int) -> dict | None:
+        options = [comparison(pred_index, gold_index) for pred_index in range(len(candidate.units))]
+        return max(options, key=lambda row: (row["combined_similarity"], -row["pred_index"])) if options else None
+
+    unmatched_pred_positions = [
+        index for index in range(len(candidate.units)) if index not in matched_pred
+    ]
+    unmatched_gold_positions = [
+        index for index in range(len(gold.units)) if index not in matched_gold
+    ]
+    return {
+        "pred_interest_units": [display_interest_unit(unit) for unit in candidate.units],
+        "match_details": details,
+        "unmatched_pred_indices": [int(candidate.units[index].index) for index in unmatched_pred_positions],
+        "unmatched_gold_indices": [int(gold.units[index].index) for index in unmatched_gold_positions],
+        "unmatched_pred_best_alternatives": [best_for_pred(index) for index in unmatched_pred_positions],
+        "unmatched_gold_best_alternatives": [best_for_gold(index) for index in unmatched_gold_positions],
+    }
+
+
 def maximum_weight_matching(
     candidates: Sequence[InterestUnit],
     gold: Sequence[InterestUnit],
@@ -206,10 +274,17 @@ def diversity_monitor(parsed_candidates: Sequence[InterestParse]) -> dict[str, f
 
 
 def monitor_record(raw_beam_reward: float, score: InterestScore, raw_n: int, grounded_n: int) -> dict:
+    beam_value = beam_utility(raw_beam_reward)
+    beam_contribution = 0.60 * beam_value
+    cot_contribution = 0.40 * score.cot_utility
     total = composite_reward(raw_beam_reward, score.cot_utility)
+    if not math.isclose(beam_contribution + cot_contribution, total, abs_tol=1e-12):
+        raise RuntimeError("Composite display contribution drift")
     return {
         "beam_raw": raw_beam_reward,
-        "beam_utility": beam_utility(raw_beam_reward),
+        "beam_utility": beam_value,
+        "beam_contribution": beam_contribution,
+        "cot_contribution": cot_contribution,
         "gold_interest_count": score.n_gold,
         "pred_interest_count": score.n_pred,
         "matched_interest_count": score.matched_interest_count,

@@ -17,7 +17,10 @@ from grpo_trl_trainer import RecGRPOTrainer
 from trl.trainer.grpo_trainer import gather_object
 
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
-from .interest_metric import diversity_monitor, monitor_record, population_advantages, score_parsed_interests
+from .interest_metric import (
+    display_interest_unit, diversity_monitor, matching_diagnostics, monitor_record,
+    population_advantages, score_parsed_interests,
+)
 
 GROUP_SIZE = 4
 
@@ -54,6 +57,7 @@ def score_candidate(completion, gold_cot, prompt, beam_raw):
         "Q": score.match_quality,
         "pair_matches": [asdict(match) for match in score.matches],
         "interest_set": [unit.normalized_text for unit in candidate.units],
+        **matching_diagnostics(candidate, gold, score.matches),
     })
     for key in ("beam_utility", "cot_utility", "composite_reward"):
         if not math.isfinite(record[key]) or not 0.0 <= record[key] <= 1.0:
@@ -89,12 +93,14 @@ def build_global_runtime(records, beam_rewards, group_size=GROUP_SIZE):
         totals = [row["composite_reward"] for row in scored]
         group_advantages = population_advantages(totals)
         parsed = [extract_interest_units(row["completion"], row["prompt"]) for row in chunk]
+        gold_parsed = extract_interest_units(chunk[0]["gold_cot"], chunk[0]["prompt"])
         beam_utilities = [row["beam_utility"] for row in scored]
         cot_utilities = [row["cot_utility"] for row in scored]
         mean_total = sum(totals) / group_size
         composite_std = math.sqrt(sum((value - mean_total) ** 2 for value in totals) / group_size)
         groups.append({
             "group_id": group_id,
+            "gold_interest_units": [display_interest_unit(unit) for unit in gold_parsed.units],
             "beam_raw_vector": raw,
             "beam_utility_vector": beam_utilities,
             "cot_utility_vector": cot_utilities,
@@ -165,7 +171,10 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
             "prompt": item["prompt"],
             "gold_cot": item["gold_cot"],
             "completion": raw_completion,
-        } for index, (item, raw_completion) in enumerate(zip(inputs, raw_completions))]
+            "completion_length": len(candidate_ids),
+        } for index, (item, raw_completion, candidate_ids) in enumerate(
+            zip(inputs, raw_completions, completion_ids)
+        )]
         self._composite_runtime = build_global_runtime(gather_object(local_records), weighted)
         return rewards_per_func
 

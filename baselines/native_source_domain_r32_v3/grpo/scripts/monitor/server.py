@@ -21,8 +21,20 @@ from fastapi.staticfiles import StaticFiles
 
 try:
     from .advantage_adapter import reconstruct_groups
+    from .composite_interest_adapter import (
+        adapt_events as adapt_composite_events,
+        captured_payload as composite_payload,
+        is_composite_manifest,
+        summary as composite_summary_rows,
+    )
 except ImportError:  # Direct execution: python monitor/server.py
     from advantage_adapter import reconstruct_groups
+    from composite_interest_adapter import (
+        adapt_events as adapt_composite_events,
+        captured_payload as composite_payload,
+        is_composite_manifest,
+        summary as composite_summary_rows,
+    )
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -110,6 +122,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     """Select only formulas whose immutable run manifest identifies them exactly."""
     experiment = str(manifest.get("experiment") or "")
     runner = str(manifest.get("runner") or "")
+    if is_composite_manifest(manifest):
+        return "composite_interest_v1"
     if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
         return "frontier_v1"
     if (
@@ -861,6 +875,9 @@ def create_app(
             for path in output.iterdir()
         )
         algorithm = normalized_algorithm(manifest_data)
+        composite_formula = is_composite_manifest(manifest_data)
+        composite = composite_formula or (selected / "composite_interest.jsonl").is_file()
+        advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
             "algorithm": algorithm,
@@ -875,6 +892,13 @@ def create_app(
             ),
             "checkpoints": checkpoint_available,
             "rollouts": (selected / "rollouts.jsonl").is_file(),
+            "composite_interest": composite,
+            "advantage_formula": advantage_formula,
+            "advantage_source": (
+                "captured" if composite_formula
+                else "reconstructed" if advantage_formula is not None
+                else None
+            ),
         }
 
     def queried(selected: Path, path: Path, from_step, to_step, route, rollout_id):
@@ -997,9 +1021,21 @@ def create_app(
         group_id: str | None = None,
         limit: int = Query(default=40, ge=1, le=200),
     ):
-        """Reconstruct display-only credit from immutable trace rows."""
-        rows = []
+        """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if is_composite_manifest(manifest_data):
+            groups = adapt_composite_events(
+                read_jsonl(selected / "composite_interest.jsonl"),
+                from_step=from_step,
+                to_step=to_step,
+                rollout_id=rollout_id,
+                group_id=group_id,
+                limit=limit,
+            )
+            return composite_payload(groups)
+
+        rows = []
         trace_dir = selected / "traces"
         for path in sorted(trace_dir.glob("*.jsonl")):
             rows.extend(read_jsonl(path))
@@ -1014,7 +1050,7 @@ def create_app(
             rows = [row for row in rows if row.get("group_id") == group_id]
         rows = rows[-limit:]
         enrich_source_fields(rows, source_rows(selected, "train"))
-        formula = monitor_advantage_formula(read_json(selected / "manifest.json", {}))
+        formula = monitor_advantage_formula(manifest_data)
         return {
             "read_only": True,
             "supported": formula is not None,
@@ -1030,6 +1066,48 @@ def create_app(
             "groups": reconstruct_groups(
                 rows,
                 formula=formula,
+            ),
+        }
+
+    @app.get("/api/composite-interest")
+    def composite_interest(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        rollout_id: int | None = None,
+        group_id: str | None = None,
+        limit: int = Query(default=40, ge=1, le=200),
+    ):
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if not is_composite_manifest(manifest_data):
+            return {
+                "read_only": True,
+                "supported": False,
+                "formula": None,
+                "provenance": {"mode": None, "label": None},
+                "groups": [],
+            }
+        return composite_payload(adapt_composite_events(
+            read_jsonl(selected / "composite_interest.jsonl"),
+            from_step=from_step,
+            to_step=to_step,
+            rollout_id=rollout_id,
+            group_id=group_id,
+            limit=limit,
+        ))
+
+    @app.get("/api/composite-interest/summary")
+    def composite_interest_summary(run_id: str | None = None):
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if not is_composite_manifest(manifest_data):
+            return {"supported": False, "provenance": None, "rows": []}
+        return {
+            "supported": True,
+            "provenance": {"mode": "captured", "label": "训练时实采"},
+            "rows": composite_summary_rows(
+                read_jsonl(selected / "composite_interest.jsonl")
             ),
         }
 
