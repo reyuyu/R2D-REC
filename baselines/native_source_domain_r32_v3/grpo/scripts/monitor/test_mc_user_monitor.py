@@ -265,8 +265,8 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("user_dashboard.js?v=20260822-hybrid-advantage-v3", html)
-        self.assertIn("user_dashboard.css?v=20260822-hybrid-advantage-v3", html)
+        self.assertIn("user_dashboard.js?v=20260822-hybrid-health-v4", html)
+        self.assertIn("user_dashboard.css?v=20260822-hybrid-health-v4", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
         self.assertIn("tokenTab.textContent = mc ? 'Marginal Credit' : 'Token Advantage'", javascript)
@@ -290,6 +290,10 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("Loss coefficient / token", javascript)
         self.assertIn("localWeight * Number(candidateUnit.delta || 0) / unitIndices.length", javascript)
         self.assertIn("-value / candidateCount", javascript)
+        self.assertIn("HYBRID_METRIC_GUIDE", javascript)
+        self.assertIn("HYBRID_CHART_GUIDE", javascript)
+        self.assertIn("健康：固定 cohort 上升", javascript)
+        self.assertIn("健康趋势：", javascript)
         self.assertIn("state.manifest.K ?? 2", javascript)
         self.assertIn("userRolloutKey", javascript)
         self.assertIn("完整样本", javascript)

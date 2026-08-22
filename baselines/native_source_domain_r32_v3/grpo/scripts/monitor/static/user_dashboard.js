@@ -189,8 +189,64 @@
       </div></main>`);
   }
 
+  const HYBRID_METRIC_GUIDE = {
+    'Group Reward Mean': ['当前 K4 候选 evaluator reward 的均值。', 'stable', '健康：结合固定 Probe 看，单步波动正常'],
+    'Reward Spread': ['同组最高与最低 reward 之差，决定序列优势是否有区分度。', 'stable', '健康：持续非零且不过度尖峰'],
+    'Sequence Loss': ['完整 completion 上由组内标准化优势产生的损失项。', 'stable', '健康：有限波动，无 NaN/Inf'],
+    'Local Loss': ['SID/Event marginal delta 产生的局部辅助损失，进入总损失前乘 0.3。', 'stable', '健康：有限且不长期压倒序列项'],
+    'Total Loss': ['Sequence Loss + 0.3 × Local Loss。', 'stable', '健康：有限波动，无持续爆炸'],
+    'Grad Norm': ['本次 LoRA 更新前的全局梯度范数。', 'stable', '健康：有限稳定，无尖峰或非有限值'],
+    'Candidate Mean F1': ['Action 当前所有 on-policy candidate 的集合 F1 均值。', 'up', '健康：固定 cohort 上升；在线值仅看长期趋势'],
+    'Mean SID Count': ['Action candidate 平均预测完整 SID 数。', 'stable', '健康：与 Gold 规模匹配，避免坍缩或膨胀'],
+    'Negative Candidate Rate': ['至少含一个负 marginal unit 的 candidate 比例。', 'stable', '健康：非零且稳定；过高或归零都需检查'],
+    'Positive credit mass': ['正 marginal delta 的累计绝对质量。', 'stable', '健康：持续存在，并与负质量保持合理平衡'],
+    'Negative credit mass': ['负 marginal delta 的累计绝对质量。', 'stable', '健康：持续存在但不应长期压倒正质量'],
+    'Mean Reward': ['Chain evaluator Total Reward 的 on-policy candidate 均值。', 'up', '健康：固定 cohort 上升；在线值仅作训练信号'],
+    'Action Alignment': ['Chain 事件 action 与 Gold ordered matching 的对齐分数。', 'up', '健康：固定 cohort 趋势上升'],
+    'Logic Alignment': ['Chain 事件 logic 与 Gold 逻辑关系的对齐分数。', 'up', '健康：固定 cohort 趋势上升'],
+    'Mean Event Count': ['Chain candidate 平均输出事件数量。', 'stable', '健康：贴近 Gold 事件数，避免过短或冗长'],
+    'Positive Credit Mass': ['正 marginal delta 的累计绝对质量。', 'stable', '健康：持续存在，并与负质量平衡'],
+    'Negative Credit Mass': ['负 marginal delta 的累计绝对质量。', 'stable', '健康：持续存在但不过度主导'],
+    'Action Mean F1': ['全部 Action on-policy candidates 的累计平均 F1。', 'up', '健康：固定 Probe 上升；在线累计值仅作参考'],
+    'Action Positive Mass': ['Action 正 SID marginal delta 的累计质量。', 'stable', '健康：持续增长且信号不过度集中'],
+    'Action Negative Mass': ['Action 负 SID marginal delta 的累计绝对质量。', 'stable', '健康：非零但不长期压倒正质量'],
+    'Action Negative Rate': ['Action 中含负 SID credit 的 candidate 比例。', 'stable', '健康：保持辨别力，不应长期为 0 或 100%'],
+    'Chain Action Align': ['全部 Chain candidates 的累计平均 action alignment。', 'up', '健康：固定 Probe 上升'],
+    'Chain Logic Align': ['全部 Chain candidates 的累计平均 logic alignment。', 'up', '健康：固定 Probe 上升'],
+    'Chain Positive Mass': ['Chain 正 event marginal delta 的累计质量。', 'stable', '健康：持续存在且不过度集中'],
+    'Chain Negative Mass': ['Chain 负 event marginal delta 的累计绝对质量。', 'stable', '健康：非零但不长期压倒正质量'],
+    'Action F1': ['固定 3+3 Probe 中 Action 的集合 F1。', 'up', '健康：相对 BETA 持续为正或改善'],
+    'ΔAction': ['当前 checkpoint Action F1 减去 BETA Action F1。', 'up', '健康：大于 0，且多个 milestone 方向一致'],
+    'Chain Total': ['固定 Probe 中 0.5 × Action Alignment + 0.5 × Logic Alignment。', 'up', '健康：相对 BETA 改善'],
+    'ΔChain': ['当前 checkpoint Chain Total 减去 BETA。', 'up', '健康：大于 0，且不是单点偶然波动'],
+    'ΔChainAction': ['当前 checkpoint Chain Action Alignment 减去 BETA。', 'up', '健康：大于 0'],
+    'ΔChainLogic': ['当前 checkpoint Chain Logic Alignment 减去 BETA。', 'up', '健康：大于 0'],
+    'User Proxy': ['固定 Action F1 与 Chain Total 的综合本地代理分。', 'up', '健康：仅用于本地 checkpoint 排序，越高越好'],
+    'ΔProxy': ['当前 User Proxy 减去 BETA User Proxy。', 'up', '健康：大于 0，且多时间点保持'],
+  };
+
+  const HYBRID_CHART_GUIDE = {
+    'Loss / Grad Norm': ['总损失与梯度尺度。', '有限稳定、无 NaN/Inf；不以越低越好判断'],
+    'On-policy Reward': ['当前生成候选的 evaluator 均值。', '只看长期训练信号，模型效果以固定 Probe 为准'],
+    'Marginal Credit Mass': ['正负 SID/Event marginal delta 的每步质量。', '两侧持续有信号，避免一侧长期归零或压倒另一侧'],
+    'Negative Candidate Rate': ['含负 marginal unit 的候选累计比例。', '稳定在非退化区间，不追求单调下降'],
+    'Training Signal': ['活跃 unit/token 及 optimizer 是否实际更新。', 'active signal 持续存在，非预期 skipped update 接近 0'],
+    'Pipeline Health': ['格式有效、投影需求和 token overlap 的累计比例。', 'Valid 越高越好；Projection/Overlap 低且稳定'],
+    'F1 / Precision / Recall': ['Action K4 候选的集合匹配质量。', '固定 cohort 上升且 Precision/Recall 不严重失衡'],
+    'Predicted SID Count': ['每个 Action candidate 的平均完整 SID 数。', '贴近 Gold 规模，避免输出坍缩或膨胀'],
+    'Positive / Negative Credit Mass': ['marginal delta 的正负训练质量。', '两侧均有且比例稳定，避免单侧主导'],
+    'Positive / Negative Unit Count': ['产生正负 credit 的 SID/Event 数量。', '持续有区分信号，避免长期全零'],
+    'Total / Action / Logic': ['Chain 总分及 action、logic 两个组成分。', '固定 cohort 上升，且两项不明显背离'],
+    'Predicted Event Count': ['每个 Chain candidate 的平均事件数。', '贴近 Gold 事件数，避免过短或冗长'],
+    'Action Credit Mass': ['Action SID marginal credit 正负质量。', '正负信号持续存在且比例稳定'],
+    'Chain Credit Mass': ['Chain Event marginal credit 正负质量。', '正负信号持续存在且比例稳定'],
+  };
+
   function metricCards(id, items) {
-    $(id).innerHTML = items.map(([label, value, tone]) => `<div class="stat"><div class="label">${escapeHtml(label)}</div><div class="value small${tone ? ` ${tone}` : ''}">${escapeHtml(value)}</div></div>`).join('');
+    $(id).innerHTML = items.map(([label, value, tone]) => {
+      const guide = isHybridMcRun() ? HYBRID_METRIC_GUIDE[label] : null;
+      return `<div class="stat"><div class="label">${escapeHtml(label)}</div><div class="value small${tone ? ` ${tone}` : ''}">${escapeHtml(value)}</div>${guide ? `<div class="user-metric-definition">${escapeHtml(guide[0])}</div><span class="user-health-tag ${guide[1]}">${escapeHtml(guide[2])}</span>` : ''}</div>`;
+    }).join('');
   }
 
   function latestRoute(route) {
@@ -258,6 +314,17 @@
     if (noteNode) {
       noteNode.textContent = note;
       noteNode.hidden = !note;
+    }
+    let guideNode = panel.querySelector('.mc-metric-guide');
+    const guide = isHybridMcRun() ? HYBRID_CHART_GUIDE[title] : null;
+    if (guide && !guideNode) {
+      guideNode = document.createElement('p');
+      guideNode.className = 'mc-metric-guide';
+      (noteNode || panel.querySelector('h2')).after(guideNode);
+    }
+    if (guideNode) {
+      guideNode.innerHTML = guide ? `<strong>定义：</strong>${escapeHtml(guide[0])} <strong>健康趋势：</strong>${escapeHtml(guide[1])}` : '';
+      guideNode.hidden = !guide;
     }
     chartLabels[id] = labels;
   }
