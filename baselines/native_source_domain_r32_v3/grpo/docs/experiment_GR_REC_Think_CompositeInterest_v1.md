@@ -459,3 +459,31 @@ not started, its parameter audit was not created, and 716-step formal training
 was not started. All worker processes exited and all four GPUs returned to about
 5 MiB idle usage with no compute processes. The structured preflight result and
 the blocked Smoke12 result preserve this outcome.
+
+## Import provenance repair and gated retry (2026-08-23)
+
+Base main: `0ff6709dd688b05efdcf035aca3f8715c7853988`. Before the
+repair, a fresh CPU process loaded `grpo_trl_trainer.py` from this worktree but
+loaded `monitor.writer` from `/data/GRPO/scripts/monitor/writer.py`; that stale
+writer did not provide `write_composite`. The direct cause was an absolute
+`sys.path.insert(0, "/data/GRPO/scripts")` in the active training chain.
+
+Commit `61cfae3bac3ffc896bb3fad2db8cb061fba0eca5` replaces those stale
+absolute-priority injections with the scripts directory derived from each
+module's own file path. A shared fail-closed guard now verifies the trainer and
+monitor module paths plus `MonitorWriter.write_composite` before NCCL
+initialization or model loading. Preflight output and formal/Smoke manifests
+record the resulting module provenance. Targeted CPU tests passed 48/48.
+
+The four GPUs were idle, so the one authorized post-fix retry launched from that
+exact commit. Runtime import provenance passed and the previous monitor failure
+was eliminated: the captured `composite_interest.jsonl` was written after
+generation, Beam32, raw decode, Composite reward and G4 advantage. The preflight
+then failed on all ranks when its direct `_compute_loss` call reached an absent
+`PreflightTrainer.current_gradient_accumulation_steps` attribute. Loss did not
+complete and backward did not start. Optimizer/scheduler steps remained zero and
+no parameters were updated.
+
+Per the gate, this new failure was not modified or retried, Smoke12 was not
+started, and formal training remained unstarted. All workers exited and the four
+GPUs returned to approximately 5 MiB idle usage with no compute processes.
