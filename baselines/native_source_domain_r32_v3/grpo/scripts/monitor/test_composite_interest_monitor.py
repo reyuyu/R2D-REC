@@ -49,6 +49,11 @@ def test_composite_filters_and_alignment():
         for candidate in selected[0]['candidates']:
             assert math.isclose(candidate['beam_contribution'] + candidate['cot_contribution'],
                                 candidate['composite_reward'], abs_tol=1e-9)
+        summary = client.get('/api/composite-interest/summary').json()['rows']
+        assert summary and all(
+            row['beam_utility_mean'] is not None and row['composite_reward_std'] is not None
+            for row in summary
+        )
     finally:
         temporary.cleanup()
 
@@ -139,11 +144,17 @@ def test_frontend_composite_contract_and_no_js_reward_math():
                    '0 / 200 / 400 / 600 / 716', 'compositeOverviewPanels',
                    'Beam 命中得分', 'CoT 兴趣命中得分', '最终 Composite 奖励',
                    'Beam 命中均值', 'CoT 兴趣命中均值（U_cot）',
-                   '最终 Composite 均值 / 标准差'):
+                   '最终 Composite 均值 / 标准差', '主奖励 · 最终 Composite Reward',
+                   'U_beam', 'probeCandidate', 'old.renderCandidate', 'selected.gold_sids',
+                   'compositeBeamRawChart', '原始 Beam Reward（旧口径，仅对照）',
+                   'r.beam_raw_mean',
+                   "rawDiagnosticCharts.add('compositeSignalChart')"):
         assert marker in source
     shell = (Path(__file__).parent / 'static' / 'index.html').read_text(encoding='utf-8')
     assert "id==='probeOverview'&&!isSimpleDsr()&&state.manifest?.experiment!==" in shell
     assert "GR_REC_Think_CompositeInterest_v1" in shell
+    assert '查看 32 条 Beam SID' in shell
+    assert "resolved==='rewardChart'&&state.manifest?.experiment==='GR_REC_Think_CompositeInterest_v1'" in shell
     for forbidden in ('S_text', 'S_evidence', 'maximum_weight_matching', 'population_advantages'):
         assert forbidden not in source
 

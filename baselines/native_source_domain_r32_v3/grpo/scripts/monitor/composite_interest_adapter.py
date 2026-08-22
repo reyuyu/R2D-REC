@@ -120,6 +120,13 @@ def summary(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
         finite = [value for item in values if (value := _finite(item)) is not None]
         return sum(finite) / len(finite) if finite else None
 
+    def population_std(values: Iterable[Any]) -> float | None:
+        finite = [value for item in values if (value := _finite(item)) is not None]
+        if not finite:
+            return None
+        center = sum(finite) / len(finite)
+        return math.sqrt(sum((value - center) ** 2 for value in finite) / len(finite))
+
     result = []
     for step, groups in sorted(by_step.items()):
         candidates = [candidate for group in groups for candidate in group["candidates"]]
@@ -130,8 +137,12 @@ def summary(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             "group_count": count,
             "candidate_count": len(candidates),
             "beam_raw_mean": mean(candidate.get("beam_raw") for candidate in candidates),
+            "beam_utility_mean": mean(candidate.get("beam_utility") for candidate in candidates),
             "cot_utility_mean": mean(candidate.get("cot_utility") for candidate in candidates),
             "composite_reward_mean": mean(candidate.get("composite_reward") for candidate in candidates),
+            "composite_reward_std": population_std(
+                candidate.get("composite_reward") for candidate in candidates
+            ),
             "matched_interest_mean": mean(candidate.get("matched_interest_count") for candidate in candidates),
             "raw_n_mean": mean(candidate.get("raw_n") for candidate in candidates),
             "grounded_n_mean": mean(candidate.get("grounded_n") for candidate in candidates),
