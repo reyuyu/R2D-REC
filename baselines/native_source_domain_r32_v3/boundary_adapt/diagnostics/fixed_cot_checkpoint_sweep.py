@@ -59,6 +59,11 @@ CHECKPOINTS = {
     "200": FORMAL / "checkpoint-200",
     "300": FORMAL / "checkpoint-300",
 }
+CONTINUATION = Path("/data/outputs/boundary_adapt/continuation_from300_to1500")
+CONTINUATION_CHECKPOINTS = {
+    label: CONTINUATION / f"checkpoint-{label}" for label in ("450", "600", "900", "1200", "1500")
+}
+ALL_CHECKPOINTS = {**CHECKPOINTS, **CONTINUATION_CHECKPOINTS}
 
 
 def closed_cot(text: str) -> str:
@@ -215,11 +220,11 @@ def run_checkpoint(label: str) -> None:
     rank, world = int(os.environ.get("LOCAL_RANK", "-1")), int(os.environ.get("LOCAL_WORLD_SIZE", "1"))
     if world != 4 or rank not in range(4):
         raise RuntimeError("RUN_REQUIRES_FOUR_LOCAL_RANKS")
-    if label not in CHECKPOINTS or not MANIFEST.is_file():
+    if label not in ALL_CHECKPOINTS or not MANIFEST.is_file():
         raise RuntimeError("UNKNOWN_CHECKPOINT_OR_MISSING_MANIFEST")
     items = json.loads(MANIFEST.read_text(encoding="utf-8"))["items"]
     torch.cuda.set_device(rank)
-    model, tokenizer = load_adapter(CHECKPOINTS[label], f"cuda:{rank}")
+    model, tokenizer = load_adapter(ALL_CHECKPOINTS[label], f"cuda:{rank}")
     records = []
     for index, item in enumerate(items):
         if index % world != rank:
@@ -254,7 +259,7 @@ def run_checkpoint(label: str) -> None:
         print(f"SWEEP_PROGRESS checkpoint={label} rank={rank} item={len(records)}/12", flush=True)
     target = PARTS / label
     target.mkdir(parents=True, exist_ok=True)
-    (target / f"rank{rank}.json").write_text(json.dumps({"checkpoint": label, "rank": rank, "adapter": str(CHECKPOINTS[label]), "records": records}, ensure_ascii=False), encoding="utf-8")
+    (target / f"rank{rank}.json").write_text(json.dumps({"checkpoint": label, "rank": rank, "adapter": str(ALL_CHECKPOINTS[label]), "records": records}, ensure_ascii=False), encoding="utf-8")
 
 
 def rate(value: int, denominator: int):
@@ -293,7 +298,7 @@ def merge_checkpoint(label: str) -> Path:
     records = [record for part in parts for record in part["records"]]
     if len(records) != 48 or len({(row["recommendation_group_id"], row["candidate_id"]) for row in records}) != 48:
         raise RuntimeError("INCOMPLETE_FIXED_COT_SWEEP")
-    result = {"checkpoint": label, "adapter": str(CHECKPOINTS[label]), "fixed_cot_count": len(records), "records": records, "modes": {}, "per_domain": {}}
+    result = {"checkpoint": label, "adapter": str(ALL_CHECKPOINTS[label]), "fixed_cot_count": len(records), "records": records, "modes": {}, "per_domain": {}}
     for mode in ("bare", "bridge"):
         result["modes"][mode] = aggregate_records(records, mode)
     for domain in DOMAIN:
@@ -351,21 +356,68 @@ def finalize() -> None:
     print(f"FINAL_RESULT={target}")
 
 
+def finalize_continuation() -> None:
+    labels = ("300", *CONTINUATION_CHECKPOINTS)
+    checkpoints = {
+        label: json.loads((PARTS / f"checkpoint_{label}_merged.json").read_text(encoding="utf-8"))
+        for label in labels
+    }
+    step0 = json.loads((PARTS / "checkpoint_0_merged.json").read_text(encoding="utf-8"))
+    step0_bare = step0["modes"]["bare"]
+    denominator = step0["modes"]["bridge"]["beam_raw_mean"] - step0_bare["beam_raw_mean"]
+    table = []
+    for label in labels:
+        item = checkpoints[label]
+        bare, bridge = item["modes"]["bare"], item["modes"]["bridge"]
+        table.append({
+            "checkpoint": int(label), "bare": bare, "bridge": bridge,
+            "bridge_dependency_gap": bridge["beam_raw_mean"] - bare["beam_raw_mean"],
+            "interface_recovery_ratio": None if abs(denominator) < 1e-12 else (
+                bare["beam_raw_mean"] - step0_bare["beam_raw_mean"]
+            ) / denominator,
+        })
+    eligible = [row for row in table if row["bare"]["history_not_gold"] <= step0_bare["history_not_gold"]]
+    best = max(eligible or table, key=lambda row: (
+        row["bare"]["beam_raw_mean"], row["bare"]["exact"],
+        -row["bridge_dependency_gap"], row["bare"]["gold_not_history"],
+    ))
+    step300 = table[0]
+    fixed_bare_plateau = best["bare"]["beam_raw_mean"] <= step300["bare"]["beam_raw_mean"] + 0.01
+    bridge_gap_remains = best["bridge_dependency_gap"] > 0.25
+    result = {
+        "type": "boundary_adaptation_continuation_fixed_cot_sweep",
+        "fixed_cot_count": 48, "history_extraction_source": "MODEL_VISIBLE_PROMPT_ONLY",
+        "checkpoints": checkpoints, "table": table,
+        "best_fixed_cot_checkpoint": best["checkpoint"],
+        "best_reason": "highest Bare Beam raw with History-not-Gold not worse than Step0",
+        "fixed_bare_plateau": fixed_bare_plateau, "bridge_gap_remains": bridge_gap_remains,
+        "kd_candidate": bool(fixed_bare_plateau and bridge_gap_remains),
+        "training_started": False, "optimizer_created": False, "self_cot_evaluated": False,
+    }
+    target = RESULTS / "boundary_adapt_continuation_fixed_cot_sweep_20260824.json"
+    target.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"BEST_FIXED_COT_CHECKPOINT={best['checkpoint']}")
+    print(f"KD_CANDIDATE={'YES' if result['kd_candidate'] else 'NO'}")
+    print(f"FINAL_RESULT={target}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prepare", action="store_true")
-    parser.add_argument("--checkpoint", choices=tuple(CHECKPOINTS))
-    parser.add_argument("--merge", choices=tuple(CHECKPOINTS))
+    parser.add_argument("--checkpoint", choices=tuple(ALL_CHECKPOINTS))
+    parser.add_argument("--merge", choices=tuple(ALL_CHECKPOINTS))
     parser.add_argument("--gate-step0", action="store_true")
     parser.add_argument("--finalize", action="store_true")
+    parser.add_argument("--finalize-continuation", action="store_true")
     args = parser.parse_args()
-    if sum(bool(value) for value in (args.prepare, args.checkpoint, args.merge, args.gate_step0, args.finalize)) != 1:
+    if sum(bool(value) for value in (args.prepare, args.checkpoint, args.merge, args.gate_step0, args.finalize, args.finalize_continuation)) != 1:
         raise SystemExit("choose exactly one operation")
     if args.prepare: prepare_manifest()
     elif args.checkpoint: run_checkpoint(args.checkpoint)
     elif args.merge: merge_checkpoint(args.merge)
     elif args.gate_step0: gate_step0()
-    else: finalize()
+    elif args.finalize: finalize()
+    else: finalize_continuation()
 
 
 if __name__ == "__main__":

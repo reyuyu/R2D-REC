@@ -37,6 +37,10 @@ STEP0 = Path(
 )
 STEP300 = Path("/data/outputs/boundary_adapt/formal_300step/checkpoint-300")
 CHECKPOINTS = {"0": STEP0, "300": STEP300}
+CHECKPOINTS.update({
+    label: Path(f"/data/outputs/boundary_adapt/continuation_from300_to1500/checkpoint-{label}")
+    for label in ("450", "600", "900", "1200", "1500")
+})
 RESULTS = RUNTIME / "boundary_adapt/results/self_cot_health_20260824_parts"
 FINAL = RUNTIME / "boundary_adapt/results/boundary_adapt_self_cot_health_gate_20260824.json"
 DOMAIN_ORDER = ("video", "prod", "ad", "living")
@@ -170,6 +174,8 @@ def run_checkpoint(label):
         (RESULTS / f"checkpoint_{label}.json").parent.mkdir(parents=True, exist_ok=True)
         (RESULTS / f"checkpoint_{label}.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"SELF_COT_CHECKPOINT_RESULT={RESULTS / f'checkpoint_{label}.json'}", flush=True)
+    dist.barrier()
+    dist.destroy_process_group()
 
 
 def finalize():
