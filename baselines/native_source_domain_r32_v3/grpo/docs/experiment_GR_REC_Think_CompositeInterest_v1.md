@@ -606,3 +606,25 @@ LoRA total L2 delta `0.05248426205148421`, and maximum absolute delta
 `1.2219883501529694e-05`. NaN, Inf, OOM, NCCL, and runtime-error flags were all
 false. The frozen evaluator returned `SMOKE_PASS=YES`. No checkpoint was saved
 and Formal716 was not started.
+
+## Step-0 probe boundary gate (2026-08-23)
+
+Before the authorized balanced Step-0 probe, a read-only scan covered all 32,179
+real `recommend/recommendation_cot` targets in the frozen BATA/SFT source. None
+uses direct `</think><|domain_begin|>`, one-newline, or two-newline adjacency.
+Every target instead inserts one domain-specific natural-language bridge:
+
+- video: 24,511 use `\n该用户最近喜欢: `
+- prod: 2,699 use `\n该用户最近点击了商品: `
+- ad: 2,767 use `\n该用户最近感兴趣的广告有: `
+- living: 2,202 use `\n该用户最近首次打赏了主播: `
+
+Therefore `SFT_BEAM_BOUNDARY_PARITY=FAIL`. Per the hard gate, the 12-probe GPU
+inference and conditional Gold-CoT diagnostic were not run, no algorithm was
+modified, and `FORMAL_READY=NO`.
+
+A Formal launcher had been started under the preceding user authorization just
+before the superseding Step-0 gate arrived. It was terminated immediately. The
+four workers loaded fresh BATA and entered the first generation call, but the run
+remained at `0/716`: no metrics file, optimizer step, parameter update, or
+checkpoint was produced. All GPUs returned to idle.

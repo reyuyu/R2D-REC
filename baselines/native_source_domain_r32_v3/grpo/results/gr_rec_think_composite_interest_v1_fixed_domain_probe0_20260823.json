@@ -1,0 +1,69 @@
+{
+  "experiment": "GR_REC_Think_CompositeInterest_v1",
+  "diagnostic": "fixed_domain_step0_probe_gate",
+  "base_main_sha": "f737e022e49655cb8cc6a6208d046a05e174fc9e",
+  "source_path": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+  "source_filter": {
+    "data_source": "recommend",
+    "source_segment": "recommendation_cot"
+  },
+  "recommendation_think_sample_count": 32179,
+  "current_beam_boundary": "</think><|target_domain_begin|>",
+  "sft_beam_boundary_parity": "FAIL",
+  "boundary_distribution": {
+    "video": {
+      "total": 24511,
+      "direct": 0,
+      "newline": 0,
+      "double_newline": 0,
+      "other": {
+        "\n该用户最近: ": 24511
+      }
+    },
+    "prod": {
+      "total": 2699,
+      "direct": 0,
+      "newline": 0,
+      "double_newline": 0,
+      "other": {
+        "\n该用户最近点击了商品: ": 2699
+      }
+    },
+    "ad": {
+      "total": 2767,
+      "direct": 0,
+      "newline": 0,
+      "double_newline": 0,
+      "other": {
+        "\n该用户最近感兴趣的广告: ": 2767
+      }
+    },
+    "living": {
+      "total": 2202,
+      "direct": 0,
+      "newline": 0,
+      "double_newline": 0,
+      "other": {
+        "\n该用户最近首次打赏了主播: ": 2202
+      }
+    }
+  },
+  "probe_12_of_12_complete": false,
+  "probe_groups_completed": 0,
+  "probe_groups_expected": 12,
+  "probe_gpu_used": false,
+  "probe_skipped_reason": "SFT_BEAM_BOUNDARY_PARITY_FAIL",
+  "gold_cot_diagnostic_run": false,
+  "formal_ready": false,
+  "formal_optimizer_steps": 0,
+  "formal_checkpoint_saved": false,
+  "formal_metrics_written": false,
+  "premature_formal_launcher_started": true,
+  "premature_formal_launcher_terminated_on_new_instruction": true,
+  "formal_parameter_update": false,
+  "notes": [
+    "All 32179 real recommendation_cot targets place a domain-specific natural-language bridge between </think> and the SID domain token.",
+    "The fixed-domain Beam context omits that bridge, so the requested hard gate stopped before GPU probe-only inference.",
+    "A previously authorized Formal launcher was terminated after the superseding instruction arrived; it reached 0/716 and wrote no metrics or checkpoint."
+  ]
+}
