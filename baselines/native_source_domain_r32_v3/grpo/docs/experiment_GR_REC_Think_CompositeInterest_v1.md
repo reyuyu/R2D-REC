@@ -553,3 +553,19 @@ LoRA total L2 delta `0.051735382818748316`, and maximum absolute delta
 `1.2249220162630081e-05`. NaN, Inf, OOM, NCCL, and runtime-error flags were all
 false. The existing evaluator returned `SMOKE_PASS=YES`. Formal716 training was
 not started, and all four GPUs returned to approximately 5 MiB idle usage.
+
+## Beam32 fixed-domain semantic correction
+
+The preceding Preflight and Smoke12 used `Prompt + sampled CoT + </think>` as
+the Beam32 context. They remain useful only as engineering-chain evidence and
+are now explicitly classified as:
+
+`OLD_SMOKE_BEAM_SEMANTICS=UNFIXED_DOMAIN_PREFIX`
+
+They do not validate the corrected reward semantics. The corrected contract
+uses `dataset.target_domain` as the sole authoritative domain source and appends
+its fixed prefix immediately after `</think>`. Beam32 then searches only the
+A/B/C continuation. Gold SID domains are consistency-checked but are never used
+to select the prefix. The interrupted Formal716 run launched from
+`120b511614d3f8726753b7cec788bb851403dd34` is invalid for experiment conclusions
+and was safely stopped before this correction was implemented.

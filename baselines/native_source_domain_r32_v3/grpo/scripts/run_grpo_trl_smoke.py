@@ -31,6 +31,11 @@ from grpo_trl_trainer import (RecGRPOTrainer, build_route_dataset,
                               make_nothink_reward_func, make_think_reward_func,
                               M_THINK, M_NO)
 from grpo_sid import final_sid, think_reward
+from grpo_beam_domain import (
+    build_fixed_domain_beam_input,
+    parse_fixed_domain_beam_sid,
+    validate_gold_domains,
+)
 from grpo_model import load_model, encode_prompt, generate_batch, BASE, ADAPTER
 from monitor.writer import monitor_from_env
 
@@ -98,7 +103,10 @@ def run_beam32_task(model, tokenizer, task):
     )
     torch.cuda.synchronize()
     beam_sec = time.perf_counter() - t0
-    beam_sids = [final_sid(text) for text in texts]
+    beam_sids = [
+        parse_fixed_domain_beam_sid(text, task["target_domain"])
+        for text in texts
+    ]
     invalid = sum(sid is None for sid in beam_sids)
     reward, exact, ab, a = think_reward(beam_sids, {tuple(item) for item in task["gold"]})
     return {
@@ -109,6 +117,10 @@ def run_beam32_task(model, tokenizer, task):
         "ab": ab,
         "a": a,
         "invalid": invalid,
+        "target_domain": task["target_domain"],
+        "domain_prefix": task["domain_prefix"],
+        "beam_fixed_domain_prefix": True,
+        "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
         # The SIDs are already parsed for reward. Retain them only while the
         # optional monitor is enabled; the default training payload is unchanged.
         **({"beam_sids": beam_sids} if task.get("capture_monitor") else {}),
@@ -133,7 +145,15 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
         scheduler_exec_sec=0.0, scheduler_task_count=0,
     )
 
-    def beam32_fn(prompts, completions, completion_ids, gold_sets):
+    def beam32_fn(
+        prompts, completions, completion_ids, gold_sets, target_domains,
+    ):
+        sizes = {
+            len(prompts), len(completions), len(completion_ids),
+            len(gold_sets), len(target_domains),
+        }
+        if len(sizes) != 1:
+            raise ValueError("fixed-domain Beam inputs must have equal lengths")
         # Reward-call scoped only: repeated G=4 completions share one prompt.
         prompt_ids_cache = {}
         was_training = model.training
@@ -143,18 +163,27 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
             with torch.inference_mode():
                 rank = dist.get_rank() if distributed_beam_enabled() else 0
                 local_tasks = []
-                for local_index, (prompt, cot_ids, gs) in enumerate(zip(prompts, completion_ids, gold_sets)):
+                for local_index, (prompt, cot_ids, gs, target_domain) in enumerate(
+                    zip(prompts, completion_ids, gold_sets, target_domains)
+                ):
+                    validate_gold_domains(gs, target_domain)
                     cot = tokenizer.decode(cot_ids, skip_special_tokens=False)
                     closed = "</think>" in cot
                     idx = cot.find("</think>")
                     cot_trim = cot[: idx + len("</think>")] if idx >= 0 else cot
                     prompt_ids = cached_prompt_ids(tokenizer, prompt, prompt_ids_cache)
                     cot_ids2 = tokenizer.encode(cot_trim, add_special_tokens=False)
+                    input_ids, prefix_text, prefix_ids = build_fixed_domain_beam_input(
+                        tokenizer, prompt_ids, cot_ids2, target_domain,
+                    )
                     local_tasks.append({
                         "task_id": (rank, local_index),
                         "origin_rank": rank,
                         "local_index": local_index,
-                        "input_ids": prompt_ids + cot_ids2,
+                        "input_ids": input_ids,
+                        "target_domain": target_domain,
+                        "domain_prefix": prefix_text,
+                        "domain_prefix_ids": prefix_ids,
                         "gold": [list(item) for item in sorted(gs)],
                         "closed": closed,
                         "capture_monitor": bool(monitor_writer is not None and monitor_writer.enabled),
@@ -224,6 +253,22 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                         "scheduler_wall_sec": scheduler_sec,
                         "result_gather_wall_sec": result_gather_sec,
                         "local_results": local_results,
+                        "fixed_domain_tasks": [{
+                            "task_id": list(task["task_id"]),
+                            "target_domain": task["target_domain"],
+                            "domain_prefix": task["domain_prefix"],
+                            "domain_prefix_ids": task["domain_prefix_ids"],
+                            "context_ends_with_prefix": (
+                                task["input_ids"][-len(task["domain_prefix_ids"]):]
+                                == task["domain_prefix_ids"]
+                            ),
+                        } for task in global_tasks],
+                        "fixed_domain_results": [{
+                            "task_id": list(item["task_id"]),
+                            "reward": item["reward"],
+                        } for item in global_results],
+                        "beam_fixed_domain_prefix": True,
+                        "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
                     }
 
                 for task, result in zip(local_tasks, local_results):

@@ -61,6 +61,9 @@ def frozen_contract():
         "loss_type": "grpo", "num_iterations": 2,
         "steps_per_generation": 1, "route_multiplier": 1.0,
         "stop_token": "</think>", "beam_num_beams": 32,
+        "beam_domain_prefix": "fixed_target_domain",
+        "beam_context": "prompt+cot+</think>+fixed_target_domain_prefix",
+        "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
         "reward": "0.60*U_beam+0.40*U_cot",
         "advantage": "(R-mean)/(population_std+1e-4); correction=0",
     }
@@ -212,6 +215,9 @@ def dry_run_report(args, plan):
         "single_node_nccl_socket_ifname": "lo",
         "frozen_contract": frozen_contract(),
         "gold_cot_contract": "reward_only; absent from prompt/input_ids/generation/beam",
+        "target_domain_source": "dataset.target_domain",
+        "gold_used_to_select_domain": False,
+        "old_smoke_beam_semantics": "UNFIXED_DOMAIN_PREFIX",
     }
     RESULT_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULT_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -271,7 +277,12 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             "smoke_mode": contract["smoke_mode"],
             "fixed_probe_enabled": contract["enable_probes"],
             "checkpoint_saving_enabled": contract["enable_checkpoints"],
-            "smoke_parameter_audit_enabled": contract["smoke_mode"],
+              "smoke_parameter_audit_enabled": contract["smoke_mode"],
+              "target_domain_source": "dataset.target_domain",
+              "gold_used_to_select_domain": False,
+              "beam_fixed_domain_prefix": True,
+              "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
+              "old_smoke_beam_semantics": "UNFIXED_DOMAIN_PREFIX",
             "SMOKE_FIXED_PROBE_DISABLED_FOR_SPEED": (
                 "YES" if contract["smoke_mode"] and not contract["enable_probes"] else "NO"
             ),

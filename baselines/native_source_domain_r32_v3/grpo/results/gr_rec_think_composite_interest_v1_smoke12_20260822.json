@@ -1,4 +1,7 @@
 {
+  "beam_semantics": "UNFIXED_DOMAIN_PREFIX",
+  "valid_for_fixed_domain_beam_claims": false,
+  "status_note": "Engineering reference only; superseded by fixed target-domain Beam validation.",
   "synthetic": false,
   "optimizer_steps": 12,
   "metrics_optimizer_steps": 12,

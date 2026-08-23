@@ -99,6 +99,41 @@ def summarize_composite_smoke(
             candidate.get("final_sequence_advantage") for candidate in candidates
         )
     )
+    beam_invalid_count = sum(
+        int(candidate.get("beam_invalid_count") or 0) for candidate in candidates
+    )
+    beam_total = len(candidates) * 32
+    domain_beam_summary = {}
+    for domain in ("video", "prod", "ad", "living"):
+        domain_candidates = [
+            candidate for candidate in candidates
+            if candidate.get("target_domain") == domain
+        ]
+        invalid = sum(
+            int(candidate.get("beam_invalid_count") or 0)
+            for candidate in domain_candidates
+        )
+        total = len(domain_candidates) * 32
+        domain_beam_summary[domain] = {
+            "candidate_count": len(domain_candidates),
+            "beam_raw_mean": _mean(
+                candidate.get("beam_raw") for candidate in domain_candidates
+            ),
+            "exact_count": sum(
+                int(candidate.get("beam_exact_count") or 0)
+                for candidate in domain_candidates
+            ),
+            "ab_count": sum(
+                int(candidate.get("beam_ab_count") or 0)
+                for candidate in domain_candidates
+            ),
+            "a_count": sum(
+                int(candidate.get("beam_a_count") or 0)
+                for candidate in domain_candidates
+            ),
+            "invalid_count": invalid,
+            "invalid_rate": invalid / total if total else None,
+        }
 
     all_numbers = [
         value for row in metrics for value in row.values()
@@ -124,6 +159,18 @@ def summarize_composite_smoke(
             median=False,
         ),
         "beam_raw_mean": _mean(candidate.get("beam_raw") for candidate in candidates),
+        "beam_invalid_count": beam_invalid_count,
+        "beam_invalid_rate": beam_invalid_count / beam_total if beam_total else None,
+        "generated_abc_parse_success_rate": (
+            1.0 - beam_invalid_count / beam_total if beam_total else None
+        ),
+        "domain_beam_summary": domain_beam_summary,
+        "beam_fixed_domain_prefix": bool(
+            manifest.get("beam_fixed_domain_prefix")
+        ),
+        "old_smoke_beam_semantics": manifest.get(
+            "old_smoke_beam_semantics", "UNFIXED_DOMAIN_PREFIX"
+        ),
         "u_cot_mean": _mean(candidate.get("cot_utility") for candidate in candidates),
         "composite_reward_mean": _mean(candidate.get("composite_reward") for candidate in candidates),
         "k_distribution": {key: k_distribution.get(key, 0) for key in ("0", "1", "2", "3", "4+")},
@@ -257,6 +304,11 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
                     "completion": "synthetic",
                     "completion_length": 12 + candidate_id,
                     "beam_raw": beam_raw,
+                    "target_domain": ("video", "prod", "ad", "living")[offset],
+                    "beam_invalid_count": 0,
+                    "beam_exact_count": int(beam_raw >= 8.0),
+                    "beam_ab_count": int(beam_raw == 2.0),
+                    "beam_a_count": int(beam_raw == 0.5),
                     "beam_utility": beam_utility,
                     "beam_contribution": beam_contribution,
                     "cot_utility": cot,

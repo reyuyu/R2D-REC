@@ -11,6 +11,13 @@ from .composite_trainer import (
     score_candidate, slice_global,
 )
 from .interest_metric import composite_reward, population_advantages
+from grpo_beam_domain import (
+    DOMAIN_PREFIX,
+    build_fixed_domain_beam_input,
+    domain_prefix,
+    parse_fixed_domain_beam_sid,
+    validate_gold_domains,
+)
 from .run_gr_rec_think_composite_interest_v1 import (
     AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_DOMAIN_ORDER, PROBE_IDS, PROBE_ROUNDS,
     PROBE_STEPS, SAVE_TOTAL_LIMIT, SEED,
@@ -42,6 +49,104 @@ class SpecialTokenFixture:
 
 
 class TrainingChainTests(unittest.TestCase):
+    class PrefixTokenizer:
+        token_ids = {
+            "<|video_begin|>": [101],
+            "<|prod_begin|>": [102],
+            "<|ad_begin|>": [103],
+            "<|living_begin|>": [104],
+        }
+
+        def encode(self, text, add_special_tokens=False):
+            if add_special_tokens:
+                raise AssertionError("domain prefix must not add special tokens")
+            return list(self.token_ids[text])
+
+    def test_fixed_domain_prefix_mapping_and_unknown_fail_closed(self):
+        self.assertEqual(DOMAIN_PREFIX, {
+            "video": "<|video_begin|>",
+            "prod": "<|prod_begin|>",
+            "ad": "<|ad_begin|>",
+            "living": "<|living_begin|>",
+        })
+        for domain, prefix in DOMAIN_PREFIX.items():
+            self.assertEqual(domain_prefix(domain), prefix)
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_TARGET_DOMAIN"):
+            domain_prefix("search")
+
+    def test_beam_context_appends_only_fixed_domain_prefix(self):
+        prompt_ids = [10, 11]
+        cot_ids = [20, 21, 22]
+        old_context = prompt_ids + cot_ids
+        new_context, prefix, prefix_ids = build_fixed_domain_beam_input(
+            self.PrefixTokenizer(), prompt_ids, cot_ids, "prod",
+        )
+        self.assertEqual(prefix, "<|prod_begin|>")
+        self.assertEqual(prefix_ids, [102])
+        self.assertEqual(new_context, old_context + [102])
+        self.assertEqual(new_context[:-1], old_context)
+
+    def test_production_beam_task_uses_fixed_domain_context(self):
+        import run_grpo_trl_smoke as production
+        from unittest.mock import patch
+
+        captured = {}
+
+        class Model:
+            training = False
+
+            def eval(self):
+                return self
+
+        class Tokenizer(self.PrefixTokenizer):
+            def decode(self, token_ids, skip_special_tokens=False):
+                return "<think>reason</think>ignored"
+
+            def encode(self, text, add_special_tokens=False):
+                if text == "<think>reason</think>":
+                    return [20, 21]
+                return super().encode(text, add_special_tokens=add_special_tokens)
+
+        def fake_run(model, tokenizer, task):
+            captured.update(task)
+            return {
+                "task_id": task["task_id"], "beam_sec": 0.0, "reward": 0.0,
+                "exact": 0, "ab": 0, "a": 0, "invalid": 32,
+            }
+
+        with (
+            patch.object(production, "cached_prompt_ids", return_value=[10, 11]),
+            patch.object(production, "run_beam32_task", side_effect=fake_run),
+            patch.object(production, "distributed_beam_enabled", return_value=False),
+        ):
+            rewards = production.make_beam32_fn(Model(), Tokenizer())(
+                ["prompt"], ["completion"], [[7, 8]],
+                [{("prod", 1, 2, 3)}], ["prod"],
+            )
+        self.assertEqual(rewards, [0.0])
+        self.assertEqual(captured["input_ids"], [10, 11, 20, 21, 102])
+        self.assertEqual(captured["domain_prefix"], "<|prod_begin|>")
+        self.assertEqual(captured["target_domain"], "prod")
+
+    def test_fixed_domain_continuation_parsing_is_authoritative(self):
+        abc = "<s_a_1><s_b_2><s_c_3>"
+        self.assertEqual(
+            parse_fixed_domain_beam_sid(abc, "prod"), ("prod", 1, 2, 3),
+        )
+        self.assertEqual(
+            parse_fixed_domain_beam_sid("<|prod_begin|>" + abc, "prod"),
+            ("prod", 1, 2, 3),
+        )
+        self.assertEqual(
+            parse_fixed_domain_beam_sid("<|video_begin|>" + abc, "prod"),
+            ("prod", 1, 2, 3),
+        )
+
+    def test_gold_domain_mismatch_is_hard_but_not_domain_source(self):
+        validate_gold_domains({("prod", 1, 2, 3)}, "prod")
+        with self.assertRaisesRegex(ValueError, "GOLD_DOMAIN_MISMATCH"):
+            validate_gold_domains({("video", 1, 2, 3)}, "prod")
+
     def test_raw_reward_decode_preserves_sid_and_grounding(self):
         tokenizer = SpecialTokenFixture()
         raw = decode_reward_completion(tokenizer, [1, 2, 3])
@@ -178,19 +283,24 @@ class TrainingChainTests(unittest.TestCase):
         from grpo_trl_trainer import make_think_reward_func
         seen = {}
 
-        def beam_spy(prompts, completions, completion_ids, gold_sets):
-            seen["arguments"] = (prompts, completions, completion_ids, gold_sets)
+        def beam_spy(
+            prompts, completions, completion_ids, gold_sets, target_domains,
+        ):
+            seen["arguments"] = (
+                prompts, completions, completion_ids, gold_sets, target_domains,
+            )
             return [2.0]
 
         reward = make_think_reward_func(beam_spy)
         result = reward(
             [PROMPT], [GOOD], [[1, 2]], route=["think"],
-            all_gold_sids=[[SID]], gold_cot=[GOLD],
+            all_gold_sids=[[SID]], gold_cot=[GOLD], target_domain=["video"],
         )
         self.assertEqual(result, [2.0])
-        self.assertEqual(len(seen["arguments"]), 4)
+        self.assertEqual(len(seen["arguments"]), 5)
         self.assertNotIn(GOLD, seen["arguments"][0])
         self.assertNotIn(GOLD, seen["arguments"][3])
+        self.assertEqual(seen["arguments"][4], ["video"])
 
 
 if __name__ == "__main__":

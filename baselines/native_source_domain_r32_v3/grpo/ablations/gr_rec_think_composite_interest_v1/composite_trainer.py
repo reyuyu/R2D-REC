@@ -160,6 +160,11 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
             decoded = self.processing_class.decode(token_ids, skip_special_tokens=False)
             assert_gold_isolation(item, visible, decoded)
         rewards_per_func = super()._calculate_rewards(inputs, prompts, completions, completion_ids)
+        beam_call = self._current_beam_call() or {}
+        beam_results = {
+            int(result["task_id"][1]): result
+            for result in beam_call.get("local_results", [])
+        }
         weighted = (rewards_per_func * self.reward_weights.to(
             self.accelerator.device).unsqueeze(0)).nansum(dim=1).tolist()
         raw_completions = [decode_reward_completion(self.processing_class, candidate_ids)
@@ -168,10 +173,22 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
             "group_id": item["recommendation_group_id"],
             "rank": self.accelerator.process_index,
             "local_index": index,
+            "target_domain": item["target_domain"],
             "prompt": item["prompt"],
             "gold_cot": item["gold_cot"],
             "completion": raw_completion,
             "completion_length": len(candidate_ids),
+            "beam_invalid_count": beam_results.get(index, {}).get("invalid"),
+            "beam_exact_count": beam_results.get(index, {}).get("exact"),
+            "beam_ab_count": beam_results.get(index, {}).get("ab"),
+            "beam_a_count": beam_results.get(index, {}).get("a"),
+            "beam_fixed_domain_prefix": beam_results.get(index, {}).get(
+                "beam_fixed_domain_prefix"
+            ),
+            "domain_prefix": beam_results.get(index, {}).get("domain_prefix"),
+            "beam_search_space": beam_results.get(index, {}).get(
+                "beam_search_space"
+            ),
         } for index, (item, raw_completion, candidate_ids) in enumerate(
             zip(inputs, raw_completions, completion_ids)
         )]
@@ -200,6 +217,8 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
                 "step": self.state.global_step,
                 "route": "think",
                 "g": GROUP_SIZE,
+                "beam_fixed_domain_prefix": True,
+                "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
                 "formula": {"beam_weight": 0.60, "cot_weight": 0.40,
                             "normalization": "population_std_plus_1e-4", "correction": 0},
                 **runtime,

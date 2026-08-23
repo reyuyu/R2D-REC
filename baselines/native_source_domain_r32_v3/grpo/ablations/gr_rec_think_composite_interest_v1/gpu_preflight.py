@@ -14,6 +14,7 @@ import torch.distributed as dist
 from datasets import Dataset
 
 from grpo_model import ADAPTER, BASE, load_model, render_prompt
+from grpo_beam_domain import domain_prefix
 from grpo_trl_trainer import make_think_reward_func
 from monitor.writer import monitor_from_env
 from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config
@@ -106,6 +107,7 @@ def main(argv=None):
     batch = next(iter(trainer.get_train_dataloader()))
     model.zero_grad(set_to_none=True)
     prepared = trainer._prepare_inputs(batch)
+    beam_call = trainer._current_beam_call() or {}
     runtime = trainer.preflight_runtime
     pre_shuffle = trainer.preflight_pre_shuffle
     pre_advantages = pre_shuffle["advantages"].detach().float().cpu().tolist()
@@ -172,8 +174,35 @@ def main(argv=None):
     if rank == 0:
         groups = runtime["groups"]
         candidates = runtime["candidates"]
-        reward_parity = all(abs(row["composite_reward"] - composite_reward(
+        composite_formula_parity = all(abs(row["composite_reward"] - composite_reward(
             row["beam_raw"], row["cot_utility"])) < 1e-7 for row in candidates)
+        fixed_domain_tasks = beam_call.get("fixed_domain_tasks", [])
+        fixed_domain_mismatches = [
+            task for task in fixed_domain_tasks
+            if (
+                task.get("target_domain") not in {"video", "prod", "ad", "living"}
+                or task.get("domain_prefix") != domain_prefix(task.get("target_domain"))
+                or not task.get("context_ends_with_prefix")
+            )
+        ]
+        beam_fixed_domain_candidate_count = len(fixed_domain_tasks)
+        beam_fixed_domain_mismatch_count = len(fixed_domain_mismatches)
+        beam_fixed_domain_prefix_pass = (
+            beam_call.get("beam_fixed_domain_prefix") is True
+            and beam_fixed_domain_candidate_count == 16
+            and beam_fixed_domain_mismatch_count == 0
+        )
+        beam_result_by_id = {
+            tuple(item["task_id"]): float(item["reward"])
+            for item in beam_call.get("fixed_domain_results", [])
+        }
+        fixed_domain_reward_parity = all(
+            abs(float(row["beam_raw"]) - beam_result_by_id.get(
+                (int(row["rank"]), int(row["local_index"])), math.inf
+            )) < 1e-7
+            for row in candidates
+        )
+        reward_parity = composite_formula_parity and fixed_domain_reward_parity
         pre_shuffle_advantage_parity = all(
             row["pre_shuffle_advantage_parity"] for row in parity_rows
         )
@@ -210,6 +239,7 @@ def main(argv=None):
         )
         evaluation = evaluate_preflight_conditions(
             raw_decode_runtime=raw_decode_pass,
+            beam_fixed_domain_prefix=beam_fixed_domain_prefix_pass,
             online_reward_parity=reward_parity,
             online_advantage_parity=advantage_parity,
             ddp_g4_alignment=ddp_alignment,
@@ -244,6 +274,15 @@ def main(argv=None):
             "raw_decode_candidate_count": raw_decode_candidate_count,
             "raw_decode_mismatch_count": raw_decode_mismatch_count,
             "raw_decode_runtime_pass": raw_decode_pass,
+            "beam_fixed_domain_candidate_count": beam_fixed_domain_candidate_count,
+            "beam_fixed_domain_mismatch_count": beam_fixed_domain_mismatch_count,
+            "beam_fixed_domain_mismatches": fixed_domain_mismatches,
+            "BEAM_FIXED_DOMAIN_PREFIX_PASS": (
+                "YES" if beam_fixed_domain_prefix_pass else "NO"
+            ),
+            "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
+            "target_domain_source": "dataset.target_domain",
+            "gold_used_to_select_domain": False,
             "raw_decode_rank_rows": [{
                 "rank": row["rank"],
                 "candidate_count": row["raw_decode_candidate_count"],
@@ -253,6 +292,8 @@ def main(argv=None):
             } for row in parity_rows],
             **sid_observation,
             "online_reward_parity": reward_parity,
+            "composite_formula_parity": composite_formula_parity,
+            "fixed_domain_reward_parity": fixed_domain_reward_parity,
             "pre_shuffle_advantage_parity": pre_shuffle_advantage_parity,
             "post_shuffle_association_parity": post_shuffle_association_parity_pass,
             "pre_shuffle_advantage_vector_by_rank": [

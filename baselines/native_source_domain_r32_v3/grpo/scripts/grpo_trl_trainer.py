@@ -218,12 +218,17 @@ def make_nothink_reward_func(tokenizer=None):
 
 def make_think_reward_func(beam32_fn=None):
     """Think reward: completion = sampled CoT; reward via Beam32 hierarchical credits.
-    beam32_fn(prompts, completions, completion_ids_list, tokenizer, gold_sets)
+    beam32_fn(prompts, completions, completion_ids_list, gold_sets, target_domains)
     -> list of rewards. completion_ids are the RAW sampled tokens (TRL decodes
     completions with skip_special_tokens=True which strips </think>/SID tokens,
     so beam32_fn must re-decode from ids)."""
     def reward_func(prompts, completions, completion_ids, **kwargs):
         golds_list = kwargs["all_gold_sids"]
+        target_domains = kwargs.get("target_domain")
+        if target_domains is None:
+            raise RuntimeError(
+                "think_reward requires dataset column 'target_domain'"
+            )
         routes = kwargs.get("route")
         if routes is None:
             raise RuntimeError("think_reward requires dataset column 'route' "
@@ -246,7 +251,13 @@ def make_think_reward_func(beam32_fn=None):
         sub_completions = [completions[i] for i in think_idx]
         sub_ids = [completion_ids[i] for i in think_idx]
         sub_golds = [gold_sets[i] for i in think_idx]
-        sub_rewards = beam32_fn(sub_prompts, sub_completions, sub_ids, sub_golds)
+        sub_domains = [target_domains[i] for i in think_idx]
+        from grpo_beam_domain import validate_gold_domains
+        for gold_set, target_domain in zip(sub_golds, sub_domains):
+            validate_gold_domains(gold_set, target_domain)
+        sub_rewards = beam32_fn(
+            sub_prompts, sub_completions, sub_ids, sub_golds, sub_domains,
+        )
         out = [None] * len(prompts)
         for pos, r in zip(think_idx, sub_rewards):
             out[pos] = r
@@ -792,6 +803,12 @@ class RecGRPOTrainer(GRPOTrainer):
             "completion_length_max": entry["completion_length_max"],
             "generation_wall_sec": entry["gen_wall_sec"],
             "beam_wall_sec": entry.get("beam_wall_sec"),
+            "beam_fixed_domain_prefix": (
+                beam_call.get("beam_fixed_domain_prefix") if beam_call else None
+            ),
+            "beam_search_space": (
+                beam_call.get("beam_search_space") if beam_call else None
+            ),
             "rollout_wall_sec": entry["rollout_sec"],
         }
         self._monitor.write_rollout(rollout_event)
@@ -859,12 +876,30 @@ class RecGRPOTrainer(GRPOTrainer):
                 "ab": result.get("ab"),
                 "a": result.get("a"),
                 "beam_sids": result.get("beam_sids"),
+                "beam_fixed_domain_prefix": result.get(
+                    "beam_fixed_domain_prefix"
+                ),
+                "target_domain": result.get("target_domain"),
+                "domain_prefix": result.get("domain_prefix"),
+                "beam_search_space": result.get("beam_search_space"),
             })
         self._monitor.write_trace({
             "rollout_id": entry["rollout_id"],
             "step": self.state.global_step,
             "route": entry["route"],
             "group_id": group_id,
+            "target_domain": inputs[0].get("target_domain"),
+            "domain_prefix": (
+                next(iter(local_beam.values()), {}).get("domain_prefix")
+                if entry["route"] == "think" else None
+            ),
+            "beam_fixed_domain_prefix": (
+                beam_call.get("beam_fixed_domain_prefix")
+                if beam_call else None
+            ),
+            "beam_search_space": (
+                beam_call.get("beam_search_space") if beam_call else None
+            ),
             "scope": "global_group" if len(candidates) == self.num_generations else "rank0_local",
             "gold_sids": inputs[0].get("all_gold_sids"),
             "candidates": candidates,

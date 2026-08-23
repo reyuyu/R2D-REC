@@ -162,7 +162,10 @@ class FixedProbeEvaluator:
         texts = [self.trainer.processing_class.decode(ids, skip_special_tokens=False)
                  for ids in completion_ids]
         gold = _gold_set(row["all_gold_sids"])
-        rewards = self.beam32_fn(prompts, texts, completion_ids, [gold] * 4)
+        target_domain = row["target_domain"]
+        rewards = self.beam32_fn(
+            prompts, texts, completion_ids, [gold] * 4, [target_domain] * 4,
+        )
         torch.cuda.synchronize()
         total_wall = time.perf_counter() - started
         beam_call = self.trainer._current_beam_call() or {}
@@ -184,6 +187,10 @@ class FixedProbeEvaluator:
                 "a": result.get("a"),
                 "invalid": result.get("invalid"),
                 "beam_sids": result.get("beam_sids"),
+                "beam_fixed_domain_prefix": result.get("beam_fixed_domain_prefix"),
+                "target_domain": result.get("target_domain"),
+                "domain_prefix": result.get("domain_prefix"),
+                "beam_search_space": result.get("beam_search_space"),
             })
         return {
             "group_id": gid,
