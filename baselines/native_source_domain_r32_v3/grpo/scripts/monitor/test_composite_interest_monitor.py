@@ -58,6 +58,77 @@ def test_composite_filters_and_alignment():
         temporary.cleanup()
 
 
+def test_beam32_lazy_endpoint_uses_full_training_key_and_legacy_fallback():
+    temporary, client = demo_client()
+    try:
+        run = Path(temporary.name) / "GR-REC-THINK-COMPOSITE-DEMO"
+        beam_dir = run / "beam_details"
+        beam_dir.mkdir()
+        group_id = "demo-rescued"
+        relations = ["EXACT", "AB", "A"] + ["VALID_NO_HIT"] * 28 + ["INVALID"]
+
+        def captured(step, marker):
+            return {
+                "type": "beam_detail",
+                "source": "training",
+                "step": step,
+                "rollout_id": 0,
+                "recommendation_group_id": group_id,
+                "origin_rank": 0,
+                "local_index": 0,
+                "candidate_id": "0:0",
+                "target_domain": "video",
+                "domain_prefix": "<|video_begin|>",
+                "beam_fixed_domain_prefix": True,
+                "beam_search_space": "abc3",
+                "beam_raw": 8,
+                "beams": [
+                    {
+                        "beam_index": index,
+                        "generated_continuation_text": f"{marker}-{index}",
+                        "generated_token_ids": [100 + index, 200 + index, 300 + index],
+                        "generated_tokens": [f"<s_a_{index}>", f"<s_b_{index}>", f"<s_c_{index}>"],
+                        "generated_token_count": 3,
+                        "parsed_sid": ["video", index, index, index],
+                        "relation_to_gold": relation,
+                    }
+                    for index, relation in enumerate(relations)
+                ],
+            }
+
+        (beam_dir / "rank0.jsonl").write_text(
+            "\n".join(json.dumps(row) for row in (captured(200, "wrong-step"), captured(0, "right-step"))) + "\n",
+            encoding="utf-8",
+        )
+        params = {
+            "step": 0,
+            "rollout_id": 0,
+            "recommendation_group_id": group_id,
+            "origin_rank": 0,
+            "local_index": 0,
+        }
+        payload = client.get("/api/composite-beams", params=params).json()
+        assert payload["supported"] is True
+        assert payload["key"]["run_id"] == run.name
+        assert payload["beams"][0]["generated_continuation_text"] == "right-step-0"
+        assert len(payload["beams"]) == 32
+        assert all(len(beam["generated_tokens"]) == 3 for beam in payload["beams"])
+        assert payload["summary"]["relation_counts"] == {
+            "EXACT": 1, "AB": 1, "A": 1, "VALID_NO_HIT": 28, "INVALID": 1,
+        }
+        assert payload["summary"]["abc_parse_success_count"] == 31
+        assert "beams" not in json.dumps(client.get("/api/advantages").json())
+
+        params["origin_rank"] = 1
+        legacy = client.get("/api/composite-beams", params=params).json()
+        assert legacy["supported"] is False
+        assert legacy["unavailable_reason"] == "Beam details unavailable for this legacy run."
+        missing_step = {key: value for key, value in params.items() if key != "step"}
+        assert client.get("/api/composite-beams", params=missing_step).status_code == 422
+    finally:
+        temporary.cleanup()
+
+
 def test_matching_indices_unmatched_and_demo_cases():
     temporary, client = demo_client()
     try:
@@ -156,6 +227,27 @@ def test_frontend_composite_contract_and_no_js_reward_math():
     assert '查看 32 条 Beam SID' in shell
     assert "resolved==='rewardChart'&&state.manifest?.experiment==='GR_REC_Think_CompositeInterest_v1'" in shell
     for forbidden in ('S_text', 'S_evidence', 'maximum_weight_matching', 'population_advantages'):
+        assert forbidden not in source
+
+
+def test_frontend_model_input_candidate_and_lazy_beam_contract():
+    source = (Path(__file__).parent / 'static' / 'composite_dashboard.js').read_text(encoding='utf-8')
+    for marker in (
+        'Model Input', 'recommendation_group_id', 'target_domain',
+        'Reward-only Reference · NOT MODEL INPUT', 'Sampled CoT',
+        'Completion Length', 'Beam raw', 'U_beam', 'U_cot',
+        'Composite Reward', 'Final Advantage', 'Grounding Coverage',
+        'Beam32 Summary', 'Show 32 Beams',
+        'exactly 3 generated tokens: A / B / C', '/api/composite-beams',
+        'generated_token_ids', 'parsed_sid', 'VALID NO HIT',
+        'Beam details unavailable for this legacy run.',
+    ):
+        assert marker in source
+    key = ('Object.entries({step:button.dataset.step,rollout_id:button.dataset.rolloutId,'
+           'recommendation_group_id:button.dataset.groupId,origin_rank:button.dataset.originRank,'
+           'local_index:button.dataset.localIndex})')
+    assert key in source
+    for forbidden in ('beam_raw=', 'composite_reward=', 'final_sequence_advantage='):
         assert forbidden not in source
 
 

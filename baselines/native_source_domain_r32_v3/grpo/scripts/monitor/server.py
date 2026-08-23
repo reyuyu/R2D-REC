@@ -1112,6 +1112,78 @@ def create_app(
             ),
         }
 
+    @app.get("/api/composite-beams")
+    def composite_beams(
+        step: int,
+        rollout_id: int,
+        recommendation_group_id: str = Query(min_length=1),
+        origin_rank: int = Query(ge=0),
+        local_index: int = Query(ge=0),
+        run_id: str | None = None,
+    ):
+        """Lazy-load one captured Beam32 record using its immutable training key."""
+        selected = selected_run(run_id)
+        beam_path = selected / "beam_details" / f"rank{origin_rank}.jsonl"
+        unavailable = "Beam details unavailable for this legacy run."
+        if not beam_path.is_file():
+            return {
+                "read_only": True,
+                "supported": False,
+                "unavailable_reason": unavailable,
+                "beams": [],
+            }
+
+        matched = None
+        for row in read_jsonl(beam_path):
+            if (
+                row.get("source") == "training"
+                and row.get("step") == step
+                and row.get("rollout_id") == rollout_id
+                and row.get("recommendation_group_id") == recommendation_group_id
+                and row.get("origin_rank") == origin_rank
+                and row.get("local_index") == local_index
+            ):
+                matched = row
+                break
+        if matched is None:
+            return {
+                "read_only": True,
+                "supported": False,
+                "unavailable_reason": unavailable,
+                "beams": [],
+            }
+
+        beams = matched.get("beams")
+        beams = beams if isinstance(beams, list) else []
+        relation_counts = {
+            relation: sum(beam.get("relation_to_gold") == relation for beam in beams)
+            for relation in ("EXACT", "AB", "A", "VALID_NO_HIT", "INVALID")
+        }
+        return {
+            "read_only": True,
+            "supported": True,
+            "provenance": {"mode": "captured", "label": "训练时实采"},
+            "key": {
+                "run_id": selected.name,
+                "step": step,
+                "rollout_id": rollout_id,
+                "recommendation_group_id": recommendation_group_id,
+                "origin_rank": origin_rank,
+                "local_index": local_index,
+            },
+            "summary": {
+                "target_domain": matched.get("target_domain"),
+                "domain_prefix": matched.get("domain_prefix"),
+                "beam_fixed_domain_prefix": matched.get("beam_fixed_domain_prefix"),
+                "beam_search_space": matched.get("beam_search_space"),
+                "beam_raw": matched.get("beam_raw"),
+                "beam_count": len(beams),
+                "abc_parse_success_count": len(beams) - relation_counts["INVALID"],
+                "relation_counts": relation_counts,
+            },
+            "beams": beams,
+        }
+
     @app.get("/api/probes")
     def probes(
         run_id: str | None = None,
