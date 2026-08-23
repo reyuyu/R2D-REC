@@ -628,3 +628,13 @@ before the superseding Step-0 gate arrived. It was terminated immediately. The
 four workers loaded fresh BATA and entered the first generation call, but the run
 remained at `0/716`: no metrics file, optimizer step, parameter update, or
 checkpoint was produced. All GPUs returned to idle.
+
+## Evaluation boundary decision and Beam detail capture
+
+The prior SFT boundary gate was superseded after confirming that the real
+evaluation contract is `sampled CoT + fixed target-domain token -> Beam32`.
+Natural-language SFT teacher bridges are not part of the Beam evaluation input,
+so the historical boundary scan remains recorded but `FORMAL_READY=NO` from that
+scan is no longer the current gate. Before Formal716, monitor-only capture was
+added for all 32 already-generated continuations per candidate; it does not
+change generation, reward, advantage, loss, or training topology.

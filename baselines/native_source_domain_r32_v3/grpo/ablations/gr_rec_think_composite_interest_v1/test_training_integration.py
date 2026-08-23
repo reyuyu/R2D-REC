@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import inspect
+import json
 import math
 from pathlib import Path
+import tempfile
 import unittest
 
 from .composite_trainer import (
@@ -141,6 +143,73 @@ class TrainingChainTests(unittest.TestCase):
             parse_fixed_domain_beam_sid("<|video_begin|>" + abc, "prod"),
             ("prod", 1, 2, 3),
         )
+
+    def test_beam_detail_rows_preserve_all_outputs_and_relations(self):
+        from run_grpo_trl_smoke import build_beam_detail_rows
+
+        texts = ["exact", "ab", "a", "miss", "invalid"] + ["tail"] * 27
+        sids = [
+            ("prod", 1, 2, 3),
+            ("prod", 1, 2, 9),
+            ("prod", 1, 9, 9),
+            ("prod", 9, 9, 9),
+            None,
+        ] + [None] * 27
+        rows = build_beam_detail_rows(texts, sids, {("prod", 1, 2, 3)})
+        self.assertEqual(len(rows), 32)
+        self.assertEqual([row["beam_index"] for row in rows], list(range(32)))
+        self.assertEqual([row["generated_continuation_text"] for row in rows], texts)
+        self.assertEqual(rows[0]["parsed_sid"], ["prod", 1, 2, 3])
+        self.assertEqual(
+            [row["relation_to_gold"] for row in rows[:5]],
+            ["EXACT", "AB", "A", "VALID_NO_HIT", "INVALID"],
+        )
+
+    def test_beam_detail_capture_does_not_change_reward(self):
+        import run_grpo_trl_smoke as production
+        from unittest.mock import patch
+
+        texts = ["<s_a_1><s_b_2><s_c_3>"] + ["invalid"] * 31
+        base_task = {
+            "task_id": (0, 0),
+            "input_ids": [1],
+            "target_domain": "prod",
+            "domain_prefix": "<|prod_begin|>",
+            "gold": [["prod", 1, 2, 3]],
+        }
+        with (
+            patch.object(production, "generate_batch", return_value=texts),
+            patch.object(production.torch.cuda, "synchronize"),
+        ):
+            plain = production.run_beam32_task(
+                None, None, {**base_task, "capture_monitor": False}
+            )
+            captured = production.run_beam32_task(
+                None, None, {**base_task, "capture_monitor": True}
+            )
+        self.assertEqual(plain["reward"], captured["reward"])
+        self.assertNotIn("beam_details", plain)
+        self.assertEqual(len(captured["beam_details"]), 32)
+
+    def test_beam_detail_writer_uses_origin_rank_and_context(self):
+        from monitor.writer import MonitorWriter
+
+        with tempfile.TemporaryDirectory() as directory:
+            writer = MonitorWriter(True, directory, "run", rank=2)
+            writer.set_beam_context(step=7, rollout_id=4, source="training")
+            beams = [{"beam_index": index} for index in range(32)]
+            self.assertTrue(writer.write_beam_detail({
+                "recommendation_group_id": "g1",
+                "origin_rank": 2,
+                "local_index": 3,
+                "beam_raw": 8.0,
+                "beams": beams,
+            }))
+            path = Path(directory) / "run/beam_details/rank2.jsonl"
+            row = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual((row["step"], row["rollout_id"]), (7, 4))
+            self.assertEqual(row["recommendation_group_id"], "g1")
+            self.assertEqual(len(row["beams"]), 32)
 
     def test_gold_domain_mismatch_is_hard_but_not_domain_source(self):
         validate_gold_domains({("prod", 1, 2, 3)}, "prod")
@@ -285,22 +354,26 @@ class TrainingChainTests(unittest.TestCase):
 
         def beam_spy(
             prompts, completions, completion_ids, gold_sets, target_domains,
+            recommendation_group_ids=None,
         ):
             seen["arguments"] = (
                 prompts, completions, completion_ids, gold_sets, target_domains,
             )
+            seen["group_ids"] = recommendation_group_ids
             return [2.0]
 
         reward = make_think_reward_func(beam_spy)
         result = reward(
             [PROMPT], [GOOD], [[1, 2]], route=["think"],
             all_gold_sids=[[SID]], gold_cot=[GOLD], target_domain=["video"],
+            recommendation_group_id=["group-1"],
         )
         self.assertEqual(result, [2.0])
         self.assertEqual(len(seen["arguments"]), 5)
         self.assertNotIn(GOLD, seen["arguments"][0])
         self.assertNotIn(GOLD, seen["arguments"][3])
         self.assertEqual(seen["arguments"][4], ["video"])
+        self.assertEqual(seen["group_ids"], ["group-1"])
 
 
 if __name__ == "__main__":

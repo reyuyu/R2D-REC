@@ -94,6 +94,28 @@ def all_gather_objects(value):
     return gathered
 
 
+def beam_relation_to_gold(sid, gold_set):
+    """Classify one Beam continuation for display; reward remains authoritative."""
+    if sid is None:
+        return "INVALID"
+    if sid in gold_set:
+        return "EXACT"
+    if any(sid[:3] == gold[:3] for gold in gold_set):
+        return "AB"
+    if any(sid[:2] == gold[:2] for gold in gold_set):
+        return "A"
+    return "VALID_NO_HIT"
+
+
+def build_beam_detail_rows(texts, beam_sids, gold_set):
+    return [{
+        "beam_index": index,
+        "generated_continuation_text": text,
+        "parsed_sid": list(sid) if sid is not None else None,
+        "relation_to_gold": beam_relation_to_gold(sid, gold_set),
+    } for index, (text, sid) in enumerate(zip(texts, beam_sids))]
+
+
 def run_beam32_task(model, tokenizer, task):
     torch.cuda.synchronize()
     t0 = time.perf_counter()
@@ -107,8 +129,9 @@ def run_beam32_task(model, tokenizer, task):
         parse_fixed_domain_beam_sid(text, task["target_domain"])
         for text in texts
     ]
+    gold_set = {tuple(item) for item in task["gold"]}
     invalid = sum(sid is None for sid in beam_sids)
-    reward, exact, ab, a = think_reward(beam_sids, {tuple(item) for item in task["gold"]})
+    reward, exact, ab, a = think_reward(beam_sids, gold_set)
     return {
         "task_id": task["task_id"],
         "beam_sec": beam_sec,
@@ -123,7 +146,10 @@ def run_beam32_task(model, tokenizer, task):
         "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
         # The SIDs are already parsed for reward. Retain them only while the
         # optional monitor is enabled; the default training payload is unchanged.
-        **({"beam_sids": beam_sids} if task.get("capture_monitor") else {}),
+        **({
+            "beam_sids": beam_sids,
+            "beam_details": build_beam_detail_rows(texts, beam_sids, gold_set),
+        } if task.get("capture_monitor") else {}),
     }
 
 
@@ -147,10 +173,13 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
 
     def beam32_fn(
         prompts, completions, completion_ids, gold_sets, target_domains,
+        recommendation_group_ids=None,
     ):
+        if recommendation_group_ids is None:
+            recommendation_group_ids = [None] * len(prompts)
         sizes = {
             len(prompts), len(completions), len(completion_ids),
-            len(gold_sets), len(target_domains),
+            len(gold_sets), len(target_domains), len(recommendation_group_ids),
         }
         if len(sizes) != 1:
             raise ValueError("fixed-domain Beam inputs must have equal lengths")
@@ -163,8 +192,9 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
             with torch.inference_mode():
                 rank = dist.get_rank() if distributed_beam_enabled() else 0
                 local_tasks = []
-                for local_index, (prompt, cot_ids, gs, target_domain) in enumerate(
-                    zip(prompts, completion_ids, gold_sets, target_domains)
+                for local_index, (prompt, cot_ids, gs, target_domain, group_id) in enumerate(
+                    zip(prompts, completion_ids, gold_sets, target_domains,
+                        recommendation_group_ids)
                 ):
                     validate_gold_domains(gs, target_domain)
                     cot = tokenizer.decode(cot_ids, skip_special_tokens=False)
@@ -180,6 +210,7 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                         "task_id": (rank, local_index),
                         "origin_rank": rank,
                         "local_index": local_index,
+                        "recommendation_group_id": group_id,
                         "input_ids": input_ids,
                         "target_domain": target_domain,
                         "domain_prefix": prefix_text,
@@ -224,6 +255,24 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                 else:
                     local_results = [run_beam32_task(model, tokenizer, task) for task in local_tasks]
                     stats["beam_sec"] += sum(item["beam_sec"] for item in local_results)
+
+                if monitor_writer is not None and monitor_writer.enabled:
+                    for task, result in zip(local_tasks, local_results):
+                        details = result.get("beam_details")
+                        if details is None:
+                            continue
+                        monitor_writer.write_beam_detail({
+                            "candidate_id": f"{task['origin_rank']}:{task['local_index']}",
+                            "recommendation_group_id": task["recommendation_group_id"],
+                            "origin_rank": task["origin_rank"],
+                            "local_index": task["local_index"],
+                            "target_domain": task["target_domain"],
+                            "domain_prefix": task["domain_prefix"],
+                            "beam_raw": result["reward"],
+                            "beam_fixed_domain_prefix": True,
+                            "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
+                            "beams": details,
+                        })
 
                 parity_audit = os.environ.get("GRPO_PARITY_AUDIT", "0") == "1"
                 if (monitor_writer is not None and monitor_writer.enabled) or parity_audit:

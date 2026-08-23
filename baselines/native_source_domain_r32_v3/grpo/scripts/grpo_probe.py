@@ -165,6 +165,7 @@ class FixedProbeEvaluator:
         target_domain = row["target_domain"]
         rewards = self.beam32_fn(
             prompts, texts, completion_ids, [gold] * 4, [target_domain] * 4,
+            recommendation_group_ids=[gid] * 4,
         )
         torch.cuda.synchronize()
         total_wall = time.perf_counter() - started

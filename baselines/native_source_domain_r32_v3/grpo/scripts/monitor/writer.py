@@ -83,6 +83,7 @@ class MonitorWriter:
         self.errors = 0
         self.run_id = _safe_run_id(run_id)
         self.run_dir = Path(root_dir or ".") / self.run_id
+        self._beam_context: dict[str, Any] = {}
         if self.enabled:
             self._guard(self._create_layout)
 
@@ -90,6 +91,7 @@ class MonitorWriter:
         (self.run_dir / "ranks").mkdir(parents=True, exist_ok=True)
         (self.run_dir / "traces").mkdir(parents=True, exist_ok=True)
         (self.run_dir / "probes").mkdir(parents=True, exist_ok=True)
+        (self.run_dir / "beam_details").mkdir(parents=True, exist_ok=True)
 
     def _guard(self, operation) -> bool:
         if not self.enabled:
@@ -176,6 +178,26 @@ class MonitorWriter:
         return self._append(
             "composite_interest.jsonl",
             {"type": "composite_interest", **event},
+        )
+
+    def set_beam_context(self, **context: Any) -> None:
+        """Set passive metadata for the next already-computed Beam result."""
+        self._beam_context = json_safe(context)
+
+    def beam_context(self) -> dict[str, Any]:
+        return dict(self._beam_context)
+
+    def write_beam_detail(self, event: Mapping[str, Any]) -> bool:
+        """Persist one candidate's existing Beam32 outputs on its origin rank."""
+        origin_rank = int(event.get("origin_rank", self.rank))
+        if origin_rank != self.rank:
+            return False
+        beams = event.get("beams")
+        if not isinstance(beams, list) or len(beams) != 32:
+            return False
+        return self._append(
+            f"beam_details/rank{origin_rank}.jsonl",
+            {"type": "beam_detail", **self.beam_context(), **event},
         )
 
 

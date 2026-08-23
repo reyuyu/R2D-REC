@@ -159,6 +159,12 @@ class ThinkCompositeInterestRecGRPOTrainer(RecGRPOTrainer):
             token_ids = self.processing_class(visible, add_special_tokens=False)["input_ids"]
             decoded = self.processing_class.decode(token_ids, skip_special_tokens=False)
             assert_gold_isolation(item, visible, decoded)
+        if self._monitor_enabled():
+            self._monitor.set_beam_context(
+                step=int(self.state.global_step),
+                rollout_id=int(self._smoke_rollout_id),
+                source="training",
+            )
         rewards_per_func = super()._calculate_rewards(inputs, prompts, completions, completion_ids)
         beam_call = self._current_beam_call() or {}
         beam_results = {

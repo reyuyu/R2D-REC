@@ -229,6 +229,7 @@ def make_think_reward_func(beam32_fn=None):
             raise RuntimeError(
                 "think_reward requires dataset column 'target_domain'"
             )
+        group_ids = kwargs.get("recommendation_group_id")
         routes = kwargs.get("route")
         if routes is None:
             raise RuntimeError("think_reward requires dataset column 'route' "
@@ -255,8 +256,14 @@ def make_think_reward_func(beam32_fn=None):
         from grpo_beam_domain import validate_gold_domains
         for gold_set, target_domain in zip(sub_golds, sub_domains):
             validate_gold_domains(gold_set, target_domain)
+        beam_kwargs = {}
+        if group_ids is not None:
+            beam_kwargs["recommendation_group_ids"] = [
+                group_ids[i] for i in think_idx
+            ]
         sub_rewards = beam32_fn(
             sub_prompts, sub_completions, sub_ids, sub_golds, sub_domains,
+            **beam_kwargs,
         )
         out = [None] * len(prompts)
         for pos, r in zip(think_idx, sub_rewards):

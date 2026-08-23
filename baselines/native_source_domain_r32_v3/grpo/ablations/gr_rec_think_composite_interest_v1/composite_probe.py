@@ -72,6 +72,12 @@ class CompositeThinkProbeEvaluator(FixedProbeEvaluator):
             self._set_seed()
             think_by_rank = []
             for round_index, round_ids in enumerate(self.probe_rounds):
+                if self.monitor.enabled:
+                    self.monitor.set_beam_context(
+                        step=int(step),
+                        source="probe",
+                        probe_round=round_index,
+                    )
                 parts = self._gather(self._think_round(round_ids))
                 for part in parts:
                     part["probe_round"] = round_index

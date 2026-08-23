@@ -282,6 +282,12 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
               "gold_used_to_select_domain": False,
               "beam_fixed_domain_prefix": True,
               "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
+              "beam_detail_capture": bool(monitor.enabled),
+              "beam_detail_artifact": "beam_details/rank{origin_rank}.jsonl",
+              "beam_detail_join_keys": [
+                  "recommendation_group_id", "origin_rank", "local_index",
+              ],
+              "beam_detail_count_per_candidate": 32,
               "old_smoke_beam_semantics": "UNFIXED_DOMAIN_PREFIX",
             "SMOKE_FIXED_PROBE_DISABLED_FOR_SPEED": (
                 "YES" if contract["smoke_mode"] and not contract["enable_probes"] else "NO"
