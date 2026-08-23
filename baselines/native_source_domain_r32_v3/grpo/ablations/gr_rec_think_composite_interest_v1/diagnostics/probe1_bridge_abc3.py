@@ -26,6 +26,7 @@ from .probe1_beam_anatomy import (
     load_model,
     load_probe,
     parse_abc3,
+    parse_gold,
     prefill,
     score_sequences,
     token_rank,
@@ -105,6 +106,7 @@ def run_rank(rank, phase, parts_dir):
         else prompt_ids + cot_ids + bridge_ids + domain_ids
     )
     historical_ids = [gold_ids(tokenizer, sid) for sid in HISTORICAL_EXACT]
+    full_gold = {parse_gold(value) for value in fixed["gold_sids"]}
     started = time.perf_counter()
     with torch.inference_mode():
         beam, beam_ids = hf_beam(
@@ -114,7 +116,7 @@ def run_rank(rank, phase, parts_dir):
             32,
             3,
             parse_abc3,
-            set(HISTORICAL_EXACT),
+            full_gold,
         )
         scores = score_sequences(model, tokenizer, context, historical_ids + beam_ids)
         gold_scores = scores[: len(historical_ids)]
