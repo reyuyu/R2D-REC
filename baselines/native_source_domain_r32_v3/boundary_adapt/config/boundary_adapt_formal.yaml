@@ -1,0 +1,11 @@
+# Prepared only. This task does not permit launching it.
+base_model: /data/models/onereason-8b-pretrain-competition
+adapter_path: /data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106
+init_mode: BASE_PLUS_EXISTING_LORA_CONTINUE_SAME_ADAPTER
+packing: false
+learning_rate: 5.0e-7
+max_steps: 300
+world_size: 4
+save_steps: [50, 100, 200, 300]
+resume_from_checkpoint: null
+formal_training_started: false

@@ -1,0 +1,6 @@
+base_model: /data/models/onereason-8b-pretrain-competition
+adapter_path: /data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106
+packing: false
+world_size: 4
+optimizer_steps: 0
+training_started: false
