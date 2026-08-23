@@ -569,3 +569,40 @@ A/B/C continuation. Gold SID domains are consistency-checked but are never used
 to select the prefix. The interrupted Formal716 run launched from
 `120b511614d3f8726753b7cec788bb851403dd34` is invalid for experiment conclusions
 and was safely stopped before this correction was implemented.
+
+## Fixed-domain Beam32 GPU validation (2026-08-23)
+
+The corrected implementation was committed and launched from exact GitHub main
+`fc7db7c355d98724d87ee20c5a21df739d0c357c`. The former Formal716 process was
+stopped before validation; its launch point `120b511614d3f8726753b7cec788bb851403dd34`
+remains invalid for experiment conclusions and was not resumed.
+
+The four-GPU zero-update Preflight reloaded fresh original BATA and passed every
+hard gate. All 16 Beam tasks ended their context with the fixed prefix selected
+from `dataset.target_domain`; mismatch count was zero. Raw decode, fixed-domain
+reward parity, Composite formula parity, population-advantage parity, DDP G4
+alignment, finite loss/gradient, Gold-leakage absence, LoRA-gradient presence,
+base-gradient absence, and NCCL/OOM/NaN/Inf guards all passed. Loss was
+`7.450580596923828e-09` and aggregate LoRA gradient norm was
+`1.0623637455369506`. Trainable checksums were identical before and after,
+`optimizer_steps=0`, and `PREFLIGHT_PASS=YES`.
+
+Only after that pass, Smoke12 independently reloaded fresh original BATA. It
+completed the frozen 12 optimizer steps, 6 fresh rollouts, 24 G4 groups, and 96
+candidates with probes and checkpoints disabled. Mean loss was
+`-0.0003311941400170326`, mean gradient norm `0.4866350367665291`, mean KL
+`0.0008939758117776364`, and mean clip ratio `0.009850505739450455`. Corrected
+fixed-domain Beam raw mean was `1.8297526041666667`, CoT utility mean was
+`0.11291666666666668`, and Composite reward mean was `0.1722270981385796`.
+Generated ABC parse success rate was `0.7229817708333333`; parser failure rate
+was `0.010416666666666666`; grounding coverage mean was `0.8675438596491228`.
+The four-domain breakdown recorded video/prod/ad Beam raw means of
+`2.464543269230769`, `1.484375`, and `0.0`; the sampled Smoke cohort contained
+no living-domain candidates, so no living-domain mean is inferred.
+
+The parameter audit reported `BASE_DELTA=0`, `BASE_CHANGED=false`, zero changed
+base versions, zero base parameters requiring gradients, `LORA_CHANGED=true`,
+LoRA total L2 delta `0.05248426205148421`, and maximum absolute delta
+`1.2219883501529694e-05`. NaN, Inf, OOM, NCCL, and runtime-error flags were all
+false. The frozen evaluator returned `SMOKE_PASS=YES`. No checkpoint was saved
+and Formal716 was not started.
