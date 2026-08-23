@@ -19,8 +19,7 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 RUNTIME = Path("/data/GRPO")
-GRPO = RUNTIME / "baselines/native_source_domain_r32_v3/grpo"
-sys.path[:0] = [str(RUNTIME / "scripts"), str(GRPO)]
+sys.path[:0] = [str(RUNTIME / "scripts"), str(RUNTIME)]
 from grpo_model import BASE, encode_prompt  # noqa: E402
 from grpo_probe import FixedProbeEvaluator  # noqa: E402
 from run_grpo_trl_smoke import make_beam32_fn, make_grpo_config  # noqa: E402
