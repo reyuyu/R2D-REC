@@ -1,0 +1,605 @@
+{
+  "type": "probe1_bare_vs_sft_bridge_abc3",
+  "diagnostic_code_commit": "11c406e81e5aa4702af32118ede2103250ce12be",
+  "recommendation_group_id": "662e21149595c33240d7ec0baed2282d687f71e1a0983252f28edc9c18855cbc",
+  "model_parent": {
+    "base": "/data/models/onereason-8b-pretrain-competition",
+    "adapter": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+    "fresh_original_bata": true
+  },
+  "cot_sha_match": "4/4",
+  "sft_bridge": {
+    "source": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+    "matching_rows": 12,
+    "text_repr": "'\\n该用户最近喜欢的视频有: '",
+    "token_ids": [
+      198,
+      75882,
+      20002,
+      104044,
+      99729,
+      9370,
+      87140,
+      18830,
+      25,
+      220
+    ],
+    "token_count": 10
+  },
+  "bare_abc3": {
+    "beam_raw_mean": 1.125,
+    "exact": 0,
+    "ab": 1,
+    "a": 8,
+    "invalid": 0
+  },
+  "bridge_abc3": {
+    "beam_raw_mean": 7.109375,
+    "exact": 3,
+    "ab": 8,
+    "a": 2,
+    "invalid": 0
+  },
+  "per_candidate": [
+    {
+      "rank": 0,
+      "bare": {
+        "beam_raw": 2.25,
+        "exact": 0,
+        "ab": 1,
+        "a": 1,
+        "invalid": 0
+      },
+      "bridge": {
+        "beam_raw": 3.125,
+        "exact": 0,
+        "ab": 2,
+        "a": 1,
+        "invalid": 0
+      },
+      "bare_beam32_cutoff_logprob": -6.379748284816742,
+      "bridge_beam32_cutoff_logprob": -7.170690059661865,
+      "a_logit_comparison": {
+        "max_abs_logit_diff": 7.875,
+        "mean_abs_logit_diff": 1.2964543104171753,
+        "top32_a_token_overlap": 21,
+        "bare_top32_a_token_ids": [
+          156850,
+          157408,
+          153004,
+          155816,
+          152247,
+          154119,
+          153289,
+          155584,
+          154323,
+          154545,
+          159716,
+          159317,
+          152337,
+          155981,
+          159440,
+          158624,
+          157990,
+          153763,
+          159837,
+          156387,
+          159565,
+          153949,
+          155422,
+          159420,
+          153086,
+          153808,
+          157297,
+          153693,
+          152965,
+          152720,
+          152995,
+          155481
+        ],
+        "bridge_top32_a_token_ids": [
+          156850,
+          157408,
+          153004,
+          155584,
+          153289,
+          154119,
+          155816,
+          152247,
+          159716,
+          159317,
+          157990,
+          156909,
+          158624,
+          159440,
+          159565,
+          152965,
+          157660,
+          154545,
+          159611,
+          155422,
+          158227,
+          156174,
+          153693,
+          152995,
+          152903,
+          152720,
+          154323,
+          158512,
+          153264,
+          153022,
+          157380,
+          159665
+        ]
+      }
+    },
+    {
+      "rank": 1,
+      "bare": {
+        "beam_raw": 0.875,
+        "exact": 0,
+        "ab": 0,
+        "a": 3,
+        "invalid": 0
+      },
+      "bridge": {
+        "beam_raw": 12.75,
+        "exact": 2,
+        "ab": 2,
+        "a": 0,
+        "invalid": 0
+      },
+      "bare_beam32_cutoff_logprob": -6.893638849258423,
+      "bridge_beam32_cutoff_logprob": -7.777325868606567,
+      "a_logit_comparison": {
+        "max_abs_logit_diff": 4.65625,
+        "mean_abs_logit_diff": 0.6684796214103699,
+        "top32_a_token_overlap": 22,
+        "bare_top32_a_token_ids": [
+          156850,
+          157408,
+          154075,
+          153591,
+          151973,
+          153004,
+          154119,
+          153960,
+          154648,
+          153907,
+          154606,
+          159201,
+          159813,
+          156167,
+          154567,
+          159556,
+          155584,
+          153399,
+          152511,
+          158676,
+          153078,
+          153528,
+          155816,
+          159440,
+          152247,
+          152925,
+          152315,
+          154434,
+          156343,
+          157990,
+          154060,
+          159047
+        ],
+        "bridge_top32_a_token_ids": [
+          156850,
+          157408,
+          154075,
+          154648,
+          153004,
+          155584,
+          153960,
+          154119,
+          155816,
+          153078,
+          154567,
+          159440,
+          153591,
+          152247,
+          157990,
+          157660,
+          156909,
+          153907,
+          154606,
+          154434,
+          157801,
+          153289,
+          156167,
+          154382,
+          152995,
+          158624,
+          159716,
+          158227,
+          151973,
+          159317,
+          159201,
+          158676
+        ]
+      }
+    },
+    {
+      "rank": 2,
+      "bare": {
+        "beam_raw": 0.5,
+        "exact": 0,
+        "ab": 0,
+        "a": 1,
+        "invalid": 0
+      },
+      "bridge": {
+        "beam_raw": 3.0,
+        "exact": 0,
+        "ab": 2,
+        "a": 0,
+        "invalid": 0
+      },
+      "bare_beam32_cutoff_logprob": -7.8127137422561646,
+      "bridge_beam32_cutoff_logprob": -7.792493581771851,
+      "a_logit_comparison": {
+        "max_abs_logit_diff": 4.4375,
+        "mean_abs_logit_diff": 0.6317390203475952,
+        "top32_a_token_overlap": 17,
+        "bare_top32_a_token_ids": [
+          157660,
+          153803,
+          156850,
+          158227,
+          154514,
+          153552,
+          152941,
+          158983,
+          159608,
+          159828,
+          153062,
+          159548,
+          157990,
+          159561,
+          154522,
+          156638,
+          152592,
+          155708,
+          155197,
+          159440,
+          157944,
+          156315,
+          157408,
+          159653,
+          153143,
+          158179,
+          153237,
+          158512,
+          153684,
+          154916,
+          158882,
+          153377
+        ],
+        "bridge_top32_a_token_ids": [
+          156850,
+          157660,
+          153803,
+          157408,
+          158227,
+          156638,
+          154075,
+          157990,
+          155584,
+          159440,
+          157801,
+          152941,
+          159828,
+          158374,
+          159650,
+          159608,
+          155816,
+          158624,
+          156909,
+          159653,
+          152995,
+          154916,
+          155665,
+          153684,
+          154648,
+          153004,
+          159548,
+          154522,
+          158512,
+          153289,
+          159611,
+          153960
+        ]
+      }
+    },
+    {
+      "rank": 3,
+      "bare": {
+        "beam_raw": 0.875,
+        "exact": 0,
+        "ab": 0,
+        "a": 3,
+        "invalid": 0
+      },
+      "bridge": {
+        "beam_raw": 9.5625,
+        "exact": 1,
+        "ab": 2,
+        "a": 1,
+        "invalid": 0
+      },
+      "bare_beam32_cutoff_logprob": -7.128224611282349,
+      "bridge_beam32_cutoff_logprob": -7.644837498664856,
+      "a_logit_comparison": {
+        "max_abs_logit_diff": 4.34375,
+        "mean_abs_logit_diff": 0.472637802362442,
+        "top32_a_token_overlap": 21,
+        "bare_top32_a_token_ids": [
+          156850,
+          157408,
+          154075,
+          151973,
+          153591,
+          153960,
+          157990,
+          155584,
+          158624,
+          156167,
+          158676,
+          153004,
+          159556,
+          154606,
+          159201,
+          154119,
+          154648,
+          153528,
+          159440,
+          153078,
+          153907,
+          152995,
+          154567,
+          156343,
+          152124,
+          157423,
+          155665,
+          153399,
+          159813,
+          155816,
+          158374,
+          157801
+        ],
+        "bridge_top32_a_token_ids": [
+          156850,
+          157408,
+          154075,
+          155584,
+          153004,
+          155816,
+          159440,
+          157990,
+          154119,
+          157660,
+          154648,
+          153960,
+          153078,
+          158624,
+          156909,
+          153289,
+          156167,
+          158227,
+          152247,
+          153803,
+          152995,
+          157801,
+          153591,
+          159317,
+          156638,
+          159716,
+          159611,
+          158676,
+          158374,
+          154606,
+          153264,
+          155665
+        ]
+      }
+    }
+  ],
+  "historical_gold": [
+    {
+      "sid": [
+        "video",
+        2406,
+        3727,
+        5563
+      ],
+      "bare_found": false,
+      "bridge_found": true,
+      "bare_abc_logprob_mean": -12.997292309999466,
+      "bridge_abc_logprob_mean": -7.374470807611942,
+      "logprob_delta_mean": 5.622821502387524,
+      "per_candidate": [
+        {
+          "rank": 0,
+          "bare_found": false,
+          "bridge_found": false,
+          "bare_abc_logprob": -19.073553323745728,
+          "bridge_abc_logprob": -8.93731364607811,
+          "logprob_delta": 10.136239677667618,
+          "bare_ranks": [
+            969,
+            9,
+            1
+          ],
+          "bridge_ranks": [
+            34,
+            4,
+            1
+          ]
+        },
+        {
+          "rank": 1,
+          "bare_found": false,
+          "bridge_found": true,
+          "bare_abc_logprob": -10.296852707862854,
+          "bridge_abc_logprob": -6.002822756767273,
+          "logprob_delta": 4.294029951095581,
+          "bare_ranks": [
+            3,
+            14,
+            1
+          ],
+          "bridge_ranks": [
+            3,
+            2,
+            1
+          ]
+        },
+        {
+          "rank": 2,
+          "bare_found": false,
+          "bridge_found": false,
+          "bare_abc_logprob": -12.936323165893555,
+          "bridge_abc_logprob": -7.760009527206421,
+          "logprob_delta": 5.176313638687134,
+          "bare_ranks": [
+            89,
+            7,
+            1
+          ],
+          "bridge_ranks": [
+            7,
+            4,
+            1
+          ]
+        },
+        {
+          "rank": 3,
+          "bare_found": false,
+          "bridge_found": false,
+          "bare_abc_logprob": -9.682440042495728,
+          "bridge_abc_logprob": -6.797737300395966,
+          "logprob_delta": 2.884702742099762,
+          "bare_ranks": [
+            2,
+            10,
+            1
+          ],
+          "bridge_ranks": [
+            3,
+            3,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "sid": [
+        "video",
+        5739,
+        2965,
+        670
+      ],
+      "bare_found": false,
+      "bridge_found": true,
+      "bare_abc_logprob_mean": -9.040875345468521,
+      "bridge_abc_logprob_mean": -7.728530377149582,
+      "logprob_delta_mean": 1.3123449683189392,
+      "per_candidate": [
+        {
+          "rank": 0,
+          "bare_found": false,
+          "bridge_found": false,
+          "bare_abc_logprob": -8.930691003799438,
+          "bridge_abc_logprob": -7.9260265827178955,
+          "logprob_delta": 1.004664421081543,
+          "bare_ranks": [
+            2,
+            8,
+            2
+          ],
+          "bridge_ranks": [
+            2,
+            4,
+            2
+          ]
+        },
+        {
+          "rank": 1,
+          "bare_found": false,
+          "bridge_found": true,
+          "bare_abc_logprob": -8.58615243434906,
+          "bridge_abc_logprob": -7.32507061958313,
+          "logprob_delta": 1.2610818147659302,
+          "bare_ranks": [
+            1,
+            9,
+            1
+          ],
+          "bridge_ranks": [
+            2,
+            4,
+            1
+          ]
+        },
+        {
+          "rank": 2,
+          "bare_found": false,
+          "bridge_found": false,
+          "bare_abc_logprob": -10.31480610370636,
+          "bridge_abc_logprob": -8.018186807632446,
+          "logprob_delta": 2.2966192960739136,
+          "bare_ranks": [
+            22,
+            9,
+            1
+          ],
+          "bridge_ranks": [
+            4,
+            4,
+            1
+          ]
+        },
+        {
+          "rank": 3,
+          "bare_found": false,
+          "bridge_found": true,
+          "bare_abc_logprob": -8.331851840019226,
+          "bridge_abc_logprob": -7.644837498664856,
+          "logprob_delta": 0.6870143413543701,
+          "bare_ranks": [
+            2,
+            9,
+            1
+          ],
+          "bridge_ranks": [
+            2,
+            5,
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "a_logit_summary": {
+    "max_abs_logit_diff_max": 7.875,
+    "mean_abs_logit_diff_mean": 0.7673276886343956,
+    "top32_a_token_overlap": [
+      21,
+      22,
+      17,
+      21
+    ]
+  },
+  "bridge_effect": "STRONG_POSITIVE",
+  "exact_recovered": true,
+  "root_conclusion": "SFT bridge restores at least one strict ABC3 Exact; inspect per-stage ranks for the primary gain.",
+  "gpu_used": 4,
+  "training_started": false,
+  "production_code_changed": false
+}
