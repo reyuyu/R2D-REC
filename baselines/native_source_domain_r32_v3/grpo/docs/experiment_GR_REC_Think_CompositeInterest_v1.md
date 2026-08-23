@@ -638,3 +638,23 @@ so the historical boundary scan remains recorded but `FORMAL_READY=NO` from that
 scan is no longer the current gate. Before Formal716, monitor-only capture was
 added for all 32 already-generated continuations per candidate; it does not
 change generation, reward, advantage, loss, or training topology.
+
+## Strict ABC3 Beam correction (2026-08-23)
+
+Run `GR-REC-THINK-COMPOSITE-INTEREST-V1-FIXEDDOMAIN-FORMAL716-20260823` was
+manually stopped at optimizer step 32 and is classified
+`INVALID_BEAM_CONTINUATION_PARSE`. It must not be resumed, used for checkpoints,
+or interpreted as a formal result. The fixed-domain Beam path still generated up
+to 128 tokens and the generic final-SID parser could replace the first ABC with a
+later generated SID.
+
+The corrected production contract generates exactly three raw tokens with
+`min_new_tokens=max_new_tokens=3`. Reward accepts only a strict A/B/C token
+sequence parsed directly from those raw token IDs; generic `final_sid()` remains
+unchanged for legacy and NoThink paths. The real tokenizer contains 8,192 A,
+8,192 B, and 8,192 C component tokens, all single-token encodings. All 22,040
+Gold ABC sequences in the GRPO training data encode to exactly three tokens.
+
+The 4-GPU zero-update preflight at launch commit
+`b4ca4fba5911e00ce65c5de207f134c04f5d1cd7` passed all gates: 16 candidates,
+512 Beam sequences, zero generated-token-count mismatches, reward/advantage/DDP
