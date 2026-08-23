@@ -1,0 +1,19 @@
+{
+  "kind": "temporary_four_gpu_one_optimizer_step_smoke",
+  "formal_training_started": false,
+  "world_size": 4,
+  "optimizer_steps_per_rank": 1,
+  "total_paths": 42799,
+  "total_groups": 15943,
+  "effective_global_batch_rows": 4,
+  "init_model_parity_max_abs_diff": 0.0,
+  "init_model_parity_mean_abs_diff": 0.0,
+  "abc_supervised_tokens_per_path": 3,
+  "only_lora_trainable": true,
+  "lora_changed": true,
+  "base_changed": false,
+  "old_optimizer_resumed": false,
+  "second_lora_created": false,
+  "rank_losses": [1.6418601274490356, 2.552672863006592, 1.3901880979537964, 2.636563539505005],
+  "runtime_result": "/data/GRPO/boundary_adapt/tmp/formal_trainer_smoke_nccl_retry_20260824/result.json"
+}

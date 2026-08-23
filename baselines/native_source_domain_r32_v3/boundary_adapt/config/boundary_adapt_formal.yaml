@@ -6,6 +6,11 @@ packing: false
 learning_rate: 5.0e-7
 max_steps: 300
 world_size: 4
+per_device_batch_size: 1
+gradient_accumulation_steps: 1
+effective_global_batch_rows: 4
+multi_positive_objective: "mean(path_loss * sample_weight) * (total_paths / total_groups)"
+dataset_stats: /data/GRPO/boundary_adapt/results/dataset_stats.json
 save_steps: [50, 100, 200, 300]
 resume_from_checkpoint: null
 formal_training_started: false
