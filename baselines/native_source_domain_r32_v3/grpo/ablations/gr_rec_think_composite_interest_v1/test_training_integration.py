@@ -64,6 +64,20 @@ class TrainingChainTests(unittest.TestCase):
                 raise AssertionError("domain prefix must not add special tokens")
             return list(self.token_ids[text])
 
+    class ABC3Tokenizer(PrefixTokenizer):
+        tokens = {
+            201: "<s_a_2406>", 202: "<s_b_3727>", 203: "<s_c_5563>",
+            204: "<s_c_4>", 205: "<s_b_9>", 206: "<s_a_9>",
+            999: "invalid",
+        }
+
+        def convert_ids_to_tokens(self, token_ids, skip_special_tokens=False):
+            if skip_special_tokens:
+                raise AssertionError("strict Beam parsing must preserve special tokens")
+            if isinstance(token_ids, int):
+                return self.tokens[token_ids]
+            return [self.tokens[token_id] for token_id in token_ids]
+
     def test_fixed_domain_prefix_mapping_and_unknown_fail_closed(self):
         self.assertEqual(DOMAIN_PREFIX, {
             "video": "<|video_begin|>",
@@ -130,19 +144,21 @@ class TrainingChainTests(unittest.TestCase):
         self.assertEqual(captured["domain_prefix"], "<|prod_begin|>")
         self.assertEqual(captured["target_domain"], "prod")
 
-    def test_fixed_domain_continuation_parsing_is_authoritative(self):
-        abc = "<s_a_1><s_b_2><s_c_3>"
+    def test_strict_abc3_raw_id_parser(self):
+        tokenizer = self.ABC3Tokenizer()
         self.assertEqual(
-            parse_fixed_domain_beam_sid(abc, "prod"), ("prod", 1, 2, 3),
+            parse_fixed_domain_beam_sid(tokenizer, [201, 202, 203], "prod"),
+            ("prod", 2406, 3727, 5563),
         )
-        self.assertEqual(
-            parse_fixed_domain_beam_sid("<|prod_begin|>" + abc, "prod"),
-            ("prod", 1, 2, 3),
-        )
-        self.assertEqual(
-            parse_fixed_domain_beam_sid("<|video_begin|>" + abc, "prod"),
-            ("prod", 1, 2, 3),
-        )
+        self.assertIsNone(parse_fixed_domain_beam_sid(tokenizer, [201, 202], "prod"))
+        self.assertIsNone(parse_fixed_domain_beam_sid(tokenizer, [201, 202, 203, 204], "prod"))
+        self.assertIsNone(parse_fixed_domain_beam_sid(tokenizer, [202, 201, 203], "prod"))
+
+    def test_strict_parser_ignores_later_text_that_legacy_final_sid_would_take(self):
+        from grpo_sid import final_sid
+        long_text = "<|prod_begin|><s_a_2406><s_b_3727><s_c_5563></think><|video_begin|><s_a_1><s_b_2><s_c_3>"
+        self.assertEqual(final_sid(long_text), ("video", 1, 2, 3))
+        self.assertEqual(parse_fixed_domain_beam_sid(self.ABC3Tokenizer(), [201, 202, 203], "prod"), ("prod", 2406, 3727, 5563))
 
     def test_beam_detail_rows_preserve_all_outputs_and_relations(self):
         from run_grpo_trl_smoke import build_beam_detail_rows
@@ -155,11 +171,17 @@ class TrainingChainTests(unittest.TestCase):
             ("prod", 9, 9, 9),
             None,
         ] + [None] * 27
-        rows = build_beam_detail_rows(texts, sids, {("prod", 1, 2, 3)})
+        token_ids = [[201, 202, 203]] * 32
+        tokens = [["<s_a_2406>", "<s_b_3727>", "<s_c_5563>"]] * 32
+        rows = build_beam_detail_rows(
+            texts, token_ids, tokens, sids, {("prod", 1, 2, 3)})
         self.assertEqual(len(rows), 32)
         self.assertEqual([row["beam_index"] for row in rows], list(range(32)))
         self.assertEqual([row["generated_continuation_text"] for row in rows], texts)
         self.assertEqual(rows[0]["parsed_sid"], ["prod", 1, 2, 3])
+        self.assertEqual(rows[0]["generated_token_ids"], [201, 202, 203])
+        self.assertEqual(rows[0]["generated_tokens"], tokens[0])
+        self.assertEqual(rows[0]["generated_token_count"], 3)
         self.assertEqual(
             [row["relation_to_gold"] for row in rows[:5]],
             ["EXACT", "AB", "A", "VALID_NO_HIT", "INVALID"],
@@ -169,28 +191,35 @@ class TrainingChainTests(unittest.TestCase):
         import run_grpo_trl_smoke as production
         from unittest.mock import patch
 
-        texts = ["<s_a_1><s_b_2><s_c_3>"] + ["invalid"] * 31
+        texts = ["<s_a_2406><s_b_3727><s_c_5563>"] + ["invalid"] * 31
+        token_ids = [[201, 202, 203]] + [[999, 202, 203]] * 31
         base_task = {
             "task_id": (0, 0),
             "input_ids": [1],
             "target_domain": "prod",
             "domain_prefix": "<|prod_begin|>",
-            "gold": [["prod", 1, 2, 3]],
+            "gold": [["prod", 2406, 3727, 5563]],
         }
         with (
-            patch.object(production, "generate_batch", return_value=texts),
+            patch.object(production, "generate_batch", return_value=(texts, token_ids)) as generate,
             patch.object(production.torch.cuda, "synchronize"),
         ):
             plain = production.run_beam32_task(
-                None, None, {**base_task, "capture_monitor": False}
+                None, self.ABC3Tokenizer(), {**base_task, "capture_monitor": False}
             )
             captured = production.run_beam32_task(
-                None, None, {**base_task, "capture_monitor": True}
+                None, self.ABC3Tokenizer(), {**base_task, "capture_monitor": True}
             )
         self.assertEqual(plain["reward"], captured["reward"])
         self.assertNotIn("beam_details", plain)
         self.assertEqual(len(captured["beam_details"]), 32)
 
+        self.assertEqual(captured["generated_token_count_mismatch"], 0)
+        self.assertTrue(all(count == 3 for count in captured["generated_token_counts"]))
+        self.assertEqual(generate.call_args.kwargs["min_new_tokens"], 3)
+        self.assertEqual(generate.call_args.kwargs["max_new_tokens"], 3)
+        self.assertTrue(generate.call_args.kwargs["return_ids"])
+        self.assertTrue(all(row["generated_token_count"] == 3 for row in captured["beam_details"]))
     def test_beam_detail_writer_uses_origin_rank_and_context(self):
         from monitor.writer import MonitorWriter
 

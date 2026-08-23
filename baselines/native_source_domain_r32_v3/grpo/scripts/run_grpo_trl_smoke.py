@@ -107,27 +107,37 @@ def beam_relation_to_gold(sid, gold_set):
     return "VALID_NO_HIT"
 
 
-def build_beam_detail_rows(texts, beam_sids, gold_set):
+def build_beam_detail_rows(texts, generated_ids, generated_tokens, beam_sids, gold_set):
     return [{
         "beam_index": index,
         "generated_continuation_text": text,
+        "generated_token_ids": list(token_ids),
+        "generated_tokens": list(tokens),
+        "generated_token_count": len(token_ids),
         "parsed_sid": list(sid) if sid is not None else None,
         "relation_to_gold": beam_relation_to_gold(sid, gold_set),
-    } for index, (text, sid) in enumerate(zip(texts, beam_sids))]
+    } for index, (text, token_ids, tokens, sid) in enumerate(
+        zip(texts, generated_ids, generated_tokens, beam_sids)
+    )]
 
 
 def run_beam32_task(model, tokenizer, task):
     torch.cuda.synchronize()
     t0 = time.perf_counter()
-    texts = generate_batch(
+    texts, generated_ids = generate_batch(
         model, tokenizer, [task["input_ids"]],
-        max_new_tokens=128, num_beams=32, num_return_sequences=32,
+        min_new_tokens=3, max_new_tokens=3,
+        num_beams=32, num_return_sequences=32, return_ids=True,
     )
     torch.cuda.synchronize()
     beam_sec = time.perf_counter() - t0
+    generated_tokens = [
+        tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=False)
+        for ids in generated_ids
+    ]
     beam_sids = [
-        parse_fixed_domain_beam_sid(text, task["target_domain"])
-        for text in texts
+        parse_fixed_domain_beam_sid(tokenizer, ids, task["target_domain"])
+        for ids in generated_ids
     ]
     gold_set = {tuple(item) for item in task["gold"]}
     invalid = sum(sid is None for sid in beam_sids)
@@ -141,6 +151,8 @@ def run_beam32_task(model, tokenizer, task):
         "a": a,
         "invalid": invalid,
         "target_domain": task["target_domain"],
+        "generated_token_counts": [len(ids) for ids in generated_ids],
+        "generated_token_count_mismatch": sum(len(ids) != 3 for ids in generated_ids),
         "domain_prefix": task["domain_prefix"],
         "beam_fixed_domain_prefix": True,
         "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
@@ -148,7 +160,8 @@ def run_beam32_task(model, tokenizer, task):
         # optional monitor is enabled; the default training payload is unchanged.
         **({
             "beam_sids": beam_sids,
-            "beam_details": build_beam_detail_rows(texts, beam_sids, gold_set),
+            "beam_details": build_beam_detail_rows(
+                texts, generated_ids, generated_tokens, beam_sids, gold_set),
         } if task.get("capture_monitor") else {}),
     }
 
@@ -315,6 +328,8 @@ def make_beam32_fn(model, tokenizer, monitor_writer=None):
                         "fixed_domain_results": [{
                             "task_id": list(item["task_id"]),
                             "reward": item["reward"],
+                            "generated_token_counts": item["generated_token_counts"],
+                            "generated_token_count_mismatch": item["generated_token_count_mismatch"],
                         } for item in global_results],
                         "beam_fixed_domain_prefix": True,
                         "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",

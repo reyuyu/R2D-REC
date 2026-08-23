@@ -192,9 +192,18 @@ def main(argv=None):
             and beam_fixed_domain_candidate_count == 16
             and beam_fixed_domain_mismatch_count == 0
         )
+        fixed_domain_results = beam_call.get("fixed_domain_results", [])
+        beam_sequence_count = sum(
+            len(item.get("generated_token_counts", [])) for item in fixed_domain_results
+        )
+        generated_token_count_mismatch = sum(
+            int(item.get("generated_token_count_mismatch", 0))
+            for item in fixed_domain_results
+        )
+        beam_abc3_pass = beam_sequence_count == 512 and generated_token_count_mismatch == 0
         beam_result_by_id = {
             tuple(item["task_id"]): float(item["reward"])
-            for item in beam_call.get("fixed_domain_results", [])
+            for item in fixed_domain_results
         }
         fixed_domain_reward_parity = all(
             abs(float(row["beam_raw"]) - beam_result_by_id.get(
@@ -240,6 +249,7 @@ def main(argv=None):
         evaluation = evaluate_preflight_conditions(
             raw_decode_runtime=raw_decode_pass,
             beam_fixed_domain_prefix=beam_fixed_domain_prefix_pass,
+            beam_abc3=beam_abc3_pass,
             online_reward_parity=reward_parity,
             online_advantage_parity=advantage_parity,
             ddp_g4_alignment=ddp_alignment,
@@ -280,6 +290,11 @@ def main(argv=None):
             "BEAM_FIXED_DOMAIN_PREFIX_PASS": (
                 "YES" if beam_fixed_domain_prefix_pass else "NO"
             ),
+            "beam_sequence_count": beam_sequence_count,
+            "generated_token_count_mismatch": generated_token_count_mismatch,
+            "BEAM_ABC3_PASS": "YES" if beam_abc3_pass else "NO",
+            "beam_min_new_tokens": 3,
+            "beam_max_new_tokens": 3,
             "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
             "target_domain_source": "dataset.target_domain",
             "gold_used_to_select_domain": False,

@@ -54,6 +54,7 @@ def passing_preflight(**overrides):
     observations = {
         "raw_decode_runtime": True,
         "beam_fixed_domain_prefix": True,
+        "beam_abc3": True,
         "online_reward_parity": True,
         "online_advantage_parity": True,
         "ddp_g4_alignment": True,
@@ -168,6 +169,7 @@ class PreflightContractTests(unittest.TestCase):
     def test_hard_gate_failures_are_reported(self):
         cases = {
             "beam_fixed_domain_prefix": {"beam_fixed_domain_prefix": False},
+            "beam_abc3": {"beam_abc3": False},
             "online_reward_parity": {"online_reward_parity": False},
             "ddp_g4_alignment": {"ddp_g4_alignment": False},
             "nccl_error_absent": {"nccl_error": True},

@@ -47,6 +47,7 @@ def encode_prompt(tokenizer, prompt: str):
 def generate_batch(
     model, tokenizer, input_ids_list,
     max_new_tokens=128,
+    min_new_tokens=None,
     do_sample=False,
     temperature=1.0,
     top_p=1.0,
@@ -82,6 +83,8 @@ def generate_batch(
         num_return_sequences=num_return_sequences,
         pad_token_id=pad_id,
     )
+    if min_new_tokens is not None:
+        gen_kwargs["min_new_tokens"] = min_new_tokens
     out = model.generate(inputs=input_t, attention_mask=attn, **gen_kwargs)
     texts = []
     ids_out = []

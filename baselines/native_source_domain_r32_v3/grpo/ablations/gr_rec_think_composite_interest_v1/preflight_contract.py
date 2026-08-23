@@ -8,6 +8,7 @@ from typing import Any
 HARD_CONDITIONS = (
     "raw_decode_runtime",
     "beam_fixed_domain_prefix",
+    "beam_abc3",
     "online_reward_parity",
     "online_advantage_parity",
     "ddp_g4_alignment",
@@ -140,6 +141,7 @@ def evaluate_preflight_conditions(**observations: Any) -> dict[str, Any]:
         "beam_fixed_domain_prefix": bool(
             observations.get("beam_fixed_domain_prefix")
         ),
+        "beam_abc3": bool(observations.get("beam_abc3")),
         "online_reward_parity": bool(observations.get("online_reward_parity")),
         "online_advantage_parity": bool(observations.get("online_advantage_parity")),
         "ddp_g4_alignment": bool(observations.get("ddp_g4_alignment")),

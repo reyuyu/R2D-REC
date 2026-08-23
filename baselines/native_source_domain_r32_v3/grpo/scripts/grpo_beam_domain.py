@@ -4,17 +4,16 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 
-from grpo_sid import final_sid
-
-
 DOMAIN_PREFIX = {
     "video": "<|video_begin|>",
     "prod": "<|prod_begin|>",
     "ad": "<|ad_begin|>",
     "living": "<|living_begin|>",
 }
-_LEADING_DOMAIN_PREFIX_RE = re.compile(
-    r"^\s*<\|(?:video|prod|ad|living)_begin\|>"
+_ABC_TOKEN_PATTERNS = (
+    re.compile(r"<s_a_(\d+)>").fullmatch,
+    re.compile(r"<s_b_(\d+)>").fullmatch,
+    re.compile(r"<s_c_(\d+)>").fullmatch,
 )
 
 
@@ -54,13 +53,23 @@ def build_fixed_domain_beam_input(
     )
 
 
-def parse_fixed_domain_beam_sid(generated_text: str, target_domain: str):
-    """Parse A/B/C continuation while dataset.target_domain stays authoritative."""
-    prefix_text = domain_prefix(target_domain)
-    continuation = _LEADING_DOMAIN_PREFIX_RE.sub(
-        "", generated_text or "", count=1,
-    )
-    parsed = final_sid(prefix_text + continuation)
-    if parsed is None or parsed[0] != target_domain:
+def parse_strict_abc3_ids(tokenizer, generated_ids, target_domain: str):
+    """Parse exactly three raw A/B/C token IDs under the fixed target domain."""
+    domain_prefix(target_domain)
+    ids = list(generated_ids or [])
+    if len(ids) != 3:
         return None
-    return parsed
+    tokens = tokenizer.convert_ids_to_tokens(ids, skip_special_tokens=False)
+    if isinstance(tokens, str):
+        tokens = [tokens]
+    if len(tokens) != 3:
+        return None
+    matches = [pattern(token) for pattern, token in zip(_ABC_TOKEN_PATTERNS, tokens)]
+    if any(match is None for match in matches):
+        return None
+    return (target_domain, *(int(match.group(1)) for match in matches))
+
+
+def parse_fixed_domain_beam_sid(tokenizer, generated_ids, target_domain: str):
+    """Compatibility name for the production strict raw-ID ABC3 parser."""
+    return parse_strict_abc3_ids(tokenizer, generated_ids, target_domain)
