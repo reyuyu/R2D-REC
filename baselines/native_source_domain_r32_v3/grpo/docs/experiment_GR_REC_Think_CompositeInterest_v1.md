@@ -658,3 +658,37 @@ Gold ABC sequences in the GRPO training data encode to exactly three tokens.
 The 4-GPU zero-update preflight at launch commit
 `b4ca4fba5911e00ce65c5de207f134c04f5d1cd7` passed all gates: 16 candidates,
 512 Beam sequences, zero generated-token-count mismatches, reward/advantage/DDP
+
+## Probe1 Beam Search Anatomy (2026-08-23)
+
+An inference-only four-GPU diagnostic reloaded the original 8B base and fresh
+original BATA, with one immutable step-0 Video Probe1 CoT per GPU. The four
+completion SHA256 values matched the historical free-domain record 4/4. No
+training, optimizer, scheduler, backward, parameter update, or checkpoint was
+started.
+
+Strict free-domain DABC4 generated exactly four raw tokens per sequence. Across
+the four CoTs its 128 sequences were all invalid under the strict raw-ID parser:
+Beam raw mean 0, Exact 0, AB 0, A 0, Invalid 128. The first raw tokens were
+natural-language continuation tokens rather than a domain token. Consequently,
+the two Exact SIDs reported by the old 128-token free-domain path cannot be
+reproduced under strict DABC4 and are classified as a long-text parse artifact.
+
+Production Fixed ABC3 was reproduced exactly: Beam raw mean 1.125, Exact 0,
+AB 1, A 8, Invalid 0. Beam64 found no Exact. A memory-bounded manual Beam128
+sweep found `[video,5739,2965,670]` only for CoT3; it did not find
+`[video,2406,3727,5563]`. This width-sweep observation is diagnostic rather than
+production evidence because the manual Beam32 replay matched only 31/32, 31/32,
+29/32, and 30/32 of the HF Beam32 sets. Per the audit contract, all manual
+frontier pruning labels are therefore `NOT_APPLICABLE` and no A/AB/C pruning
+claim is made.
+
+Teacher-forced scoring put both historical Exact sequences below the actual
+Fixed Beam32 cutoff for every CoT. Direct fixed-prefix prefill versus KV-cache
+decode differed by max absolute logit 0.125-0.25, mean absolute logit
+0.0182-0.0363, with top-32 overlap 30-31/32. This is a real bf16 execution-path
+numerical difference, but it does not restore either Exact in production
+Beam32. The final diagnosis is `MIXED`: the old Exact observation is primarily
+`OLD_PARSE_ARTIFACT`; current historical Gold full-sequence scores are below
+Top32; and prefill/KV numerical differences are measurable. Full evidence is in
+`results/gr_rec_think_composite_interest_v1_probe1_beam_anatomy_20260823.json`.
