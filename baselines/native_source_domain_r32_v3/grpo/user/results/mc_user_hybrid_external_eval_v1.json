@@ -1,0 +1,103 @@
+{
+  "run_id": "MC-USER-HYBRID-K4-S1-512-20260822-223353",
+  "algorithm": "mc_user_hybrid_grpo_v1",
+  "source": "user_provided",
+  "recorded_at": "2026-08-23",
+  "parent": {
+    "experiment": "GR_REC_v1",
+    "checkpoint": "checkpoint-1500",
+    "aggregate": 1.3510,
+    "scores": {
+      "material": [0.0510, 0.0366, 0.0515, 0.0425],
+      "user": [0.1587, 0.0976],
+      "recommendation": [0.1381, 0.1598, 0.2156, 0.1665],
+      "world": [0.2331]
+    },
+    "group_sums_from_rounded_scores": {
+      "material": 0.1816,
+      "user": 0.2563,
+      "recommendation": 0.6800,
+      "world": 0.2331
+    }
+  },
+  "checkpoints": [
+    {
+      "step": 256,
+      "aggregate": 1.3472,
+      "scores": {
+        "material": [0.0515, 0.0376, 0.0527, 0.0424],
+        "user": [0.1601, 0.0996],
+        "recommendation": [0.1381, 0.1632, 0.2030, 0.1647],
+        "world": [0.2342]
+      },
+      "group_sums_from_rounded_scores": {
+        "material": 0.1842,
+        "user": 0.2597,
+        "recommendation": 0.6690,
+        "world": 0.2342
+      },
+      "delta_vs_parent": {
+        "aggregate": -0.0038,
+        "material": [0.0005, 0.0010, 0.0012, -0.0001],
+        "material_sum": 0.0026,
+        "user": [0.0014, 0.0020],
+        "user_sum": 0.0034,
+        "recommendation": [0.0000, 0.0034, -0.0126, -0.0018],
+        "recommendation_sum": -0.0110,
+        "world": 0.0011
+      }
+    },
+    {
+      "step": 512,
+      "aggregate": 1.3402,
+      "scores": {
+        "material": [0.0522, 0.0368, 0.0518, 0.0422],
+        "user": [0.1622, 0.1001],
+        "recommendation": [0.1325, 0.1564, 0.2016, 0.1683],
+        "world": [0.2361]
+      },
+      "group_sums_from_rounded_scores": {
+        "material": 0.1830,
+        "user": 0.2623,
+        "recommendation": 0.6588,
+        "world": 0.2361
+      },
+      "delta_vs_parent": {
+        "aggregate": -0.0108,
+        "material": [0.0012, 0.0002, 0.0003, -0.0003],
+        "material_sum": 0.0014,
+        "user": [0.0035, 0.0025],
+        "user_sum": 0.0060,
+        "recommendation": [-0.0056, -0.0034, -0.0140, 0.0018],
+        "recommendation_sum": -0.0212,
+        "world": 0.0030
+      },
+      "delta_vs_step256": {
+        "aggregate": -0.0070,
+        "material_sum": -0.0012,
+        "user_sum": 0.0026,
+        "recommendation_sum": -0.0102,
+        "world": 0.0019
+      }
+    }
+  ],
+  "training_health": {
+    "status": "PASS",
+    "prompt_step": 512,
+    "optimizer_step": 512,
+    "valid_candidate_rate": 0.998046875,
+    "no_credit_prompt_rate": 0.0,
+    "base_hash_unchanged": true,
+    "trainable_tensor_count": 504,
+    "lora_tensor_count": 504,
+    "learning_rate": 0.000001,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3
+  },
+  "interpretation": {
+    "aggregate": "Step 256 is within the repository's approximate +/-0.01 single-evaluation variation band; Step 512 is only slightly outside it.",
+    "task_tradeoff": "User increases monotonically while Recommendation decreases, and the Recommendation deficit grows from -0.0110 at step 256 to -0.0212 at step 512.",
+    "learning_rate": "The monotonic task movement and 512 successful optimizer updates show that 1e-6 is not too low to change behavior. A higher learning rate would not preserve Recommendation and could accelerate interference.",
+    "selection": "Among the two evaluated MC checkpoints, step 256 has the better external tradeoff; neither establishes an improvement over the GR_REC_v1 step-1500 parent."
+  }
+}

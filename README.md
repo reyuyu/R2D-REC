@@ -71,6 +71,16 @@ Step 240 和 final 378 的训练内固定 Probe 均比 step 40 更好，但外�
 
 Recommendation Gold 相对 History 的纯 CPU 任务结构审计见 [Recommendation History-vs-Novel Audit](./baselines/native_source_domain_r32_v3/grpo/user/docs/recommendation_history_novel_audit_v1.md)。
 
+### MC_USER Hybrid K4 外部评测
+
+| 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对 Parent `1.3510` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Parent GR_REC_v1 Step 1500 | `1.3510` | `0.1816` | `0.2563` | `0.6800` | `0.2331` | - |
+| MC_USER Hybrid Step 256 | `1.3472` | `0.1842` | `0.2597` | `0.6690` | `0.2342` | `-0.0038` |
+| MC_USER Hybrid Step 512 | `1.3402` | `0.1830` | `0.2623` | `0.6588` | `0.2361` | `-0.0108` |
+
+Hybrid 训练健康完成，但外部任务呈现随 step 增强的 User/Recommendation 权衡：相对 Parent，User 从 `+0.0034` 增至 `+0.0060`，Recommendation 从 `-0.0110` 扩大到 `-0.0212`。这更支持 User-only objective 的跨任务干扰，而不是“学习率低到没有学到”；`1e-6` 已经产生稳定方向性变化，提高学习率本身不能保证保留 Recommendation。完整原始 11 项、逐项 delta 和保留策略见 [MC_USER Hybrid 外部评测记录](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md)。
+
 GRPO 记录入口：
 
 - [GR_REC_v1：动机、冻结合同、训练完成记录、问题侧证据与完整分项](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)
