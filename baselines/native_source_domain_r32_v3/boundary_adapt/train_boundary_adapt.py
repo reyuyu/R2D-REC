@@ -16,7 +16,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-sys.path.insert(0, "/data/GRPO/scripts")
+_runtime_scripts = Path("/data/GRPO/scripts")
+_source_scripts = Path(__file__).resolve().parents[1] / "grpo" / "scripts"
+sys.path.insert(0, str(_runtime_scripts if _runtime_scripts.is_dir() else _source_scripts))
 from grpo_model import render_prompt
 from boundary_adapt_loss import IGNORE_INDEX, assert_three_labels, load_and_validate_provenance, row_uniform_group_loss
 
@@ -25,14 +27,14 @@ ADAPTER = "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32
 DOMAIN = {"video": "<|video_begin|>", "prod": "<|prod_begin|>", "ad": "<|ad_begin|>", "living": "<|living_begin|>"}
 
 
-def load(adapter_trainable: bool, device: str):
+def load(adapter_trainable: bool, device: str, adapter_path: str = ADAPTER):
     tok = AutoTokenizer.from_pretrained(BASE, trust_remote_code=True)
     base = AutoModelForCausalLM.from_pretrained(
         BASE, torch_dtype=torch.bfloat16, device_map=device, trust_remote_code=True,
         attn_implementation="flash_attention_2",
     )
     # This attaches the existing adapter in-place; it neither merges nor creates one.
-    model = PeftModel.from_pretrained(base, ADAPTER, is_trainable=adapter_trainable)
+    model = PeftModel.from_pretrained(base, adapter_path, is_trainable=adapter_trainable)
     for name, parameter in model.named_parameters():
         parameter.requires_grad = adapter_trainable and "lora" in name.lower()
     model.eval()
@@ -78,8 +80,8 @@ def _write_rank_result(result_path: str, rank: int, item: dict, world: int) -> N
     Path(result_path).write_text(json.dumps({"ranks": [json.loads(path.read_text()) for path in paths]}, indent=2), encoding="utf-8")
 
 
-def verify_initial_parity(model, tokenizer, row, device: str) -> dict:
-    ref, _ = load(False, device)
+def verify_initial_parity(model, tokenizer, row, device: str, adapter_path: str = ADAPTER) -> dict:
+    ref, _ = load(False, device, adapter_path)
     ids, _, _ = encode_row(tokenizer, row, device)
     with torch.inference_mode():
         ref_logits = ref(input_ids=ids, attention_mask=torch.ones_like(ids)).logits.float()
@@ -90,11 +92,38 @@ def verify_initial_parity(model, tokenizer, row, device: str) -> dict:
     return {"max_abs_diff": float(diff.max()), "mean_abs_diff": float(diff.mean())}
 
 
+def distributed_sampler_indices(rows, *, rank: int, world: int, seed: int = 20260824) -> list[int]:
+    sampler = DistributedSampler(rows, num_replicas=world, rank=rank, shuffle=True, seed=seed)
+    sampler.set_epoch(0)
+    return list(iter(sampler))
+
+
+def continuation_local_indices(rows, *, rank: int, world: int, local_offset: int) -> list[int]:
+    indices = distributed_sampler_indices(rows, rank=rank, world=world)
+    if not 0 <= local_offset < len(indices):
+        raise ValueError(f"invalid continuation local offset {local_offset} for {len(indices)} indices")
+    return indices[local_offset:]
+
+
+def checkpoint_total_steps(mode: str, *, total_step_offset: int, max_steps: int, major_steps=()) -> tuple[int, ...]:
+    if mode == "formal":
+        return (50, 100, 200, 300)
+    if mode != "continuation":
+        return ()
+    final_step = total_step_offset + max_steps
+    safety = range(((total_step_offset // 100) + 1) * 100, final_step + 1, 100)
+    selected = set(int(step) for step in major_steps) | set(safety) | {final_step}
+    return tuple(sorted(step for step in selected if total_step_offset < step <= final_step))
+
+
 def preflight(rows_path: str, stats_path: str, result_path: str) -> None:
     _run(rows_path, stats_path, result_path, mode="preflight", output_dir=None, max_steps=0)
 
 
-def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str, output_dir: str | None, max_steps: int) -> None:
+def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str,
+         output_dir: str | None, max_steps: int, init_adapter: str = ADAPTER,
+         local_sampler_offset: int = 0, total_step_offset: int = 0,
+         save_total_steps=()) -> None:
     rank, world = int(os.environ.get("LOCAL_RANK", "0")), int(os.environ.get("WORLD_SIZE", "1"))
     # Match the repository's proven single-node four-GPU NCCL bootstrap.
     os.environ.setdefault("NCCL_SOCKET_IFNAME", "lo")
@@ -105,8 +134,8 @@ def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str, output
     provenance = load_and_validate_provenance(rows_path, stats_path)
     rows = [json.loads(line) for line in Path(rows_path).read_text(encoding="utf-8").splitlines() if line.strip()]
     row = rows[rank % len(rows)]
-    model, tokenizer = load(True, device)
-    parity = verify_initial_parity(model, tokenizer, row, device)
+    model, tokenizer = load(True, device, init_adapter)
+    parity = verify_initial_parity(model, tokenizer, row, device, init_adapter)
     if parity["max_abs_diff"] != 0.0:
         raise AssertionError(f"BASE_PLUS_EXISTING_LORA parity failed: {parity}")
     only_lora_trainable = all(("lora" in name.lower()) == parameter.requires_grad for name, parameter in model.named_parameters())
@@ -121,22 +150,34 @@ def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str, output
         loss = row_uniform_group_loss(wrapped(input_ids=ids, attention_mask=torch.ones_like(ids)).logits, labels, weights, **provenance)
         loss.backward()
     else:
-        sampler = DistributedSampler(rows, num_replicas=world, rank=rank, shuffle=(mode == "formal"), seed=20260824)
-        loader = DataLoader(rows, batch_size=1, sampler=sampler, collate_fn=lambda batch: batch[0])
+        sampler = DistributedSampler(rows, num_replicas=world, rank=rank, shuffle=(mode in ("formal", "continuation")), seed=20260824)
+        sampler.set_epoch(0)
+        if mode == "continuation":
+            indices = continuation_local_indices(rows, rank=rank, world=world, local_offset=local_sampler_offset)
+            loader = DataLoader(rows, batch_size=1, sampler=indices, collate_fn=lambda batch: batch[0])
+        else:
+            loader = DataLoader(rows, batch_size=1, sampler=sampler, collate_fn=lambda batch: batch[0])
         optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=5e-7)
         iterator = iter(loader)
+        checkpoint_steps = checkpoint_total_steps(
+            mode, total_step_offset=total_step_offset, max_steps=max_steps,
+            major_steps=save_total_steps,
+        )
         for step in range(max_steps):
             try:
                 train_row = next(iterator)
             except StopIteration:
-                sampler.set_epoch(step + 1); iterator = iter(loader); train_row = next(iterator)
+                sampler.set_epoch(step + 1)
+                loader = DataLoader(rows, batch_size=1, sampler=sampler, collate_fn=lambda batch: batch[0])
+                iterator = iter(loader); train_row = next(iterator)
             ids, labels, weights = encode_row(tokenizer, train_row, device)
             optimizer.zero_grad(set_to_none=True)
             loss = row_uniform_group_loss(wrapped(input_ids=ids, attention_mask=torch.ones_like(ids)).logits, labels, weights, **provenance)
             loss.backward(); optimizer.step(); optimizer_steps += 1
-            if mode == "formal" and (step + 1) in (50, 100, 200, 300):
+            total_step = total_step_offset + step + 1
+            if total_step in checkpoint_steps:
                 if rank == 0:
-                    checkpoint = Path(output_dir) / f"checkpoint-{step + 1}"
+                    checkpoint = Path(output_dir) / f"checkpoint-{total_step}"
                     checkpoint.mkdir(parents=True, exist_ok=True)
                     model.save_pretrained(checkpoint); tokenizer.save_pretrained(checkpoint)
                 dist.barrier()
@@ -144,6 +185,8 @@ def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str, output
     base_nonzero = any(p.grad is not None and p.grad.abs().sum() > 0 for n, p in model.named_parameters() if "lora" not in n.lower())
     item = {
         "rank": rank, "mode": mode, "loss": float(loss), "optimizer_steps": optimizer_steps,
+        "init_adapter": init_adapter, "local_sampler_offset": local_sampler_offset,
+        "total_step_offset": total_step_offset, "final_total_step": total_step_offset + optimizer_steps,
         "labels": int(labels.ne(IGNORE_INDEX).sum()), "provenance": provenance,
         "init_parity": parity, "only_lora_trainable": only_lora_trainable,
         "lora_grad_nonzero": bool(lora_nonzero), "base_grad_nonzero": bool(base_nonzero),
@@ -157,9 +200,13 @@ def _run(rows_path: str, stats_path: str, result_path: str, *, mode: str, output
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("preflight", "smoke", "formal"), required=True)
+    parser.add_argument("--mode", choices=("preflight", "smoke", "formal", "continuation"), required=True)
     parser.add_argument("--rows", required=True); parser.add_argument("--stats", required=True); parser.add_argument("--result", required=True)
     parser.add_argument("--output-dir"); parser.add_argument("--max-steps", type=int, default=300)
+    parser.add_argument("--init-adapter", default=ADAPTER)
+    parser.add_argument("--local-sampler-offset", type=int, default=0)
+    parser.add_argument("--total-step-offset", type=int, default=0)
+    parser.add_argument("--save-total-steps", default="")
     args = parser.parse_args()
     if args.mode == "formal" and os.environ.get("BOUNDARY_ADAPT_CONFIRM_FORMAL") != "1":
         raise SystemExit("Refusing formal launch without BOUNDARY_ADAPT_CONFIRM_FORMAL=1")
@@ -169,4 +216,13 @@ if __name__ == "__main__":
         raise SystemExit("Formal trainer requires max_steps=300")
     if args.mode == "formal" and not args.output_dir:
         raise SystemExit("Formal trainer requires --output-dir")
-    _run(args.rows, args.stats, args.result, mode=args.mode, output_dir=args.output_dir, max_steps=args.max_steps)
+    if args.mode == "continuation":
+        if os.environ.get("BOUNDARY_ADAPT_CONFIRM_CONTINUATION") != "1":
+            raise SystemExit("Refusing continuation without BOUNDARY_ADAPT_CONFIRM_CONTINUATION=1")
+        if not args.output_dir or args.local_sampler_offset <= 0 or args.total_step_offset <= 0:
+            raise SystemExit("Continuation requires output-dir and positive sampler/total offsets")
+    save_total_steps = tuple(int(value) for value in args.save_total_steps.split(",") if value)
+    _run(args.rows, args.stats, args.result, mode=args.mode, output_dir=args.output_dir,
+         max_steps=args.max_steps, init_adapter=args.init_adapter,
+         local_sampler_offset=args.local_sampler_offset,
+         total_step_offset=args.total_step_offset, save_total_steps=save_total_steps)

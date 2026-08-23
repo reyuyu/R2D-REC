@@ -5,7 +5,7 @@ import torch
 ROOT=Path(__file__).parents[1]
 def load(name):
     spec=importlib.util.spec_from_file_location(name,ROOT/f"{name}.py"); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); return mod
-b=load("build_boundary_adapt_dataset"); loss=load("boundary_adapt_loss")
+b=load("build_boundary_adapt_dataset"); loss=load("boundary_adapt_loss"); trainer=load("train_boundary_adapt")
 
 def sample():
     return {"route":"think","recommendation_group_id":"g","prompt":"P","target_domain":"video","response":"<think>原始 CoT，逐字保留。</think>这是必须删除的 bridge。<|video_begin|><s_a_1><s_b_2><s_c_3>","recommendation_all_gold_sids":["<s_a_1><s_b_2><s_c_3>","<s_a_4><s_b_5><s_c_6>","<s_a_7><s_b_8><s_c_9>"]}
@@ -61,3 +61,16 @@ def test_microbatch_one_group_objective_gradient_parity():
 def test_wrong_label_count_fails_closed():
     try: loss.assert_three_labels(torch.tensor([[-100,1]])); assert False
     except ValueError: pass
+
+def test_continuation_sampler_is_exact_formal_epoch0_suffix():
+    rows=list(range(42799))
+    for rank in range(4):
+        formal=trainer.distributed_sampler_indices(rows,rank=rank,world=4)
+        continuation=trainer.continuation_local_indices(rows,rank=rank,world=4,local_offset=300)
+        assert continuation==formal[300:]
+        assert continuation[0]!=formal[0]
+
+def test_total_checkpoint_names_preserve_formal_and_add_continuation_safety():
+    assert trainer.checkpoint_total_steps("formal",total_step_offset=0,max_steps=300)==(50,100,200,300)
+    actual=trainer.checkpoint_total_steps("continuation",total_step_offset=300,max_steps=1200,major_steps=(450,600,900,1200,1500))
+    assert actual==(400,450,500,600,700,800,900,1000,1100,1200,1300,1400,1500)
