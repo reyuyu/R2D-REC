@@ -19,6 +19,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 _runtime_scripts = Path("/data/GRPO/scripts")
 _source_scripts = Path(__file__).resolve().parents[1] / "grpo" / "scripts"
 sys.path.insert(0, str(_runtime_scripts if _runtime_scripts.is_dir() else _source_scripts))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from grpo_model import render_prompt
 from boundary_adapt_loss import IGNORE_INDEX, assert_three_labels, load_and_validate_provenance, row_uniform_group_loss
 
