@@ -339,7 +339,7 @@ def group_values(row: dict[str, Any], item: dict[str, Any], manifold: dict[str, 
     return {
         **{f"hit{cut}": float(exact is not None and exact <= cut) for cut in CUTS},
         "mrr": 0.0 if exact is None else 1.0 / exact,
-        "rank": float("nan") if exact is None else float(exact),
+        "rank": None if exact is None else float(exact),
         "ab32": float(ab is not None), "a32": float(a is not None),
         "history_fraction": history_count / 32, "top1_is_history": float(bool(row.get("beams")) and row["beams"][0]["copy_class"] == "EXACT_COPY"),
         "unique_a": float(len({value[:2] for value in predictions if value is not None})),
@@ -359,7 +359,7 @@ def summarize_cell(rows: list[dict[str, Any]], manifest: dict[str, dict[str, Any
         metrics[field] = statistics.fmean(value[field] for _, value in values)
         if field in ("hit1", "hit5", "hit10", "hit32", "ab32", "a32", "top1_is_history"):
             metrics[f"{field}_numerator"] = int(sum(value[field] for _, value in values))
-    hit_ranks = [value["rank"] for _, value in values if not math.isnan(value["rank"])]
+    hit_ranks = [value["rank"] for _, value in values if value["rank"] is not None]
     metrics["mean_best_gold_rank_hits_only"] = statistics.fmean(hit_ranks) if hit_ranks else None
     metrics["per_group"] = {row["group_id"]: value for row, value in values}
     return metrics
