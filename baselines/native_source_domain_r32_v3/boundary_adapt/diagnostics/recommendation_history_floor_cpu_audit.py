@@ -487,6 +487,9 @@ def add_evidence(
     rows = read_jsonl(records_path)
     grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for record in rows:
+        # FREE continuation records have no Beam32 list and cannot support these metrics.
+        if not isinstance(record.get("beams"), list):
+            continue
         item = items[record["group_id"]]
         model = str(record[model_field])
         if model_field == "decoder":
@@ -531,6 +534,7 @@ def existing_evidence_table() -> dict[str, Any]:
     add_evidence(rows, "Phase1.5.1", "16G_TRAIN_MEMORY_X_HISTORY_2X2", PHASE151 / "records.jsonl", phase151_items, "model", "condition")
     return {
         "do_not_pool_across_sample_contracts": True,
+        "record_filter": "Only persisted records with a Beam list; FREE continuation rows are excluded.",
         "derived_phase_notes": {
             "Phase1.1": "CPU behavior analysis derives from Phase1.0 records; not duplicated.",
             "Phase1.4.1": "Adjudication derives from Phase1.4 records; not duplicated.",
