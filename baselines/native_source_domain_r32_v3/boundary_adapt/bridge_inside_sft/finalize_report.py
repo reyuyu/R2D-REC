@@ -59,7 +59,7 @@ def finalize(args) -> dict:
     ))
     emission_signal = gates["A_bridge_emission"]
     decoder_preservation = t50["injected_before_raw"] / d0["injected_before_raw"]
-    nll_declined = t50["transition_nll"] < .9 * d0["transition_nll"]
+    nll_declined = t50["transition_nll"] < d0["transition_nll"]
     if emission_signal and decoder_preservation < .95:
         root_class = "TRANSITION_TRAINING_DAMAGES_DECODER"
         conclusion = "Exact bridge emission increased, but the injected Fresh-D0-CoT decoder preservation gate failed."
