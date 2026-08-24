@@ -1,0 +1,21 @@
+{
+  "record_contract_pass": true,
+  "checks": {
+    "phase12_records_80": true,
+    "phase12_unique_model_group_80": true,
+    "phase12_models_40_each": true,
+    "phase12_same_groups_between_models": true,
+    "phase12_beam32": true,
+    "phase14_records_80": true,
+    "phase14_unique_model_group_80": true,
+    "phase14_models_40_each": true,
+    "phase14_same_groups_between_models": true,
+    "phase14_beam32": true,
+    "same_group_set_phase12_phase14": true,
+    "item_sets_match_fixed40": true,
+    "gold_domain_k_history_match": true
+  },
+  "mismatches": [],
+  "phase12_group_count": 40,
+  "phase14_group_count": 40
+}

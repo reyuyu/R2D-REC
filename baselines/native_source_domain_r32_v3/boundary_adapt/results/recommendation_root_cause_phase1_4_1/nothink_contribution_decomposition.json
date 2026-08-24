@@ -1,0 +1,167 @@
+{
+  "natural_total": 1595,
+  "supported_natural_mass": 0.9899686520376175,
+  "strata": [
+    {
+      "stratum": "ad|HISTORY|K1",
+      "stratum_weight": 0.013793103448275862,
+      "natural_count": 22,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.5196078431372549,
+      "Step900_MRR": 0.34920634920634924,
+      "delta_MRR": 0.1704014939309057,
+      "contribution_to_weighted_delta": 0.002350365433529734
+    },
+    {
+      "stratum": "ad|HISTORY|K2PLUS",
+      "stratum_weight": 0.003134796238244514,
+      "natural_count": 5,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.4537037037037037,
+      "Step900_MRR": 0.3194444444444444,
+      "delta_MRR": 0.1342592592592593,
+      "contribution_to_weighted_delta": 0.00042087542087542097
+    },
+    {
+      "stratum": "ad|NONHISTORY|K1",
+      "stratum_weight": 0.11473354231974922,
+      "natural_count": 183,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "ad|NONHISTORY|K2PLUS",
+      "stratum_weight": 0.02006269592476489,
+      "natural_count": 32,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.025,
+      "Step900_MRR": 0.05555555555555555,
+      "delta_MRR": -0.03055555555555555,
+      "contribution_to_weighted_delta": -0.0006130268199233716
+    },
+    {
+      "stratum": "living|HISTORY|K1",
+      "stratum_weight": 0.01755485893416928,
+      "natural_count": 28,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.10038314176245211,
+      "Step900_MRR": 0.04882154882154882,
+      "delta_MRR": 0.05156159294090329,
+      "contribution_to_weighted_delta": 0.0009051564904986157
+    },
+    {
+      "stratum": "living|HISTORY|K2PLUS",
+      "stratum_weight": 0.0018808777429467085,
+      "natural_count": 3,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.11724137931034484,
+      "Step900_MRR": 0.25,
+      "delta_MRR": -0.13275862068965516,
+      "contribution_to_weighted_delta": -0.0002497027348394768
+    },
+    {
+      "stratum": "living|NONHISTORY|K1",
+      "stratum_weight": 0.10156739811912226,
+      "natural_count": 162,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "living|NONHISTORY|K2PLUS",
+      "stratum_weight": 0.00877742946708464,
+      "natural_count": 14,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "prod|HISTORY|K1",
+      "stratum_weight": 0.023824451410658306,
+      "natural_count": 38,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.03333333333333333,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.03333333333333333,
+      "contribution_to_weighted_delta": 0.0007941483803552768
+    },
+    {
+      "stratum": "prod|HISTORY|K2PLUS",
+      "stratum_weight": 0.0025078369905956114,
+      "natural_count": 4,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.5833333333333334,
+      "Step900_MRR": 0.6,
+      "delta_MRR": -0.016666666666666607,
+      "contribution_to_weighted_delta": -4.179728317659337e-05
+    },
+    {
+      "stratum": "prod|NONHISTORY|K1",
+      "stratum_weight": 0.09216300940438872,
+      "natural_count": 147,
+      "probe_sample_n": 3,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "prod|NONHISTORY|K2PLUS",
+      "stratum_weight": 0.021316614420062698,
+      "natural_count": 34,
+      "probe_sample_n": 2,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "video|NONHISTORY|K1",
+      "stratum_weight": 0.16050156739811913,
+      "natural_count": 256,
+      "probe_sample_n": 5,
+      "Beta_MRR": 0.0,
+      "Step900_MRR": 0.0,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    },
+    {
+      "stratum": "video|NONHISTORY|K2PLUS",
+      "stratum_weight": 0.40815047021943573,
+      "natural_count": 651,
+      "probe_sample_n": 5,
+      "Beta_MRR": 0.15,
+      "Step900_MRR": 0.15,
+      "delta_MRR": 0.0,
+      "contribution_to_weighted_delta": 0.0
+    }
+  ],
+  "contribution_by_domain": {
+    "ad": 0.002158214034481783,
+    "living": 0.000655453755659139,
+    "prod": 0.0007523510971786835,
+    "video": 0.0
+  },
+  "contribution_by_history": {
+    "HISTORY": 0.004179045707242978,
+    "NONHISTORY": -0.0006130268199233716
+  },
+  "contribution_by_K": {
+    "K1": 0.004049670304383626,
+    "K2PLUS": -0.00048365141706402083
+  },
+  "natural_weighted_delta_from_history": 0.004179045707242978,
+  "natural_weighted_delta_from_nonhistory": -0.0006130268199233716,
+  "dominant_stratum": "ad|HISTORY|K1",
+  "dominant_absolute_contribution_ratio": 0.43727138673847527,
+  "high_weight_singleton_strata": [],
+  "single_stratum_dominance": false,
+  "dominance_rule": "singleton with >=5% natural mass, or >=60% of total absolute supported contribution"
+}

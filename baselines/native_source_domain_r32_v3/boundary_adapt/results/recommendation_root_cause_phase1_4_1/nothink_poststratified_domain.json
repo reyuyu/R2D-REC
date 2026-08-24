@@ -1,0 +1,469 @@
+{
+  "video": {
+    "domain": "video",
+    "natural_domain_n": 923,
+    "covered_domain_natural_mass": 0.9826652221018418,
+    "coverage_status": "ADEQUATE_COVERAGE",
+    "Beta": {
+      "mrr": 0.10766262403528114,
+      "hit32": 0.28710033076074976,
+      "ab32": 0.28710033076074976,
+      "a32": 0.43065049614112455,
+      "history_fraction": 0.03941565600882029
+    },
+    "Step900": {
+      "mrr": 0.10766262403528114,
+      "hit32": 0.28710033076074976,
+      "ab32": 0.28710033076074976,
+      "a32": 0.43065049614112455,
+      "history_fraction": 0.025957828004410145
+    },
+    "delta": {
+      "mrr": 0.0,
+      "hit32": 0.0,
+      "ab32": 0.0,
+      "a32": 0.0,
+      "history_fraction": 0.013457828004410147
+    },
+    "bootstrap": {
+      "method": "paired resampling within observed strata with fixed natural within-domain weights",
+      "replicates": 10000,
+      "seed": 16875753,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "hit32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "ab32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "a32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "history_fraction": {
+          "estimate": 0.013457828004410147,
+          "bootstrap_mean": 0.013384707138919516,
+          "ci95": [
+            0.0,
+            0.031401598676957
+          ],
+          "p_positive": 0.9197
+        }
+      }
+    },
+    "stratum_sample_n": {
+      "video|HISTORY|K1": 0,
+      "video|HISTORY|K2PLUS": 0,
+      "video|NONHISTORY|K1": 5,
+      "video|NONHISTORY|K2PLUS": 5
+    },
+    "singleton_strata": [],
+    "min_stratum_n": 5,
+    "uncertainty_status": "DESCRIPTIVE_BOOTSTRAP",
+    "underresolved_strata": [],
+    "strata": {
+      "video|HISTORY|K1": {
+        "natural_count": 2,
+        "natural_domain_mass": 0.0021668472372697724,
+        "probe_sample_n": 0,
+        "status": "ADEQUATE"
+      },
+      "video|HISTORY|K2PLUS": {
+        "natural_count": 14,
+        "natural_domain_mass": 0.015167930660888408,
+        "probe_sample_n": 0,
+        "status": "ADEQUATE"
+      },
+      "video|NONHISTORY|K1": {
+        "natural_count": 256,
+        "natural_domain_mass": 0.27735644637053086,
+        "probe_sample_n": 5,
+        "status": "ADEQUATE"
+      },
+      "video|NONHISTORY|K2PLUS": {
+        "natural_count": 651,
+        "natural_domain_mass": 0.7053087757313109,
+        "probe_sample_n": 5,
+        "status": "ADEQUATE"
+      }
+    }
+  },
+  "prod": {
+    "domain": "prod",
+    "natural_domain_n": 223,
+    "covered_domain_natural_mass": 1.0,
+    "coverage_status": "ADEQUATE_COVERAGE",
+    "Beta": {
+      "mrr": 0.016143497757847534,
+      "hit32": 0.07473841554559042,
+      "ab32": 0.07473841554559042,
+      "a32": 0.5037369207772795,
+      "history_fraction": 0.34986920777279523
+    },
+    "Step900": {
+      "mrr": 0.010762331838565021,
+      "hit32": 0.017937219730941704,
+      "ab32": 0.017937219730941704,
+      "a32": 0.5037369207772795,
+      "history_fraction": 0.3290358744394619
+    },
+    "delta": {
+      "mrr": 0.005381165919282513,
+      "hit32": 0.05680119581464872,
+      "ab32": 0.05680119581464872,
+      "a32": 0.0,
+      "history_fraction": 0.020833333333333315
+    },
+    "bootstrap": {
+      "method": "paired resampling within observed strata with fixed natural within-domain weights",
+      "replicates": 10000,
+      "seed": 2522291724,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.005381165919282513,
+          "bootstrap_mean": 0.0053125859491778785,
+          "ci95": [
+            -0.0005979073243647238,
+            0.01674140508221226
+          ],
+          "p_positive": 0.6994
+        },
+        "hit32": {
+          "estimate": 0.05680119581464872,
+          "bootstrap_mean": 0.056125261584454404,
+          "ci95": [
+            0.0,
+            0.17040358744394618
+          ],
+          "p_positive": 0.6994
+        },
+        "ab32": {
+          "estimate": 0.05680119581464872,
+          "bootstrap_mean": 0.056125261584454404,
+          "ci95": [
+            0.0,
+            0.17040358744394618
+          ],
+          "p_positive": 0.6994
+        },
+        "a32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "history_fraction": {
+          "estimate": 0.020833333333333315,
+          "bootstrap_mean": 0.020789746823617342,
+          "ci95": [
+            0.007427130044843022,
+            0.03246449925261588
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "stratum_sample_n": {
+      "prod|HISTORY|K1": 3,
+      "prod|HISTORY|K2PLUS": 2,
+      "prod|NONHISTORY|K1": 3,
+      "prod|NONHISTORY|K2PLUS": 2
+    },
+    "singleton_strata": [],
+    "min_stratum_n": 2,
+    "uncertainty_status": "UNDERRESOLVED_STRATA",
+    "underresolved_strata": [
+      "prod|NONHISTORY|K2PLUS"
+    ],
+    "strata": {
+      "prod|HISTORY|K1": {
+        "natural_count": 38,
+        "natural_domain_mass": 0.17040358744394618,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "prod|HISTORY|K2PLUS": {
+        "natural_count": 4,
+        "natural_domain_mass": 0.017937219730941704,
+        "probe_sample_n": 2,
+        "status": "ADEQUATE"
+      },
+      "prod|NONHISTORY|K1": {
+        "natural_count": 147,
+        "natural_domain_mass": 0.6591928251121076,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "prod|NONHISTORY|K2PLUS": {
+        "natural_count": 34,
+        "natural_domain_mass": 0.15246636771300448,
+        "probe_sample_n": 2,
+        "status": "UNDERRESOLVED"
+      }
+    }
+  },
+  "ad": {
+    "domain": "ad",
+    "natural_domain_n": 242,
+    "covered_domain_natural_mass": 1.0,
+    "coverage_status": "ADEQUATE_COVERAGE",
+    "Beta": {
+      "mrr": 0.05991690523776085,
+      "hit32": 0.17768595041322316,
+      "ab32": 0.5557851239669422,
+      "a32": 0.6219008264462811,
+      "history_fraction": 0.431344696969697
+    },
+    "Step900": {
+      "mrr": 0.04569231273776729,
+      "hit32": 0.17768595041322316,
+      "ab32": 0.5557851239669422,
+      "a32": 0.6219008264462811,
+      "history_fraction": 0.3369920798898072
+    },
+    "delta": {
+      "mrr": 0.014224592499993562,
+      "hit32": 0.0,
+      "ab32": 0.0,
+      "a32": 0.0,
+      "history_fraction": 0.09435261707988984
+    },
+    "bootstrap": {
+      "method": "paired resampling within observed strata with fixed natural within-domain weights",
+      "replicates": 10000,
+      "seed": 2947250255,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.014224592499993562,
+          "bootstrap_mean": 0.014018858244399687,
+          "ci95": [
+            -0.005762167125803498,
+            0.04368686868686869
+          ],
+          "p_positive": 0.7965
+        },
+        "hit32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "ab32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "a32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "history_fraction": {
+          "estimate": 0.09435261707988984,
+          "bootstrap_mean": 0.09435284090909091,
+          "ci95": [
+            0.08905819559228656,
+            0.09964703856749307
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "stratum_sample_n": {
+      "ad|HISTORY|K1": 3,
+      "ad|HISTORY|K2PLUS": 3,
+      "ad|NONHISTORY|K1": 2,
+      "ad|NONHISTORY|K2PLUS": 2
+    },
+    "singleton_strata": [],
+    "min_stratum_n": 2,
+    "uncertainty_status": "UNDERRESOLVED_STRATA",
+    "underresolved_strata": [
+      "ad|NONHISTORY|K1",
+      "ad|NONHISTORY|K2PLUS"
+    ],
+    "strata": {
+      "ad|HISTORY|K1": {
+        "natural_count": 22,
+        "natural_domain_mass": 0.09090909090909091,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "ad|HISTORY|K2PLUS": {
+        "natural_count": 5,
+        "natural_domain_mass": 0.02066115702479339,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "ad|NONHISTORY|K1": {
+        "natural_count": 183,
+        "natural_domain_mass": 0.756198347107438,
+        "probe_sample_n": 2,
+        "status": "UNDERRESOLVED"
+      },
+      "ad|NONHISTORY|K2PLUS": {
+        "natural_count": 32,
+        "natural_domain_mass": 0.1322314049586777,
+        "probe_sample_n": 2,
+        "status": "UNDERRESOLVED"
+      }
+    }
+  },
+  "living": {
+    "domain": "living",
+    "natural_domain_n": 207,
+    "covered_domain_natural_mass": 1.0,
+    "coverage_status": "ADEQUATE_COVERAGE",
+    "Beta": {
+      "mrr": 0.015277546411979195,
+      "hit32": 0.1497584541062802,
+      "ab32": 0.4106280193236715,
+      "a32": 0.4444444444444444,
+      "history_fraction": 0.32812499999999994
+    },
+    "Step900": {
+      "mrr": 0.010227069405813367,
+      "hit32": 0.09742351046698872,
+      "ab32": 0.35829307568438,
+      "a32": 0.43719806763285024,
+      "history_fraction": 0.2330414653784219
+    },
+    "delta": {
+      "mrr": 0.005050477006165828,
+      "hit32": 0.052334943639291476,
+      "ab32": 0.052334943639291476,
+      "a32": 0.00724637681159418,
+      "history_fraction": 0.09508353462157804
+    },
+    "bootstrap": {
+      "method": "paired resampling within observed strata with fixed natural within-domain weights",
+      "replicates": 10000,
+      "seed": 2042092059,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.005050477006165828,
+          "bootstrap_mean": 0.0050696526876853375,
+          "ci95": [
+            -0.0017910797687575985,
+            0.012832220253509618
+          ],
+          "p_positive": 0.9178
+        },
+        "hit32": {
+          "estimate": 0.052334943639291476,
+          "bootstrap_mean": 0.05176892109500806,
+          "ci95": [
+            0.0,
+            0.14251207729468598
+          ],
+          "p_positive": 0.9208
+        },
+        "ab32": {
+          "estimate": 0.052334943639291476,
+          "bootstrap_mean": 0.05176892109500806,
+          "ci95": [
+            0.0,
+            0.14251207729468596
+          ],
+          "p_positive": 0.9208
+        },
+        "a32": {
+          "estimate": 0.00724637681159418,
+          "bootstrap_mean": 0.007271014492753624,
+          "ci95": [
+            0.0,
+            0.01449275362318847
+          ],
+          "p_positive": 0.7484
+        },
+        "history_fraction": {
+          "estimate": 0.09508353462157804,
+          "bootstrap_mean": 0.09479539553140094,
+          "ci95": [
+            0.018669484702093397,
+            0.22023450080515306
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "stratum_sample_n": {
+      "living|HISTORY|K1": 3,
+      "living|HISTORY|K2PLUS": 2,
+      "living|NONHISTORY|K1": 3,
+      "living|NONHISTORY|K2PLUS": 2
+    },
+    "singleton_strata": [],
+    "min_stratum_n": 2,
+    "uncertainty_status": "UNDERRESOLVED_STRATA",
+    "underresolved_strata": [
+      "living|NONHISTORY|K2PLUS"
+    ],
+    "strata": {
+      "living|HISTORY|K1": {
+        "natural_count": 28,
+        "natural_domain_mass": 0.13526570048309178,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "living|HISTORY|K2PLUS": {
+        "natural_count": 3,
+        "natural_domain_mass": 0.014492753623188406,
+        "probe_sample_n": 2,
+        "status": "ADEQUATE"
+      },
+      "living|NONHISTORY|K1": {
+        "natural_count": 162,
+        "natural_domain_mass": 0.782608695652174,
+        "probe_sample_n": 3,
+        "status": "ADEQUATE"
+      },
+      "living|NONHISTORY|K2PLUS": {
+        "natural_count": 14,
+        "natural_domain_mass": 0.06763285024154589,
+        "probe_sample_n": 2,
+        "status": "UNDERRESOLVED"
+      }
+    }
+  }
+}

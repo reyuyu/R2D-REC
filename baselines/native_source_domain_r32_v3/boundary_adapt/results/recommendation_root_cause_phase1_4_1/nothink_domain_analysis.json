@@ -1,0 +1,1005 @@
+{
+  "raw": {
+    "video": {
+      "N": 10,
+      "group_ids": [
+        "43f49d5f0089466803fb17431552c0d384f6327f02b76c61e2f510d9ac0bae08",
+        "445ca4db989b12bc02fbc22853640084628064a646505ce4d4551d7ad4a2a89c",
+        "6b53b7cd2263025a1684c9581378edf0fcf16d7402ea80163d309028777f2332",
+        "6c63b3ffd13d6d661c7e9bad0e878fe638527dd8c44a1d764cce3954e637a051",
+        "90465e23e5e5b38883cf7a3566484ae222fd178d47a04da818dd9f49dafd415a",
+        "acc672c39d8bc381f9231017b38736a917541591b8c6a8ad7beeeff07f018391",
+        "b4b458839a40421dfb692bfb892658a9e299045ffa0fcfe857b930415a2be79a",
+        "c52be670c53c6b1a83c87da9a482af8dfdd2782f2301bca55320a99f18e04c0a",
+        "ca6732e49835a779c938a780b9a2babe8a0b351349f74e04419845088ec38d11",
+        "f765f5da5f68efe750a71832cab77a94e18c9ce5ce0b849dfff9f15ab0020d77"
+      ],
+      "Beta": {
+        "mrr": {
+          "numerator": 0.75,
+          "denominator": 10,
+          "estimate": 0.075
+        },
+        "hit32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "ab32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "a32": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        },
+        "history_fraction": {
+          "numerator": 0.3125,
+          "denominator": 10,
+          "estimate": 0.03125
+        }
+      },
+      "Step900": {
+        "mrr": {
+          "numerator": 0.75,
+          "denominator": 10,
+          "estimate": 0.075
+        },
+        "hit32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "ab32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "a32": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        },
+        "history_fraction": {
+          "numerator": 0.21875,
+          "denominator": 10,
+          "estimate": 0.021875
+        }
+      },
+      "paired": {
+        "method": "paired group bootstrap",
+        "groups": 10,
+        "replicates": 10000,
+        "seed": 3711484344,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "hit32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "ab32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.009375,
+            "bootstrap_mean": 0.00936375,
+            "ci95": [
+              0.0,
+              0.021875
+            ],
+            "p_positive": 0.8925
+          }
+        }
+      },
+      "directions": {
+        "mrr": "TIE",
+        "hit32": "TIE",
+        "ab32": "TIE",
+        "a32": "TIE",
+        "history_fraction": "BETA_GT_STEP900"
+      }
+    },
+    "prod": {
+      "N": 10,
+      "group_ids": [
+        "300e3521f7c91c2431d46165e4bfceb4aced6fe1fd4005f0bb61541630d077fd",
+        "35ca8198af8d9c6d2fe08f0a3c2351a448f0627d58fcacfbb04d31cbeb663856",
+        "3cc7d76e2da53bc0eada61aa6b0cc94ba8606bfdd6d4682ed684dbfbd9efa284",
+        "5ccc07af943eca67f445623aca4cb37fe7b3d5bc123f1dca9ab5b9dc10512512",
+        "91dd2014b22d00e01831f486228a3a07417d8d36d59f9ccc20e064bc8ec54f5c",
+        "a2ff368bd607e0c43fb09c152c33d49c3aa84791f6ea609235cd0799b552010e",
+        "bb0f0eabb03c6932437382cec0adb7908ae36056fecb1d70848c8f3f75b351d3",
+        "e8fa0b9fd51842a50b47e5f5b820ed68fb9cb8d253341c46e54b27dcbdddfdf5",
+        "f81b1f60dc852a7c4f6fa5e38b442b0b0e325b7db5b7f53847282a8e5ed27756",
+        "fd983f2e42c7321b671c148155125dd9a197b33a8cfbe43aecd71537b797698f"
+      ],
+      "Beta": {
+        "mrr": {
+          "numerator": 1.2666666666666666,
+          "denominator": 10,
+          "estimate": 0.12666666666666665
+        },
+        "hit32": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        },
+        "ab32": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        },
+        "a32": {
+          "numerator": 7.0,
+          "denominator": 10,
+          "estimate": 0.7
+        },
+        "history_fraction": {
+          "numerator": 3.1875,
+          "denominator": 10,
+          "estimate": 0.31875
+        }
+      },
+      "Step900": {
+        "mrr": {
+          "numerator": 1.2,
+          "denominator": 10,
+          "estimate": 0.12
+        },
+        "hit32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "ab32": {
+          "numerator": 2.0,
+          "denominator": 10,
+          "estimate": 0.2
+        },
+        "a32": {
+          "numerator": 7.0,
+          "denominator": 10,
+          "estimate": 0.7
+        },
+        "history_fraction": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        }
+      },
+      "paired": {
+        "method": "paired group bootstrap",
+        "groups": 10,
+        "replicates": 10000,
+        "seed": 82598753,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.006666666666666665,
+            "bootstrap_mean": 0.006599999999999998,
+            "ci95": [
+              -0.010000000000000005,
+              0.030000000000000006
+            ],
+            "p_positive": 0.6193
+          },
+          "hit32": {
+            "estimate": 0.1,
+            "bootstrap_mean": 0.09887,
+            "ci95": [
+              0.0,
+              0.3
+            ],
+            "p_positive": 0.649
+          },
+          "ab32": {
+            "estimate": 0.1,
+            "bootstrap_mean": 0.09887,
+            "ci95": [
+              0.0,
+              0.3
+            ],
+            "p_positive": 0.649
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.01875,
+            "bootstrap_mean": 0.0185696875,
+            "ci95": [
+              0.003125,
+              0.034375
+            ],
+            "p_positive": 0.9826
+          }
+        }
+      },
+      "directions": {
+        "mrr": "BETA_GT_STEP900",
+        "hit32": "BETA_GT_STEP900",
+        "ab32": "BETA_GT_STEP900",
+        "a32": "TIE",
+        "history_fraction": "BETA_GT_STEP900"
+      }
+    },
+    "ad": {
+      "N": 10,
+      "group_ids": [
+        "315b93a412a2f83b8a39579d69f611d659704c1f28273822c69e78383778a21a",
+        "3a67f76e9bbd4500171b896bb00943ae19ed86920caa3ecf60d5ccfcd0cabf05",
+        "5279a2241ae4b3da2ef2d41ab58b5754c916e085c73a373f4ce1458662126868",
+        "6ee4406634d5aaaedafb25818891e9b68b890d0a87cabfa53d206de9bfb673ce",
+        "946c1e95e326c693fec0bbd5ca66df072639926785cc78795ea6fe16553a91d7",
+        "96e3fa188ebe30bf026b6668cc878edfa83d4c923e03fcb6b19b1519f7f841a0",
+        "9e9ad72ba9fc187fe1c5798e32f78342cd601f29e82693606814e36853b4905d",
+        "a7dc6ec768eb3ae20493d783e8a9c665ee9f313334157c73e30314ff4c59de11",
+        "cd351447b9e7a6e9d6ecea281492828c4e5ee1a7d9e7b88109cd8ae1c353d8fe",
+        "d87d2edc3ab7280f61f98f03e9ca2041a45512cdae787bb9569c3de9eb66e1d4"
+      ],
+      "Beta": {
+        "mrr": {
+          "numerator": 2.969934640522876,
+          "denominator": 10,
+          "estimate": 0.2969934640522876
+        },
+        "hit32": {
+          "numerator": 7.0,
+          "denominator": 10,
+          "estimate": 0.7
+        },
+        "ab32": {
+          "numerator": 8.0,
+          "denominator": 10,
+          "estimate": 0.8
+        },
+        "a32": {
+          "numerator": 9.0,
+          "denominator": 10,
+          "estimate": 0.9
+        },
+        "history_fraction": {
+          "numerator": 5.40625,
+          "denominator": 10,
+          "estimate": 0.540625
+        }
+      },
+      "Step900": {
+        "mrr": {
+          "numerator": 2.117063492063492,
+          "denominator": 10,
+          "estimate": 0.2117063492063492
+        },
+        "hit32": {
+          "numerator": 7.0,
+          "denominator": 10,
+          "estimate": 0.7
+        },
+        "ab32": {
+          "numerator": 8.0,
+          "denominator": 10,
+          "estimate": 0.8
+        },
+        "a32": {
+          "numerator": 9.0,
+          "denominator": 10,
+          "estimate": 0.9
+        },
+        "history_fraction": {
+          "numerator": 4.59375,
+          "denominator": 10,
+          "estimate": 0.459375
+        }
+      },
+      "paired": {
+        "method": "paired group bootstrap",
+        "groups": 10,
+        "replicates": 10000,
+        "seed": 1683834613,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.08528711484593839,
+            "bootstrap_mean": 0.08537468113912232,
+            "ci95": [
+              -0.025537114845938375,
+              0.23555555555555557
+            ],
+            "p_positive": 0.897
+          },
+          "hit32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "ab32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.08125,
+            "bootstrap_mean": 0.08112625000000001,
+            "ci95": [
+              0.05625,
+              0.103125
+            ],
+            "p_positive": 1.0
+          }
+        }
+      },
+      "directions": {
+        "mrr": "BETA_GT_STEP900",
+        "hit32": "TIE",
+        "ab32": "TIE",
+        "a32": "TIE",
+        "history_fraction": "BETA_GT_STEP900"
+      }
+    },
+    "living": {
+      "N": 10,
+      "group_ids": [
+        "14d56497360dadd9f5e359a106139866d53361ebda5cddc2ec35b1340022a65d",
+        "2dbca2fb16cf49b17f09a197fa1bb7250b6a23beec7145a25c70250236cc4b97",
+        "5d30603dc11c1d280c1c2ade2c23dced0f565813aae8e6f1e727cacea9911e51",
+        "64727c92f1637a4fbcdaccef41db28ef6be438cf7a46743f2466f4c744bd74c5",
+        "99127068757156b13e9025bd684192ddf35d336c642638b0b8732a8eff574f81",
+        "9c0342ab8d9778772c9feb3ce511a0d306f907f6641e5093db1221ef9d9a9521",
+        "aa2c5085acb8764c5c5f0f513ae6b9702047970570fee1aa801746955796c631",
+        "d08999a44d80c3321fe3f11cabc528a6d99ecffa4e26d9e973e8934f340bcf14",
+        "d38ee590d9927896258f999c9461dc2adaa00d595564f69d1774d9b860135c27",
+        "e5a2b4897f346d1a2f4b603b72662dee2e96349f63358a559c9701432d3d1652"
+      ],
+      "Beta": {
+        "mrr": {
+          "numerator": 0.5356321839080459,
+          "denominator": 10,
+          "estimate": 0.0535632183908046
+        },
+        "hit32": {
+          "numerator": 5.0,
+          "denominator": 10,
+          "estimate": 0.5
+        },
+        "ab32": {
+          "numerator": 6.0,
+          "denominator": 10,
+          "estimate": 0.6
+        },
+        "a32": {
+          "numerator": 7.0,
+          "denominator": 10,
+          "estimate": 0.7
+        },
+        "history_fraction": {
+          "numerator": 4.15625,
+          "denominator": 10,
+          "estimate": 0.415625
+        }
+      },
+      "Step900": {
+        "mrr": {
+          "numerator": 0.6464646464646465,
+          "denominator": 10,
+          "estimate": 0.06464646464646465
+        },
+        "hit32": {
+          "numerator": 3.0,
+          "denominator": 10,
+          "estimate": 0.3
+        },
+        "ab32": {
+          "numerator": 4.0,
+          "denominator": 10,
+          "estimate": 0.4
+        },
+        "a32": {
+          "numerator": 6.0,
+          "denominator": 10,
+          "estimate": 0.6
+        },
+        "history_fraction": {
+          "numerator": 2.96875,
+          "denominator": 10,
+          "estimate": 0.296875
+        }
+      },
+      "paired": {
+        "method": "paired group bootstrap",
+        "groups": 10,
+        "replicates": 10000,
+        "seed": 3713299488,
+        "metrics": {
+          "mrr": {
+            "estimate": -0.011083246255660047,
+            "bootstrap_mean": -0.01097929885057471,
+            "ci95": [
+              -0.08310344827586207,
+              0.03728665970045281
+            ],
+            "p_positive": 0.3994
+          },
+          "hit32": {
+            "estimate": 0.2,
+            "bootstrap_mean": 0.20013,
+            "ci95": [
+              0.0,
+              0.5
+            ],
+            "p_positive": 0.8949
+          },
+          "ab32": {
+            "estimate": 0.2,
+            "bootstrap_mean": 0.20013,
+            "ci95": [
+              0.0,
+              0.5
+            ],
+            "p_positive": 0.8949
+          },
+          "a32": {
+            "estimate": 0.1,
+            "bootstrap_mean": 0.09919000000000001,
+            "ci95": [
+              0.0,
+              0.3
+            ],
+            "p_positive": 0.6509
+          },
+          "history_fraction": {
+            "estimate": 0.11875,
+            "bootstrap_mean": 0.1190615625,
+            "ci95": [
+              0.059375,
+              0.18125
+            ],
+            "p_positive": 1.0
+          }
+        }
+      },
+      "directions": {
+        "mrr": "STEP900_GT_BETA",
+        "hit32": "BETA_GT_STEP900",
+        "ab32": "BETA_GT_STEP900",
+        "a32": "BETA_GT_STEP900",
+        "history_fraction": "BETA_GT_STEP900"
+      }
+    }
+  },
+  "direction_comparison": {
+    "external": {
+      "video": "BETA_GT_STEP900",
+      "prod": "BETA_GT_STEP900",
+      "ad": "BETA_GT_STEP900",
+      "living": "BETA_GT_STEP900"
+    },
+    "nothink_raw": {
+      "video": "TIE",
+      "prod": "BETA_GT_STEP900",
+      "ad": "BETA_GT_STEP900",
+      "living": "STEP900_GT_BETA"
+    },
+    "match_count": 2,
+    "classification": "MIXED"
+  },
+  "natural_weighted": {
+    "video": {
+      "domain": "video",
+      "natural_domain_n": 923,
+      "covered_domain_natural_mass": 0.9826652221018418,
+      "coverage_status": "ADEQUATE_COVERAGE",
+      "Beta": {
+        "mrr": 0.10766262403528114,
+        "hit32": 0.28710033076074976,
+        "ab32": 0.28710033076074976,
+        "a32": 0.43065049614112455,
+        "history_fraction": 0.03941565600882029
+      },
+      "Step900": {
+        "mrr": 0.10766262403528114,
+        "hit32": 0.28710033076074976,
+        "ab32": 0.28710033076074976,
+        "a32": 0.43065049614112455,
+        "history_fraction": 0.025957828004410145
+      },
+      "delta": {
+        "mrr": 0.0,
+        "hit32": 0.0,
+        "ab32": 0.0,
+        "a32": 0.0,
+        "history_fraction": 0.013457828004410147
+      },
+      "bootstrap": {
+        "method": "paired resampling within observed strata with fixed natural within-domain weights",
+        "replicates": 10000,
+        "seed": 16875753,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "hit32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "ab32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.013457828004410147,
+            "bootstrap_mean": 0.013384707138919516,
+            "ci95": [
+              0.0,
+              0.031401598676957
+            ],
+            "p_positive": 0.9197
+          }
+        }
+      },
+      "stratum_sample_n": {
+        "video|HISTORY|K1": 0,
+        "video|HISTORY|K2PLUS": 0,
+        "video|NONHISTORY|K1": 5,
+        "video|NONHISTORY|K2PLUS": 5
+      },
+      "singleton_strata": [],
+      "min_stratum_n": 5,
+      "uncertainty_status": "DESCRIPTIVE_BOOTSTRAP",
+      "underresolved_strata": [],
+      "strata": {
+        "video|HISTORY|K1": {
+          "natural_count": 2,
+          "natural_domain_mass": 0.0021668472372697724,
+          "probe_sample_n": 0,
+          "status": "ADEQUATE"
+        },
+        "video|HISTORY|K2PLUS": {
+          "natural_count": 14,
+          "natural_domain_mass": 0.015167930660888408,
+          "probe_sample_n": 0,
+          "status": "ADEQUATE"
+        },
+        "video|NONHISTORY|K1": {
+          "natural_count": 256,
+          "natural_domain_mass": 0.27735644637053086,
+          "probe_sample_n": 5,
+          "status": "ADEQUATE"
+        },
+        "video|NONHISTORY|K2PLUS": {
+          "natural_count": 651,
+          "natural_domain_mass": 0.7053087757313109,
+          "probe_sample_n": 5,
+          "status": "ADEQUATE"
+        }
+      }
+    },
+    "prod": {
+      "domain": "prod",
+      "natural_domain_n": 223,
+      "covered_domain_natural_mass": 1.0,
+      "coverage_status": "ADEQUATE_COVERAGE",
+      "Beta": {
+        "mrr": 0.016143497757847534,
+        "hit32": 0.07473841554559042,
+        "ab32": 0.07473841554559042,
+        "a32": 0.5037369207772795,
+        "history_fraction": 0.34986920777279523
+      },
+      "Step900": {
+        "mrr": 0.010762331838565021,
+        "hit32": 0.017937219730941704,
+        "ab32": 0.017937219730941704,
+        "a32": 0.5037369207772795,
+        "history_fraction": 0.3290358744394619
+      },
+      "delta": {
+        "mrr": 0.005381165919282513,
+        "hit32": 0.05680119581464872,
+        "ab32": 0.05680119581464872,
+        "a32": 0.0,
+        "history_fraction": 0.020833333333333315
+      },
+      "bootstrap": {
+        "method": "paired resampling within observed strata with fixed natural within-domain weights",
+        "replicates": 10000,
+        "seed": 2522291724,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.005381165919282513,
+            "bootstrap_mean": 0.0053125859491778785,
+            "ci95": [
+              -0.0005979073243647238,
+              0.01674140508221226
+            ],
+            "p_positive": 0.6994
+          },
+          "hit32": {
+            "estimate": 0.05680119581464872,
+            "bootstrap_mean": 0.056125261584454404,
+            "ci95": [
+              0.0,
+              0.17040358744394618
+            ],
+            "p_positive": 0.6994
+          },
+          "ab32": {
+            "estimate": 0.05680119581464872,
+            "bootstrap_mean": 0.056125261584454404,
+            "ci95": [
+              0.0,
+              0.17040358744394618
+            ],
+            "p_positive": 0.6994
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.020833333333333315,
+            "bootstrap_mean": 0.020789746823617342,
+            "ci95": [
+              0.007427130044843022,
+              0.03246449925261588
+            ],
+            "p_positive": 1.0
+          }
+        }
+      },
+      "stratum_sample_n": {
+        "prod|HISTORY|K1": 3,
+        "prod|HISTORY|K2PLUS": 2,
+        "prod|NONHISTORY|K1": 3,
+        "prod|NONHISTORY|K2PLUS": 2
+      },
+      "singleton_strata": [],
+      "min_stratum_n": 2,
+      "uncertainty_status": "UNDERRESOLVED_STRATA",
+      "underresolved_strata": [
+        "prod|NONHISTORY|K2PLUS"
+      ],
+      "strata": {
+        "prod|HISTORY|K1": {
+          "natural_count": 38,
+          "natural_domain_mass": 0.17040358744394618,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "prod|HISTORY|K2PLUS": {
+          "natural_count": 4,
+          "natural_domain_mass": 0.017937219730941704,
+          "probe_sample_n": 2,
+          "status": "ADEQUATE"
+        },
+        "prod|NONHISTORY|K1": {
+          "natural_count": 147,
+          "natural_domain_mass": 0.6591928251121076,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "prod|NONHISTORY|K2PLUS": {
+          "natural_count": 34,
+          "natural_domain_mass": 0.15246636771300448,
+          "probe_sample_n": 2,
+          "status": "UNDERRESOLVED"
+        }
+      }
+    },
+    "ad": {
+      "domain": "ad",
+      "natural_domain_n": 242,
+      "covered_domain_natural_mass": 1.0,
+      "coverage_status": "ADEQUATE_COVERAGE",
+      "Beta": {
+        "mrr": 0.05991690523776085,
+        "hit32": 0.17768595041322316,
+        "ab32": 0.5557851239669422,
+        "a32": 0.6219008264462811,
+        "history_fraction": 0.431344696969697
+      },
+      "Step900": {
+        "mrr": 0.04569231273776729,
+        "hit32": 0.17768595041322316,
+        "ab32": 0.5557851239669422,
+        "a32": 0.6219008264462811,
+        "history_fraction": 0.3369920798898072
+      },
+      "delta": {
+        "mrr": 0.014224592499993562,
+        "hit32": 0.0,
+        "ab32": 0.0,
+        "a32": 0.0,
+        "history_fraction": 0.09435261707988984
+      },
+      "bootstrap": {
+        "method": "paired resampling within observed strata with fixed natural within-domain weights",
+        "replicates": 10000,
+        "seed": 2947250255,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.014224592499993562,
+            "bootstrap_mean": 0.014018858244399687,
+            "ci95": [
+              -0.005762167125803498,
+              0.04368686868686869
+            ],
+            "p_positive": 0.7965
+          },
+          "hit32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "ab32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "a32": {
+            "estimate": 0.0,
+            "bootstrap_mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "p_positive": 0.0
+          },
+          "history_fraction": {
+            "estimate": 0.09435261707988984,
+            "bootstrap_mean": 0.09435284090909091,
+            "ci95": [
+              0.08905819559228656,
+              0.09964703856749307
+            ],
+            "p_positive": 1.0
+          }
+        }
+      },
+      "stratum_sample_n": {
+        "ad|HISTORY|K1": 3,
+        "ad|HISTORY|K2PLUS": 3,
+        "ad|NONHISTORY|K1": 2,
+        "ad|NONHISTORY|K2PLUS": 2
+      },
+      "singleton_strata": [],
+      "min_stratum_n": 2,
+      "uncertainty_status": "UNDERRESOLVED_STRATA",
+      "underresolved_strata": [
+        "ad|NONHISTORY|K1",
+        "ad|NONHISTORY|K2PLUS"
+      ],
+      "strata": {
+        "ad|HISTORY|K1": {
+          "natural_count": 22,
+          "natural_domain_mass": 0.09090909090909091,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "ad|HISTORY|K2PLUS": {
+          "natural_count": 5,
+          "natural_domain_mass": 0.02066115702479339,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "ad|NONHISTORY|K1": {
+          "natural_count": 183,
+          "natural_domain_mass": 0.756198347107438,
+          "probe_sample_n": 2,
+          "status": "UNDERRESOLVED"
+        },
+        "ad|NONHISTORY|K2PLUS": {
+          "natural_count": 32,
+          "natural_domain_mass": 0.1322314049586777,
+          "probe_sample_n": 2,
+          "status": "UNDERRESOLVED"
+        }
+      }
+    },
+    "living": {
+      "domain": "living",
+      "natural_domain_n": 207,
+      "covered_domain_natural_mass": 1.0,
+      "coverage_status": "ADEQUATE_COVERAGE",
+      "Beta": {
+        "mrr": 0.015277546411979195,
+        "hit32": 0.1497584541062802,
+        "ab32": 0.4106280193236715,
+        "a32": 0.4444444444444444,
+        "history_fraction": 0.32812499999999994
+      },
+      "Step900": {
+        "mrr": 0.010227069405813367,
+        "hit32": 0.09742351046698872,
+        "ab32": 0.35829307568438,
+        "a32": 0.43719806763285024,
+        "history_fraction": 0.2330414653784219
+      },
+      "delta": {
+        "mrr": 0.005050477006165828,
+        "hit32": 0.052334943639291476,
+        "ab32": 0.052334943639291476,
+        "a32": 0.00724637681159418,
+        "history_fraction": 0.09508353462157804
+      },
+      "bootstrap": {
+        "method": "paired resampling within observed strata with fixed natural within-domain weights",
+        "replicates": 10000,
+        "seed": 2042092059,
+        "metrics": {
+          "mrr": {
+            "estimate": 0.005050477006165828,
+            "bootstrap_mean": 0.0050696526876853375,
+            "ci95": [
+              -0.0017910797687575985,
+              0.012832220253509618
+            ],
+            "p_positive": 0.9178
+          },
+          "hit32": {
+            "estimate": 0.052334943639291476,
+            "bootstrap_mean": 0.05176892109500806,
+            "ci95": [
+              0.0,
+              0.14251207729468598
+            ],
+            "p_positive": 0.9208
+          },
+          "ab32": {
+            "estimate": 0.052334943639291476,
+            "bootstrap_mean": 0.05176892109500806,
+            "ci95": [
+              0.0,
+              0.14251207729468596
+            ],
+            "p_positive": 0.9208
+          },
+          "a32": {
+            "estimate": 0.00724637681159418,
+            "bootstrap_mean": 0.007271014492753624,
+            "ci95": [
+              0.0,
+              0.01449275362318847
+            ],
+            "p_positive": 0.7484
+          },
+          "history_fraction": {
+            "estimate": 0.09508353462157804,
+            "bootstrap_mean": 0.09479539553140094,
+            "ci95": [
+              0.018669484702093397,
+              0.22023450080515306
+            ],
+            "p_positive": 1.0
+          }
+        }
+      },
+      "stratum_sample_n": {
+        "living|HISTORY|K1": 3,
+        "living|HISTORY|K2PLUS": 2,
+        "living|NONHISTORY|K1": 3,
+        "living|NONHISTORY|K2PLUS": 2
+      },
+      "singleton_strata": [],
+      "min_stratum_n": 2,
+      "uncertainty_status": "UNDERRESOLVED_STRATA",
+      "underresolved_strata": [
+        "living|NONHISTORY|K2PLUS"
+      ],
+      "strata": {
+        "living|HISTORY|K1": {
+          "natural_count": 28,
+          "natural_domain_mass": 0.13526570048309178,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "living|HISTORY|K2PLUS": {
+          "natural_count": 3,
+          "natural_domain_mass": 0.014492753623188406,
+          "probe_sample_n": 2,
+          "status": "ADEQUATE"
+        },
+        "living|NONHISTORY|K1": {
+          "natural_count": 162,
+          "natural_domain_mass": 0.782608695652174,
+          "probe_sample_n": 3,
+          "status": "ADEQUATE"
+        },
+        "living|NONHISTORY|K2PLUS": {
+          "natural_count": 14,
+          "natural_domain_mass": 0.06763285024154589,
+          "probe_sample_n": 2,
+          "status": "UNDERRESOLVED"
+        }
+      }
+    }
+  }
+}

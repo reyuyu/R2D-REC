@@ -1,0 +1,558 @@
+{
+  "HISTORY": {
+    "N": 16,
+    "group_ids": [
+      "2dbca2fb16cf49b17f09a197fa1bb7250b6a23beec7145a25c70250236cc4b97",
+      "35ca8198af8d9c6d2fe08f0a3c2351a448f0627d58fcacfbb04d31cbeb663856",
+      "3a67f76e9bbd4500171b896bb00943ae19ed86920caa3ecf60d5ccfcd0cabf05",
+      "3cc7d76e2da53bc0eada61aa6b0cc94ba8606bfdd6d4682ed684dbfbd9efa284",
+      "5279a2241ae4b3da2ef2d41ab58b5754c916e085c73a373f4ce1458662126868",
+      "91dd2014b22d00e01831f486228a3a07417d8d36d59f9ccc20e064bc8ec54f5c",
+      "946c1e95e326c693fec0bbd5ca66df072639926785cc78795ea6fe16553a91d7",
+      "96e3fa188ebe30bf026b6668cc878edfa83d4c923e03fcb6b19b1519f7f841a0",
+      "99127068757156b13e9025bd684192ddf35d336c642638b0b8732a8eff574f81",
+      "9e9ad72ba9fc187fe1c5798e32f78342cd601f29e82693606814e36853b4905d",
+      "a7dc6ec768eb3ae20493d783e8a9c665ee9f313334157c73e30314ff4c59de11",
+      "aa2c5085acb8764c5c5f0f513ae6b9702047970570fee1aa801746955796c631",
+      "d08999a44d80c3321fe3f11cabc528a6d99ecffa4e26d9e973e8934f340bcf14",
+      "d38ee590d9927896258f999c9461dc2adaa00d595564f69d1774d9b860135c27",
+      "f81b1f60dc852a7c4f6fa5e38b442b0b0e325b7db5b7f53847282a8e5ed27756",
+      "fd983f2e42c7321b671c148155125dd9a197b33a8cfbe43aecd71537b797698f"
+    ],
+    "Beta": {
+      "mrr": {
+        "numerator": 4.7222334910975885,
+        "denominator": 16,
+        "estimate": 0.2951395931935993
+      },
+      "hit32": {
+        "numerator": 14.0,
+        "denominator": 16,
+        "estimate": 0.875
+      },
+      "ab32": {
+        "numerator": 14.0,
+        "denominator": 16,
+        "estimate": 0.875
+      },
+      "a32": {
+        "numerator": 15.0,
+        "denominator": 16,
+        "estimate": 0.9375
+      },
+      "history_fraction": {
+        "numerator": 7.8125,
+        "denominator": 16,
+        "estimate": 0.48828125
+      }
+    },
+    "Step900": {
+      "mrr": {
+        "numerator": 3.8524170274170273,
+        "denominator": 16,
+        "estimate": 0.2407760642135642
+      },
+      "hit32": {
+        "numerator": 11.0,
+        "denominator": 16,
+        "estimate": 0.6875
+      },
+      "ab32": {
+        "numerator": 11.0,
+        "denominator": 16,
+        "estimate": 0.6875
+      },
+      "a32": {
+        "numerator": 14.0,
+        "denominator": 16,
+        "estimate": 0.875
+      },
+      "history_fraction": {
+        "numerator": 6.46875,
+        "denominator": 16,
+        "estimate": 0.404296875
+      }
+    },
+    "paired": {
+      "method": "paired group bootstrap",
+      "groups": 16,
+      "replicates": 10000,
+      "seed": 651153608,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.05436352898003507,
+          "bootstrap_mean": 0.054133009591441066,
+          "ci95": [
+            -0.030929565252825263,
+            0.1537357198789913
+          ],
+          "p_positive": 0.8787
+        },
+        "hit32": {
+          "estimate": 0.1875,
+          "bootstrap_mean": 0.18709375,
+          "ci95": [
+            0.0,
+            0.375
+          ],
+          "p_positive": 0.9632
+        },
+        "ab32": {
+          "estimate": 0.1875,
+          "bootstrap_mean": 0.18709375,
+          "ci95": [
+            0.0,
+            0.375
+          ],
+          "p_positive": 0.9632
+        },
+        "a32": {
+          "estimate": 0.0625,
+          "bootstrap_mean": 0.06250625,
+          "ci95": [
+            0.0,
+            0.1875
+          ],
+          "p_positive": 0.6436
+        },
+        "history_fraction": {
+          "estimate": 0.083984375,
+          "bootstrap_mean": 0.083812109375,
+          "ci95": [
+            0.048828125,
+            0.12109375
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "directions": {
+      "mrr": "BETA_GT_STEP900",
+      "hit32": "BETA_GT_STEP900",
+      "ab32": "BETA_GT_STEP900",
+      "a32": "BETA_GT_STEP900",
+      "history_fraction": "BETA_GT_STEP900"
+    }
+  },
+  "NONHISTORY": {
+    "N": 24,
+    "group_ids": [
+      "14d56497360dadd9f5e359a106139866d53361ebda5cddc2ec35b1340022a65d",
+      "300e3521f7c91c2431d46165e4bfceb4aced6fe1fd4005f0bb61541630d077fd",
+      "315b93a412a2f83b8a39579d69f611d659704c1f28273822c69e78383778a21a",
+      "43f49d5f0089466803fb17431552c0d384f6327f02b76c61e2f510d9ac0bae08",
+      "445ca4db989b12bc02fbc22853640084628064a646505ce4d4551d7ad4a2a89c",
+      "5ccc07af943eca67f445623aca4cb37fe7b3d5bc123f1dca9ab5b9dc10512512",
+      "5d30603dc11c1d280c1c2ade2c23dced0f565813aae8e6f1e727cacea9911e51",
+      "64727c92f1637a4fbcdaccef41db28ef6be438cf7a46743f2466f4c744bd74c5",
+      "6b53b7cd2263025a1684c9581378edf0fcf16d7402ea80163d309028777f2332",
+      "6c63b3ffd13d6d661c7e9bad0e878fe638527dd8c44a1d764cce3954e637a051",
+      "6ee4406634d5aaaedafb25818891e9b68b890d0a87cabfa53d206de9bfb673ce",
+      "90465e23e5e5b38883cf7a3566484ae222fd178d47a04da818dd9f49dafd415a",
+      "9c0342ab8d9778772c9feb3ce511a0d306f907f6641e5093db1221ef9d9a9521",
+      "a2ff368bd607e0c43fb09c152c33d49c3aa84791f6ea609235cd0799b552010e",
+      "acc672c39d8bc381f9231017b38736a917541591b8c6a8ad7beeeff07f018391",
+      "b4b458839a40421dfb692bfb892658a9e299045ffa0fcfe857b930415a2be79a",
+      "bb0f0eabb03c6932437382cec0adb7908ae36056fecb1d70848c8f3f75b351d3",
+      "c52be670c53c6b1a83c87da9a482af8dfdd2782f2301bca55320a99f18e04c0a",
+      "ca6732e49835a779c938a780b9a2babe8a0b351349f74e04419845088ec38d11",
+      "cd351447b9e7a6e9d6ecea281492828c4e5ee1a7d9e7b88109cd8ae1c353d8fe",
+      "d87d2edc3ab7280f61f98f03e9ca2041a45512cdae787bb9569c3de9eb66e1d4",
+      "e5a2b4897f346d1a2f4b603b72662dee2e96349f63358a559c9701432d3d1652",
+      "e8fa0b9fd51842a50b47e5f5b820ed68fb9cb8d253341c46e54b27dcbdddfdf5",
+      "f765f5da5f68efe750a71832cab77a94e18c9ce5ce0b849dfff9f15ab0020d77"
+    ],
+    "Beta": {
+      "mrr": {
+        "numerator": 0.8,
+        "denominator": 24,
+        "estimate": 0.03333333333333333
+      },
+      "hit32": {
+        "numerator": 3.0,
+        "denominator": 24,
+        "estimate": 0.125
+      },
+      "ab32": {
+        "numerator": 5.0,
+        "denominator": 24,
+        "estimate": 0.20833333333333334
+      },
+      "a32": {
+        "numerator": 11.0,
+        "denominator": 24,
+        "estimate": 0.4583333333333333
+      },
+      "history_fraction": {
+        "numerator": 5.25,
+        "denominator": 24,
+        "estimate": 0.21875
+      }
+    },
+    "Step900": {
+      "mrr": {
+        "numerator": 0.8611111111111112,
+        "denominator": 24,
+        "estimate": 0.03587962962962963
+      },
+      "hit32": {
+        "numerator": 3.0,
+        "denominator": 24,
+        "estimate": 0.125
+      },
+      "ab32": {
+        "numerator": 5.0,
+        "denominator": 24,
+        "estimate": 0.20833333333333334
+      },
+      "a32": {
+        "numerator": 11.0,
+        "denominator": 24,
+        "estimate": 0.4583333333333333
+      },
+      "history_fraction": {
+        "numerator": 4.3125,
+        "denominator": 24,
+        "estimate": 0.1796875
+      }
+    },
+    "paired": {
+      "method": "paired group bootstrap",
+      "groups": 24,
+      "replicates": 10000,
+      "seed": 311548074,
+      "metrics": {
+        "mrr": {
+          "estimate": -0.002546296296296296,
+          "bootstrap_mean": -0.002517523148148148,
+          "ci95": [
+            -0.007638888888888887,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "hit32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "ab32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "a32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "history_fraction": {
+          "estimate": 0.0390625,
+          "bootstrap_mean": 0.03911510416666667,
+          "ci95": [
+            0.015625,
+            0.06640625
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "directions": {
+      "mrr": "STEP900_GT_BETA",
+      "hit32": "TIE",
+      "ab32": "TIE",
+      "a32": "TIE",
+      "history_fraction": "BETA_GT_STEP900"
+    }
+  },
+  "K1": {
+    "N": 22,
+    "group_ids": [
+      "2dbca2fb16cf49b17f09a197fa1bb7250b6a23beec7145a25c70250236cc4b97",
+      "315b93a412a2f83b8a39579d69f611d659704c1f28273822c69e78383778a21a",
+      "35ca8198af8d9c6d2fe08f0a3c2351a448f0627d58fcacfbb04d31cbeb663856",
+      "3cc7d76e2da53bc0eada61aa6b0cc94ba8606bfdd6d4682ed684dbfbd9efa284",
+      "5279a2241ae4b3da2ef2d41ab58b5754c916e085c73a373f4ce1458662126868",
+      "5ccc07af943eca67f445623aca4cb37fe7b3d5bc123f1dca9ab5b9dc10512512",
+      "5d30603dc11c1d280c1c2ade2c23dced0f565813aae8e6f1e727cacea9911e51",
+      "6b53b7cd2263025a1684c9581378edf0fcf16d7402ea80163d309028777f2332",
+      "6c63b3ffd13d6d661c7e9bad0e878fe638527dd8c44a1d764cce3954e637a051",
+      "946c1e95e326c693fec0bbd5ca66df072639926785cc78795ea6fe16553a91d7",
+      "96e3fa188ebe30bf026b6668cc878edfa83d4c923e03fcb6b19b1519f7f841a0",
+      "9c0342ab8d9778772c9feb3ce511a0d306f907f6641e5093db1221ef9d9a9521",
+      "a2ff368bd607e0c43fb09c152c33d49c3aa84791f6ea609235cd0799b552010e",
+      "acc672c39d8bc381f9231017b38736a917541591b8c6a8ad7beeeff07f018391",
+      "c52be670c53c6b1a83c87da9a482af8dfdd2782f2301bca55320a99f18e04c0a",
+      "d08999a44d80c3321fe3f11cabc528a6d99ecffa4e26d9e973e8934f340bcf14",
+      "d38ee590d9927896258f999c9461dc2adaa00d595564f69d1774d9b860135c27",
+      "d87d2edc3ab7280f61f98f03e9ca2041a45512cdae787bb9569c3de9eb66e1d4",
+      "e5a2b4897f346d1a2f4b603b72662dee2e96349f63358a559c9701432d3d1652",
+      "e8fa0b9fd51842a50b47e5f5b820ed68fb9cb8d253341c46e54b27dcbdddfdf5",
+      "f765f5da5f68efe750a71832cab77a94e18c9ce5ce0b849dfff9f15ab0020d77",
+      "fd983f2e42c7321b671c148155125dd9a197b33a8cfbe43aecd71537b797698f"
+    ],
+    "Beta": {
+      "mrr": {
+        "numerator": 1.9599729546991211,
+        "denominator": 22,
+        "estimate": 0.08908967975905097
+      },
+      "hit32": {
+        "numerator": 7.0,
+        "denominator": 22,
+        "estimate": 0.3181818181818182
+      },
+      "ab32": {
+        "numerator": 9.0,
+        "denominator": 22,
+        "estimate": 0.4090909090909091
+      },
+      "a32": {
+        "numerator": 11.0,
+        "denominator": 22,
+        "estimate": 0.5
+      },
+      "history_fraction": {
+        "numerator": 6.65625,
+        "denominator": 22,
+        "estimate": 0.3025568181818182
+      }
+    },
+    "Step900": {
+      "mrr": {
+        "numerator": 1.194083694083694,
+        "denominator": 22,
+        "estimate": 0.05427653154925882
+      },
+      "hit32": {
+        "numerator": 5.0,
+        "denominator": 22,
+        "estimate": 0.22727272727272727
+      },
+      "ab32": {
+        "numerator": 7.0,
+        "denominator": 22,
+        "estimate": 0.3181818181818182
+      },
+      "a32": {
+        "numerator": 11.0,
+        "denominator": 22,
+        "estimate": 0.5
+      },
+      "history_fraction": {
+        "numerator": 5.1875,
+        "denominator": 22,
+        "estimate": 0.23579545454545456
+      }
+    },
+    "paired": {
+      "method": "paired group bootstrap",
+      "groups": 22,
+      "replicates": 10000,
+      "seed": 1810831812,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.03481314820979214,
+          "bootstrap_mean": 0.034353654620012726,
+          "ci95": [
+            0.003596088383106639,
+            0.08471707672334632
+          ],
+          "p_positive": 0.9981
+        },
+        "hit32": {
+          "estimate": 0.09090909090909091,
+          "bootstrap_mean": 0.09229090909090909,
+          "ci95": [
+            0.0,
+            0.22727272727272727
+          ],
+          "p_positive": 0.8798
+        },
+        "ab32": {
+          "estimate": 0.09090909090909091,
+          "bootstrap_mean": 0.09229090909090909,
+          "ci95": [
+            0.0,
+            0.22727272727272727
+          ],
+          "p_positive": 0.8798
+        },
+        "a32": {
+          "estimate": 0.0,
+          "bootstrap_mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "p_positive": 0.0
+        },
+        "history_fraction": {
+          "estimate": 0.06676136363636363,
+          "bootstrap_mean": 0.06677301136363636,
+          "ci95": [
+            0.036931818181818184,
+            0.10085227272727272
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "directions": {
+      "mrr": "BETA_GT_STEP900",
+      "hit32": "BETA_GT_STEP900",
+      "ab32": "BETA_GT_STEP900",
+      "a32": "TIE",
+      "history_fraction": "BETA_GT_STEP900"
+    }
+  },
+  "K2PLUS": {
+    "N": 18,
+    "group_ids": [
+      "14d56497360dadd9f5e359a106139866d53361ebda5cddc2ec35b1340022a65d",
+      "300e3521f7c91c2431d46165e4bfceb4aced6fe1fd4005f0bb61541630d077fd",
+      "3a67f76e9bbd4500171b896bb00943ae19ed86920caa3ecf60d5ccfcd0cabf05",
+      "43f49d5f0089466803fb17431552c0d384f6327f02b76c61e2f510d9ac0bae08",
+      "445ca4db989b12bc02fbc22853640084628064a646505ce4d4551d7ad4a2a89c",
+      "64727c92f1637a4fbcdaccef41db28ef6be438cf7a46743f2466f4c744bd74c5",
+      "6ee4406634d5aaaedafb25818891e9b68b890d0a87cabfa53d206de9bfb673ce",
+      "90465e23e5e5b38883cf7a3566484ae222fd178d47a04da818dd9f49dafd415a",
+      "91dd2014b22d00e01831f486228a3a07417d8d36d59f9ccc20e064bc8ec54f5c",
+      "99127068757156b13e9025bd684192ddf35d336c642638b0b8732a8eff574f81",
+      "9e9ad72ba9fc187fe1c5798e32f78342cd601f29e82693606814e36853b4905d",
+      "a7dc6ec768eb3ae20493d783e8a9c665ee9f313334157c73e30314ff4c59de11",
+      "aa2c5085acb8764c5c5f0f513ae6b9702047970570fee1aa801746955796c631",
+      "b4b458839a40421dfb692bfb892658a9e299045ffa0fcfe857b930415a2be79a",
+      "bb0f0eabb03c6932437382cec0adb7908ae36056fecb1d70848c8f3f75b351d3",
+      "ca6732e49835a779c938a780b9a2babe8a0b351349f74e04419845088ec38d11",
+      "cd351447b9e7a6e9d6ecea281492828c4e5ee1a7d9e7b88109cd8ae1c353d8fe",
+      "f81b1f60dc852a7c4f6fa5e38b442b0b0e325b7db5b7f53847282a8e5ed27756"
+    ],
+    "Beta": {
+      "mrr": {
+        "numerator": 3.5622605363984676,
+        "denominator": 18,
+        "estimate": 0.1979033631332482
+      },
+      "hit32": {
+        "numerator": 10.0,
+        "denominator": 18,
+        "estimate": 0.5555555555555556
+      },
+      "ab32": {
+        "numerator": 10.0,
+        "denominator": 18,
+        "estimate": 0.5555555555555556
+      },
+      "a32": {
+        "numerator": 15.0,
+        "denominator": 18,
+        "estimate": 0.8333333333333334
+      },
+      "history_fraction": {
+        "numerator": 6.40625,
+        "denominator": 18,
+        "estimate": 0.3559027777777778
+      }
+    },
+    "Step900": {
+      "mrr": {
+        "numerator": 3.5194444444444444,
+        "denominator": 18,
+        "estimate": 0.1955246913580247
+      },
+      "hit32": {
+        "numerator": 9.0,
+        "denominator": 18,
+        "estimate": 0.5
+      },
+      "ab32": {
+        "numerator": 9.0,
+        "denominator": 18,
+        "estimate": 0.5
+      },
+      "a32": {
+        "numerator": 14.0,
+        "denominator": 18,
+        "estimate": 0.7777777777777778
+      },
+      "history_fraction": {
+        "numerator": 5.59375,
+        "denominator": 18,
+        "estimate": 0.3107638888888889
+      }
+    },
+    "paired": {
+      "method": "paired group bootstrap",
+      "groups": 18,
+      "replicates": 10000,
+      "seed": 991123413,
+      "metrics": {
+        "mrr": {
+          "estimate": 0.0023786717752235,
+          "bootstrap_mean": 0.0022801303746275018,
+          "ci95": [
+            -0.056417624521072796,
+            0.07506385696040868
+          ],
+          "p_positive": 0.4938
+        },
+        "hit32": {
+          "estimate": 0.05555555555555555,
+          "bootstrap_mean": 0.0552,
+          "ci95": [
+            0.0,
+            0.16666666666666666
+          ],
+          "p_positive": 0.6411
+        },
+        "ab32": {
+          "estimate": 0.05555555555555555,
+          "bootstrap_mean": 0.0552,
+          "ci95": [
+            0.0,
+            0.16666666666666666
+          ],
+          "p_positive": 0.6411
+        },
+        "a32": {
+          "estimate": 0.05555555555555555,
+          "bootstrap_mean": 0.0552,
+          "ci95": [
+            0.0,
+            0.16666666666666666
+          ],
+          "p_positive": 0.6411
+        },
+        "history_fraction": {
+          "estimate": 0.04513888888888889,
+          "bootstrap_mean": 0.045115451388888894,
+          "ci95": [
+            0.019097222222222224,
+            0.0763888888888889
+          ],
+          "p_positive": 1.0
+        }
+      }
+    },
+    "directions": {
+      "mrr": "BETA_GT_STEP900",
+      "hit32": "BETA_GT_STEP900",
+      "ab32": "BETA_GT_STEP900",
+      "a32": "BETA_GT_STEP900",
+      "history_fraction": "BETA_GT_STEP900"
+    }
+  }
+}

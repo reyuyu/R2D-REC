@@ -1,0 +1,15 @@
+{
+  "soft_switch_available": true,
+  "soft_switch_path": "/data/models/onereason-8b-pretrain-competition/tokenizer_config.json",
+  "soft_switch_sha256": "5059344eb9660ec6fc8d8bc704f326b9c033318d6bd5131c26c2c77d5057863a",
+  "soft_switch_source": "runtime/model tokenizer package",
+  "template_storage": "embedded tokenizer_config.json chat_template",
+  "named_qwen3_soft_switch_file_found": false,
+  "slash_think_handling": "preserved verbatim in user content; model-side soft switch",
+  "slash_nothink_handling": "preserved verbatim in user content; model-side soft switch",
+  "default_soft_switch_render": "assistant prefix only; no automatic think block",
+  "hard_enable_thinking_false_render": "inserts <think>\\n\\n</think>\\n\\n after assistant prefix",
+  "automatic_domain_content": false,
+  "controlled_proxy": "LLaMA-Factory qwen3_nothink with literal terminal /no_think",
+  "official_soft_switch": "base tokenizer chat_template with literal terminal /no_think and default thinking template mode"
+}
