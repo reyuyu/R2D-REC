@@ -417,7 +417,10 @@ def hierarchy_metrics(record: dict[str, Any], golds: set[tuple[str, int, int, in
 def average_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"N": 0}
-    keys = [key for key in rows[0] if key != "group_id" and isinstance(rows[0][key], (int, float))]
+    keys = [
+        key for key in rows[0]
+        if key != "group_id" and all(isinstance(row.get(key), (int, float)) for row in rows)
+    ]
     return {"N": len(rows), **{key: statistics.fmean(float(row[key]) for row in rows) for key in keys}}
 
 
@@ -876,6 +879,8 @@ def self_test() -> None:
     assert value["ARank"] == 2 and value["ABRank"] == 5 and value["ABCRank"] == 10
     assert value["AHit@1"] == 0 and value["AHit@5"] == 1 and value["ABCHit@5"] == 0
     assert math.isclose(float(value["ABCMRR"]), 0.1)
+    averaged = average_metrics([{"rank": None, "hit": 0}, {"rank": 2, "hit": 1}])
+    assert averaged == {"N": 2, "hit": 0.5}
     assert rankdata([3, 1, 1, 2]) == [4.0, 1.5, 1.5, 3.0]
     assert math.isclose(float(pearson([1, 2, 3], [2, 4, 6])), 1.0)
     print("CPU_SELF_TEST_PASS=YES")
