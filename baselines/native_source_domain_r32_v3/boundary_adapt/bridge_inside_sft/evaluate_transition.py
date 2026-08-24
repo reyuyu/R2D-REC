@@ -39,6 +39,7 @@ MAX_PROMPT_LENGTH = 8192
 MAX_NEW_TOKENS = 4096
 TEMPERATURE = .9
 TOP_P = .95
+GENERATION_BATCH = 4
 
 
 class ThinkTokenStop(StoppingCriteria):
@@ -84,20 +85,25 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
     return items
 
 
-def seed_for(group: str) -> int:
-    # Same per-group seed at every checkpoint for paired sampling comparisons.
-    digest = hashlib.sha256(f"{SEED}|{group}".encode()).digest()
+def seed_for_batch(groups: list[str]) -> int:
+    # Same rank-local batch seed/order at every checkpoint for paired comparisons.
+    digest = hashlib.sha256(f"{SEED}|{'|'.join(groups)}".encode()).digest()
     return int.from_bytes(digest[:8], "big") % (2**31 - 1)
 
 
-def generate_one(model, tokenizer, prompt_ids: list[int], close_id: int, seed: int) -> tuple[list[int], float]:
-    if len(prompt_ids) > MAX_PROMPT_LENGTH:
-        prompt_ids = prompt_ids[:MAX_PROMPT_LENGTH]
+def generate_batch(model, tokenizer, prompt_rows: list[list[int]], close_id: int, seed: int) -> tuple[list[list[int]], float]:
+    prompt_rows = [row[:MAX_PROMPT_LENGTH] for row in prompt_rows]
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    inputs = torch.tensor([prompt_ids], dtype=torch.long, device=model.device)
-    attention = torch.ones_like(inputs)
+    pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+    width = max(map(len, prompt_rows))
+    inputs = torch.full((len(prompt_rows), width), pad_id, dtype=torch.long, device=model.device)
+    attention = torch.zeros_like(inputs)
+    for index, prompt in enumerate(prompt_rows):
+        values = torch.tensor(prompt, dtype=torch.long, device=model.device)
+        inputs[index, -len(prompt):] = values
+        attention[index, -len(prompt):] = 1
     torch.cuda.synchronize(model.device)
     started = time.perf_counter()
     with torch.inference_mode():
@@ -110,17 +116,23 @@ def generate_one(model, tokenizer, prompt_ids: list[int], close_id: int, seed: i
             top_p=TOP_P,
             num_beams=1,
             num_return_sequences=1,
-            pad_token_id=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id,
+            pad_token_id=pad_id,
             stopping_criteria=StoppingCriteriaList([ThinkTokenStop(close_id)]),
             disable_compile=True,
         )
     torch.cuda.synchronize(model.device)
     wall = time.perf_counter() - started
-    completion = list(map(int, output[0, inputs.shape[1]:].tolist()))
-    close = close_position(completion, close_id)
-    if close is not None:
-        completion = completion[:close + 1]
-    return completion, wall
+    completions = []
+    for row in output[:, inputs.shape[1]:].tolist():
+        completion = list(map(int, row))
+        close = close_position(completion, close_id)
+        if close is not None:
+            completion = completion[:close + 1]
+        else:
+            while completion and completion[-1] == pad_id:
+                completion.pop()
+        completions.append(completion)
+    return completions, wall
 
 
 def known_bridges(items: list[dict[str, Any]]) -> dict[str, list[int]]:
@@ -142,26 +154,29 @@ def generate_self_cots(label: str, adapter: Path, manifest: Path, parts: Path) -
     close_id = int(close_ids[0])
     bridges = known_bridges(items)
     local = []
-    for index, item in enumerate(items):
-        if index % world != rank:
-            continue
-        prompt = list(map(int, item["prompt_token_ids"]))
-        completion, wall = generate_one(model, tokenizer, prompt, close_id, seed_for(item["group_id"]))
-        emission = emission_metrics(completion, close_id, list(map(int, item["bridge_token_ids"])), bridges, item["target_domain"])
-        text = tokenizer.decode(completion, skip_special_tokens=False, clean_up_tokenization_spaces=False)
-        local.append({
-            "label": label,
-            "group_id": item["group_id"],
-            "target_domain": item["target_domain"],
-            "prompt_token_ids_sha256": token_ids_sha(prompt),
-            "completion_token_ids": completion,
-            "completion_token_ids_sha256": token_ids_sha(completion),
-            "completion_token_length": len(completion),
-            "generation_wall_sec": wall,
-            "literal_sid_occurrences": text.count("<s_a_"),
-            "emission": emission,
-        })
-        print(f"SELF_COT_PROGRESS label={label} rank={rank} sample={index // world + 1}/64", flush=True)
+    local_items = [item for index, item in enumerate(items) if index % world == rank]
+    for start in range(0, len(local_items), GENERATION_BATCH):
+        batch = local_items[start:start + GENERATION_BATCH]
+        prompts = [list(map(int, item["prompt_token_ids"])) for item in batch]
+        completions, wall = generate_batch(model, tokenizer, prompts, close_id, seed_for_batch([item["group_id"] for item in batch]))
+        for item, prompt, completion in zip(batch, prompts, completions):
+            emission = emission_metrics(completion, close_id, list(map(int, item["bridge_token_ids"])), bridges, item["target_domain"])
+            text = tokenizer.decode(completion, skip_special_tokens=False, clean_up_tokenization_spaces=False)
+            local.append({
+                "label": label,
+                "group_id": item["group_id"],
+                "target_domain": item["target_domain"],
+                "prompt_token_ids_sha256": token_ids_sha(prompt),
+                "completion_token_ids": completion,
+                "completion_token_ids_sha256": token_ids_sha(completion),
+                "completion_token_length": len(completion),
+                "generation_wall_sec": wall / len(batch),
+                "batch_generation_wall_sec": wall,
+                "generation_batch_size": len(batch),
+                "literal_sid_occurrences": text.count("<s_a_"),
+                "emission": emission,
+            })
+        print(f"SELF_COT_PROGRESS label={label} rank={rank} sample={start + len(batch)}/64 batch={len(batch)}", flush=True)
     target = parts / f"self_cot_{label}"
     target.mkdir(parents=True, exist_ok=True)
     (target / f"rank{rank}.json").write_text(json.dumps({"records": local}, ensure_ascii=False) + "\n", encoding="utf-8")
