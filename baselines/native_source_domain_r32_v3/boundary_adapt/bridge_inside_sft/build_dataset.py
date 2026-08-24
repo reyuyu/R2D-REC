@@ -24,26 +24,45 @@ from .common import (
 )
 
 
-def load_unique_source(source: Path) -> tuple[list[dict[str, Any]], int]:
-    unique: dict[str, dict[str, Any]] = {}
-    signatures: dict[str, str] = {}
-    duplicates = 0
+def load_unique_source(source: Path, canonical_rows: Path) -> tuple[list[dict[str, Any]], int]:
+    canonical: dict[str, tuple[str, str]] = {}
+    with canonical_rows.open(encoding="utf-8") as handle:
+        for line in handle:
+            row = json.loads(line)
+            group = str(row["boundary_group_id"])
+            value = (str(row["prompt"]), str(row["original_response"]))
+            if group in canonical and canonical[group] != value:
+                raise RuntimeError(f"CANONICAL_BOUNDARY_GROUP_CONFLICT={group}")
+            canonical[group] = value
+    if len(canonical) != 15943:
+        raise RuntimeError(f"CANONICAL_BOUNDARY_GROUP_COUNT={len(canonical)}")
+
+    matches: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    source_rows = 0
     with source.open(encoding="utf-8") as handle:
         for line in handle:
             row = json.loads(line)
             if row.get("data_source") != "recommend" or row.get("source_segment") != "recommendation_cot":
                 continue
+            source_rows += 1
             group = source_group_id(row)
-            signature = stable_hash(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
-            if group in unique:
-                if signatures[group] != signature:
-                    # Duplicate rows may differ only in serialized JSON spacing; compare objects.
-                    if unique[group] != row:
-                        raise RuntimeError(f"CONFLICTING_DUPLICATE_GROUP={group}")
-                duplicates += 1
-                continue
-            unique[group], signatures[group] = row, signature
-    return list(unique.values()), duplicates
+            identity = (str(row.get("instruction", "")) + str(row.get("input", "")), str(row["output"]))
+            if canonical.get(group) == identity:
+                matches[group].append(row)
+    if set(matches) != set(canonical):
+        missing = sorted(set(canonical) - set(matches))
+        raise RuntimeError(f"CANONICAL_SOURCE_MATCH_MISSING count={len(missing)} examples={missing[:3]}")
+    selected = []
+    for group in canonical:
+        candidates = matches[group]
+        signatures = {
+            (row.get("system"), row.get("instruction"), row.get("input"), row.get("output"), row.get("aux_metadata_json"))
+            for row in candidates
+        }
+        if len(signatures) != 1:
+            raise RuntimeError(f"CANONICAL_SOURCE_MATCH_AMBIGUOUS group={group} variants={len(signatures)}")
+        selected.append(candidates[0])
+    return selected, source_rows - len(selected)
 
 
 def historical_groups(path: Path) -> set[str]:
@@ -111,13 +130,13 @@ def public_row(row: dict[str, Any], *, training: bool) -> dict[str, Any]:
     return row
 
 
-def build(source: Path, historical_manifest: Path, output: Path) -> dict[str, Any]:
+def build(source: Path, historical_manifest: Path, canonical_rows: Path, output: Path) -> dict[str, Any]:
     if file_sha(source) != SOURCE_SHA256:
         raise RuntimeError("TRAIN_SOURCE_SHA256_MISMATCH")
     if file_sha(FRESH_BATA / "adapter_model.safetensors") != ADAPTER_SHA256:
         raise RuntimeError("FRESH_BATA_SHA256_MISMATCH")
     tokenizer = AutoTokenizer.from_pretrained(BASE, trust_remote_code=True)
-    raw_rows, duplicates = load_unique_source(source)
+    raw_rows, duplicates = load_unique_source(source, canonical_rows)
     rows = [construct_token_row(tokenizer, row) for row in raw_rows]
     if len(rows) != 15943:
         raise RuntimeError(f"UNIQUE_GROUP_COUNT={len(rows)}")
@@ -162,7 +181,9 @@ def build(source: Path, historical_manifest: Path, output: Path) -> dict[str, An
         "source": str(source),
         "source_sha256": SOURCE_SHA256,
         "unique_groups": len(rows),
-        "byte_identical_duplicates_dropped": duplicates,
+        "legacy_group_duplicate_rows_dropped": duplicates,
+        "canonical_boundary_rows": str(canonical_rows),
+        "canonical_source_match": "15943/15943",
         "train_groups": len(train),
         "holdout_groups": len(holdout),
         "train_per_domain": dict(Counter(row["target_domain"] for row in train)),
@@ -199,9 +220,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", required=True)
     parser.add_argument("--historical-manifest", required=True)
+    parser.add_argument("--canonical-boundary-rows", required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    result = build(Path(args.source), Path(args.historical_manifest), Path(args.output))
+    result = build(Path(args.source), Path(args.historical_manifest), Path(args.canonical_boundary_rows), Path(args.output))
     print(json.dumps({key: result[key] for key in (
         "train_groups", "holdout_groups", "train_per_domain", "holdout_per_domain",
         "historical_probes_in_train", "historical_probes_in_holdout", "primary_heldout_groups",
