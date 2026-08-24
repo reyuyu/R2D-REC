@@ -352,7 +352,7 @@ def official_inventory() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]
         )
     expected_text = {
         "Beta": "recommendation: 0.1223, 0.1598, 0.2072, 0.1701",
-        "MiniFix": "`0.1297, 0.1598, 0.2030, 0.1719`",
+        "MiniFix": "0.1297, 0.1598, 0.2030, 0.1719",
     }
     for model, needle in expected_text.items():
         contract = OFFICIAL_SCORE_CONTRACT[model]
