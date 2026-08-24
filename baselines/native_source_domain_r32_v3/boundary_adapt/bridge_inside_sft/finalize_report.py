@@ -105,7 +105,9 @@ def finalize(args) -> dict:
         "best_exact_bridge_rate": views[best]["bridge_rate"],
         "best_injected_decoder_preservation": views[best]["injected_before_raw"] / d0["injected_before_raw"],
         "base_changed": any(rank["base_changed"] for rank in train_ranks),
-        "only_existing_lora_trained": all(rank["only_existing_lora_trainable"] for rank in train_ranks),
+        "only_existing_lora_trained": all(
+            rank["zero_update"]["only_existing_lora_trainable"] for rank in train_ranks
+        ),
         "second_lora_created": any(rank["second_lora_created"] for rank in train_ranks),
         "old_optimizer_resumed": any(rank["old_optimizer_resumed"] for rank in train_ranks),
         "training_started": True,
