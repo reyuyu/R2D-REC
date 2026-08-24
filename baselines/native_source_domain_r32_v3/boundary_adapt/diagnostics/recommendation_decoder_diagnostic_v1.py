@@ -126,8 +126,9 @@ def prepare() -> None:
         public.append({
             "group_id": row["group_id"],
             "domain": row["target_domain"],
-            "official_style_system": row["system"],
-            "official_style_prompt": row["user"],
+            "original_bata_system": row["system"],
+            "original_bata_prompt": row["user"],
+            "prompt_style": "ORIGINAL_BATA",
             "prompt_token_ids": row["prompt_token_ids"],
             "frozen_cot_body": tokenizer.decode(cot_ids[:-1], skip_special_tokens=False, clean_up_tokenization_spaces=False),
             "frozen_cot_token_ids": cot_ids,
