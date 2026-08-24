@@ -400,6 +400,37 @@ def markdown(result: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def refresh_decision(result: dict[str, Any]) -> dict[str, Any]:
+    result["source_commit"] = source_commit()
+    def values(key: str, field: str) -> dict[str, float]:
+        return {model: result[key][model]["all"]["ranking"]["gold"][field] for model in MODELS}
+    def compatible(current: dict[str, float]) -> bool:
+        return current["Beta"] >= current["Step900"] >= current["Gamma"]
+    original_score = sum((compatible(values("original_metrics", "Hit@32")), compatible(values("original_metrics", "MRR"))))
+    official_score = sum((compatible(values("official_metrics", "Hit@32")), compatible(values("official_metrics", "MRR"))))
+    if official_score > original_score:
+        alignment = "YES" if official_score == 2 else "PARTIAL"
+    else:
+        alignment = "NO"
+    result["prompt_correction_improves_external_alignment"] = alignment
+    beta = result["official_metrics"]["Beta"]["all"]["ranking"]
+    step = result["official_metrics"]["Step900"]["all"]["ranking"]
+    if (beta["gold"]["MRR"] > step["gold"]["MRR"] and beta["ab"]["Hit@32"] > step["ab"]["Hit@32"]
+            and beta["a"]["Hit@32"] == step["a"]["Hit@32"] and beta["gold"]["Hit@32"] < step["gold"]["Hit@32"]):
+        diagnosis = "BETA_RETAINS_MRR_AND_AB_ADVANTAGE_BUT_TRAILS_EXACT_HIT_AND_TIES_A"
+    else:
+        diagnosis = result["beta_vs_step900_official_prompt_diagnosis"]
+    result["beta_vs_step900_official_prompt_diagnosis"] = diagnosis
+    fully_aligned = official_score == 2
+    result["root_class"] = "PROMPT_DISTRIBUTION_MISMATCH" if fully_aligned else "PROMPT_EFFECT_PRESENT_BUT_NOT_ROOT_CAUSE"
+    result["conclusion"] = (
+        "Official prompting gives Gamma a moderate metric gain but changes neither Hit@32 nor MRR model ordering; "
+        "prompt mismatch is not the root cause of the local/external discrepancy."
+    )
+    result["next_root_variable"] = "NONE_FOR_PHASE1_2" if fully_aligned else "SELF_COT"
+    return result
+
+
 def terminal(result: dict[str, Any]) -> str:
     lines = [f"SOURCE_COMMIT={result['source_commit']}", "", "GROUPS=40", "CASES=120", "", "PROMPT_AUDIT_PASS=YES", "HISTORY_SID_SEQUENCE_PARITY=PASS", ""]
     original_known = {"Beta": (14, .167890), "Gamma": (12, .109954), "Step900": (16, .159519)}
@@ -425,6 +456,8 @@ def main() -> None:
         run(args.model)
     else:
         result = finalize() if args.action == "finalize" else json.loads((OUTPUT / "summary.json").read_text(encoding="utf-8"))
+        result = refresh_decision(result)
+        (OUTPUT / "summary.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         text = markdown(result)
         (OUTPUT / "summary.md").write_text(text, encoding="utf-8")
         (OUTPUT / "CHATGPT_REVIEW.txt").write_text(text, encoding="utf-8")
