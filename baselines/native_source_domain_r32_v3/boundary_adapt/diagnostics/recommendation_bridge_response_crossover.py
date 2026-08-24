@@ -397,13 +397,11 @@ def dataset_audit(scans: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return payload
 
 
-def select_natural40(natural: list[dict[str, Any]], train_union: set[str],
-                     minifix_think_groups: set[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    eligible = [row for row in natural if row["group_id"] in minifix_think_groups]
-    outside = [row for row in eligible if row["group_id"] not in train_union]
+def select_natural40(natural: list[dict[str, Any]], train_union: set[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    outside = [row for row in natural if row["group_id"] not in train_union]
     outside_counts = Counter(row["domain"] for row in outside)
     use_outside = len(outside) >= 40 and all(outside_counts[domain] >= 10 for domain in DOMAIN_ORDER)
-    pool = outside if use_outside else eligible
+    pool = outside if use_outside else natural
     selected = []
     for domain in DOMAIN_ORDER:
         candidates = [row for row in pool if row["domain"] == domain]
@@ -415,10 +413,7 @@ def select_natural40(natural: list[dict[str, Any]], train_union: set[str],
         raise RuntimeError("NATURAL40_CARDINALITY_FAIL")
     return selected, {
         "selection_salt": SELECTION_SALT,
-        "selection_method": "MiniFix-Think-eligible natural holdout; per-domain stable-hash random top-10; no history/K balancing",
-        "natural_groups_before_minifix_think_eligibility": len(natural),
-        "minifix_think_eligible_groups": len(eligible),
-        "minifix_think_eligible_per_domain": dict(Counter(row["domain"] for row in eligible)),
+        "selection_method": "per-domain stable-hash random top-10; no history/K balancing",
         "outside_all_three_train_groups": len(outside),
         "outside_all_three_per_domain": dict(outside_counts),
         "outside_only_selected": use_outside,
@@ -463,10 +458,7 @@ def prepare() -> None:
     write_json(OUTPUT / "data_alignment_audit.json", alignment)
 
     train_union = set.union(*(scan["group_ids"] for scan in scans.values()))
-    minifix_think_groups = {
-        key[0] for key in scans["MiniFix"]["route_keys"] if key[2] == "recommendation_cot"
-    }
-    selected, selection = select_natural40(natural, train_union, minifix_think_groups)
+    selected, selection = select_natural40(natural, train_union)
     tokenizer = AutoTokenizer.from_pretrained(BASE, trust_remote_code=True)
     close_ids = tokenizer.encode("</think>", add_special_tokens=False)
     if len(close_ids) != 1:
