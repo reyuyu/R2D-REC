@@ -1,0 +1,31 @@
+{
+  "source_commit": "94ae31ff87c99ba71c9f0142d97d92b8e6f5efc3",
+  "dataset": {"original_groups": 15943, "expanded_paths": 42799, "exact_bridge_extraction_pass": true, "duplicate_bridge_byte_parity_pass": true},
+  "cpu_tests_passed": 12,
+  "lambda0_forward_parity": true,
+  "lambda0_gradient_parity": true,
+  "multi_positive_gradient_parity": true,
+  "teacher_usefulness": {
+    "groups": 256,
+    "bare_gold_nll": 4.396267638882539,
+    "bridge_gold_nll": 4.1557906577771,
+    "kl_A": 0.26172835145797907,
+    "kl_B": 0.27418563569558624,
+    "kl_C": 0.48311941252950524,
+    "pass": true
+  },
+  "four_gpu_zero_update": {
+    "optimizer_steps": 0,
+    "init_student_step900_max_abs_diff": 0.0,
+    "teacher_grad_nonzero": false,
+    "student_base_grad_nonzero": false,
+    "student_lora_grad_nonzero": true,
+    "abc_labels_per_path": 3,
+    "family_shapes": {"A": 8192, "B": 8192, "C": 8192},
+    "base_changed": false,
+    "lora_changed": false,
+    "second_student_lora_created": false,
+    "pass": true
+  },
+  "formal_training_started": false
+}

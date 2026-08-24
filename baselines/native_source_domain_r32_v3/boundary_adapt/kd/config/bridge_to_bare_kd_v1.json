@@ -1,0 +1,16 @@
+{
+  "base_model": "/data/models/onereason-8b-pretrain-competition",
+  "teacher_adapter": "/data/outputs/boundary_adapt/continuation_from300_to1500/checkpoint-900",
+  "student_init_adapter": "/data/outputs/boundary_adapt/continuation_from300_to1500/checkpoint-900",
+  "lambda_kd": 0.3,
+  "temperature": 1.0,
+  "learning_rate": 1e-7,
+  "max_steps": 300,
+  "world_size": 4,
+  "per_device_batch_size": 1,
+  "gradient_accumulation_steps": 1,
+  "effective_global_batch_rows": 4,
+  "packing": false,
+  "save_steps": [50, 100, 200, 300],
+  "resume_from_checkpoint": null
+}
