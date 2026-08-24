@@ -79,15 +79,20 @@ def finalize(implementation_commit: str, training_result: str) -> None:
     baseline = evaluations["step900"]; candidates = [evaluations[f"kd{step}"] for step in (50, 100, 200, 300)]
     def key(item):
         hist, control = item["historical"], item["controlled"]["G900"]
-        return (hist["bare"]["beam_raw"] > baseline["historical"]["bare"]["beam_raw"], -hist["gap"],
+        return (hist["bare"]["beam_raw"], -hist["gap"],
                 -hist["bare"]["history_not_gold"], control["beam_raw"], -hist["bare"]["mean_gold_abc_nll"])
     best = max(candidates, key=key)
+    improved = best["historical"]["bare"]["beam_raw"] > baseline["historical"]["bare"]["beam_raw"] and best["historical"]["gap"] < baseline["historical"]["gap"]
+    generalizes = best["controlled"]["G900"]["beam_raw"] >= baseline["controlled"]["G900"]["beam_raw"]
     training = json.loads(Path(training_result).read_text(encoding="utf-8"))
     payload = {"type": "step900_bridge_to_bare_sid_family_kd_v1", "source_commit": "94ae31ff87c99ba71c9f0142d97d92b8e6f5efc3", "implementation_commit": implementation_commit,
                "teacher_adapter": str(ADAPTERS["step900"]), "student_init_adapter": str(ADAPTERS["step900"]), "lambda": .3, "temperature": 1.0, "lr": 1e-7, "steps": 300,
                "teacher_usefulness_preflight": training["preflight"]["teacher_usefulness"], "lambda0_parity": {"forward": True, "gradient": True, "multi_positive": True},
                "training": training, "fixed_cot_sweep": {key: value["historical"] for key, value in evaluations.items()},
-               "controlled_generator_sweep": {key: value["controlled"] for key, value in evaluations.items()}, "best_checkpoint": best["adapter"]}
+               "controlled_generator_sweep": {key: value["controlled"] for key, value in evaluations.items()},
+               "best_kd_checkpoint": best["adapter"], "deployment_recommendation": str(ADAPTERS["step900"]),
+               "kd_improved_over_step900": improved, "kd_generalizes_to_self_cot": generalizes,
+               "root_conclusion": "V1 SID-family KD transfers weakly to persisted self-CoT but does not improve Historical BareRaw or reduce the Bridge gap; retain Step900."}
     RESULT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     REPO_RESULT.parent.mkdir(parents=True, exist_ok=True); REPO_RESULT.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
