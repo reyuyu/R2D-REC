@@ -406,8 +406,11 @@ def classify_root(cells: dict[str, dict[str, Any]]) -> tuple[str, str, str, str]
     interaction = abs((cells["G9_D9"]["mrr"] - cells["G9_DB"]["mrr"]) - (cells["GB_D9"]["mrr"] - cells["GB_DB"]["mrr"]))
     if generator < .01 and decoder < .01:
         return "MODEL_SIDE_LOCAL_METRICS_INSUFFICIENT", "Neither local MRR main effect is large.", "No stable secondary local signal.", "OFFICIAL_EVALUATOR_REWARD_OR_TEST_DISTRIBUTION"
+    beta_matched_is_best = cells["GB_DB"]["mrr"] > max(cells["GB_D9"]["mrr"], cells["G9_DB"]["mrr"], cells["G9_D9"]["mrr"])
+    if interaction > max(generator, decoder) and beta_matched_is_best:
+        return "GENERATOR_DECODER_SPECIALIZATION", f"Beta matched-pair MRR is best and interaction={interaction:.6f} dominates main effects.", f"Generator magnitude={generator:.6f}; decoder magnitude={decoder:.6f}.", "CONTROLLED_LARGER_SAMPLE_CONFIRMATION"
     if interaction > max(generator, decoder):
-        return "GENERATOR_DECODER_SPECIALIZATION", f"MRR interaction={interaction:.6f} dominates main effects.", f"Generator magnitude={generator:.6f}; decoder magnitude={decoder:.6f}.", "CONTROLLED_LARGER_SAMPLE_CONFIRMATION"
+        return "MIXED_GENERATOR_DECODER_EFFECT", f"Sign-reversing MRR interaction={interaction:.6f}; Beta matched pair is not the best cell.", f"Generator magnitude={generator:.6f}; decoder magnitude={decoder:.6f}.", "CONTROLLED_LARGER_SAMPLE_CONFIRMATION"
     if generator > decoder * 1.5:
         return "SELF_COT_GENERATOR_DEGRADATION", f"Generator MRR effect magnitude={generator:.6f}.", f"Decoder magnitude={decoder:.6f}.", "SELF_COT_DISTRIBUTION_MECHANISM"
     if decoder > generator * 1.5:
@@ -447,7 +450,8 @@ def finalize() -> dict[str, Any]:
     }
     interactions = {field: bootstrap_interaction(cells, field) for field in ("mrr", "hit32", "history_fraction")}
     own_orders = {field: label_order(cells["GB_DB"][field], cells["G9_D9"][field]) for field in ("hit32", "mrr", "ab32", "a32")}
-    alignment = "YES" if own_orders["mrr"] == "Beta > Step900" and sum(own_orders[field] == "Beta > Step900" for field in ("ab32", "a32")) >= 1 else "PARTIAL" if own_orders["mrr"] == "Beta > Step900" or sum(own_orders[field] == "Beta > Step900" for field in ("ab32", "a32")) >= 1 else "NO"
+    priority_orders = [own_orders[field] == "Beta > Step900" for field in ("mrr", "ab32", "a32")]
+    alignment = "YES" if all(priority_orders) else "PARTIAL" if any(priority_orders) else "NO"
     root, primary, secondary, next_variable = classify_root(cells)
     health_payload = json.loads((OUTPUT / "self_cot_health.json").read_text())
     result = {
