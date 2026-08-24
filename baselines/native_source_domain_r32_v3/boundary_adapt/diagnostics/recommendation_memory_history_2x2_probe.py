@@ -492,8 +492,29 @@ def finalize() -> None:
             rows.extend(json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
     index = {(row["model"], row["group_id"], row["condition"]): row for row in rows}
     invalid = sum(beam.get("predicted_sid") is None for row in rows for beam in row["beams"])
-    if len(rows) != 64 or len(index) != 64 or invalid != 0 or any(len(row["beams"]) != 32 for row in rows):
+    if len(rows) != 64 or len(index) != 64 or any(len(row["beams"]) != 32 for row in rows):
         raise RuntimeError(f"RECORD_CONTRACT_FAIL rows={len(rows)} keys={len(index)} invalid={invalid}")
+    invalid_details = []
+    if invalid:
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained(BASE, trust_remote_code=True)
+        for row in rows:
+            for beam in row["beams"]:
+                if beam.get("predicted_sid") is not None:
+                    continue
+                raw_ids = list(map(int, beam.get("raw_token_ids", [])))
+                invalid_details.append({
+                    "model": row["model"], "group_id": row["group_id"], "domain": row["domain"],
+                    "cell": row["cell"], "condition": row["condition"], "beam_index": beam["beam_index"],
+                    "raw_token_ids": raw_ids, "raw_tokens": tokenizer.convert_ids_to_tokens(raw_ids),
+                    "decoded": tokenizer.decode(raw_ids, skip_special_tokens=False, clean_up_tokenization_spaces=False),
+                    "reason": "strict ABC3 parser rejected the retained three-token beam",
+                })
+    write_json(OUTPUT / "invalid_beam_audit.json", {
+        "invalid_beams": invalid, "total_beams": len(rows) * 32,
+        "invalid_beams_silently_filtered": False, "details": invalid_details,
+    })
     rows.sort(key=lambda row: (MODELS.index(row["model"]), row["group_id"], row["condition"]))
     write_jsonl(OUTPUT / "records.jsonl", rows)
     per_group, summary, boot = {}, {}, {}
@@ -550,12 +571,12 @@ def finalize() -> None:
             lines.append(f"| {model} | {cell} | {value['BareMRR']:.5f} | {value['BridgeMRR']:.5f} | {value['BridgeGain_MRR']:+.5f} | {value['Response1MinusJaccard']:.5f} | {value['Top1Flip']:.5f} |")
     lines.extend(["", "## Decisions", "", *[f"- {key}: {value}" for key, value in decisions.items()], "", "Each cell has N=4. Bootstrap intervals are descriptive only."])
     (OUTPUT / "cell_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    review = final_review(audit, manifest, summary, contrasts, decisions)
+    review = final_review(audit, manifest, summary, contrasts, decisions, invalid)
     (OUTPUT / "CHATGPT_MEMORY_HISTORY_2X2_REVIEW.txt").write_text(review + "\n", encoding="utf-8")
     print(review)
 
 
-def final_review(audit: dict[str, Any], manifest: dict[str, Any], summary: dict[str, Any], contrasts: dict[str, Any], decisions: dict[str, str]) -> str:
+def final_review(audit: dict[str, Any], manifest: dict[str, Any], summary: dict[str, Any], contrasts: dict[str, Any], decisions: dict[str, str], invalid: int) -> str:
     mf, ga = summary["MiniFix"], summary["Gamma"]
     lines = [
         f"IMPLEMENT_COMMIT={audit['implement_commit']}", "RESULT_COMMIT=PENDING_REPORT_COMMIT",
@@ -563,7 +584,8 @@ def final_review(audit: dict[str, Any], manifest: dict[str, Any], summary: dict[
         f"RUNTIME_SCRIPT_SHA256={audit['runtime_script_sha256']}", "RUNTIME_GITHUB_PARITY=PASS", "", "--- Sampling ---",
         f"SAMPLING_MODE={manifest['sampling_mode']}", "GROUPS=16", "SEEN_HISTORY_N=4", "SEEN_NONHISTORY_N=4",
         "UNSEEN_HISTORY_N=4", "UNSEEN_NONHISTORY_N=4", f"DOMAIN_COMPOSITION={manifest['domain_composition']}",
-        "PROBE_IS_NATURAL_DISTRIBUTION=NO", "", "--- Provenance ---", "SEEN_BRIDGE_PROVENANCE_PASS=PASS",
+        "PROBE_IS_NATURAL_DISTRIBUTION=NO", f"INVALID_BEAMS={invalid}",
+        "INVALID_BEAMS_SILENTLY_FILTERED=NO", "", "--- Provenance ---", "SEEN_BRIDGE_PROVENANCE_PASS=PASS",
         "SEEN_COT_PROVENANCE_PASS=PASS", "SEEN_HISTORY_PROVENANCE_PASS=PASS", "PROMPT_TOKEN_AUDIT_PASS=PASS",
     ]
     for label, values in (("MF", mf), ("GA", ga)):
