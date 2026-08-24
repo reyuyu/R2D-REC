@@ -221,6 +221,9 @@ def main(args) -> None:
         raise RuntimeError("prepared row count changed")
     student, tokenizer = load_model(device, True)
     teacher, teacher_tokenizer = load_model(device, False)
+    only_lora_trainable = all(("lora" in name.lower()) == parameter.requires_grad for name, parameter in student.named_parameters())
+    if not only_lora_trainable:
+        raise RuntimeError("only the existing student LoRA may be trainable")
     if tokenizer.get_vocab() != teacher_tokenizer.get_vocab():
         raise RuntimeError("teacher/student tokenizer mismatch")
     sid = scan_sid_families(tokenizer); families = sid.tensors(device)
@@ -251,6 +254,7 @@ def main(args) -> None:
         "kd_finite": bool(torch.isfinite(losses["kd"]).all()), "total_finite": bool(torch.isfinite(total)),
         "family_shapes": family_shapes, "base_changed": tensor_digest(student, False) != base_before,
         "lora_changed": tensor_digest(student, True) != lora_before, "second_student_lora_created": len(student.peft_config) != 1,
+        "only_lora_trainable": only_lora_trainable,
     }
     zero_update["pass"] = init_diff == 0 and not teacher_grad and not base_grad and lora_grad and zero_update["abc_labels_per_path"] == 3 and not zero_update["base_changed"] and not zero_update["lora_changed"] and not zero_update["second_student_lora_created"]
     dist.barrier()
@@ -304,11 +308,12 @@ def main(args) -> None:
         "teacher_adapter": STEP900, "student_init_adapter": STEP900,
         "old_optimizer_resumed": False, "second_student_lora_created": len(student.peft_config) != 1,
         "base_changed": tensor_digest(student, False) != base_before,
+        "lora_changed": tensor_digest(student, True) != lora_before,
         "teacher_grad_nonzero": any(parameter.grad is not None for parameter in teacher.parameters()),
         "checkpoints": [str(Path(args.output_dir) / f"checkpoint-{step}") for step in SAVE_STEPS], "metrics": metrics,
         "historical_training_gates": gates,
     }
-    if final["base_changed"] or final["teacher_grad_nonzero"] or final["second_student_lora_created"]:
+    if final["base_changed"] or not final["lora_changed"] or final["teacher_grad_nonzero"] or final["second_student_lora_created"]:
         raise RuntimeError(f"post-training invariant failed: {final}")
     write_json(args.result, final, rank); dist.destroy_process_group()
 
