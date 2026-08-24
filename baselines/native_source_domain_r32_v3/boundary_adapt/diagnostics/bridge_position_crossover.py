@@ -20,13 +20,10 @@ RUNTIME = Path("/data/GRPO")
 sys.path[:0] = [str(RUNTIME), str(RUNTIME / "scripts")]
 from boundary_adapt.diagnostics import controlled_generator_decoder_crossover as cross  # noqa: E402
 from boundary_adapt.diagnostics.fixed_cot_checkpoint_sweep import DOMAIN, MANIFEST  # noqa: E402
-from boundary_adapt.diagnostics.system_prompt_crossover import (  # noqa: E402
-    SOURCE,
-    SOURCE_SHA256,
-    true_bata_system_prompt_ids,
-)
 
 SOURCE_COMMIT = "e46cc89d221e342e4fffa50a15a731dfa941bef3"
+SOURCE = Path("/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl")
+SOURCE_SHA256 = "f84f288b8a9685b4c9cb769c937a5250407723dfab11bdc548486ac7751ec8ca"
 OUTPUT = Path("/root/GRPO_audit_results/bridge_position_crossover_20260824")
 PUBLIC_OUTPUT = RUNTIME / "boundary_adapt/results/bridge_position_crossover_20260824"
 PREPARED = OUTPUT / "prepared_manifest.json"
@@ -71,6 +68,17 @@ def ensure_output_link() -> None:
 def source_group_id(row: dict[str, Any]) -> str | None:
     metadata = json.loads(row.get("aux_metadata_json") or "{}")
     return metadata.get("recommendation_group_id")
+
+
+def true_bata_system_prompt_ids(tokenizer, user_content: str, system: str) -> list[int]:
+    from llamafactory.data.template import TEMPLATES
+
+    prompt_ids, _ = TEMPLATES["qwen3_nothink"].encode_oneturn(
+        tokenizer,
+        [{"role": "user", "content": user_content}, {"role": "assistant", "content": ""}],
+        system=system,
+    )
+    return list(map(int, prompt_ids))
 
 
 def prepare() -> None:
