@@ -526,20 +526,18 @@ def soft_switch_recon(inputs: dict[str, Any]) -> tuple[dict[str, Any], dict[str,
     comparisons = []
     for item in selected:
         proxy = list(map(int, item["nothink_prompt_token_ids"]))
-        official = list(
-            map(
-                int,
-                tokenizer.apply_chat_template(
-                    [
-                        {"role": "system", "content": item["new_system"]},
-                        {"role": "user", "content": item["nothink_user"]},
-                    ],
-                    tokenize=True,
-                    add_generation_prompt=True,
-                    enable_thinking=True,
-                ),
-            )
+        rendered = tokenizer.apply_chat_template(
+            [
+                {"role": "system", "content": item["new_system"]},
+                {"role": "user", "content": item["nothink_user"]},
+            ],
+            tokenize=True,
+            add_generation_prompt=True,
+            enable_thinking=True,
         )
+        if isinstance(rendered, dict):
+            rendered = rendered["input_ids"]
+        official = list(map(int, rendered))
         prefix = common_prefix(proxy, official)
         suffix = common_suffix(proxy, official, prefix)
         max_length = max(len(proxy), len(official))
