@@ -469,8 +469,20 @@ def prepare() -> None:
     for row in selected:
         key = (row["group_id"], row["current_gold_sid"], "recommendation_cot")
         source_row = scans["MiniFix"]["holdout_rows"].get(key)
+        source_current = row["current_gold_sid"]
         if source_row is None:
-            raise RuntimeError(f"MINIFIX_FROZEN_COT_ROW_MISSING key={key}")
+            candidates = sorted(
+                (
+                    (candidate_key[1], candidate_row)
+                    for candidate_key, candidate_row in scans["MiniFix"]["holdout_rows"].items()
+                    if candidate_key[0] == row["group_id"] and candidate_key[2] == "recommendation_cot"
+                ),
+                key=lambda value: value[0],
+            )
+            extracted = {extract_cot_bridge(candidate, row["domain"]) for _, candidate in candidates}
+            if not candidates or len(extracted) != 1:
+                raise RuntimeError(f"MINIFIX_GROUP_COT_BRIDGE_NOT_UNIQUE key={key} variants={len(extracted)}")
+            source_current, source_row = candidates[0]
         cot, bridge = extract_cot_bridge(source_row, row["domain"])
         cot_ids = list(map(int, tokenizer.encode(cot, add_special_tokens=False)))
         bridge_ids = list(map(int, tokenizer.encode(bridge, add_special_tokens=False)))
@@ -493,6 +505,8 @@ def prepare() -> None:
             "think_prompt_token_ids": think_prompt,
             "nothink_prompt_token_ids": nothink_prompt,
             "frozen_cot_source": "MiniFix aligned recommendation_cot row",
+            "frozen_cot_training_current_gold_sid": source_current,
+            "frozen_cot_current_gold_matches_canonical": source_current == row["current_gold_sid"],
             "frozen_cot_body": cot,
             "frozen_cot_token_ids": cot_ids,
             "frozen_cot_sha256": token_ids_sha(cot_ids),
@@ -506,6 +520,8 @@ def prepare() -> None:
             "group_id": row["group_id"], "domain": row["domain"],
             "close_atomic": True, "bridge_nonempty": True,
             "cot_tokens": len(cot_ids), "bridge_tokens": len(bridge_ids),
+            "training_current_gold_sid": source_current,
+            "current_gold_matches_canonical": source_current == row["current_gold_sid"],
             "source_row_sha256": row_sha(source_row),
         })
 
