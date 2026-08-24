@@ -586,14 +586,14 @@ def finalize() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prepare", action="store_true")
-    parser.add_argument("--run", action="store_true")
+    parser.add_argument("--gpu-execute", action="store_true")
     parser.add_argument("--finalize", action="store_true")
     args = parser.parse_args()
-    if sum((args.prepare, args.run, args.finalize)) != 1:
+    if sum((args.prepare, args.gpu_execute, args.finalize)) != 1:
         raise SystemExit("choose exactly one operation")
     if args.prepare:
         prepare()
-    elif args.run:
+    elif args.gpu_execute:
         run()
     else:
         finalize()
