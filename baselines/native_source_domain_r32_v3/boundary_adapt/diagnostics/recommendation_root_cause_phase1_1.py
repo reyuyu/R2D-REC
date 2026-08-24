@@ -354,17 +354,97 @@ def render_markdown(result: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def refresh_interpretation(result: dict[str, Any]) -> dict[str, Any]:
+    bare = {model: result["metrics"][model]["bare"] for model in MODELS}
+    history_fraction = {model: bare[model]["all"]["history"]["mean_candidate_fraction"] for model in MODELS}
+    in_hit = {model: bare[model]["GoldSIDInHistory"]["ranking"]["gold"]["Hit@32"] for model in MODELS}
+    out_hit = {model: bare[model]["GoldSIDNotInHistory"]["ranking"]["gold"]["Hit@32"] for model in MODELS}
+    result["copy_repeat_prior_important"] = (
+        history_fraction["Beta"] > max(history_fraction["Gamma"], history_fraction["Step900"])
+        and out_hit["Beta"] <= min(out_hit["Gamma"], out_hit["Step900"])
+    )
+    result["copy_only_hypothesis_supported"] = (
+        in_hit["Beta"] > max(in_hit["Gamma"], in_hit["Step900"])
+        and out_hit["Beta"] == 0
+    )
+    if result["copy_repeat_prior_important"] and result["step900_exact_concentration_pattern"]:
+        result["root_cause_phase1_1_class"] = "HISTORY_COPY_AND_BEAM_HIERARCHY_GEOMETRY"
+    result["phase1_1_conclusion"] = (
+        "Beta is the most history-copy-heavy decoder, but copy alone does not explain the local/external ordering. "
+        "Its advantage is also ranking/hierarchy geometry: Beta covers A/AB more broadly and ranks gold earlier, "
+        "while Step900 gains deep-beam exact hits mainly on multi-positive groups. The full-SID manifold proxy is weak."
+    )
+    result["next_experiment_needed"] = (
+        "Recover auditable Gamma launch/dataset prompt provenance. Only if domain-specific Gamma training prompts are confirmed, "
+        "run the already-specified fixed 240-case official-prompt crossover."
+    )
+    return result
+
+
+def terminal_report(result: dict[str, Any]) -> str:
+    bare = {model: result["metrics"][model]["bare"] for model in MODELS}
+    def rank(model, subset="all"):
+        return bare[model][subset]["ranking"]
+    lines = [
+        f"SOURCE_COMMIT={result['source_commit']}", "",
+        "CURRENT_40G_PROMPT_STYLE=ORIGINAL_BATA",
+        "FREE_MODE_DO_SAMPLE=NO", "FREE_MODE_NUM_BEAMS=1", "FREE_MODE_MAX_NEW_TOKENS=32",
+        "FREE_MODE_INTERPRETATION=TRANSITION_BEHAVIOR_PROBE_ONLY", "",
+        "GROUPS=40", "GOLD_IN_HISTORY=16", "GOLD_NOT_IN_HISTORY=24", "K1=22", "K2PLUS=18", "",
+        "--- BARE GoldInHistory ---",
+        f"BETA_HIT32={rank('Beta', 'GoldSIDInHistory')['gold']['Hit@32_numerator']}/16",
+        f"GAMMA_HIT32={rank('Gamma', 'GoldSIDInHistory')['gold']['Hit@32_numerator']}/16",
+        f"STEP900_HIT32={rank('Step900', 'GoldSIDInHistory')['gold']['Hit@32_numerator']}/16", "",
+        "--- BARE GoldNotInHistory ---",
+        f"BETA_HIT32={rank('Beta', 'GoldSIDNotInHistory')['gold']['Hit@32_numerator']}/24",
+        f"GAMMA_HIT32={rank('Gamma', 'GoldSIDNotInHistory')['gold']['Hit@32_numerator']}/24",
+        f"STEP900_HIT32={rank('Step900', 'GoldSIDNotInHistory')['gold']['Hit@32_numerator']}/24", "",
+        f"COPY_ONLY_HYPOTHESIS_SUPPORTED={'YES' if result['copy_only_hypothesis_supported'] else 'NO'}", "",
+        "--- Candidate History Fractions ---",
+        *[f"{model.upper()}_HISTORY_FRACTION={bare[model]['all']['history']['mean_candidate_fraction']:.6f}" for model in MODELS], "",
+        "--- Beam Ranking ---",
+        *[f"{model.upper()}_GOLD_MRR={rank(model)['gold']['MRR']:.6f}" for model in MODELS], "",
+        *[f"{model.upper()}_AB_HIT32={rank(model)['ab']['Hit@32']:.6f}" for model in MODELS], "",
+        *[f"{model.upper()}_A_HIT32={rank(model)['a']['Hit@32']:.6f}" for model in MODELS], "",
+        "--- Train Manifold Proxy ---",
+        *[f"TRAIN_MANIFOLD_SIZE_{domain.upper()}={result['train_manifold']['sizes'][domain]}" for domain in ("video", "prod", "ad", "living")], "",
+    ]
+    for model in MODELS:
+        manifold = bare[model]["all"]["manifold"]
+        lines += [
+            f"{model.upper()}_HISTORY_COPY_FRACTION={manifold['HISTORY_COPY_fraction']:.6f}",
+            f"{model.upper()}_SEEN_NOVEL_FRACTION={manifold['SEEN_NOVEL_fraction']:.6f}",
+            f"{model.upper()}_UNSEEN_RECOMBINATION_FRACTION={manifold['UNSEEN_RECOMBINATION_fraction']:.6f}", "",
+        ]
+    lines += [f"MANIFOLD_HYPOTHESIS_SUPPORT={result['manifold_hypothesis_support']}", "", "--- K bucket ---"]
+    for model in MODELS:
+        lines += [
+            f"{model.upper()}_K1_HIT32={rank(model, 'K1')['gold']['Hit@32_numerator']}/22",
+            f"{model.upper()}_K2PLUS_HIT32={rank(model, 'K2PLUS')['gold']['Hit@32_numerator']}/18",
+        ]
+    lines += [
+        f"STEP900_GAIN_BY_K_BUCKET={result['step900_gain_by_k_bucket']['classification']}", "",
+        f"GPU_GATE={result['gpu_gate']['status']}", "GPU_RERUN_STARTED=NO", "",
+        "TRAINING_STARTED=NO", "SELF_COT_GENERATION=NO", "EXTERNAL_EVAL=NO", "",
+        f"ROOT_CAUSE_PHASE1_1_CLASS={result['root_cause_phase1_1_class']}",
+        f"PHASE1_1_CONCLUSION={result['phase1_1_conclusion']}",
+        f"NEXT_EXPERIMENT_NEEDED={result['next_experiment_needed']}",
+    ]
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("analyze",))
-    parser.parse_args()
-    result = analyze()
+    parser.add_argument("action", choices=("analyze", "report"))
+    args = parser.parse_args()
+    result = analyze() if args.action == "analyze" else json.loads((OUTPUT / "cpu_behavior_analysis.json").read_text(encoding="utf-8"))
+    result = refresh_interpretation(result)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "cpu_behavior_analysis.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     markdown = render_markdown(result)
     (OUTPUT / "cpu_behavior_analysis.md").write_text(markdown, encoding="utf-8")
     (OUTPUT / "CHATGPT_ROOT_CAUSE_PHASE1_1.txt").write_text(markdown, encoding="utf-8")
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(terminal_report(result))
 
 
 if __name__ == "__main__":
