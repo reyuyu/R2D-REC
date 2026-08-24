@@ -242,21 +242,44 @@ def select_probe(rows: list[dict[str, Any]], seen: set[str], union: set[str]) ->
             excluded_one_model += 1
     selected = []
     pool_counts = {}
+    candidates_by_cell = {}
     for domain in DOMAIN_ORDER:
         for membership in ("TRAIN_SEEN", "TRAIN_UNSEEN"):
             candidates = [row for row in pools[membership] if row["domain"] == domain]
             candidates.sort(key=lambda row: (stable_hash(SELECTION_SALT + membership + "|" + row["group_id"]), row["group_id"]))
+            candidates_by_cell[(domain, membership)] = candidates
             if len(candidates) < 2:
                 raise RuntimeError(f"INSUFFICIENT_POOL domain={domain} membership={membership} n={len(candidates)}")
             chosen = candidates[:2]
             selected.extend({**row, "membership": membership} for row in chosen)
             pool_counts[f"{domain}|{membership}"] = len(candidates)
+    history_coverage_adjustments = []
+    for membership in ("TRAIN_SEEN", "TRAIN_UNSEEN"):
+        if any(row["membership"] == membership and row["gold_sid_in_history"] for row in selected):
+            continue
+        options = [
+            (stable_hash(SELECTION_SALT + membership + "|HISTORY|" + row["group_id"]), domain, row)
+            for domain in DOMAIN_ORDER
+            for row in candidates_by_cell[(domain, membership)]
+            if row["gold_sid_in_history"] and all(row["group_id"] != value["group_id"] for value in selected)
+        ]
+        if options:
+            _, domain, replacement = min(options, key=lambda value: (value[0], value[2]["group_id"]))
+            incumbents = [row for row in selected if row["domain"] == domain and row["membership"] == membership]
+            removed = max(incumbents, key=lambda row: (stable_hash(SELECTION_SALT + membership + "|" + row["group_id"]), row["group_id"]))
+            selected.remove(removed)
+            selected.append({**replacement, "membership": membership})
+            history_coverage_adjustments.append({
+                "membership": membership, "domain": domain, "removed_group": removed["group_id"],
+                "added_history_group": replacement["group_id"],
+            })
     selected.sort(key=lambda row: (DOMAIN_ORDER.index(row["domain"]), row["membership"], row["group_id"]))
     if len(selected) != 16 or Counter(row["membership"] for row in selected) != Counter({"TRAIN_SEEN": 8, "TRAIN_UNSEEN": 8}):
         raise RuntimeError("PROBE16_CARDINALITY_FAIL")
     return selected, {
         "salt": SELECTION_SALT, "method": "stable-hash first two per domain x strict membership; no K/history balancing",
         "pool_counts": pool_counts, "one_model_only_groups_excluded": excluded_one_model,
+        "history_coverage_adjustments": history_coverage_adjustments,
     }
 
 
