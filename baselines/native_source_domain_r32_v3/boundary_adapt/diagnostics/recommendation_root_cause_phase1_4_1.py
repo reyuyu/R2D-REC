@@ -606,6 +606,7 @@ def exact_log_check(inputs: dict[str, Any]) -> dict[str, Any]:
 
 def classify(
     raw: dict[str, Any],
+    raw_domains: dict[str, Any],
     weighted_domains: dict[str, Any],
     history: dict[str, Any],
     did: dict[str, Any],
@@ -613,7 +614,9 @@ def classify(
 ) -> dict[str, str]:
     raw_delta = raw["paired"]["metrics"]["mrr"]["estimate"]
     equal_delta = statistics.fmean(weighted_domains[domain]["delta"]["mrr"] for domain in DOMAINS)
-    supporting_domains = sum(weighted_domains[domain]["delta"]["mrr"] > 0 for domain in DOMAINS)
+    supporting_domains = sum(
+        raw_domains[domain]["paired"]["metrics"]["mrr"]["estimate"] > 0 for domain in DOMAINS
+    )
     nonhistory_delta = history["NONHISTORY"]["paired"]["metrics"]["mrr"]["estimate"]
     did_delta = did["nothink_minus_think_gap_did"]["mrr"]
     dominated = contribution["single_stratum_dominance"]
@@ -893,7 +896,7 @@ def run() -> dict[str, Any]:
     write_json(OUTPUT / "soft_switch_token_diff.json", token_diff)
     log_check = exact_log_check(inputs)
 
-    decision = classify(raw, weighted_domains, history_k, did, contribution)
+    decision = classify(raw, domain_raw, weighted_domains, history_k, did, contribution)
     next_choice = next_experiment(decision, token_diff, weighted_domains, history_k)
     summary = {
         "code_audit": audit,
