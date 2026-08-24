@@ -535,7 +535,9 @@ def soft_switch_recon(inputs: dict[str, Any]) -> tuple[dict[str, Any], dict[str,
             add_generation_prompt=True,
             enable_thinking=True,
         )
-        if isinstance(rendered, dict):
+        if hasattr(rendered, "input_ids"):
+            rendered = rendered.input_ids
+        elif hasattr(rendered, "keys") and "input_ids" in rendered:
             rendered = rendered["input_ids"]
         official = list(map(int, rendered))
         prefix = common_prefix(proxy, official)
