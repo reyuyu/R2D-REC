@@ -261,10 +261,15 @@ def select_probe(rows: list[dict[str, Any]], seen: set[str], union: set[str]) ->
 
 
 def soft_switch_ids(tokenizer, user: str, system: str) -> list[int]:
-    return list(map(int, tokenizer.apply_chat_template(
+    rendered = tokenizer.apply_chat_template(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        tokenize=True, add_generation_prompt=True,
-    )))
+        tokenize=True, add_generation_prompt=True, enable_thinking=True,
+    )
+    if hasattr(rendered, "input_ids"):
+        rendered = rendered.input_ids
+    elif hasattr(rendered, "keys") and "input_ids" in rendered:
+        rendered = rendered["input_ids"]
+    return list(map(int, rendered))
 
 
 def prepare() -> None:
