@@ -355,6 +355,7 @@ def render_markdown(result: dict[str, Any]) -> str:
 
 
 def refresh_interpretation(result: dict[str, Any]) -> dict[str, Any]:
+    result["source_commit"] = source_commit()
     bare = {model: result["metrics"][model]["bare"] for model in MODELS}
     history_fraction = {model: bare[model]["all"]["history"]["mean_candidate_fraction"] for model in MODELS}
     in_hit = {model: bare[model]["GoldSIDInHistory"]["ranking"]["gold"]["Hit@32"] for model in MODELS}
