@@ -1,0 +1,1158 @@
+{
+  "type": "boundary_adaptation_controlled_generator_decoder_crossover",
+  "source_commit": "836b3540549233bfeeeb1664bb85ea477b131237",
+  "seed": 20260818,
+  "seed_claim": "same controlled RNG schedule, not the same random sample across different model distributions",
+  "controlled_cot_gate": {
+    "controlled_cot_generation_pass": true,
+    "canonical_object": "PRODUCTION_CROPPED_COMPLETION_TOKEN_IDS",
+    "token_id_persistence_pass": true,
+    "token_sha_pass": true,
+    "text_roundtrip_match_count": 106,
+    "text_roundtrip_total": 144,
+    "text_roundtrip_is_hard_gate": false,
+    "controlled_seed_schedule_pass": true,
+    "generation_token_repeatable": true,
+    "token_repeat_match_count": 48,
+    "manifests": {
+      "0": {
+        "path": "/data/GRPO/boundary_adapt/results/controlled_token_crossover_20260824/G0.jsonl",
+        "sha256": "9243799798b21f07578f45989688df83b709c87f867c1a19022fce4585de8e09",
+        "count": 48
+      },
+      "300": {
+        "path": "/data/GRPO/boundary_adapt/results/controlled_token_crossover_20260824/G300.jsonl",
+        "sha256": "fa5ca4ebc21d8f08e7f9ecbb655e331fe232c970000f9103a33c13b266f3cb60",
+        "count": 48
+      },
+      "900": {
+        "path": "/data/GRPO/boundary_adapt/results/controlled_token_crossover_20260824/G900.jsonl",
+        "sha256": "3e54922c7eac72ac9a72996dc3187f076d61149ddab4f536371e2151b9382e3d",
+        "count": 48
+      }
+    }
+  },
+  "generator_stats": {
+    "0": {
+      "closed_rate": 1.0,
+      "empty_rate": 0.0,
+      "length": {
+        "mean": 701.1666666666666,
+        "p50": 704.5,
+        "p95": 838.25
+      },
+      "token_level_history_literal": {
+        "exact": 0.9583333333333334,
+        "ab": 0.9583333333333334,
+        "a": 0.9583333333333334
+      },
+      "token_level_gold_literal": {
+        "exact": 0.0,
+        "ab": 0.08333333333333333,
+        "a": 0.5
+      },
+      "text_view_history_literal": {
+        "exact": 0.9583333333333334,
+        "ab": 0.9583333333333334,
+        "a": 0.9583333333333334
+      },
+      "text_view_gold_literal": {
+        "exact": 0.0,
+        "ab": 0.08333333333333333,
+        "a": 0.5
+      },
+      "last_128_tokens": {
+        "history_literal": {
+          "exact": 0.5625,
+          "ab": 0.5833333333333334,
+          "a": 0.5833333333333334
+        },
+        "gold_literal": {
+          "exact": 0.0,
+          "ab": 0.041666666666666664,
+          "a": 0.14583333333333334
+        },
+        "target_domain_marker_rate": 0.5416666666666666
+      }
+    },
+    "300": {
+      "closed_rate": 0.9791666666666666,
+      "empty_rate": 0.0,
+      "length": {
+        "mean": 715.0416666666666,
+        "p50": 728.5,
+        "p95": 873.1499999999999
+      },
+      "token_level_history_literal": {
+        "exact": 0.8541666666666666,
+        "ab": 0.8541666666666666,
+        "a": 0.8541666666666666
+      },
+      "token_level_gold_literal": {
+        "exact": 0.0,
+        "ab": 0.14583333333333334,
+        "a": 0.3958333333333333
+      },
+      "text_view_history_literal": {
+        "exact": 0.8541666666666666,
+        "ab": 0.8541666666666666,
+        "a": 0.8541666666666666
+      },
+      "text_view_gold_literal": {
+        "exact": 0.0,
+        "ab": 0.14583333333333334,
+        "a": 0.3958333333333333
+      },
+      "last_128_tokens": {
+        "history_literal": {
+          "exact": 0.5416666666666666,
+          "ab": 0.5416666666666666,
+          "a": 0.5416666666666666
+        },
+        "gold_literal": {
+          "exact": 0.0,
+          "ab": 0.020833333333333332,
+          "a": 0.10416666666666667
+        },
+        "target_domain_marker_rate": 0.4375
+      }
+    },
+    "900": {
+      "closed_rate": 0.9583333333333334,
+      "empty_rate": 0.0,
+      "length": {
+        "mean": 708.5,
+        "p50": 737.0,
+        "p95": 842.85
+      },
+      "token_level_history_literal": {
+        "exact": 0.9583333333333334,
+        "ab": 0.9583333333333334,
+        "a": 0.9583333333333334
+      },
+      "token_level_gold_literal": {
+        "exact": 0.041666666666666664,
+        "ab": 0.16666666666666666,
+        "a": 0.4791666666666667
+      },
+      "text_view_history_literal": {
+        "exact": 0.9583333333333334,
+        "ab": 0.9583333333333334,
+        "a": 0.9583333333333334
+      },
+      "text_view_gold_literal": {
+        "exact": 0.041666666666666664,
+        "ab": 0.16666666666666666,
+        "a": 0.4791666666666667
+      },
+      "last_128_tokens": {
+        "history_literal": {
+          "exact": 0.5416666666666666,
+          "ab": 0.5416666666666666,
+          "a": 0.5625
+        },
+        "gold_literal": {
+          "exact": 0.0,
+          "ab": 0.0625,
+          "a": 0.16666666666666666
+        },
+        "target_domain_marker_rate": 0.4583333333333333
+      }
+    }
+  },
+  "beam_raw_matrix": {
+    "0": {
+      "0": 2.140625,
+      "300": 2.88671875,
+      "900": 3.39453125
+    },
+    "300": {
+      "0": 2.2239583333333335,
+      "300": 2.6263020833333335,
+      "900": 3.19921875
+    },
+    "900": {
+      "0": 2.35546875,
+      "300": 2.5690104166666665,
+      "900": 3.2552083333333335
+    }
+  },
+  "gold_nll_matrix": {
+    "0": {
+      "0": 4.716865173789965,
+      "300": 4.375858139174501,
+      "900": 4.257130675235024
+    },
+    "300": {
+      "0": 4.794339636941765,
+      "300": 4.388364803799689,
+      "900": 4.253106678728334
+    },
+    "900": {
+      "0": 4.719207839292292,
+      "300": 4.386653052141885,
+      "900": 4.263751971800788
+    }
+  },
+  "effects": {
+    "generator_G900_minus_G300_at_D0": {
+      "mean_delta": 0.13151041666666666,
+      "ci95": [
+        -0.44140625,
+        0.7213541666666666
+      ]
+    },
+    "generator_G900_minus_G300_at_D300": {
+      "mean_delta": -0.057291666666666664,
+      "ci95": [
+        -0.5286783854166667,
+        0.4153971354166662
+      ]
+    },
+    "generator_G900_minus_G300_at_D900": {
+      "mean_delta": 0.055989583333333336,
+      "ci95": [
+        -0.3177408854166666,
+        0.4153645833333333
+      ]
+    },
+    "decoder_D900_minus_D300_on_G0": {
+      "mean_delta": 0.5078125,
+      "ci95": [
+        0.1640625,
+        0.8958333333333334
+      ]
+    },
+    "decoder_D900_minus_D300_on_G300": {
+      "mean_delta": 0.5729166666666666,
+      "ci95": [
+        0.0859375,
+        1.2813151041666657
+      ]
+    },
+    "decoder_D900_minus_D300_on_G900": {
+      "mean_delta": 0.6861979166666666,
+      "ci95": [
+        0.2265299479166667,
+        1.2903971354166661
+      ]
+    },
+    "interaction": {
+      "mean_delta": 0.11328125,
+      "ci95": [
+        -0.02607421874999997,
+        0.2682291666666667
+      ]
+    }
+  },
+  "bootstrap": {
+    "cluster": "recommendation_group",
+    "groups": 12,
+    "candidates_per_group": 4,
+    "resamples": 10000,
+    "seed": 20260824
+  },
+  "frozen_cot_parity_pass": true,
+  "new_diagonal_internal_consistency": true,
+  "root_cause_class": "NO_CLEAR_REGRESSION",
+  "next_recommended_training_recipe": "keep Step900 and expand official-like held-out probe/evaluation; do not continue training",
+  "historical_self_cot": {
+    "status": "HISTORICAL_NON_REPLAYABLE",
+    "step300_raw": 3.421875,
+    "step900_raw": 3.2421875
+  },
+  "training_started": false,
+  "optimizer_steps": 0,
+  "cells": {
+    "0": {
+      "0": {
+        "overall": {
+          "beam_raw": 2.140625,
+          "exact": 8,
+          "ab": 17,
+          "a": 35,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.5651041666666666,
+          "history_not_gold": 0.5618489583333334,
+          "gold_not_history": 0.001953125,
+          "novel": 0.16471354166666666,
+          "mean_gold_abc_nll": 4.716865173789965,
+          "A_rank_mean": 118.39924242424242,
+          "B_rank_mean": 99.31363636363636,
+          "C_rank_mean": 75.88238636363637,
+          "best_gold_path_nll": 3.2424759512456753,
+          "best_A_rank": 19.375
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 0.8958333333333334,
+            "exact": 0,
+            "ab": 3,
+            "a": 15,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.2994791666666667,
+            "history_not_gold": 0.2994791666666667,
+            "gold_not_history": 0.0,
+            "novel": 0.25,
+            "mean_gold_abc_nll": 5.960536754033481,
+            "A_rank_mean": 323.88863636363635,
+            "B_rank_mean": 106.83787878787878,
+            "C_rank_mean": 161.1337121212121,
+            "best_gold_path_nll": 3.494017091062334,
+            "best_A_rank": 3.75
+          },
+          "prod": {
+            "beam_raw": 2.875,
+            "exact": 4,
+            "ab": 1,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3020833333333333,
+            "history_not_gold": 0.2994791666666667,
+            "gold_not_history": 0.0078125,
+            "novel": 0.2526041666666667,
+            "mean_gold_abc_nll": 4.342927336909471,
+            "A_rank_mean": 94.79166666666667,
+            "B_rank_mean": 19.083333333333332,
+            "C_rank_mean": 32.895833333333336,
+            "best_gold_path_nll": 2.98246608583981,
+            "best_A_rank": 41.5
+          },
+          "ad": {
+            "beam_raw": 1.1666666666666667,
+            "exact": 0,
+            "ab": 8,
+            "a": 4,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.7317708333333334,
+            "history_not_gold": 0.7317708333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.15625,
+            "mean_gold_abc_nll": 4.321920162985205,
+            "A_rank_mean": 41.166666666666664,
+            "B_rank_mean": 20.666666666666668,
+            "C_rank_mean": 21.583333333333332,
+            "best_gold_path_nll": 3.5400791440107344,
+            "best_A_rank": 30.583333333333332
+          },
+          "living": {
+            "beam_raw": 3.625,
+            "exact": 4,
+            "ab": 5,
+            "a": 15,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.9270833333333334,
+            "history_not_gold": 0.9166666666666666,
+            "gold_not_history": 0.0,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 4.242076441231701,
+            "A_rank_mean": 13.75,
+            "B_rank_mean": 250.66666666666666,
+            "C_rank_mean": 87.91666666666667,
+            "best_gold_path_nll": 2.953341484069824,
+            "best_A_rank": 1.6666666666666667
+          }
+        }
+      },
+      "300": {
+        "overall": {
+          "beam_raw": 2.2239583333333335,
+          "exact": 8,
+          "ab": 20,
+          "a": 34,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.587890625,
+          "history_not_gold": 0.5852864583333334,
+          "gold_not_history": 0.0026041666666666665,
+          "novel": 0.10091145833333333,
+          "mean_gold_abc_nll": 4.794339636941765,
+          "A_rank_mean": 115.00066287878788,
+          "B_rank_mean": 104.0535037878788,
+          "C_rank_mean": 79.39422348484848,
+          "best_gold_path_nll": 3.359529187294862,
+          "best_A_rank": 17.958333333333332
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.1666666666666667,
+            "exact": 0,
+            "ab": 6,
+            "a": 14,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3645833333333333,
+            "history_not_gold": 0.3645833333333333,
+            "gold_not_history": 0.0,
+            "novel": 0.171875,
+            "mean_gold_abc_nll": 6.1588315814432475,
+            "A_rank_mean": 331.1276515151515,
+            "B_rank_mean": 110.85984848484848,
+            "C_rank_mean": 180.53522727272727,
+            "best_gold_path_nll": 3.8361607028378377,
+            "best_A_rank": 5.583333333333333
+          },
+          "prod": {
+            "beam_raw": 3.3958333333333335,
+            "exact": 5,
+            "ab": 0,
+            "a": 2,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3255208333333333,
+            "history_not_gold": 0.3229166666666667,
+            "gold_not_history": 0.010416666666666666,
+            "novel": 0.13020833333333334,
+            "mean_gold_abc_nll": 4.235262147942396,
+            "A_rank_mean": 67.0625,
+            "B_rank_mean": 17.770833333333332,
+            "C_rank_mean": 28.416666666666668,
+            "best_gold_path_nll": 2.951273000126498,
+            "best_A_rank": 31.75
+          },
+          "ad": {
+            "beam_raw": 1.1666666666666667,
+            "exact": 0,
+            "ab": 8,
+            "a": 4,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.7291666666666666,
+            "history_not_gold": 0.7291666666666666,
+            "gold_not_history": 0.0,
+            "novel": 0.1015625,
+            "mean_gold_abc_nll": 4.461005888142002,
+            "A_rank_mean": 46.708333333333336,
+            "B_rank_mean": 21.833333333333332,
+            "C_rank_mean": 24.375,
+            "best_gold_path_nll": 3.608863261838754,
+            "best_A_rank": 32.75
+          },
+          "living": {
+            "beam_raw": 3.1666666666666665,
+            "exact": 3,
+            "ab": 6,
+            "a": 14,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.9322916666666666,
+            "history_not_gold": 0.9244791666666666,
+            "gold_not_history": 0.0,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 4.322258930239412,
+            "A_rank_mean": 15.104166666666666,
+            "B_rank_mean": 265.75,
+            "C_rank_mean": 84.25,
+            "best_gold_path_nll": 3.041819784376356,
+            "best_A_rank": 1.75
+          }
+        }
+      },
+      "900": {
+        "overall": {
+          "beam_raw": 2.35546875,
+          "exact": 10,
+          "ab": 14,
+          "a": 38,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.576171875,
+          "history_not_gold": 0.572265625,
+          "gold_not_history": 0.0026041666666666665,
+          "novel": 0.14127604166666666,
+          "mean_gold_abc_nll": 4.719207839292292,
+          "A_rank_mean": 108.07982954545456,
+          "B_rank_mean": 98.0691287878788,
+          "C_rank_mean": 76.5719696969697,
+          "best_gold_path_nll": 3.327173161760179,
+          "best_A_rank": 17.291666666666668
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 0.7760416666666666,
+            "exact": 0,
+            "ab": 2,
+            "a": 18,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3567708333333333,
+            "history_not_gold": 0.3567708333333333,
+            "gold_not_history": 0.0,
+            "novel": 0.24739583333333334,
+            "mean_gold_abc_nll": 6.120742209398686,
+            "A_rank_mean": 304.23598484848486,
+            "B_rank_mean": 110.04734848484848,
+            "C_rank_mean": 168.78787878787878,
+            "best_gold_path_nll": 3.929195589489407,
+            "best_A_rank": 7.75
+          },
+          "prod": {
+            "beam_raw": 3.3541666666666665,
+            "exact": 5,
+            "ab": 0,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.2994791666666667,
+            "history_not_gold": 0.2942708333333333,
+            "gold_not_history": 0.0078125,
+            "novel": 0.21875,
+            "mean_gold_abc_nll": 4.225167904956227,
+            "A_rank_mean": 64.625,
+            "B_rank_mean": 21.625,
+            "C_rank_mean": 37.0,
+            "best_gold_path_nll": 3.000117090427213,
+            "best_A_rank": 26.833333333333332
+          },
+          "ad": {
+            "beam_raw": 1.1666666666666667,
+            "exact": 0,
+            "ab": 8,
+            "a": 4,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.734375,
+            "history_not_gold": 0.734375,
+            "gold_not_history": 0.0,
+            "novel": 0.09895833333333333,
+            "mean_gold_abc_nll": 4.378694082810802,
+            "A_rank_mean": 48.375,
+            "B_rank_mean": 18.375,
+            "C_rank_mean": 20.541666666666668,
+            "best_gold_path_nll": 3.5168732827943234,
+            "best_A_rank": 33.083333333333336
+          },
+          "living": {
+            "beam_raw": 4.125,
+            "exact": 5,
+            "ab": 4,
+            "a": 15,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.9140625,
+            "history_not_gold": 0.9036458333333334,
+            "gold_not_history": 0.0026041666666666665,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 4.15222716000345,
+            "A_rank_mean": 15.083333333333334,
+            "B_rank_mean": 242.22916666666666,
+            "C_rank_mean": 79.95833333333333,
+            "best_gold_path_nll": 2.862506684329775,
+            "best_A_rank": 1.5
+          }
+        }
+      }
+    },
+    "300": {
+      "0": {
+        "overall": {
+          "beam_raw": 2.88671875,
+          "exact": 12,
+          "ab": 20,
+          "a": 38,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.4615885416666667,
+          "history_not_gold": 0.45703125,
+          "gold_not_history": 0.0032552083333333335,
+          "novel": 0.15950520833333334,
+          "mean_gold_abc_nll": 4.375858139174501,
+          "A_rank_mean": 93.8401515151515,
+          "B_rank_mean": 85.27386363636363,
+          "C_rank_mean": 73.88929924242424,
+          "best_gold_path_nll": 3.056664346769038,
+          "best_A_rank": 14.083333333333334
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.3177083333333333,
+            "exact": 0,
+            "ab": 6,
+            "a": 20,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.16145833333333334,
+            "history_not_gold": 0.16145833333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.22135416666666666,
+            "mean_gold_abc_nll": 5.516373501025666,
+            "A_rank_mean": 260.2564393939394,
+            "B_rank_mean": 92.34545454545456,
+            "C_rank_mean": 158.45303030303032,
+            "best_gold_path_nll": 3.4754410650995045,
+            "best_A_rank": 1.5
+          },
+          "prod": {
+            "beam_raw": 4.1875,
+            "exact": 6,
+            "ab": 1,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.23958333333333334,
+            "history_not_gold": 0.23177083333333334,
+            "gold_not_history": 0.0078125,
+            "novel": 0.23697916666666666,
+            "mean_gold_abc_nll": 4.130517574492842,
+            "A_rank_mean": 71.20833333333333,
+            "B_rank_mean": 14.395833333333334,
+            "C_rank_mean": 32.604166666666664,
+            "best_gold_path_nll": 2.912415014579892,
+            "best_A_rank": 32.25
+          },
+          "ad": {
+            "beam_raw": 1.1666666666666667,
+            "exact": 0,
+            "ab": 8,
+            "a": 4,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.6458333333333334,
+            "history_not_gold": 0.6458333333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.1796875,
+            "mean_gold_abc_nll": 3.8864393647139273,
+            "A_rank_mean": 29.5,
+            "B_rank_mean": 20.5,
+            "C_rank_mean": 18.583333333333332,
+            "best_gold_path_nll": 2.9886170157955756,
+            "best_A_rank": 21.083333333333332
+          },
+          "living": {
+            "beam_raw": 4.875,
+            "exact": 6,
+            "ab": 5,
+            "a": 13,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.7994791666666666,
+            "history_not_gold": 0.7890625,
+            "gold_not_history": 0.005208333333333333,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 3.9701021164655685,
+            "A_rank_mean": 14.395833333333334,
+            "B_rank_mean": 213.85416666666666,
+            "C_rank_mean": 85.91666666666667,
+            "best_gold_path_nll": 2.850184291601181,
+            "best_A_rank": 1.5
+          }
+        }
+      },
+      "300": {
+        "overall": {
+          "beam_raw": 2.6263020833333335,
+          "exact": 10,
+          "ab": 22,
+          "a": 38,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.4921875,
+          "history_not_gold": 0.48828125,
+          "gold_not_history": 0.0026041666666666665,
+          "novel": 0.111328125,
+          "mean_gold_abc_nll": 4.388364803799689,
+          "A_rank_mean": 92.96941287878788,
+          "B_rank_mean": 88.87320075757576,
+          "C_rank_mean": 74.86354166666666,
+          "best_gold_path_nll": 3.0980033576876544,
+          "best_A_rank": 13.854166666666666
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.3802083333333333,
+            "exact": 0,
+            "ab": 7,
+            "a": 18,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.23958333333333334,
+            "history_not_gold": 0.23958333333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.16666666666666666,
+            "mean_gold_abc_nll": 5.583651712837845,
+            "A_rank_mean": 274.6276515151515,
+            "B_rank_mean": 93.13863636363637,
+            "C_rank_mean": 172.32916666666668,
+            "best_gold_path_nll": 3.644426474968592,
+            "best_A_rank": 2.6666666666666665
+          },
+          "prod": {
+            "beam_raw": 4.083333333333333,
+            "exact": 6,
+            "ab": 0,
+            "a": 3,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.2786458333333333,
+            "history_not_gold": 0.2734375,
+            "gold_not_history": 0.010416666666666666,
+            "novel": 0.125,
+            "mean_gold_abc_nll": 3.995199374091398,
+            "A_rank_mean": 51.125,
+            "B_rank_mean": 16.208333333333332,
+            "C_rank_mean": 28.708333333333332,
+            "best_gold_path_nll": 2.7725216288429997,
+            "best_A_rank": 28.416666666666668
+          },
+          "ad": {
+            "beam_raw": 1.2916666666666667,
+            "exact": 0,
+            "ab": 9,
+            "a": 3,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.6458333333333334,
+            "history_not_gold": 0.6458333333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.15364583333333334,
+            "mean_gold_abc_nll": 3.9498151524199376,
+            "A_rank_mean": 31.958333333333332,
+            "B_rank_mean": 21.833333333333332,
+            "C_rank_mean": 18.125,
+            "best_gold_path_nll": 3.0416309100886187,
+            "best_A_rank": 23.0
+          },
+          "living": {
+            "beam_raw": 3.75,
+            "exact": 4,
+            "ab": 6,
+            "a": 14,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.8046875,
+            "history_not_gold": 0.7942708333333334,
+            "gold_not_history": 0.0,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 4.024792975849576,
+            "A_rank_mean": 14.166666666666666,
+            "B_rank_mean": 224.3125,
+            "C_rank_mean": 80.29166666666667,
+            "best_gold_path_nll": 2.933434416850408,
+            "best_A_rank": 1.3333333333333333
+          }
+        }
+      },
+      "900": {
+        "overall": {
+          "beam_raw": 2.5690104166666665,
+          "exact": 10,
+          "ab": 20,
+          "a": 36,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.44921875,
+          "history_not_gold": 0.4453125,
+          "gold_not_history": 0.0026041666666666665,
+          "novel": 0.146484375,
+          "mean_gold_abc_nll": 4.386653052141885,
+          "A_rank_mean": 91.86136363636363,
+          "B_rank_mean": 85.66382575757575,
+          "C_rank_mean": 73.46903409090909,
+          "best_gold_path_nll": 3.132834000642308,
+          "best_A_rank": 14.0
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.1510416666666667,
+            "exact": 0,
+            "ab": 5,
+            "a": 18,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.22135416666666666,
+            "history_not_gold": 0.22135416666666666,
+            "gold_not_history": 0.0,
+            "novel": 0.20833333333333334,
+            "mean_gold_abc_nll": 5.628565033005946,
+            "A_rank_mean": 267.38295454545454,
+            "B_rank_mean": 97.05113636363636,
+            "C_rank_mean": 164.98030303030302,
+            "best_gold_path_nll": 3.705703854560852,
+            "best_A_rank": 4.5
+          },
+          "prod": {
+            "beam_raw": 3.4166666666666665,
+            "exact": 5,
+            "ab": 0,
+            "a": 3,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.24479166666666666,
+            "history_not_gold": 0.23958333333333334,
+            "gold_not_history": 0.0078125,
+            "novel": 0.2109375,
+            "mean_gold_abc_nll": 4.060093515992372,
+            "A_rank_mean": 52.083333333333336,
+            "B_rank_mean": 18.291666666666668,
+            "C_rank_mean": 35.479166666666664,
+            "best_gold_path_nll": 2.92947250780546,
+            "best_A_rank": 25.75
+          },
+          "ad": {
+            "beam_raw": 1.3333333333333333,
+            "exact": 0,
+            "ab": 9,
+            "a": 2,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.5807291666666666,
+            "history_not_gold": 0.5807291666666666,
+            "gold_not_history": 0.0,
+            "novel": 0.16666666666666666,
+            "mean_gold_abc_nll": 3.9189621684037976,
+            "A_rank_mean": 33.916666666666664,
+            "B_rank_mean": 20.083333333333332,
+            "C_rank_mean": 16.416666666666668,
+            "best_gold_path_nll": 3.038049530237913,
+            "best_A_rank": 24.333333333333332
+          },
+          "living": {
+            "beam_raw": 4.375,
+            "exact": 5,
+            "ab": 6,
+            "a": 13,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.75,
+            "history_not_gold": 0.7395833333333334,
+            "gold_not_history": 0.0026041666666666665,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 3.9389914911654262,
+            "A_rank_mean": 14.0625,
+            "B_rank_mean": 207.22916666666666,
+            "C_rank_mean": 77.0,
+            "best_gold_path_nll": 2.8581101099650064,
+            "best_A_rank": 1.4166666666666667
+          }
+        }
+      }
+    },
+    "900": {
+      "0": {
+        "overall": {
+          "beam_raw": 3.39453125,
+          "exact": 14,
+          "ab": 26,
+          "a": 40,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.3125,
+          "history_not_gold": 0.3079427083333333,
+          "gold_not_history": 0.004557291666666667,
+          "novel": 0.138671875,
+          "mean_gold_abc_nll": 4.257130675235024,
+          "A_rank_mean": 85.78314393939394,
+          "B_rank_mean": 82.2342803030303,
+          "C_rank_mean": 71.28238636363636,
+          "best_gold_path_nll": 2.9587285162932755,
+          "best_A_rank": 11.791666666666666
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.828125,
+            "exact": 0,
+            "ab": 10,
+            "a": 25,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.09635416666666667,
+            "history_not_gold": 0.09635416666666667,
+            "gold_not_history": 0.0,
+            "novel": 0.15104166666666666,
+            "mean_gold_abc_nll": 5.352265030160697,
+            "A_rank_mean": 245.13257575757575,
+            "B_rank_mean": 87.43712121212121,
+            "C_rank_mean": 153.44204545454545,
+            "best_gold_path_nll": 3.450451052851147,
+            "best_A_rank": 1.3333333333333333
+          },
+          "prod": {
+            "beam_raw": 4.708333333333333,
+            "exact": 7,
+            "ab": 0,
+            "a": 2,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.20052083333333334,
+            "history_not_gold": 0.19270833333333334,
+            "gold_not_history": 0.010416666666666666,
+            "novel": 0.17447916666666666,
+            "mean_gold_abc_nll": 4.028703609921245,
+            "A_rank_mean": 59.0,
+            "B_rank_mean": 14.729166666666666,
+            "C_rank_mean": 28.395833333333332,
+            "best_gold_path_nll": 2.7875280803483395,
+            "best_A_rank": 26.5
+          },
+          "ad": {
+            "beam_raw": 1.5416666666666667,
+            "exact": 0,
+            "ab": 11,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3802083333333333,
+            "history_not_gold": 0.3802083333333333,
+            "gold_not_history": 0.0,
+            "novel": 0.22916666666666666,
+            "mean_gold_abc_nll": 3.7826705684678426,
+            "A_rank_mean": 26.291666666666668,
+            "B_rank_mean": 21.5,
+            "C_rank_mean": 15.666666666666666,
+            "best_gold_path_nll": 2.8228496818078885,
+            "best_A_rank": 17.833333333333332
+          },
+          "living": {
+            "beam_raw": 5.5,
+            "exact": 7,
+            "ab": 5,
+            "a": 12,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.5729166666666666,
+            "history_not_gold": 0.5625,
+            "gold_not_history": 0.0078125,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 3.8648834923903146,
+            "A_rank_mean": 12.708333333333334,
+            "B_rank_mean": 205.27083333333334,
+            "C_rank_mean": 87.625,
+            "best_gold_path_nll": 2.7740852501657276,
+            "best_A_rank": 1.5
+          }
+        }
+      },
+      "300": {
+        "overall": {
+          "beam_raw": 3.19921875,
+          "exact": 13,
+          "ab": 24,
+          "a": 46,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.33203125,
+          "history_not_gold": 0.3274739583333333,
+          "gold_not_history": 0.00390625,
+          "novel": 0.11263020833333333,
+          "mean_gold_abc_nll": 4.253106678728334,
+          "A_rank_mean": 84.77566287878788,
+          "B_rank_mean": 84.8347537878788,
+          "C_rank_mean": 71.1344696969697,
+          "best_gold_path_nll": 2.9717466035443874,
+          "best_A_rank": 11.541666666666666
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.6927083333333333,
+            "exact": 0,
+            "ab": 8,
+            "a": 30,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.1015625,
+            "history_not_gold": 0.1015625,
+            "gold_not_history": 0.0,
+            "novel": 0.11979166666666667,
+            "mean_gold_abc_nll": 5.391212805157358,
+            "A_rank_mean": 254.06098484848485,
+            "B_rank_mean": 87.38068181818181,
+            "C_rank_mean": 160.93371212121212,
+            "best_gold_path_nll": 3.5161961747540365,
+            "best_A_rank": 1.4166666666666667
+          },
+          "prod": {
+            "beam_raw": 4.729166666666667,
+            "exact": 7,
+            "ab": 0,
+            "a": 3,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.2526041666666667,
+            "history_not_gold": 0.24479166666666666,
+            "gold_not_history": 0.010416666666666666,
+            "novel": 0.125,
+            "mean_gold_abc_nll": 3.885287274813486,
+            "A_rank_mean": 44.645833333333336,
+            "B_rank_mean": 16.333333333333332,
+            "C_rank_mean": 23.645833333333332,
+            "best_gold_path_nll": 2.648782293415732,
+            "best_A_rank": 23.666666666666668
+          },
+          "ad": {
+            "beam_raw": 1.375,
+            "exact": 0,
+            "ab": 10,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3645833333333333,
+            "history_not_gold": 0.3645833333333333,
+            "gold_not_history": 0.0,
+            "novel": 0.20572916666666666,
+            "mean_gold_abc_nll": 3.8191166356619863,
+            "A_rank_mean": 28.208333333333332,
+            "B_rank_mean": 21.75,
+            "C_rank_mean": 15.625,
+            "best_gold_path_nll": 2.8624328134788404,
+            "best_A_rank": 19.75
+          },
+          "living": {
+            "beam_raw": 5.0,
+            "exact": 6,
+            "ab": 6,
+            "a": 12,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.609375,
+            "history_not_gold": 0.5989583333333334,
+            "gold_not_history": 0.005208333333333333,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 3.9168099992805057,
+            "A_rank_mean": 12.1875,
+            "B_rank_mean": 213.875,
+            "C_rank_mean": 84.33333333333333,
+            "best_gold_path_nll": 2.8595751325289407,
+            "best_A_rank": 1.3333333333333333
+          }
+        }
+      },
+      "900": {
+        "overall": {
+          "beam_raw": 3.2552083333333335,
+          "exact": 13,
+          "ab": 26,
+          "a": 43,
+          "invalid": 0,
+          "total_beams": 1536,
+          "history_exact_copy": 0.30078125,
+          "history_not_gold": 0.2962239583333333,
+          "gold_not_history": 0.00390625,
+          "novel": 0.146484375,
+          "mean_gold_abc_nll": 4.263751971800788,
+          "A_rank_mean": 84.46676136363637,
+          "B_rank_mean": 82.2872159090909,
+          "C_rank_mean": 70.67642045454545,
+          "best_gold_path_nll": 3.004547466963736,
+          "best_A_rank": 12.208333333333334
+        },
+        "per_domain": {
+          "video": {
+            "beam_raw": 1.75,
+            "exact": 0,
+            "ab": 9,
+            "a": 27,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.09895833333333333,
+            "history_not_gold": 0.09895833333333333,
+            "gold_not_history": 0.0,
+            "novel": 0.171875,
+            "mean_gold_abc_nll": 5.409680158366458,
+            "A_rank_mean": 250.05454545454543,
+            "B_rank_mean": 90.16969696969697,
+            "C_rank_mean": 157.8723484848485,
+            "best_gold_path_nll": 3.584379381603665,
+            "best_A_rank": 2.0
+          },
+          "prod": {
+            "beam_raw": 4.229166666666667,
+            "exact": 6,
+            "ab": 1,
+            "a": 3,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.2109375,
+            "history_not_gold": 0.203125,
+            "gold_not_history": 0.0078125,
+            "novel": 0.20052083333333334,
+            "mean_gold_abc_nll": 4.011394699802622,
+            "A_rank_mean": 47.4375,
+            "B_rank_mean": 18.020833333333332,
+            "C_rank_mean": 30.666666666666668,
+            "best_gold_path_nll": 2.8194389638180533,
+            "best_A_rank": 25.25
+          },
+          "ad": {
+            "beam_raw": 1.5416666666666667,
+            "exact": 0,
+            "ab": 11,
+            "a": 1,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.3359375,
+            "history_not_gold": 0.3359375,
+            "gold_not_history": 0.0,
+            "novel": 0.21354166666666666,
+            "mean_gold_abc_nll": 3.785576801126202,
+            "A_rank_mean": 28.416666666666668,
+            "B_rank_mean": 21.208333333333332,
+            "C_rank_mean": 15.833333333333334,
+            "best_gold_path_nll": 2.8225579501854052,
+            "best_A_rank": 20.25
+          },
+          "living": {
+            "beam_raw": 5.5,
+            "exact": 7,
+            "ab": 5,
+            "a": 12,
+            "invalid": 0,
+            "total_beams": 384,
+            "history_exact_copy": 0.5572916666666666,
+            "history_not_gold": 0.546875,
+            "gold_not_history": 0.0078125,
+            "novel": 0.0,
+            "mean_gold_abc_nll": 3.84835622790787,
+            "A_rank_mean": 11.958333333333334,
+            "B_rank_mean": 199.75,
+            "C_rank_mean": 78.33333333333333,
+            "best_gold_path_nll": 2.7918135722478232,
+            "best_A_rank": 1.3333333333333333
+          }
+        }
+      }
+    }
+  },
+  "frozen_anchor": {
+    "0": {
+      "beam_raw": 2.5065104166666665,
+      "exact": 11,
+      "ab": 15,
+      "a": 40,
+      "invalid": 0,
+      "total_beams": 1536,
+      "history_exact_copy": 0.5859375,
+      "history_not_gold": 0.5813802083333334,
+      "gold_not_history": 0.0026041666666666665,
+      "novel": 0.109375
+    },
+    "300": {
+      "beam_raw": 2.7447916666666665,
+      "exact": 12,
+      "ab": 18,
+      "a": 40,
+      "invalid": 0,
+      "total_beams": 1536,
+      "history_exact_copy": 0.4889322916666667,
+      "history_not_gold": 0.484375,
+      "gold_not_history": 0.0032552083333333335,
+      "novel": 0.1171875
+    },
+    "900": {
+      "beam_raw": 3.5338541666666665,
+      "exact": 16,
+      "ab": 23,
+      "a": 40,
+      "invalid": 0,
+      "total_beams": 1536,
+      "history_exact_copy": 0.3470052083333333,
+      "history_not_gold": 0.341796875,
+      "gold_not_history": 0.005208333333333333,
+      "novel": 0.11653645833333333
+    }
+  }
+}
