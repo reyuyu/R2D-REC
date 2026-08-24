@@ -299,7 +299,6 @@ def scan_dataset(label: str, holdout_ids: set[str]) -> dict[str, Any]:
     route_signatures: dict[str, dict[tuple[str, str], str]] = {route: {} for route in ROUTES}
     holdout_rows: dict[tuple[str, str, str], dict[str, Any]] = {}
     recommendation_rows = 0
-    identical_duplicate_rows = 0
     with path.open(encoding="utf-8") as handle:
         for line in handle:
             row = json.loads(line)
@@ -326,14 +325,10 @@ def scan_dataset(label: str, holdout_ids: set[str]) -> dict[str, Any]:
             contract["history_sha256"].add(history_sha)
             contract["routes"].add(route)
             key = (group, current, route)
-            signature = row_sha(row)
             if key in route_keys:
-                if route_signatures[route].get((group, current)) != signature:
-                    raise RuntimeError(f"CONFLICTING_RECOMMENDATION_KEY model={label} key={key}")
-                identical_duplicate_rows += 1
-                continue
+                raise RuntimeError(f"DUPLICATE_RECOMMENDATION_KEY model={label} key={key}")
             route_keys.add(key)
-            route_signatures[route][(group, current)] = signature
+            route_signatures[route][(group, current)] = row_sha(row)
             if group in holdout_ids:
                 holdout_rows[key] = row
     public_contract = {
@@ -350,7 +345,6 @@ def scan_dataset(label: str, holdout_ids: set[str]) -> dict[str, Any]:
         "path": path,
         "sha256": actual_sha,
         "recommendation_rows": recommendation_rows,
-        "identical_duplicate_rows": identical_duplicate_rows,
         "groups": public_contract,
         "group_ids": set(groups),
         "route_keys": route_keys,
@@ -382,7 +376,6 @@ def dataset_audit(scans: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "union_recommendation_groups": len(union),
         "group_counts": {label: len(scan["group_ids"]) for label, scan in scans.items()},
         "recommendation_row_counts": {label: scan["recommendation_rows"] for label, scan in scans.items()},
-        "identical_duplicate_rows": {label: scan["identical_duplicate_rows"] for label, scan in scans.items()},
         "dataset_sha256": {label: scan["sha256"] for label, scan in scans.items()},
         "group_contract_conflicts": conflicts[:100],
         "route_key_parity": "PASS" if key_parity else "FAIL",
