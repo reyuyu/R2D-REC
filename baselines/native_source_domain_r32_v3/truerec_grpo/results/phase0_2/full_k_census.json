@@ -1,0 +1,167 @@
+{
+  "overall": {
+    "N": 20531,
+    "K_mean": 2.332522,
+    "K_median": 1,
+    "K_p75": 2,
+    "K_p90": 5,
+    "K_max": 20,
+    "buckets": {
+      "K=1": {
+        "count": 12743,
+        "rate": 0.62067118
+      },
+      "K=2": {
+        "count": 2961,
+        "rate": 0.14422093
+      },
+      "K=3-5": {
+        "count": 3019,
+        "rate": 0.14704593
+      },
+      "K=6-10": {
+        "count": 1234,
+        "rate": 0.06010423
+      },
+      "K=11+": {
+        "count": 574,
+        "rate": 0.02795772
+      }
+    }
+  },
+  "domains": {
+    "video": {
+      "N": 10902,
+      "K_mean": 3.374243,
+      "K_median": 2.0,
+      "K_p75": 4,
+      "K_p90": 7,
+      "K_max": 20,
+      "buckets": {
+        "K=1": {
+          "count": 4113,
+          "rate": 0.37727023
+        },
+        "K=2": {
+          "count": 2217,
+          "rate": 0.20335718
+        },
+        "K=3-5": {
+          "count": 2790,
+          "rate": 0.25591635
+        },
+        "K=6-10": {
+          "count": 1209,
+          "rate": 0.11089708
+        },
+        "K=11+": {
+          "count": 573,
+          "rate": 0.05255916
+        }
+      }
+    },
+    "prod": {
+      "N": 3125,
+      "K_mean": 1.17472,
+      "K_median": 1,
+      "K_p75": 1,
+      "K_p90": 2,
+      "K_max": 10,
+      "buckets": {
+        "K=1": {
+          "count": 2743,
+          "rate": 0.87776
+        },
+        "K=2": {
+          "count": 283,
+          "rate": 0.09056
+        },
+        "K=3-5": {
+          "count": 93,
+          "rate": 0.02976
+        },
+        "K=6-10": {
+          "count": 6,
+          "rate": 0.00192
+        },
+        "K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "ad": {
+      "N": 3426,
+      "K_mean": 1.188558,
+      "K_median": 1.0,
+      "K_p75": 1,
+      "K_p90": 2,
+      "K_max": 9,
+      "buckets": {
+        "K=1": {
+          "count": 2999,
+          "rate": 0.87536486
+        },
+        "K=2": {
+          "count": 314,
+          "rate": 0.09165207
+        },
+        "K=3-5": {
+          "count": 100,
+          "rate": 0.02918856
+        },
+        "K=6-10": {
+          "count": 13,
+          "rate": 0.00379451
+        },
+        "K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "living": {
+      "N": 3078,
+      "K_mean": 1.091618,
+      "K_median": 1.0,
+      "K_p75": 1,
+      "K_p90": 1,
+      "K_max": 14,
+      "buckets": {
+        "K=1": {
+          "count": 2888,
+          "rate": 0.9382716
+        },
+        "K=2": {
+          "count": 147,
+          "rate": 0.04775828
+        },
+        "K=3-5": {
+          "count": 36,
+          "rate": 0.01169591
+        },
+        "K=6-10": {
+          "count": 6,
+          "rate": 0.00194932
+        },
+        "K=11+": {
+          "count": 1,
+          "rate": 0.00032489
+        }
+      }
+    }
+  },
+  "percentile_method": "median=standard midpoint; p75/p90=nearest-rank",
+  "source": {
+    "path": "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl",
+    "sha256": "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "source_route_rows": {
+      "recommendation_cot": 32179,
+      "recommendation_nocot": 16090
+    }
+  },
+  "group_key": "recommendation_group_id",
+  "K_definition": "count(unique valid recommendation_all_gold_sids)"
+}

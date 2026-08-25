@@ -1,0 +1,167 @@
+{
+  "overall": {
+    "N": 1549,
+    "K_mean": 7.114267,
+    "K_median": 3,
+    "K_p75": 13,
+    "K_p90": 19,
+    "K_max": 20,
+    "buckets": {
+      "K=1": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "K=2": {
+        "count": 744,
+        "rate": 0.48030988
+      },
+      "K=3-5": {
+        "count": 229,
+        "rate": 0.14783731
+      },
+      "K=6-10": {
+        "count": 25,
+        "rate": 0.01613944
+      },
+      "K=11+": {
+        "count": 551,
+        "rate": 0.35571336
+      }
+    }
+  },
+  "domains": {
+    "video": {
+      "N": 550,
+      "K_mean": 15.54,
+      "K_median": 15.0,
+      "K_p75": 20,
+      "K_p90": 20,
+      "K_max": 20,
+      "buckets": {
+        "K=1": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=2": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=3-5": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=6-10": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=11+": {
+          "count": 550,
+          "rate": 1.0
+        }
+      }
+    },
+    "prod": {
+      "N": 382,
+      "K_mean": 2.429319,
+      "K_median": 2.0,
+      "K_p75": 3,
+      "K_p90": 3,
+      "K_max": 10,
+      "buckets": {
+        "K=1": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=2": {
+          "count": 283,
+          "rate": 0.7408377
+        },
+        "K=3-5": {
+          "count": 93,
+          "rate": 0.2434555
+        },
+        "K=6-10": {
+          "count": 6,
+          "rate": 0.01570681
+        },
+        "K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "ad": {
+      "N": 427,
+      "K_mean": 2.512881,
+      "K_median": 2,
+      "K_p75": 3,
+      "K_p90": 4,
+      "K_max": 9,
+      "buckets": {
+        "K=1": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=2": {
+          "count": 314,
+          "rate": 0.735363
+        },
+        "K=3-5": {
+          "count": 100,
+          "rate": 0.23419204
+        },
+        "K=6-10": {
+          "count": 13,
+          "rate": 0.03044496
+        },
+        "K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "living": {
+      "N": 190,
+      "K_mean": 2.484211,
+      "K_median": 2.0,
+      "K_p75": 2,
+      "K_p90": 3,
+      "K_max": 14,
+      "buckets": {
+        "K=1": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "K=2": {
+          "count": 147,
+          "rate": 0.77368421
+        },
+        "K=3-5": {
+          "count": 36,
+          "rate": 0.18947368
+        },
+        "K=6-10": {
+          "count": 6,
+          "rate": 0.03157895
+        },
+        "K=11+": {
+          "count": 1,
+          "rate": 0.00526316
+        }
+      }
+    }
+  },
+  "percentile_method": "median=standard midpoint; p75/p90=nearest-rank",
+  "source": {
+    "path": "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl",
+    "sha256": "791d5696b87d18720fccfff5b4dbbb3c72d996095b8e2bc9d7c7f7c57fdcf3dc",
+    "total_rows": 3098,
+    "source_route_rows": {
+      "no_think": 1549,
+      "think": 1549
+    }
+  },
+  "manifest": "/data/GRPO/data/rec_mp_grpo_v2/manifest.json",
+  "group_key": "recommendation_group_id",
+  "K_definition": "count(unique valid all_gold_sids)"
+}

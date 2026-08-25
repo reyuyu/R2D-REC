@@ -1,0 +1,60 @@
+{
+  "direction": "OLD_GRPO_1549 minus FULL_BETA_GAMMA",
+  "overall": {
+    "old_minus_full_K_mean": 4.781745,
+    "old_minus_full_K_median": 2,
+    "bucket_percentage_point_drift_old_minus_full": {
+      "K=1": -62.067118,
+      "K=2": 33.608895,
+      "K=3-5": 0.079138,
+      "K=6-10": -4.396479,
+      "K=11+": 32.775564
+    }
+  },
+  "domains": {
+    "video": {
+      "old_minus_full_K_mean": 12.165757,
+      "old_minus_full_K_median": 13.0,
+      "bucket_percentage_point_drift_old_minus_full": {
+        "K=1": -37.727023,
+        "K=2": -20.335718,
+        "K=3-5": -25.591635,
+        "K=6-10": -11.089708,
+        "K=11+": 94.744084
+      }
+    },
+    "prod": {
+      "old_minus_full_K_mean": 1.254599,
+      "old_minus_full_K_median": 1.0,
+      "bucket_percentage_point_drift_old_minus_full": {
+        "K=1": -87.776,
+        "K=2": 65.02777,
+        "K=3-5": 21.36955,
+        "K=6-10": 1.378681,
+        "K=11+": 0.0
+      }
+    },
+    "ad": {
+      "old_minus_full_K_mean": 1.324323,
+      "old_minus_full_K_median": 1.0,
+      "bucket_percentage_point_drift_old_minus_full": {
+        "K=1": -87.536486,
+        "K=2": 64.371093,
+        "K=3-5": 20.500348,
+        "K=6-10": 2.665045,
+        "K=11+": 0.0
+      }
+    },
+    "living": {
+      "old_minus_full_K_mean": 1.392593,
+      "old_minus_full_K_median": 1.0,
+      "bucket_percentage_point_drift_old_minus_full": {
+        "K=1": -93.82716,
+        "K=2": 72.592593,
+        "K=3-5": 17.777777,
+        "K=6-10": 2.962963,
+        "K=11+": 0.493827
+      }
+    }
+  }
+}
