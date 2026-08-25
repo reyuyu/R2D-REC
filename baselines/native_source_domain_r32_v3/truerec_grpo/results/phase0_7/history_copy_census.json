@@ -1,0 +1,222 @@
+{
+  "overall": {
+    "valid_candidates": 32766,
+    "history_copy": {
+      "count": 3087,
+      "rate": 0.09421351
+    },
+    "correct_history_copy": {
+      "count": 208,
+      "rate": 0.00634804
+    },
+    "wrong_history_copy": {
+      "count": 2879,
+      "rate": 0.08786547
+    },
+    "groups": 4096,
+    "group_any_history_copy": {
+      "count": 1683,
+      "rate": 0.41088867
+    },
+    "group_any_wrong_history_copy": {
+      "count": 1641,
+      "rate": 0.40063477
+    }
+  },
+  "domain": {
+    "ad": {
+      "valid_candidates": 8192,
+      "history_copy": {
+        "count": 964,
+        "rate": 0.11767578
+      },
+      "correct_history_copy": {
+        "count": 64,
+        "rate": 0.0078125
+      },
+      "wrong_history_copy": {
+        "count": 900,
+        "rate": 0.10986328
+      },
+      "groups": 1024,
+      "group_any_history_copy": {
+        "count": 552,
+        "rate": 0.5390625
+      },
+      "group_any_wrong_history_copy": {
+        "count": 543,
+        "rate": 0.53027344
+      }
+    },
+    "living": {
+      "valid_candidates": 8192,
+      "history_copy": {
+        "count": 1044,
+        "rate": 0.12744141
+      },
+      "correct_history_copy": {
+        "count": 57,
+        "rate": 0.00695801
+      },
+      "wrong_history_copy": {
+        "count": 987,
+        "rate": 0.1204834
+      },
+      "groups": 1024,
+      "group_any_history_copy": {
+        "count": 502,
+        "rate": 0.49023438
+      },
+      "group_any_wrong_history_copy": {
+        "count": 489,
+        "rate": 0.47753906
+      }
+    },
+    "prod": {
+      "valid_candidates": 8190,
+      "history_copy": {
+        "count": 1031,
+        "rate": 0.12588523
+      },
+      "correct_history_copy": {
+        "count": 83,
+        "rate": 0.01013431
+      },
+      "wrong_history_copy": {
+        "count": 948,
+        "rate": 0.11575092
+      },
+      "groups": 1024,
+      "group_any_history_copy": {
+        "count": 582,
+        "rate": 0.56835938
+      },
+      "group_any_wrong_history_copy": {
+        "count": 566,
+        "rate": 0.55273438
+      }
+    },
+    "video": {
+      "valid_candidates": 8192,
+      "history_copy": {
+        "count": 48,
+        "rate": 0.00585938
+      },
+      "correct_history_copy": {
+        "count": 4,
+        "rate": 0.00048828
+      },
+      "wrong_history_copy": {
+        "count": 44,
+        "rate": 0.00537109
+      },
+      "groups": 1024,
+      "group_any_history_copy": {
+        "count": 47,
+        "rate": 0.04589844
+      },
+      "group_any_wrong_history_copy": {
+        "count": 43,
+        "rate": 0.04199219
+      }
+    }
+  },
+  "novelty": {
+    "H": {
+      "valid_candidates": 3712,
+      "history_copy": {
+        "count": 858,
+        "rate": 0.23114224
+      },
+      "correct_history_copy": {
+        "count": 208,
+        "rate": 0.05603448
+      },
+      "wrong_history_copy": {
+        "count": 650,
+        "rate": 0.17510776
+      },
+      "groups": 464,
+      "group_any_history_copy": {
+        "count": 364,
+        "rate": 0.78448276
+      },
+      "group_any_wrong_history_copy": {
+        "count": 322,
+        "rate": 0.69396552
+      }
+    },
+    "N0": {
+      "valid_candidates": 14654,
+      "history_copy": {
+        "count": 969,
+        "rate": 0.06612529
+      },
+      "correct_history_copy": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "wrong_history_copy": {
+        "count": 969,
+        "rate": 0.06612529
+      },
+      "groups": 1832,
+      "group_any_history_copy": {
+        "count": 591,
+        "rate": 0.32259825
+      },
+      "group_any_wrong_history_copy": {
+        "count": 591,
+        "rate": 0.32259825
+      }
+    },
+    "N1": {
+      "valid_candidates": 10480,
+      "history_copy": {
+        "count": 868,
+        "rate": 0.08282443
+      },
+      "correct_history_copy": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "wrong_history_copy": {
+        "count": 868,
+        "rate": 0.08282443
+      },
+      "groups": 1310,
+      "group_any_history_copy": {
+        "count": 504,
+        "rate": 0.38473282
+      },
+      "group_any_wrong_history_copy": {
+        "count": 504,
+        "rate": 0.38473282
+      }
+    },
+    "N2": {
+      "valid_candidates": 3920,
+      "history_copy": {
+        "count": 392,
+        "rate": 0.1
+      },
+      "correct_history_copy": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "wrong_history_copy": {
+        "count": 392,
+        "rate": 0.1
+      },
+      "groups": 490,
+      "group_any_history_copy": {
+        "count": 224,
+        "rate": 0.45714286
+      },
+      "group_any_wrong_history_copy": {
+        "count": 224,
+        "rate": 0.45714286
+      }
+    }
+  }
+}

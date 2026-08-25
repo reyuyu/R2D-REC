@@ -1,0 +1,3443 @@
+{
+  "warning": "20-group diagnostic only; not a formal benchmark",
+  "groups": [
+    {
+      "group_id": "1602f60fb94357050814dda0d939936b74174c1a47ca113839e17dea6afd1488",
+      "domain": "living",
+      "novelty": "N2",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": false,
+      "group_class": "AB_ONLY_MAX",
+      "hpr_trigger": "HPR_C_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "175498ed69eaf6865078ae39cbca28b383eeaab1e849245688acc17d7ea57b7e",
+      "domain": "ad",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "22aa83e11f389d33ce60246ef0a7ecf1d4ed544bbdcaedde04b1277529ebff48",
+      "domain": "ad",
+      "novelty": "H",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "2e88e7643b5849bbd6b71dbb0cc388366ef1debdf4e72e3006868ea6f47a459c",
+      "domain": "video",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "33a72f5cae3b6b331eae9e9151b8b1ebe95532ea6a4f96e00bd6adbaf7638b7f",
+      "domain": "prod",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "416bbcf6f35db60e3d737d598797c656ef227b141fd3dd9ff9b22f1b052236b8",
+      "domain": "living",
+      "novelty": "H",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": true,
+      "group_class": "EXACT_REACHED",
+      "hpr_trigger": "HPR_NONE",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 4,
+      "unique_AB_count": 7,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": true,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "44c9026fa48f6d61721876782f0ad4452518101e57ccfca24e8a7162a35bd893",
+      "domain": "ad",
+      "novelty": "N2",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": false,
+      "group_class": "AB_ONLY_MAX",
+      "hpr_trigger": "HPR_C_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 3,
+      "unique_AB_count": 5,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "4b031bb236b7533fa34e52ff921a7df25e93f49d5aaa93d4d1a5ca4ed1085bc5",
+      "domain": "prod",
+      "novelty": "N1",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "A_ONLY_MAX",
+      "hpr_trigger": "HPR_B_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 5,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "660e0fb979ff1420e950eab9e08fa728e885fcb3f6914057cbaeb7251608b2f0",
+      "domain": "ad",
+      "novelty": "N1",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "6b205292c46e1d538042f52de4d3e56b72ef15008602c1b1af2fcdf87c7ed1e3",
+      "domain": "video",
+      "novelty": "N1",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "6cdc3c3c4426ac091845db8786c0b21011d14aa389c516d852a5d59ca432147a",
+      "domain": "video",
+      "novelty": "N2",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": false,
+      "group_class": "AB_ONLY_MAX",
+      "hpr_trigger": "HPR_C_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 7,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "8041ac8d215b4fcf657cd7a262bad3b11b07e778f9b95ca3aa698935befabda4",
+      "domain": "living",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "8b89f551b263c1cf2f10b384d3caa048f4b0848bcbbeae9f3878f769eb3583bd",
+      "domain": "video",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "A_ONLY_MAX",
+      "hpr_trigger": "HPR_B_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "8bc7880620849e6896b6d5a0ceeb119ab1ffeb21ae6c9830b6ba7e00c4755b57",
+      "domain": "video",
+      "novelty": "H",
+      "K": 2,
+      "K_bucket": "K=2",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "ad2b8241ddf6ac36170084aaff2ca6731beb1fd9b7dbb34ff18be0c633e6b895",
+      "domain": "prod",
+      "novelty": "H",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "ae85d8af7042c884eddd0a15a2b010b55d55b8ba15c38727a13c0b50fbc550c7",
+      "domain": "prod",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 8,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "b5da280b9e163c44fa30253682118d7a0bd36b529badd6537c23be91f8251b3f",
+      "domain": "prod",
+      "novelty": "N2",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": false,
+      "group_class": "AB_ONLY_MAX",
+      "hpr_trigger": "HPR_C_TRIGGER",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "c255d273fa269700dfb12f0387b8b0bac9e14919cff861036d9cb5dfe1e49473",
+      "domain": "living",
+      "novelty": "N1",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 7,
+      "unique_AB_count": 8,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    },
+    {
+      "group_id": "c641306d97e5dd5ea83650c90d72d2c0f00f023d5782339866e6977ef9afcd35",
+      "domain": "living",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": true,
+      "ANY_AB_HIT": true,
+      "ANY_EXACT": true,
+      "group_class": "EXACT_REACHED",
+      "hpr_trigger": "HPR_NONE",
+      "legacy_zero_std": false,
+      "legacy_uniform_type": null,
+      "unique_raw_completion_count": 7,
+      "unique_valid_ABC_count": 7,
+      "unique_A_count": 4,
+      "unique_AB_count": 6,
+      "all_8_same_completion": false,
+      "any_history_copy": true,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": true
+    },
+    {
+      "group_id": "e2af7b8b78f573e25df5760a7e0db312d20a2514ecf042a0da0c2f8bfe43e386",
+      "domain": "ad",
+      "novelty": "N0",
+      "K": 1,
+      "K_bucket": "K=1",
+      "ANY_VALID": true,
+      "ANY_A_HIT": false,
+      "ANY_AB_HIT": false,
+      "ANY_EXACT": false,
+      "group_class": "NO_A_REACHED",
+      "hpr_trigger": "HPR_A_TRIGGER",
+      "legacy_zero_std": true,
+      "legacy_uniform_type": "all A_FAIL",
+      "unique_raw_completion_count": 8,
+      "unique_valid_ABC_count": 8,
+      "unique_A_count": 4,
+      "unique_AB_count": 5,
+      "all_8_same_completion": false,
+      "any_history_copy": false,
+      "any_correct_history_copy": false,
+      "any_wrong_history_copy": false
+    }
+  ],
+  "aggregate": {
+    "candidate_frontier": {
+      "overall": {
+        "overall": {
+          "N": 160,
+          "format_valid": {
+            "count": 160,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 13,
+            "rate": 0.08125
+          },
+          "AB_hit": {
+            "count": 10,
+            "rate": 0.0625
+          },
+          "exact": {
+            "count": 2,
+            "rate": 0.0125
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 147,
+              "rate": 0.91875
+            },
+            "B_FAIL": {
+              "count": 3,
+              "rate": 0.01875
+            },
+            "C_FAIL": {
+              "count": 8,
+              "rate": 0.05
+            },
+            "EXACT": {
+              "count": 2,
+              "rate": 0.0125
+            }
+          }
+        }
+      },
+      "domain": {
+        "ad": {
+          "N": 40,
+          "format_valid": {
+            "count": 40,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 4,
+            "rate": 0.1
+          },
+          "AB_hit": {
+            "count": 4,
+            "rate": 0.1
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 36,
+              "rate": 0.9
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 4,
+              "rate": 0.1
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living": {
+          "N": 40,
+          "format_valid": {
+            "count": 40,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 4,
+            "rate": 0.1
+          },
+          "AB_hit": {
+            "count": 3,
+            "rate": 0.075
+          },
+          "exact": {
+            "count": 2,
+            "rate": 0.05
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 36,
+              "rate": 0.9
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.025
+            },
+            "C_FAIL": {
+              "count": 1,
+              "rate": 0.025
+            },
+            "EXACT": {
+              "count": 2,
+              "rate": 0.05
+            }
+          }
+        },
+        "prod": {
+          "N": 40,
+          "format_valid": {
+            "count": 40,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 2,
+            "rate": 0.05
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.025
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 38,
+              "rate": 0.95
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.025
+            },
+            "C_FAIL": {
+              "count": 1,
+              "rate": 0.025
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video": {
+          "N": 40,
+          "format_valid": {
+            "count": 40,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 3,
+            "rate": 0.075
+          },
+          "AB_hit": {
+            "count": 2,
+            "rate": 0.05
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 37,
+              "rate": 0.925
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.025
+            },
+            "C_FAIL": {
+              "count": 2,
+              "rate": 0.05
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "novelty": {
+        "H": {
+          "N": 32,
+          "format_valid": {
+            "count": 32,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.03125
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.03125
+          },
+          "exact": {
+            "count": 1,
+            "rate": 0.03125
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 31,
+              "rate": 0.96875
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 1,
+              "rate": 0.03125
+            }
+          }
+        },
+        "N0": {
+          "N": 64,
+          "format_valid": {
+            "count": 64,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 2,
+            "rate": 0.03125
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.015625
+          },
+          "exact": {
+            "count": 1,
+            "rate": 0.015625
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 62,
+              "rate": 0.96875
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.015625
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 1,
+              "rate": 0.015625
+            }
+          }
+        },
+        "N1": {
+          "N": 32,
+          "format_valid": {
+            "count": 32,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.03125
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 31,
+              "rate": 0.96875
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.03125
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "N2": {
+          "N": 32,
+          "format_valid": {
+            "count": 32,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 9,
+            "rate": 0.28125
+          },
+          "AB_hit": {
+            "count": 8,
+            "rate": 0.25
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 23,
+              "rate": 0.71875
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.03125
+            },
+            "C_FAIL": {
+              "count": 8,
+              "rate": 0.25
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "K_bucket": {
+        "K=1": {
+          "N": 152,
+          "format_valid": {
+            "count": 152,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 13,
+            "rate": 0.08552632
+          },
+          "AB_hit": {
+            "count": 10,
+            "rate": 0.06578947
+          },
+          "exact": {
+            "count": 2,
+            "rate": 0.01315789
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 139,
+              "rate": 0.91447368
+            },
+            "B_FAIL": {
+              "count": 3,
+              "rate": 0.01973684
+            },
+            "C_FAIL": {
+              "count": 8,
+              "rate": 0.05263158
+            },
+            "EXACT": {
+              "count": 2,
+              "rate": 0.01315789
+            }
+          }
+        },
+        "K=2": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "domain_novelty": {
+        "ad|H": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N0": {
+          "N": 16,
+          "format_valid": {
+            "count": 16,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 16,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N1": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N2": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 4,
+            "rate": 0.5
+          },
+          "AB_hit": {
+            "count": 4,
+            "rate": 0.5
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 4,
+              "rate": 0.5
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 4,
+              "rate": 0.5
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living|H": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "exact": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 7,
+              "rate": 0.875
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 1,
+              "rate": 0.125
+            }
+          }
+        },
+        "living|N0": {
+          "N": 16,
+          "format_valid": {
+            "count": 16,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.0625
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.0625
+          },
+          "exact": {
+            "count": 1,
+            "rate": 0.0625
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 15,
+              "rate": 0.9375
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 1,
+              "rate": 0.0625
+            }
+          }
+        },
+        "living|N1": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living|N2": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 2,
+            "rate": 0.25
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 6,
+              "rate": 0.75
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "C_FAIL": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|H": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N0": {
+          "N": 16,
+          "format_valid": {
+            "count": 16,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 16,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N1": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 7,
+              "rate": 0.875
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N2": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "AB_hit": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 7,
+              "rate": 0.875
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|H": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N0": {
+          "N": 16,
+          "format_valid": {
+            "count": 16,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 1,
+            "rate": 0.0625
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 15,
+              "rate": 0.9375
+            },
+            "B_FAIL": {
+              "count": 1,
+              "rate": 0.0625
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N1": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "AB_hit": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 8,
+              "rate": 1.0
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N2": {
+          "N": 8,
+          "format_valid": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "A_hit": {
+            "count": 2,
+            "rate": 0.25
+          },
+          "AB_hit": {
+            "count": 2,
+            "rate": 0.25
+          },
+          "exact": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "frontier": {
+            "INVALID_FORMAT": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_FAIL": {
+              "count": 6,
+              "rate": 0.75
+            },
+            "B_FAIL": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "C_FAIL": {
+              "count": 2,
+              "rate": 0.25
+            },
+            "EXACT": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      }
+    },
+    "group_reach": {
+      "overall": {
+        "overall": {
+          "N": 20,
+          "ANY_VALID": {
+            "count": 20,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 8,
+            "rate": 0.4
+          },
+          "ANY_AB_HIT": {
+            "count": 6,
+            "rate": 0.3
+          },
+          "ANY_EXACT": {
+            "count": 2,
+            "rate": 0.1
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 12,
+              "rate": 0.6
+            },
+            "A_ONLY_MAX": {
+              "count": 2,
+              "rate": 0.1
+            },
+            "AB_ONLY_MAX": {
+              "count": 4,
+              "rate": 0.2
+            },
+            "EXACT_REACHED": {
+              "count": 2,
+              "rate": 0.1
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 12,
+              "rate": 0.6
+            },
+            "HPR_B_TRIGGER": {
+              "count": 2,
+              "rate": 0.1
+            },
+            "HPR_C_TRIGGER": {
+              "count": 4,
+              "rate": 0.2
+            },
+            "HPR_NONE": {
+              "count": 2,
+              "rate": 0.1
+            }
+          }
+        }
+      },
+      "domain": {
+        "ad": {
+          "N": 5,
+          "ANY_VALID": {
+            "count": 5,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 0.2
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.2
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 4,
+              "rate": 0.8
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 4,
+              "rate": 0.8
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living": {
+          "N": 5,
+          "ANY_VALID": {
+            "count": 5,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 3,
+            "rate": 0.6
+          },
+          "ANY_AB_HIT": {
+            "count": 3,
+            "rate": 0.6
+          },
+          "ANY_EXACT": {
+            "count": 2,
+            "rate": 0.4
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 2,
+              "rate": 0.4
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "EXACT_REACHED": {
+              "count": 2,
+              "rate": 0.4
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 2,
+              "rate": 0.4
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_NONE": {
+              "count": 2,
+              "rate": 0.4
+            }
+          }
+        },
+        "prod": {
+          "N": 5,
+          "ANY_VALID": {
+            "count": 5,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 2,
+            "rate": 0.4
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.2
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 3,
+              "rate": 0.6
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 3,
+              "rate": 0.6
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video": {
+          "N": 5,
+          "ANY_VALID": {
+            "count": 5,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 2,
+            "rate": 0.4
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.2
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 3,
+              "rate": 0.6
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 3,
+              "rate": 0.6
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 0.2
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "novelty": {
+        "H": {
+          "N": 4,
+          "ANY_VALID": {
+            "count": 4,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 0.25
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.25
+          },
+          "ANY_EXACT": {
+            "count": 1,
+            "rate": 0.25
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 3,
+              "rate": 0.75
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 1,
+              "rate": 0.25
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 3,
+              "rate": 0.75
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 1,
+              "rate": 0.25
+            }
+          }
+        },
+        "N0": {
+          "N": 8,
+          "ANY_VALID": {
+            "count": 8,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 2,
+            "rate": 0.25
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "ANY_EXACT": {
+            "count": 1,
+            "rate": 0.125
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 6,
+              "rate": 0.75
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 1,
+              "rate": 0.125
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 6,
+              "rate": 0.75
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 0.125
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 1,
+              "rate": 0.125
+            }
+          }
+        },
+        "N1": {
+          "N": 4,
+          "ANY_VALID": {
+            "count": 4,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 0.25
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 3,
+              "rate": 0.75
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.25
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 3,
+              "rate": 0.75
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 0.25
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "N2": {
+          "N": 4,
+          "ANY_VALID": {
+            "count": 4,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 4,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 4,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 4,
+              "rate": 1.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 4,
+              "rate": 1.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "K_bucket": {
+        "K=1": {
+          "N": 19,
+          "ANY_VALID": {
+            "count": 19,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 8,
+            "rate": 0.42105263
+          },
+          "ANY_AB_HIT": {
+            "count": 6,
+            "rate": 0.31578947
+          },
+          "ANY_EXACT": {
+            "count": 2,
+            "rate": 0.10526316
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 11,
+              "rate": 0.57894737
+            },
+            "A_ONLY_MAX": {
+              "count": 2,
+              "rate": 0.10526316
+            },
+            "AB_ONLY_MAX": {
+              "count": 4,
+              "rate": 0.21052632
+            },
+            "EXACT_REACHED": {
+              "count": 2,
+              "rate": 0.10526316
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 11,
+              "rate": 0.57894737
+            },
+            "HPR_B_TRIGGER": {
+              "count": 2,
+              "rate": 0.10526316
+            },
+            "HPR_C_TRIGGER": {
+              "count": 4,
+              "rate": 0.21052632
+            },
+            "HPR_NONE": {
+              "count": 2,
+              "rate": 0.10526316
+            }
+          }
+        },
+        "K=2": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      },
+      "domain_novelty": {
+        "ad|H": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N0": {
+          "N": 2,
+          "ANY_VALID": {
+            "count": 2,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 2,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 2,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N1": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "ad|N2": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living|H": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 1,
+              "rate": 1.0
+            }
+          }
+        },
+        "living|N0": {
+          "N": 2,
+          "ANY_VALID": {
+            "count": 2,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 0.5
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 0.5
+          },
+          "ANY_EXACT": {
+            "count": 1,
+            "rate": 0.5
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 1,
+              "rate": 0.5
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 1,
+              "rate": 0.5
+            }
+          }
+        },
+        "living|N1": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "living|N2": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|H": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N0": {
+          "N": 2,
+          "ANY_VALID": {
+            "count": 2,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 2,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 2,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N1": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "prod|N2": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|H": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N0": {
+          "N": 2,
+          "ANY_VALID": {
+            "count": 2,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 0.5
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "A_ONLY_MAX": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "HPR_B_TRIGGER": {
+              "count": 1,
+              "rate": 0.5
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N1": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_AB_HIT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        },
+        "video|N2": {
+          "N": 1,
+          "ANY_VALID": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_A_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_AB_HIT": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "ANY_EXACT": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "taxonomy": {
+            "ALL_INVALID": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "NO_A_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "A_ONLY_MAX": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "AB_ONLY_MAX": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "EXACT_REACHED": {
+              "count": 0,
+              "rate": 0.0
+            }
+          },
+          "hpr": {
+            "HPR_A_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_B_TRIGGER": {
+              "count": 0,
+              "rate": 0.0
+            },
+            "HPR_C_TRIGGER": {
+              "count": 1,
+              "rate": 1.0
+            },
+            "HPR_NONE": {
+              "count": 0,
+              "rate": 0.0
+            }
+          }
+        }
+      }
+    },
+    "legacy_zero_std": {
+      "groups": 20,
+      "zero_std_groups": 12,
+      "zero_std_rate": 0.6,
+      "uniform_types": {
+        "all A_FAIL": 12
+      }
+    },
+    "diversity": {
+      "unique_raw_completion_count": {
+        "mean": 7.95,
+        "median": 8.0
+      },
+      "unique_valid_ABC_count": {
+        "mean": 7.95,
+        "median": 8.0
+      },
+      "unique_A_count": {
+        "mean": 6.55,
+        "median": 7.0
+      },
+      "unique_AB_count": {
+        "mean": 7.5,
+        "median": 8.0
+      },
+      "all_8_same_completion": {
+        "count": 0,
+        "rate": 0.0
+      }
+    },
+    "history_copy": {
+      "overall": {
+        "valid_candidates": 160,
+        "history_copy": {
+          "count": 19,
+          "rate": 0.11875
+        },
+        "correct_history_copy": {
+          "count": 1,
+          "rate": 0.00625
+        },
+        "wrong_history_copy": {
+          "count": 18,
+          "rate": 0.1125
+        },
+        "groups": 20,
+        "group_any_history_copy": {
+          "count": 10,
+          "rate": 0.5
+        },
+        "group_any_wrong_history_copy": {
+          "count": 10,
+          "rate": 0.5
+        }
+      },
+      "domain": {
+        "ad": {
+          "valid_candidates": 40,
+          "history_copy": {
+            "count": 5,
+            "rate": 0.125
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 5,
+            "rate": 0.125
+          },
+          "groups": 5,
+          "group_any_history_copy": {
+            "count": 3,
+            "rate": 0.6
+          },
+          "group_any_wrong_history_copy": {
+            "count": 3,
+            "rate": 0.6
+          }
+        },
+        "living": {
+          "valid_candidates": 40,
+          "history_copy": {
+            "count": 9,
+            "rate": 0.225
+          },
+          "correct_history_copy": {
+            "count": 1,
+            "rate": 0.025
+          },
+          "wrong_history_copy": {
+            "count": 8,
+            "rate": 0.2
+          },
+          "groups": 5,
+          "group_any_history_copy": {
+            "count": 3,
+            "rate": 0.6
+          },
+          "group_any_wrong_history_copy": {
+            "count": 3,
+            "rate": 0.6
+          }
+        },
+        "prod": {
+          "valid_candidates": 40,
+          "history_copy": {
+            "count": 5,
+            "rate": 0.125
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 5,
+            "rate": 0.125
+          },
+          "groups": 5,
+          "group_any_history_copy": {
+            "count": 4,
+            "rate": 0.8
+          },
+          "group_any_wrong_history_copy": {
+            "count": 4,
+            "rate": 0.8
+          }
+        },
+        "video": {
+          "valid_candidates": 40,
+          "history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "groups": 5,
+          "group_any_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "group_any_wrong_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "novelty": {
+        "H": {
+          "valid_candidates": 32,
+          "history_copy": {
+            "count": 4,
+            "rate": 0.125
+          },
+          "correct_history_copy": {
+            "count": 1,
+            "rate": 0.03125
+          },
+          "wrong_history_copy": {
+            "count": 3,
+            "rate": 0.09375
+          },
+          "groups": 4,
+          "group_any_history_copy": {
+            "count": 3,
+            "rate": 0.75
+          },
+          "group_any_wrong_history_copy": {
+            "count": 3,
+            "rate": 0.75
+          }
+        },
+        "N0": {
+          "valid_candidates": 64,
+          "history_copy": {
+            "count": 6,
+            "rate": 0.09375
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 6,
+            "rate": 0.09375
+          },
+          "groups": 8,
+          "group_any_history_copy": {
+            "count": 2,
+            "rate": 0.25
+          },
+          "group_any_wrong_history_copy": {
+            "count": 2,
+            "rate": 0.25
+          }
+        },
+        "N1": {
+          "valid_candidates": 32,
+          "history_copy": {
+            "count": 3,
+            "rate": 0.09375
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 3,
+            "rate": 0.09375
+          },
+          "groups": 4,
+          "group_any_history_copy": {
+            "count": 2,
+            "rate": 0.5
+          },
+          "group_any_wrong_history_copy": {
+            "count": 2,
+            "rate": 0.5
+          }
+        },
+        "N2": {
+          "valid_candidates": 32,
+          "history_copy": {
+            "count": 6,
+            "rate": 0.1875
+          },
+          "correct_history_copy": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "wrong_history_copy": {
+            "count": 6,
+            "rate": 0.1875
+          },
+          "groups": 4,
+          "group_any_history_copy": {
+            "count": 3,
+            "rate": 0.75
+          },
+          "group_any_wrong_history_copy": {
+            "count": 3,
+            "rate": 0.75
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "groups": 4096,
+  "zero_std_groups": 2651,
+  "zero_std_rate": 0.6472168,
+  "uniform_types": {
+    "all A_FAIL": 2649,
+    "all B_FAIL": 2
+  }
+}

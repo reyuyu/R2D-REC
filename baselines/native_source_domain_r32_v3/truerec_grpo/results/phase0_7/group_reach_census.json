@@ -1,0 +1,1782 @@
+{
+  "overall": {
+    "overall": {
+      "N": 4096,
+      "ANY_VALID": {
+        "count": 4096,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 1445,
+        "rate": 0.3527832
+      },
+      "ANY_AB_HIT": {
+        "count": 433,
+        "rate": 0.10571289
+      },
+      "ANY_EXACT": {
+        "count": 214,
+        "rate": 0.05224609
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 2651,
+          "rate": 0.6472168
+        },
+        "A_ONLY_MAX": {
+          "count": 1012,
+          "rate": 0.24707031
+        },
+        "AB_ONLY_MAX": {
+          "count": 219,
+          "rate": 0.0534668
+        },
+        "EXACT_REACHED": {
+          "count": 214,
+          "rate": 0.05224609
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 2651,
+          "rate": 0.6472168
+        },
+        "HPR_B_TRIGGER": {
+          "count": 1012,
+          "rate": 0.24707031
+        },
+        "HPR_C_TRIGGER": {
+          "count": 219,
+          "rate": 0.0534668
+        },
+        "HPR_NONE": {
+          "count": 214,
+          "rate": 0.05224609
+        }
+      }
+    }
+  },
+  "domain": {
+    "ad": {
+      "N": 1024,
+      "ANY_VALID": {
+        "count": 1024,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 385,
+        "rate": 0.37597656
+      },
+      "ANY_AB_HIT": {
+        "count": 130,
+        "rate": 0.12695312
+      },
+      "ANY_EXACT": {
+        "count": 55,
+        "rate": 0.05371094
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 639,
+          "rate": 0.62402344
+        },
+        "A_ONLY_MAX": {
+          "count": 255,
+          "rate": 0.24902344
+        },
+        "AB_ONLY_MAX": {
+          "count": 75,
+          "rate": 0.07324219
+        },
+        "EXACT_REACHED": {
+          "count": 55,
+          "rate": 0.05371094
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 639,
+          "rate": 0.62402344
+        },
+        "HPR_B_TRIGGER": {
+          "count": 255,
+          "rate": 0.24902344
+        },
+        "HPR_C_TRIGGER": {
+          "count": 75,
+          "rate": 0.07324219
+        },
+        "HPR_NONE": {
+          "count": 55,
+          "rate": 0.05371094
+        }
+      }
+    },
+    "living": {
+      "N": 1024,
+      "ANY_VALID": {
+        "count": 1024,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 465,
+        "rate": 0.45410156
+      },
+      "ANY_AB_HIT": {
+        "count": 133,
+        "rate": 0.12988281
+      },
+      "ANY_EXACT": {
+        "count": 42,
+        "rate": 0.04101562
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 559,
+          "rate": 0.54589844
+        },
+        "A_ONLY_MAX": {
+          "count": 332,
+          "rate": 0.32421875
+        },
+        "AB_ONLY_MAX": {
+          "count": 91,
+          "rate": 0.08886719
+        },
+        "EXACT_REACHED": {
+          "count": 42,
+          "rate": 0.04101562
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 559,
+          "rate": 0.54589844
+        },
+        "HPR_B_TRIGGER": {
+          "count": 332,
+          "rate": 0.32421875
+        },
+        "HPR_C_TRIGGER": {
+          "count": 91,
+          "rate": 0.08886719
+        },
+        "HPR_NONE": {
+          "count": 42,
+          "rate": 0.04101562
+        }
+      }
+    },
+    "prod": {
+      "N": 1024,
+      "ANY_VALID": {
+        "count": 1024,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 276,
+        "rate": 0.26953125
+      },
+      "ANY_AB_HIT": {
+        "count": 113,
+        "rate": 0.11035156
+      },
+      "ANY_EXACT": {
+        "count": 87,
+        "rate": 0.08496094
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 748,
+          "rate": 0.73046875
+        },
+        "A_ONLY_MAX": {
+          "count": 163,
+          "rate": 0.15917969
+        },
+        "AB_ONLY_MAX": {
+          "count": 26,
+          "rate": 0.02539062
+        },
+        "EXACT_REACHED": {
+          "count": 87,
+          "rate": 0.08496094
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 748,
+          "rate": 0.73046875
+        },
+        "HPR_B_TRIGGER": {
+          "count": 163,
+          "rate": 0.15917969
+        },
+        "HPR_C_TRIGGER": {
+          "count": 26,
+          "rate": 0.02539062
+        },
+        "HPR_NONE": {
+          "count": 87,
+          "rate": 0.08496094
+        }
+      }
+    },
+    "video": {
+      "N": 1024,
+      "ANY_VALID": {
+        "count": 1024,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 319,
+        "rate": 0.31152344
+      },
+      "ANY_AB_HIT": {
+        "count": 57,
+        "rate": 0.05566406
+      },
+      "ANY_EXACT": {
+        "count": 30,
+        "rate": 0.02929688
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 705,
+          "rate": 0.68847656
+        },
+        "A_ONLY_MAX": {
+          "count": 262,
+          "rate": 0.25585938
+        },
+        "AB_ONLY_MAX": {
+          "count": 27,
+          "rate": 0.02636719
+        },
+        "EXACT_REACHED": {
+          "count": 30,
+          "rate": 0.02929688
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 705,
+          "rate": 0.68847656
+        },
+        "HPR_B_TRIGGER": {
+          "count": 262,
+          "rate": 0.25585938
+        },
+        "HPR_C_TRIGGER": {
+          "count": 27,
+          "rate": 0.02636719
+        },
+        "HPR_NONE": {
+          "count": 30,
+          "rate": 0.02929688
+        }
+      }
+    }
+  },
+  "novelty": {
+    "H": {
+      "N": 464,
+      "ANY_VALID": {
+        "count": 464,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 271,
+        "rate": 0.58405172
+      },
+      "ANY_AB_HIT": {
+        "count": 154,
+        "rate": 0.33189655
+      },
+      "ANY_EXACT": {
+        "count": 111,
+        "rate": 0.23922414
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 193,
+          "rate": 0.41594828
+        },
+        "A_ONLY_MAX": {
+          "count": 117,
+          "rate": 0.25215517
+        },
+        "AB_ONLY_MAX": {
+          "count": 43,
+          "rate": 0.09267241
+        },
+        "EXACT_REACHED": {
+          "count": 111,
+          "rate": 0.23922414
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 193,
+          "rate": 0.41594828
+        },
+        "HPR_B_TRIGGER": {
+          "count": 117,
+          "rate": 0.25215517
+        },
+        "HPR_C_TRIGGER": {
+          "count": 43,
+          "rate": 0.09267241
+        },
+        "HPR_NONE": {
+          "count": 111,
+          "rate": 0.23922414
+        }
+      }
+    },
+    "N0": {
+      "N": 1832,
+      "ANY_VALID": {
+        "count": 1832,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 280,
+        "rate": 0.15283843
+      },
+      "ANY_AB_HIT": {
+        "count": 58,
+        "rate": 0.03165939
+      },
+      "ANY_EXACT": {
+        "count": 17,
+        "rate": 0.00927948
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 1552,
+          "rate": 0.84716157
+        },
+        "A_ONLY_MAX": {
+          "count": 222,
+          "rate": 0.12117904
+        },
+        "AB_ONLY_MAX": {
+          "count": 41,
+          "rate": 0.02237991
+        },
+        "EXACT_REACHED": {
+          "count": 17,
+          "rate": 0.00927948
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 1552,
+          "rate": 0.84716157
+        },
+        "HPR_B_TRIGGER": {
+          "count": 222,
+          "rate": 0.12117904
+        },
+        "HPR_C_TRIGGER": {
+          "count": 41,
+          "rate": 0.02237991
+        },
+        "HPR_NONE": {
+          "count": 17,
+          "rate": 0.00927948
+        }
+      }
+    },
+    "N1": {
+      "N": 1310,
+      "ANY_VALID": {
+        "count": 1310,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 587,
+        "rate": 0.4480916
+      },
+      "ANY_AB_HIT": {
+        "count": 82,
+        "rate": 0.06259542
+      },
+      "ANY_EXACT": {
+        "count": 54,
+        "rate": 0.04122137
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 723,
+          "rate": 0.5519084
+        },
+        "A_ONLY_MAX": {
+          "count": 505,
+          "rate": 0.38549618
+        },
+        "AB_ONLY_MAX": {
+          "count": 28,
+          "rate": 0.02137405
+        },
+        "EXACT_REACHED": {
+          "count": 54,
+          "rate": 0.04122137
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 723,
+          "rate": 0.5519084
+        },
+        "HPR_B_TRIGGER": {
+          "count": 505,
+          "rate": 0.38549618
+        },
+        "HPR_C_TRIGGER": {
+          "count": 28,
+          "rate": 0.02137405
+        },
+        "HPR_NONE": {
+          "count": 54,
+          "rate": 0.04122137
+        }
+      }
+    },
+    "N2": {
+      "N": 490,
+      "ANY_VALID": {
+        "count": 490,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 307,
+        "rate": 0.62653061
+      },
+      "ANY_AB_HIT": {
+        "count": 139,
+        "rate": 0.28367347
+      },
+      "ANY_EXACT": {
+        "count": 32,
+        "rate": 0.06530612
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 183,
+          "rate": 0.37346939
+        },
+        "A_ONLY_MAX": {
+          "count": 168,
+          "rate": 0.34285714
+        },
+        "AB_ONLY_MAX": {
+          "count": 107,
+          "rate": 0.21836735
+        },
+        "EXACT_REACHED": {
+          "count": 32,
+          "rate": 0.06530612
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 183,
+          "rate": 0.37346939
+        },
+        "HPR_B_TRIGGER": {
+          "count": 168,
+          "rate": 0.34285714
+        },
+        "HPR_C_TRIGGER": {
+          "count": 107,
+          "rate": 0.21836735
+        },
+        "HPR_NONE": {
+          "count": 32,
+          "rate": 0.06530612
+        }
+      }
+    }
+  },
+  "K_bucket": {
+    "K=1": {
+      "N": 2957,
+      "ANY_VALID": {
+        "count": 2957,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 916,
+        "rate": 0.30977342
+      },
+      "ANY_AB_HIT": {
+        "count": 299,
+        "rate": 0.101116
+      },
+      "ANY_EXACT": {
+        "count": 144,
+        "rate": 0.048698
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 2041,
+          "rate": 0.69022658
+        },
+        "A_ONLY_MAX": {
+          "count": 617,
+          "rate": 0.20865742
+        },
+        "AB_ONLY_MAX": {
+          "count": 155,
+          "rate": 0.05241799
+        },
+        "EXACT_REACHED": {
+          "count": 144,
+          "rate": 0.048698
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 2041,
+          "rate": 0.69022658
+        },
+        "HPR_B_TRIGGER": {
+          "count": 617,
+          "rate": 0.20865742
+        },
+        "HPR_C_TRIGGER": {
+          "count": 155,
+          "rate": 0.05241799
+        },
+        "HPR_NONE": {
+          "count": 144,
+          "rate": 0.048698
+        }
+      }
+    },
+    "K=11+": {
+      "N": 70,
+      "ANY_VALID": {
+        "count": 70,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 52,
+        "rate": 0.74285714
+      },
+      "ANY_AB_HIT": {
+        "count": 13,
+        "rate": 0.18571429
+      },
+      "ANY_EXACT": {
+        "count": 7,
+        "rate": 0.1
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 18,
+          "rate": 0.25714286
+        },
+        "A_ONLY_MAX": {
+          "count": 39,
+          "rate": 0.55714286
+        },
+        "AB_ONLY_MAX": {
+          "count": 6,
+          "rate": 0.08571429
+        },
+        "EXACT_REACHED": {
+          "count": 7,
+          "rate": 0.1
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 18,
+          "rate": 0.25714286
+        },
+        "HPR_B_TRIGGER": {
+          "count": 39,
+          "rate": 0.55714286
+        },
+        "HPR_C_TRIGGER": {
+          "count": 6,
+          "rate": 0.08571429
+        },
+        "HPR_NONE": {
+          "count": 7,
+          "rate": 0.1
+        }
+      }
+    },
+    "K=2": {
+      "N": 481,
+      "ANY_VALID": {
+        "count": 481,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 199,
+        "rate": 0.41372141
+      },
+      "ANY_AB_HIT": {
+        "count": 60,
+        "rate": 0.12474012
+      },
+      "ANY_EXACT": {
+        "count": 34,
+        "rate": 0.07068607
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 282,
+          "rate": 0.58627859
+        },
+        "A_ONLY_MAX": {
+          "count": 139,
+          "rate": 0.28898129
+        },
+        "AB_ONLY_MAX": {
+          "count": 26,
+          "rate": 0.05405405
+        },
+        "EXACT_REACHED": {
+          "count": 34,
+          "rate": 0.07068607
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 282,
+          "rate": 0.58627859
+        },
+        "HPR_B_TRIGGER": {
+          "count": 139,
+          "rate": 0.28898129
+        },
+        "HPR_C_TRIGGER": {
+          "count": 26,
+          "rate": 0.05405405
+        },
+        "HPR_NONE": {
+          "count": 34,
+          "rate": 0.07068607
+        }
+      }
+    },
+    "K=3-5": {
+      "N": 430,
+      "ANY_VALID": {
+        "count": 430,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 187,
+        "rate": 0.43488372
+      },
+      "ANY_AB_HIT": {
+        "count": 40,
+        "rate": 0.09302326
+      },
+      "ANY_EXACT": {
+        "count": 18,
+        "rate": 0.04186047
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 243,
+          "rate": 0.56511628
+        },
+        "A_ONLY_MAX": {
+          "count": 147,
+          "rate": 0.34186047
+        },
+        "AB_ONLY_MAX": {
+          "count": 22,
+          "rate": 0.05116279
+        },
+        "EXACT_REACHED": {
+          "count": 18,
+          "rate": 0.04186047
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 243,
+          "rate": 0.56511628
+        },
+        "HPR_B_TRIGGER": {
+          "count": 147,
+          "rate": 0.34186047
+        },
+        "HPR_C_TRIGGER": {
+          "count": 22,
+          "rate": 0.05116279
+        },
+        "HPR_NONE": {
+          "count": 18,
+          "rate": 0.04186047
+        }
+      }
+    },
+    "K=6-10": {
+      "N": 158,
+      "ANY_VALID": {
+        "count": 158,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 91,
+        "rate": 0.57594937
+      },
+      "ANY_AB_HIT": {
+        "count": 21,
+        "rate": 0.13291139
+      },
+      "ANY_EXACT": {
+        "count": 11,
+        "rate": 0.06962025
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 67,
+          "rate": 0.42405063
+        },
+        "A_ONLY_MAX": {
+          "count": 70,
+          "rate": 0.44303797
+        },
+        "AB_ONLY_MAX": {
+          "count": 10,
+          "rate": 0.06329114
+        },
+        "EXACT_REACHED": {
+          "count": 11,
+          "rate": 0.06962025
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 67,
+          "rate": 0.42405063
+        },
+        "HPR_B_TRIGGER": {
+          "count": 70,
+          "rate": 0.44303797
+        },
+        "HPR_C_TRIGGER": {
+          "count": 10,
+          "rate": 0.06329114
+        },
+        "HPR_NONE": {
+          "count": 11,
+          "rate": 0.06962025
+        }
+      }
+    }
+  },
+  "domain_novelty": {
+    "ad|H": {
+      "N": 130,
+      "ANY_VALID": {
+        "count": 130,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 73,
+        "rate": 0.56153846
+      },
+      "ANY_AB_HIT": {
+        "count": 44,
+        "rate": 0.33846154
+      },
+      "ANY_EXACT": {
+        "count": 29,
+        "rate": 0.22307692
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 57,
+          "rate": 0.43846154
+        },
+        "A_ONLY_MAX": {
+          "count": 29,
+          "rate": 0.22307692
+        },
+        "AB_ONLY_MAX": {
+          "count": 15,
+          "rate": 0.11538462
+        },
+        "EXACT_REACHED": {
+          "count": 29,
+          "rate": 0.22307692
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 57,
+          "rate": 0.43846154
+        },
+        "HPR_B_TRIGGER": {
+          "count": 29,
+          "rate": 0.22307692
+        },
+        "HPR_C_TRIGGER": {
+          "count": 15,
+          "rate": 0.11538462
+        },
+        "HPR_NONE": {
+          "count": 29,
+          "rate": 0.22307692
+        }
+      }
+    },
+    "ad|N0": {
+      "N": 319,
+      "ANY_VALID": {
+        "count": 319,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 21,
+        "rate": 0.06583072
+      },
+      "ANY_AB_HIT": {
+        "count": 6,
+        "rate": 0.01880878
+      },
+      "ANY_EXACT": {
+        "count": 4,
+        "rate": 0.01253918
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 298,
+          "rate": 0.93416928
+        },
+        "A_ONLY_MAX": {
+          "count": 15,
+          "rate": 0.04702194
+        },
+        "AB_ONLY_MAX": {
+          "count": 2,
+          "rate": 0.00626959
+        },
+        "EXACT_REACHED": {
+          "count": 4,
+          "rate": 0.01253918
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 298,
+          "rate": 0.93416928
+        },
+        "HPR_B_TRIGGER": {
+          "count": 15,
+          "rate": 0.04702194
+        },
+        "HPR_C_TRIGGER": {
+          "count": 2,
+          "rate": 0.00626959
+        },
+        "HPR_NONE": {
+          "count": 4,
+          "rate": 0.01253918
+        }
+      }
+    },
+    "ad|N1": {
+      "N": 378,
+      "ANY_VALID": {
+        "count": 378,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 181,
+        "rate": 0.47883598
+      },
+      "ANY_AB_HIT": {
+        "count": 24,
+        "rate": 0.06349206
+      },
+      "ANY_EXACT": {
+        "count": 17,
+        "rate": 0.04497354
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 197,
+          "rate": 0.52116402
+        },
+        "A_ONLY_MAX": {
+          "count": 157,
+          "rate": 0.41534392
+        },
+        "AB_ONLY_MAX": {
+          "count": 7,
+          "rate": 0.01851852
+        },
+        "EXACT_REACHED": {
+          "count": 17,
+          "rate": 0.04497354
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 197,
+          "rate": 0.52116402
+        },
+        "HPR_B_TRIGGER": {
+          "count": 157,
+          "rate": 0.41534392
+        },
+        "HPR_C_TRIGGER": {
+          "count": 7,
+          "rate": 0.01851852
+        },
+        "HPR_NONE": {
+          "count": 17,
+          "rate": 0.04497354
+        }
+      }
+    },
+    "ad|N2": {
+      "N": 197,
+      "ANY_VALID": {
+        "count": 197,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 110,
+        "rate": 0.55837563
+      },
+      "ANY_AB_HIT": {
+        "count": 56,
+        "rate": 0.28426396
+      },
+      "ANY_EXACT": {
+        "count": 5,
+        "rate": 0.02538071
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 87,
+          "rate": 0.44162437
+        },
+        "A_ONLY_MAX": {
+          "count": 54,
+          "rate": 0.27411168
+        },
+        "AB_ONLY_MAX": {
+          "count": 51,
+          "rate": 0.25888325
+        },
+        "EXACT_REACHED": {
+          "count": 5,
+          "rate": 0.02538071
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 87,
+          "rate": 0.44162437
+        },
+        "HPR_B_TRIGGER": {
+          "count": 54,
+          "rate": 0.27411168
+        },
+        "HPR_C_TRIGGER": {
+          "count": 51,
+          "rate": 0.25888325
+        },
+        "HPR_NONE": {
+          "count": 5,
+          "rate": 0.02538071
+        }
+      }
+    },
+    "living|H": {
+      "N": 144,
+      "ANY_VALID": {
+        "count": 144,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 89,
+        "rate": 0.61805556
+      },
+      "ANY_AB_HIT": {
+        "count": 46,
+        "rate": 0.31944444
+      },
+      "ANY_EXACT": {
+        "count": 35,
+        "rate": 0.24305556
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 55,
+          "rate": 0.38194444
+        },
+        "A_ONLY_MAX": {
+          "count": 43,
+          "rate": 0.29861111
+        },
+        "AB_ONLY_MAX": {
+          "count": 11,
+          "rate": 0.07638889
+        },
+        "EXACT_REACHED": {
+          "count": 35,
+          "rate": 0.24305556
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 55,
+          "rate": 0.38194444
+        },
+        "HPR_B_TRIGGER": {
+          "count": 43,
+          "rate": 0.29861111
+        },
+        "HPR_C_TRIGGER": {
+          "count": 11,
+          "rate": 0.07638889
+        },
+        "HPR_NONE": {
+          "count": 35,
+          "rate": 0.24305556
+        }
+      }
+    },
+    "living|N0": {
+      "N": 571,
+      "ANY_VALID": {
+        "count": 571,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 177,
+        "rate": 0.30998249
+      },
+      "ANY_AB_HIT": {
+        "count": 37,
+        "rate": 0.0647986
+      },
+      "ANY_EXACT": {
+        "count": 2,
+        "rate": 0.00350263
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 394,
+          "rate": 0.69001751
+        },
+        "A_ONLY_MAX": {
+          "count": 140,
+          "rate": 0.24518389
+        },
+        "AB_ONLY_MAX": {
+          "count": 35,
+          "rate": 0.06129597
+        },
+        "EXACT_REACHED": {
+          "count": 2,
+          "rate": 0.00350263
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 394,
+          "rate": 0.69001751
+        },
+        "HPR_B_TRIGGER": {
+          "count": 140,
+          "rate": 0.24518389
+        },
+        "HPR_C_TRIGGER": {
+          "count": 35,
+          "rate": 0.06129597
+        },
+        "HPR_NONE": {
+          "count": 2,
+          "rate": 0.00350263
+        }
+      }
+    },
+    "living|N1": {
+      "N": 201,
+      "ANY_VALID": {
+        "count": 201,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 122,
+        "rate": 0.60696517
+      },
+      "ANY_AB_HIT": {
+        "count": 15,
+        "rate": 0.07462687
+      },
+      "ANY_EXACT": {
+        "count": 1,
+        "rate": 0.00497512
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 79,
+          "rate": 0.39303483
+        },
+        "A_ONLY_MAX": {
+          "count": 107,
+          "rate": 0.53233831
+        },
+        "AB_ONLY_MAX": {
+          "count": 14,
+          "rate": 0.06965174
+        },
+        "EXACT_REACHED": {
+          "count": 1,
+          "rate": 0.00497512
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 79,
+          "rate": 0.39303483
+        },
+        "HPR_B_TRIGGER": {
+          "count": 107,
+          "rate": 0.53233831
+        },
+        "HPR_C_TRIGGER": {
+          "count": 14,
+          "rate": 0.06965174
+        },
+        "HPR_NONE": {
+          "count": 1,
+          "rate": 0.00497512
+        }
+      }
+    },
+    "living|N2": {
+      "N": 108,
+      "ANY_VALID": {
+        "count": 108,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 77,
+        "rate": 0.71296296
+      },
+      "ANY_AB_HIT": {
+        "count": 35,
+        "rate": 0.32407407
+      },
+      "ANY_EXACT": {
+        "count": 4,
+        "rate": 0.03703704
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "A_ONLY_MAX": {
+          "count": 42,
+          "rate": 0.38888889
+        },
+        "AB_ONLY_MAX": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "EXACT_REACHED": {
+          "count": 4,
+          "rate": 0.03703704
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "HPR_B_TRIGGER": {
+          "count": 42,
+          "rate": 0.38888889
+        },
+        "HPR_C_TRIGGER": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "HPR_NONE": {
+          "count": 4,
+          "rate": 0.03703704
+        }
+      }
+    },
+    "prod|H": {
+      "N": 171,
+      "ANY_VALID": {
+        "count": 171,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 94,
+        "rate": 0.5497076
+      },
+      "ANY_AB_HIT": {
+        "count": 55,
+        "rate": 0.32163743
+      },
+      "ANY_EXACT": {
+        "count": 42,
+        "rate": 0.24561404
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 77,
+          "rate": 0.4502924
+        },
+        "A_ONLY_MAX": {
+          "count": 39,
+          "rate": 0.22807018
+        },
+        "AB_ONLY_MAX": {
+          "count": 13,
+          "rate": 0.07602339
+        },
+        "EXACT_REACHED": {
+          "count": 42,
+          "rate": 0.24561404
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 77,
+          "rate": 0.4502924
+        },
+        "HPR_B_TRIGGER": {
+          "count": 39,
+          "rate": 0.22807018
+        },
+        "HPR_C_TRIGGER": {
+          "count": 13,
+          "rate": 0.07602339
+        },
+        "HPR_NONE": {
+          "count": 42,
+          "rate": 0.24561404
+        }
+      }
+    },
+    "prod|N0": {
+      "N": 489,
+      "ANY_VALID": {
+        "count": 489,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 21,
+        "rate": 0.04294479
+      },
+      "ANY_AB_HIT": {
+        "count": 10,
+        "rate": 0.0204499
+      },
+      "ANY_EXACT": {
+        "count": 9,
+        "rate": 0.01840491
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 468,
+          "rate": 0.95705521
+        },
+        "A_ONLY_MAX": {
+          "count": 11,
+          "rate": 0.02249489
+        },
+        "AB_ONLY_MAX": {
+          "count": 1,
+          "rate": 0.00204499
+        },
+        "EXACT_REACHED": {
+          "count": 9,
+          "rate": 0.01840491
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 468,
+          "rate": 0.95705521
+        },
+        "HPR_B_TRIGGER": {
+          "count": 11,
+          "rate": 0.02249489
+        },
+        "HPR_C_TRIGGER": {
+          "count": 1,
+          "rate": 0.00204499
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.01840491
+        }
+      }
+    },
+    "prod|N1": {
+      "N": 311,
+      "ANY_VALID": {
+        "count": 311,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 131,
+        "rate": 0.42122186
+      },
+      "ANY_AB_HIT": {
+        "count": 31,
+        "rate": 0.09967846
+      },
+      "ANY_EXACT": {
+        "count": 27,
+        "rate": 0.08681672
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 180,
+          "rate": 0.57877814
+        },
+        "A_ONLY_MAX": {
+          "count": 100,
+          "rate": 0.32154341
+        },
+        "AB_ONLY_MAX": {
+          "count": 4,
+          "rate": 0.01286174
+        },
+        "EXACT_REACHED": {
+          "count": 27,
+          "rate": 0.08681672
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 180,
+          "rate": 0.57877814
+        },
+        "HPR_B_TRIGGER": {
+          "count": 100,
+          "rate": 0.32154341
+        },
+        "HPR_C_TRIGGER": {
+          "count": 4,
+          "rate": 0.01286174
+        },
+        "HPR_NONE": {
+          "count": 27,
+          "rate": 0.08681672
+        }
+      }
+    },
+    "prod|N2": {
+      "N": 53,
+      "ANY_VALID": {
+        "count": 53,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 30,
+        "rate": 0.56603774
+      },
+      "ANY_AB_HIT": {
+        "count": 17,
+        "rate": 0.32075472
+      },
+      "ANY_EXACT": {
+        "count": 9,
+        "rate": 0.16981132
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 23,
+          "rate": 0.43396226
+        },
+        "A_ONLY_MAX": {
+          "count": 13,
+          "rate": 0.24528302
+        },
+        "AB_ONLY_MAX": {
+          "count": 8,
+          "rate": 0.1509434
+        },
+        "EXACT_REACHED": {
+          "count": 9,
+          "rate": 0.16981132
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 23,
+          "rate": 0.43396226
+        },
+        "HPR_B_TRIGGER": {
+          "count": 13,
+          "rate": 0.24528302
+        },
+        "HPR_C_TRIGGER": {
+          "count": 8,
+          "rate": 0.1509434
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.16981132
+        }
+      }
+    },
+    "video|H": {
+      "N": 19,
+      "ANY_VALID": {
+        "count": 19,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 15,
+        "rate": 0.78947368
+      },
+      "ANY_AB_HIT": {
+        "count": 9,
+        "rate": 0.47368421
+      },
+      "ANY_EXACT": {
+        "count": 5,
+        "rate": 0.26315789
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "A_ONLY_MAX": {
+          "count": 6,
+          "rate": 0.31578947
+        },
+        "AB_ONLY_MAX": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "EXACT_REACHED": {
+          "count": 5,
+          "rate": 0.26315789
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "HPR_B_TRIGGER": {
+          "count": 6,
+          "rate": 0.31578947
+        },
+        "HPR_C_TRIGGER": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "HPR_NONE": {
+          "count": 5,
+          "rate": 0.26315789
+        }
+      }
+    },
+    "video|N0": {
+      "N": 453,
+      "ANY_VALID": {
+        "count": 453,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 61,
+        "rate": 0.13465784
+      },
+      "ANY_AB_HIT": {
+        "count": 5,
+        "rate": 0.01103753
+      },
+      "ANY_EXACT": {
+        "count": 2,
+        "rate": 0.00441501
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 392,
+          "rate": 0.86534216
+        },
+        "A_ONLY_MAX": {
+          "count": 56,
+          "rate": 0.12362031
+        },
+        "AB_ONLY_MAX": {
+          "count": 3,
+          "rate": 0.00662252
+        },
+        "EXACT_REACHED": {
+          "count": 2,
+          "rate": 0.00441501
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 392,
+          "rate": 0.86534216
+        },
+        "HPR_B_TRIGGER": {
+          "count": 56,
+          "rate": 0.12362031
+        },
+        "HPR_C_TRIGGER": {
+          "count": 3,
+          "rate": 0.00662252
+        },
+        "HPR_NONE": {
+          "count": 2,
+          "rate": 0.00441501
+        }
+      }
+    },
+    "video|N1": {
+      "N": 420,
+      "ANY_VALID": {
+        "count": 420,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 153,
+        "rate": 0.36428571
+      },
+      "ANY_AB_HIT": {
+        "count": 12,
+        "rate": 0.02857143
+      },
+      "ANY_EXACT": {
+        "count": 9,
+        "rate": 0.02142857
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 267,
+          "rate": 0.63571429
+        },
+        "A_ONLY_MAX": {
+          "count": 141,
+          "rate": 0.33571429
+        },
+        "AB_ONLY_MAX": {
+          "count": 3,
+          "rate": 0.00714286
+        },
+        "EXACT_REACHED": {
+          "count": 9,
+          "rate": 0.02142857
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 267,
+          "rate": 0.63571429
+        },
+        "HPR_B_TRIGGER": {
+          "count": 141,
+          "rate": 0.33571429
+        },
+        "HPR_C_TRIGGER": {
+          "count": 3,
+          "rate": 0.00714286
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.02142857
+        }
+      }
+    },
+    "video|N2": {
+      "N": 132,
+      "ANY_VALID": {
+        "count": 132,
+        "rate": 1.0
+      },
+      "ANY_A_HIT": {
+        "count": 90,
+        "rate": 0.68181818
+      },
+      "ANY_AB_HIT": {
+        "count": 31,
+        "rate": 0.23484848
+      },
+      "ANY_EXACT": {
+        "count": 14,
+        "rate": 0.10606061
+      },
+      "taxonomy": {
+        "ALL_INVALID": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "NO_A_REACHED": {
+          "count": 42,
+          "rate": 0.31818182
+        },
+        "A_ONLY_MAX": {
+          "count": 59,
+          "rate": 0.4469697
+        },
+        "AB_ONLY_MAX": {
+          "count": 17,
+          "rate": 0.12878788
+        },
+        "EXACT_REACHED": {
+          "count": 14,
+          "rate": 0.10606061
+        }
+      },
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 42,
+          "rate": 0.31818182
+        },
+        "HPR_B_TRIGGER": {
+          "count": 59,
+          "rate": 0.4469697
+        },
+        "HPR_C_TRIGGER": {
+          "count": 17,
+          "rate": 0.12878788
+        },
+        "HPR_NONE": {
+          "count": 14,
+          "rate": 0.10606061
+        }
+      }
+    }
+  }
+}

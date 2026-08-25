@@ -1,0 +1,148 @@
+{
+  "phase": "TrueRec-GRPO Phase 0.7",
+  "model": {
+    "status": "PASS",
+    "run": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+    "checkpoint": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/checkpoint-1102",
+    "base": "/data/models/onereason-8b-pretrain-competition",
+    "adapter_model_sha256": "582e3b2bf1b6c47ce0659f27d0f026ff4c63325c14bec6cf1b22304788406e6a",
+    "adapter_config_sha256": "c045789a324f555f4e9663e6ac3af3371be022af87f353027c0da49357d7b289",
+    "adapter_config": {
+      "alora_invocation_tokens": null,
+      "alpha_pattern": {},
+      "arrow_config": null,
+      "auto_mapping": null,
+      "base_model_name_or_path": "/data/models/onereason-8b-pretrain-competition",
+      "bias": "none",
+      "corda_config": null,
+      "ensure_weight_tying": false,
+      "eva_config": null,
+      "exclude_modules": null,
+      "fan_in_fan_out": false,
+      "inference_mode": true,
+      "init_lora_weights": true,
+      "layer_replication": null,
+      "layers_pattern": null,
+      "layers_to_transform": null,
+      "loftq_config": {},
+      "lora_alpha": 64,
+      "lora_bias": false,
+      "lora_dropout": 0.05,
+      "megatron_config": null,
+      "megatron_core": "megatron.core",
+      "modules_to_save": null,
+      "peft_type": "LORA",
+      "peft_version": "0.18.1",
+      "qalora_group_size": 16,
+      "r": 32,
+      "rank_pattern": {},
+      "revision": null,
+      "target_modules": [
+        "q_proj",
+        "k_proj",
+        "gate_proj",
+        "o_proj",
+        "v_proj",
+        "up_proj",
+        "down_proj"
+      ],
+      "target_parameters": null,
+      "task_type": "CAUSAL_LM",
+      "trainable_token_indices": null,
+      "use_dora": false,
+      "use_qalora": false,
+      "use_rslora": false
+    },
+    "checks": {
+      "checkpoint_exists": true,
+      "adapter_sha_match": true,
+      "adapter_base_match": true,
+      "source_base_match": true,
+      "training_base_match": true,
+      "source_dataset_beta_gamma": true,
+      "lora_r32": true
+    }
+  },
+  "datasets": {
+    "pilot": {
+      "path": "/data/GRPO/truerec_grpo/data/pilot4096/pilot4096_records.jsonl",
+      "sha256": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879",
+      "groups": 4096
+    },
+    "probe": {
+      "path": "/data/GRPO/truerec_grpo/data/fixed_domain_abc/probe20_records.jsonl",
+      "sha256": "5f06976e12e60c4576ee0dc0d083d367d423251cf3e65eedbbd728f607ffa913",
+      "groups": 20
+    }
+  },
+  "renderer": {
+    "beta_gamma_run": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+    "tokenizer_json": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/tokenizer.json",
+    "tokenizer_json_sha256": "0be9ef1be1eac715f9a14a78277f70b3f0596d0cb61a8dbc8fc4aad2abb20a9a",
+    "tokenizer_config_sha256": "47fb9a938aadb92d2023e81b4b4eca16772853d8a4da9654f1444e0e2c89373a",
+    "exported_chat_template": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/chat_template.jinja",
+    "exported_chat_template_sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
+    "source_config_sha256": "b6286f6e96f6dd8a34c816ffa93aa0ddfd7bec7c927fa14aec3c2ab2f83d7b5a",
+    "training_renderer": "LLaMA-Factory qwen3_nothink",
+    "llamafactory_reference": "/data/reference/llamafactory-01398eb",
+    "llamafactory_commit": "01398eb18dd475a6e27c36f15b970aeacf0d4a60",
+    "template_py_sha256": "68f289bb28c434e7d26cb36bd4351ea4636f9e102bf374d9a84f642565d9f84e",
+    "converter_py_sha256": "c596efb447fb50fc915f6aa5c4f228d5409fba83808e23015a1bcf3387a3ffbf",
+    "alpaca_user_join": "newline join of non-empty instruction and input"
+  },
+  "pilot_input_parity": {
+    "status": "PASS",
+    "passed": 4096,
+    "total": 4096,
+    "min_tokens": 70,
+    "max_tokens": 3489
+  },
+  "probe_input_parity": {
+    "status": "PASS",
+    "passed": 20,
+    "total": 20,
+    "min_tokens": 154,
+    "max_tokens": 1833
+  },
+  "generation_config_source_audit": {
+    "base_generation_config": {
+      "bos_token_id": 151643,
+      "do_sample": true,
+      "eos_token_id": [
+        151645,
+        151643
+      ],
+      "pad_token_id": 151643,
+      "temperature": 0.6,
+      "top_k": 20,
+      "top_p": 0.95,
+      "transformers_version": "4.53.0"
+    },
+    "old_nothink_grpo": {
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k_explicit": false
+    },
+    "effective": {
+      "do_sample": true,
+      "temperature": 1.0,
+      "top_p": 1.0,
+      "top_k": 0,
+      "repetition_penalty": 1.0,
+      "eos_token_id": [
+        151645,
+        151643
+      ],
+      "pad_token_id": 151643,
+      "max_new_tokens": 3,
+      "num_return_sequences": 8,
+      "use_cache": true
+    },
+    "top_k_decision": "explicit 0: old GRPO did not intentionally enable top-k; do not inherit base top_k=20",
+    "min_new_tokens": null,
+    "beam": false,
+    "gold_constrained": false
+  },
+  "rank_assignment": "sorted group order; group index modulo WORLD_SIZE",
+  "per_group_seed": "SHA256(20260825|group_id) first 8 bytes modulo 2^63"
+}

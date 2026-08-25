@@ -1,0 +1,642 @@
+{
+  "overall": {
+    "overall": {
+      "N": 4096,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 2651,
+          "rate": 0.6472168
+        },
+        "HPR_B_TRIGGER": {
+          "count": 1012,
+          "rate": 0.24707031
+        },
+        "HPR_C_TRIGGER": {
+          "count": 219,
+          "rate": 0.0534668
+        },
+        "HPR_NONE": {
+          "count": 214,
+          "rate": 0.05224609
+        }
+      }
+    }
+  },
+  "domain": {
+    "ad": {
+      "N": 1024,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 639,
+          "rate": 0.62402344
+        },
+        "HPR_B_TRIGGER": {
+          "count": 255,
+          "rate": 0.24902344
+        },
+        "HPR_C_TRIGGER": {
+          "count": 75,
+          "rate": 0.07324219
+        },
+        "HPR_NONE": {
+          "count": 55,
+          "rate": 0.05371094
+        }
+      }
+    },
+    "living": {
+      "N": 1024,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 559,
+          "rate": 0.54589844
+        },
+        "HPR_B_TRIGGER": {
+          "count": 332,
+          "rate": 0.32421875
+        },
+        "HPR_C_TRIGGER": {
+          "count": 91,
+          "rate": 0.08886719
+        },
+        "HPR_NONE": {
+          "count": 42,
+          "rate": 0.04101562
+        }
+      }
+    },
+    "prod": {
+      "N": 1024,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 748,
+          "rate": 0.73046875
+        },
+        "HPR_B_TRIGGER": {
+          "count": 163,
+          "rate": 0.15917969
+        },
+        "HPR_C_TRIGGER": {
+          "count": 26,
+          "rate": 0.02539062
+        },
+        "HPR_NONE": {
+          "count": 87,
+          "rate": 0.08496094
+        }
+      }
+    },
+    "video": {
+      "N": 1024,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 705,
+          "rate": 0.68847656
+        },
+        "HPR_B_TRIGGER": {
+          "count": 262,
+          "rate": 0.25585938
+        },
+        "HPR_C_TRIGGER": {
+          "count": 27,
+          "rate": 0.02636719
+        },
+        "HPR_NONE": {
+          "count": 30,
+          "rate": 0.02929688
+        }
+      }
+    }
+  },
+  "novelty": {
+    "H": {
+      "N": 464,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 193,
+          "rate": 0.41594828
+        },
+        "HPR_B_TRIGGER": {
+          "count": 117,
+          "rate": 0.25215517
+        },
+        "HPR_C_TRIGGER": {
+          "count": 43,
+          "rate": 0.09267241
+        },
+        "HPR_NONE": {
+          "count": 111,
+          "rate": 0.23922414
+        }
+      }
+    },
+    "N0": {
+      "N": 1832,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 1552,
+          "rate": 0.84716157
+        },
+        "HPR_B_TRIGGER": {
+          "count": 222,
+          "rate": 0.12117904
+        },
+        "HPR_C_TRIGGER": {
+          "count": 41,
+          "rate": 0.02237991
+        },
+        "HPR_NONE": {
+          "count": 17,
+          "rate": 0.00927948
+        }
+      }
+    },
+    "N1": {
+      "N": 1310,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 723,
+          "rate": 0.5519084
+        },
+        "HPR_B_TRIGGER": {
+          "count": 505,
+          "rate": 0.38549618
+        },
+        "HPR_C_TRIGGER": {
+          "count": 28,
+          "rate": 0.02137405
+        },
+        "HPR_NONE": {
+          "count": 54,
+          "rate": 0.04122137
+        }
+      }
+    },
+    "N2": {
+      "N": 490,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 183,
+          "rate": 0.37346939
+        },
+        "HPR_B_TRIGGER": {
+          "count": 168,
+          "rate": 0.34285714
+        },
+        "HPR_C_TRIGGER": {
+          "count": 107,
+          "rate": 0.21836735
+        },
+        "HPR_NONE": {
+          "count": 32,
+          "rate": 0.06530612
+        }
+      }
+    }
+  },
+  "K_bucket": {
+    "K=1": {
+      "N": 2957,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 2041,
+          "rate": 0.69022658
+        },
+        "HPR_B_TRIGGER": {
+          "count": 617,
+          "rate": 0.20865742
+        },
+        "HPR_C_TRIGGER": {
+          "count": 155,
+          "rate": 0.05241799
+        },
+        "HPR_NONE": {
+          "count": 144,
+          "rate": 0.048698
+        }
+      }
+    },
+    "K=11+": {
+      "N": 70,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 18,
+          "rate": 0.25714286
+        },
+        "HPR_B_TRIGGER": {
+          "count": 39,
+          "rate": 0.55714286
+        },
+        "HPR_C_TRIGGER": {
+          "count": 6,
+          "rate": 0.08571429
+        },
+        "HPR_NONE": {
+          "count": 7,
+          "rate": 0.1
+        }
+      }
+    },
+    "K=2": {
+      "N": 481,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 282,
+          "rate": 0.58627859
+        },
+        "HPR_B_TRIGGER": {
+          "count": 139,
+          "rate": 0.28898129
+        },
+        "HPR_C_TRIGGER": {
+          "count": 26,
+          "rate": 0.05405405
+        },
+        "HPR_NONE": {
+          "count": 34,
+          "rate": 0.07068607
+        }
+      }
+    },
+    "K=3-5": {
+      "N": 430,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 243,
+          "rate": 0.56511628
+        },
+        "HPR_B_TRIGGER": {
+          "count": 147,
+          "rate": 0.34186047
+        },
+        "HPR_C_TRIGGER": {
+          "count": 22,
+          "rate": 0.05116279
+        },
+        "HPR_NONE": {
+          "count": 18,
+          "rate": 0.04186047
+        }
+      }
+    },
+    "K=6-10": {
+      "N": 158,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 67,
+          "rate": 0.42405063
+        },
+        "HPR_B_TRIGGER": {
+          "count": 70,
+          "rate": 0.44303797
+        },
+        "HPR_C_TRIGGER": {
+          "count": 10,
+          "rate": 0.06329114
+        },
+        "HPR_NONE": {
+          "count": 11,
+          "rate": 0.06962025
+        }
+      }
+    }
+  },
+  "domain_novelty": {
+    "ad|H": {
+      "N": 130,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 57,
+          "rate": 0.43846154
+        },
+        "HPR_B_TRIGGER": {
+          "count": 29,
+          "rate": 0.22307692
+        },
+        "HPR_C_TRIGGER": {
+          "count": 15,
+          "rate": 0.11538462
+        },
+        "HPR_NONE": {
+          "count": 29,
+          "rate": 0.22307692
+        }
+      }
+    },
+    "ad|N0": {
+      "N": 319,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 298,
+          "rate": 0.93416928
+        },
+        "HPR_B_TRIGGER": {
+          "count": 15,
+          "rate": 0.04702194
+        },
+        "HPR_C_TRIGGER": {
+          "count": 2,
+          "rate": 0.00626959
+        },
+        "HPR_NONE": {
+          "count": 4,
+          "rate": 0.01253918
+        }
+      }
+    },
+    "ad|N1": {
+      "N": 378,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 197,
+          "rate": 0.52116402
+        },
+        "HPR_B_TRIGGER": {
+          "count": 157,
+          "rate": 0.41534392
+        },
+        "HPR_C_TRIGGER": {
+          "count": 7,
+          "rate": 0.01851852
+        },
+        "HPR_NONE": {
+          "count": 17,
+          "rate": 0.04497354
+        }
+      }
+    },
+    "ad|N2": {
+      "N": 197,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 87,
+          "rate": 0.44162437
+        },
+        "HPR_B_TRIGGER": {
+          "count": 54,
+          "rate": 0.27411168
+        },
+        "HPR_C_TRIGGER": {
+          "count": 51,
+          "rate": 0.25888325
+        },
+        "HPR_NONE": {
+          "count": 5,
+          "rate": 0.02538071
+        }
+      }
+    },
+    "living|H": {
+      "N": 144,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 55,
+          "rate": 0.38194444
+        },
+        "HPR_B_TRIGGER": {
+          "count": 43,
+          "rate": 0.29861111
+        },
+        "HPR_C_TRIGGER": {
+          "count": 11,
+          "rate": 0.07638889
+        },
+        "HPR_NONE": {
+          "count": 35,
+          "rate": 0.24305556
+        }
+      }
+    },
+    "living|N0": {
+      "N": 571,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 394,
+          "rate": 0.69001751
+        },
+        "HPR_B_TRIGGER": {
+          "count": 140,
+          "rate": 0.24518389
+        },
+        "HPR_C_TRIGGER": {
+          "count": 35,
+          "rate": 0.06129597
+        },
+        "HPR_NONE": {
+          "count": 2,
+          "rate": 0.00350263
+        }
+      }
+    },
+    "living|N1": {
+      "N": 201,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 79,
+          "rate": 0.39303483
+        },
+        "HPR_B_TRIGGER": {
+          "count": 107,
+          "rate": 0.53233831
+        },
+        "HPR_C_TRIGGER": {
+          "count": 14,
+          "rate": 0.06965174
+        },
+        "HPR_NONE": {
+          "count": 1,
+          "rate": 0.00497512
+        }
+      }
+    },
+    "living|N2": {
+      "N": 108,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "HPR_B_TRIGGER": {
+          "count": 42,
+          "rate": 0.38888889
+        },
+        "HPR_C_TRIGGER": {
+          "count": 31,
+          "rate": 0.28703704
+        },
+        "HPR_NONE": {
+          "count": 4,
+          "rate": 0.03703704
+        }
+      }
+    },
+    "prod|H": {
+      "N": 171,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 77,
+          "rate": 0.4502924
+        },
+        "HPR_B_TRIGGER": {
+          "count": 39,
+          "rate": 0.22807018
+        },
+        "HPR_C_TRIGGER": {
+          "count": 13,
+          "rate": 0.07602339
+        },
+        "HPR_NONE": {
+          "count": 42,
+          "rate": 0.24561404
+        }
+      }
+    },
+    "prod|N0": {
+      "N": 489,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 468,
+          "rate": 0.95705521
+        },
+        "HPR_B_TRIGGER": {
+          "count": 11,
+          "rate": 0.02249489
+        },
+        "HPR_C_TRIGGER": {
+          "count": 1,
+          "rate": 0.00204499
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.01840491
+        }
+      }
+    },
+    "prod|N1": {
+      "N": 311,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 180,
+          "rate": 0.57877814
+        },
+        "HPR_B_TRIGGER": {
+          "count": 100,
+          "rate": 0.32154341
+        },
+        "HPR_C_TRIGGER": {
+          "count": 4,
+          "rate": 0.01286174
+        },
+        "HPR_NONE": {
+          "count": 27,
+          "rate": 0.08681672
+        }
+      }
+    },
+    "prod|N2": {
+      "N": 53,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 23,
+          "rate": 0.43396226
+        },
+        "HPR_B_TRIGGER": {
+          "count": 13,
+          "rate": 0.24528302
+        },
+        "HPR_C_TRIGGER": {
+          "count": 8,
+          "rate": 0.1509434
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.16981132
+        }
+      }
+    },
+    "video|H": {
+      "N": 19,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "HPR_B_TRIGGER": {
+          "count": 6,
+          "rate": 0.31578947
+        },
+        "HPR_C_TRIGGER": {
+          "count": 4,
+          "rate": 0.21052632
+        },
+        "HPR_NONE": {
+          "count": 5,
+          "rate": 0.26315789
+        }
+      }
+    },
+    "video|N0": {
+      "N": 453,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 392,
+          "rate": 0.86534216
+        },
+        "HPR_B_TRIGGER": {
+          "count": 56,
+          "rate": 0.12362031
+        },
+        "HPR_C_TRIGGER": {
+          "count": 3,
+          "rate": 0.00662252
+        },
+        "HPR_NONE": {
+          "count": 2,
+          "rate": 0.00441501
+        }
+      }
+    },
+    "video|N1": {
+      "N": 420,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 267,
+          "rate": 0.63571429
+        },
+        "HPR_B_TRIGGER": {
+          "count": 141,
+          "rate": 0.33571429
+        },
+        "HPR_C_TRIGGER": {
+          "count": 3,
+          "rate": 0.00714286
+        },
+        "HPR_NONE": {
+          "count": 9,
+          "rate": 0.02142857
+        }
+      }
+    },
+    "video|N2": {
+      "N": 132,
+      "hpr": {
+        "HPR_A_TRIGGER": {
+          "count": 42,
+          "rate": 0.31818182
+        },
+        "HPR_B_TRIGGER": {
+          "count": 59,
+          "rate": 0.4469697
+        },
+        "HPR_C_TRIGGER": {
+          "count": 17,
+          "rate": 0.12878788
+        },
+        "HPR_NONE": {
+          "count": 14,
+          "rate": 0.10606061
+        }
+      }
+    }
+  }
+}
