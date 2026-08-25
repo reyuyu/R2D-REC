@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,10 @@ from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_uni
 
 EXPERIMENT = "GR_REC_Think_CompositeInterest_v1"
 BASE_MAIN_SHA = "72fa8ab9f16b742a8e8a49dd39ca9b0af2a257f3"
+DEFAULT_PARENT_ADAPTER = Path(
+    "/data/outputs/baselines/native_source_domain_r32_v3/"
+    "BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333"
+)
 SEED = 20260818
 PROBE_DOMAIN_ORDER = ("video", "prod", "ad", "living")
 PROBE_ROUNDS = (
@@ -98,6 +103,9 @@ def parser():
     ap.add_argument("--max-steps", type=int, default=716)
     ap.add_argument("--output-dir", default="/data/GRPO/outputs/formal")
     ap.add_argument("--run-id", default="GR-REC-THINK-COMPOSITE-INTEREST-V1")
+    ap.add_argument("--parent-adapter", type=Path)
+    ap.add_argument("--parent-adapter-sha256")
+    ap.add_argument("--parent-label", default="fresh-original-bata")
     ap.add_argument("--grpo-data", type=Path, default=DEFAULT_GRPO)
     ap.add_argument("--gold-data", type=Path, default=DEFAULT_SOURCE)
     return ap
@@ -110,8 +118,40 @@ def validate_args(args):
         raise ValueError("--max-steps must be within 1..716")
 
 
+def file_sha256(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def resolve_parent_adapter(args):
+    requested = getattr(args, "parent_adapter", None)
+    path = Path(requested or DEFAULT_PARENT_ADAPTER).resolve()
+    config = path / "adapter_config.json"
+    weights = path / "adapter_model.safetensors"
+    if not config.is_file() or not weights.is_file():
+        raise FileNotFoundError(f"parent adapter is incomplete: {path}")
+    expected = getattr(args, "parent_adapter_sha256", None)
+    if requested is not None and not expected:
+        raise ValueError("--parent-adapter-sha256 is required for a non-default parent")
+    actual = file_sha256(weights)
+    if expected and actual.lower() != expected.lower():
+        raise ValueError(
+            f"parent adapter SHA256 mismatch: expected={expected.lower()} actual={actual}"
+        )
+    return {
+        "path": str(path),
+        "sha256": actual,
+        "label": str(getattr(args, "parent_label", None) or path.name),
+        "fresh_original_bata": path == DEFAULT_PARENT_ADAPTER.resolve(),
+    }
+
+
 def prepare_plan(args):
     validate_args(args)
+    parent_adapter = resolve_parent_adapter(args)
     groups = load_think_groups(args.grpo_data)
     gold, _, ambiguous = load_gold(args.gold_data, set(groups))
     if ambiguous:
@@ -172,6 +212,7 @@ def prepare_plan(args):
         "dropped_group_ids": dropped_ids,
         "topology": topology,
         "output_dir": str(Path(args.output_dir) / args.run_id),
+        "parent_adapter": parent_adapter,
     }
 
 
@@ -182,7 +223,7 @@ def git_head():
 
 
 def dry_run_report(args, plan):
-    from grpo_model import ADAPTER, BASE
+    from grpo_model import BASE
     report = {
         "experiment": EXPERIMENT,
         "status": "CPU_DRY_RUN_PASS",
@@ -194,7 +235,7 @@ def dry_run_report(args, plan):
         "generation_called": False,
         "optimizer_step_called": False,
         "training_started": False,
-        "paths": {"base_model": BASE, "fresh_original_bata_adapter": ADAPTER,
+        "paths": {"base_model": BASE, "parent_adapter": plan["parent_adapter"],
                   "grpo_data": str(args.grpo_data), "gold_data": str(args.gold_data),
                   "future_output_dir": plan["output_dir"]},
         "topology": plan["topology"],
@@ -231,6 +272,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
         enable_checkpoints=enable_checkpoints,
         smoke_mode=smoke_mode,
     )
+    os.environ["GRPO_PARENT_ADAPTER"] = plan["parent_adapter"]["path"]
     from .runtime_import_provenance import assert_runtime_import_provenance
     import_provenance = assert_runtime_import_provenance()
     from .single_node_nccl import configure_single_node_nccl
@@ -248,7 +290,9 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
     os.environ["GRPO_RUN_ID"] = args.run_id
     os.environ.setdefault("GRPO_MONITOR", "1")
     if not Path(BASE).exists() or not Path(ADAPTER).exists():
-        raise FileNotFoundError("fresh original base/BATA path missing")
+        raise FileNotFoundError("base or selected parent adapter path missing")
+    if Path(ADAPTER).resolve() != Path(plan["parent_adapter"]["path"]):
+        raise RuntimeError("PARENT_ADAPTER_IMPORT_MISMATCH")
     torch.manual_seed(SEED + rank)
     model, tokenizer, _ = load_model(f"cuda:{rank}")
     for name, parameter in model.named_parameters():
@@ -267,7 +311,10 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             "nccl_socket_ifname": nccl_bootstrap["nccl_socket_ifname"],
             "local_rank_device_mapping": nccl_bootstrap["local_rank_device_mapping"],
             "model_path": BASE, "adapter_path": ADAPTER,
-            "fresh_original_bata": True, "dataset_path": str(args.grpo_data),
+            "parent_adapter_label": plan["parent_adapter"]["label"],
+            "parent_adapter_sha256": plan["parent_adapter"]["sha256"],
+            "fresh_original_bata": plan["parent_adapter"]["fresh_original_bata"],
+            "dataset_path": str(args.grpo_data),
             "gold_source_path": str(args.gold_data), "gold_cot_reward_only": True,
             "sampler_audit": plan["topology"], "fixed_probe_ids": plan["probe_ids"],
             "effective_max_steps": args.max_steps,

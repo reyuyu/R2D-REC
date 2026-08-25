@@ -7,7 +7,8 @@ from peft import PeftModel
 from llamafactory.data.template import TEMPLATES
 
 BASE = "/data/models/onereason-8b-pretrain-competition"
-ADAPTER = "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333"
+DEFAULT_ADAPTER = "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333"
+ADAPTER = os.environ.get("GRPO_PARENT_ADAPTER", DEFAULT_ADAPTER)
 TEMPLATE_NAME = "qwen3_nothink"
 
 

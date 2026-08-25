@@ -18,7 +18,9 @@ from .run_gr_rec_think_composite_interest_v1 import (
     PROBE_ROUNDS,
     PROBE_STEPS,
     launch_training,
+    parser,
     prepare_plan,
+    resolve_parent_adapter,
     should_run_probe,
     should_save_checkpoint,
 )
@@ -76,6 +78,32 @@ class RunnerContractTests(unittest.TestCase):
         )
         self.assertFalse(should_save_checkpoint(700))
         self.assertFalse(should_save_checkpoint(720))
+
+    def test_nondefault_parent_is_sha_pinned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            (parent / "adapter_config.json").write_text("{}", encoding="utf-8")
+            (parent / "adapter_model.safetensors").write_bytes(b"beta-gamma")
+            digest = __import__("hashlib").sha256(b"beta-gamma").hexdigest()
+            args = parser().parse_args([
+                "--parent-adapter", str(parent),
+                "--parent-adapter-sha256", digest,
+                "--parent-label", "beta-gamma-epoch2",
+            ])
+            resolved = resolve_parent_adapter(args)
+            self.assertEqual(resolved["path"], str(parent.resolve()))
+            self.assertEqual(resolved["sha256"], digest)
+            self.assertEqual(resolved["label"], "beta-gamma-epoch2")
+            self.assertFalse(resolved["fresh_original_bata"])
+
+    def test_nondefault_parent_without_sha_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            (parent / "adapter_config.json").write_text("{}", encoding="utf-8")
+            (parent / "adapter_model.safetensors").write_bytes(b"weights")
+            args = parser().parse_args(["--parent-adapter", str(parent)])
+            with self.assertRaisesRegex(ValueError, "sha256 is required"):
+                resolve_parent_adapter(args)
 
 
 class ProbeStateTests(unittest.TestCase):
