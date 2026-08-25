@@ -1,0 +1,492 @@
+{
+  "domains": {
+    "video": {
+      "K=1": {
+        "N": 4113,
+        "GoldAInHistory_rate": 0.32044736,
+        "GoldABInHistory_rate": 0.05689278,
+        "GoldABCInHistory_rate": 0.00510576,
+        "novelty": {
+          "H": {
+            "count": 21,
+            "rate": 0.00510576
+          },
+          "N2": {
+            "count": 213,
+            "rate": 0.05178702
+          },
+          "N1": {
+            "count": 1084,
+            "rate": 0.26355458
+          },
+          "N0": {
+            "count": 2795,
+            "rate": 0.67955264
+          }
+        }
+      },
+      "K=2": {
+        "N": 2217,
+        "GoldAInHistory_rate": 0.52007217,
+        "GoldABInHistory_rate": 0.09878214,
+        "GoldABCInHistory_rate": 0.01262968,
+        "novelty": {
+          "H": {
+            "count": 28,
+            "rate": 0.01262968
+          },
+          "N2": {
+            "count": 191,
+            "rate": 0.08615246
+          },
+          "N1": {
+            "count": 934,
+            "rate": 0.42129003
+          },
+          "N0": {
+            "count": 1064,
+            "rate": 0.47992783
+          }
+        }
+      },
+      "K=3-5": {
+        "N": 2790,
+        "GoldAInHistory_rate": 0.7172043,
+        "GoldABInHistory_rate": 0.18172043,
+        "GoldABCInHistory_rate": 0.01935484,
+        "novelty": {
+          "H": {
+            "count": 54,
+            "rate": 0.01935484
+          },
+          "N2": {
+            "count": 453,
+            "rate": 0.16236559
+          },
+          "N1": {
+            "count": 1494,
+            "rate": 0.53548387
+          },
+          "N0": {
+            "count": 789,
+            "rate": 0.2827957
+          }
+        }
+      },
+      "K=6-10": {
+        "N": 1209,
+        "GoldAInHistory_rate": 0.86765922,
+        "GoldABInHistory_rate": 0.31430935,
+        "GoldABCInHistory_rate": 0.03639371,
+        "novelty": {
+          "H": {
+            "count": 44,
+            "rate": 0.03639371
+          },
+          "N2": {
+            "count": 336,
+            "rate": 0.27791563
+          },
+          "N1": {
+            "count": 669,
+            "rate": 0.55334988
+          },
+          "N0": {
+            "count": 160,
+            "rate": 0.13234078
+          }
+        }
+      },
+      "K=11+": {
+        "N": 573,
+        "GoldAInHistory_rate": 0.96858639,
+        "GoldABInHistory_rate": 0.46073298,
+        "GoldABCInHistory_rate": 0.09249564,
+        "novelty": {
+          "H": {
+            "count": 53,
+            "rate": 0.09249564
+          },
+          "N2": {
+            "count": 211,
+            "rate": 0.36823735
+          },
+          "N1": {
+            "count": 291,
+            "rate": 0.5078534
+          },
+          "N0": {
+            "count": 18,
+            "rate": 0.03141361
+          }
+        }
+      }
+    },
+    "prod": {
+      "K=1": {
+        "N": 2743,
+        "GoldAInHistory_rate": 0.50018228,
+        "GoldABInHistory_rate": 0.20597886,
+        "GoldABCInHistory_rate": 0.15967918,
+        "novelty": {
+          "H": {
+            "count": 438,
+            "rate": 0.15967918
+          },
+          "N2": {
+            "count": 127,
+            "rate": 0.04629967
+          },
+          "N1": {
+            "count": 807,
+            "rate": 0.29420343
+          },
+          "N0": {
+            "count": 1371,
+            "rate": 0.49981772
+          }
+        }
+      },
+      "K=2": {
+        "N": 283,
+        "GoldAInHistory_rate": 0.67491166,
+        "GoldABInHistory_rate": 0.30035336,
+        "GoldABCInHistory_rate": 0.22261484,
+        "novelty": {
+          "H": {
+            "count": 63,
+            "rate": 0.22261484
+          },
+          "N2": {
+            "count": 22,
+            "rate": 0.07773852
+          },
+          "N1": {
+            "count": 106,
+            "rate": 0.3745583
+          },
+          "N0": {
+            "count": 92,
+            "rate": 0.32508834
+          }
+        }
+      },
+      "K=3-5": {
+        "N": 93,
+        "GoldAInHistory_rate": 0.69892473,
+        "GoldABInHistory_rate": 0.34408602,
+        "GoldABCInHistory_rate": 0.21505376,
+        "novelty": {
+          "H": {
+            "count": 20,
+            "rate": 0.21505376
+          },
+          "N2": {
+            "count": 12,
+            "rate": 0.12903226
+          },
+          "N1": {
+            "count": 33,
+            "rate": 0.35483871
+          },
+          "N0": {
+            "count": 28,
+            "rate": 0.30107527
+          }
+        }
+      },
+      "K=6-10": {
+        "N": 6,
+        "GoldAInHistory_rate": 1.0,
+        "GoldABInHistory_rate": 0.33333333,
+        "GoldABCInHistory_rate": 0.16666667,
+        "novelty": {
+          "H": {
+            "count": 1,
+            "rate": 0.16666667
+          },
+          "N2": {
+            "count": 1,
+            "rate": 0.16666667
+          },
+          "N1": {
+            "count": 4,
+            "rate": 0.66666667
+          },
+          "N0": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "K=11+": {
+        "N": 0,
+        "GoldAInHistory_rate": 0.0,
+        "GoldABInHistory_rate": 0.0,
+        "GoldABCInHistory_rate": 0.0,
+        "novelty": {
+          "H": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N2": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N0": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "ad": {
+      "K=1": {
+        "N": 2999,
+        "GoldAInHistory_rate": 0.65855285,
+        "GoldABInHistory_rate": 0.29376459,
+        "GoldABCInHistory_rate": 0.11137046,
+        "novelty": {
+          "H": {
+            "count": 334,
+            "rate": 0.11137046
+          },
+          "N2": {
+            "count": 547,
+            "rate": 0.18239413
+          },
+          "N1": {
+            "count": 1094,
+            "rate": 0.36478826
+          },
+          "N0": {
+            "count": 1024,
+            "rate": 0.34144715
+          }
+        }
+      },
+      "K=2": {
+        "N": 314,
+        "GoldAInHistory_rate": 0.86624204,
+        "GoldABInHistory_rate": 0.43312102,
+        "GoldABCInHistory_rate": 0.17197452,
+        "novelty": {
+          "H": {
+            "count": 54,
+            "rate": 0.17197452
+          },
+          "N2": {
+            "count": 82,
+            "rate": 0.2611465
+          },
+          "N1": {
+            "count": 136,
+            "rate": 0.43312102
+          },
+          "N0": {
+            "count": 42,
+            "rate": 0.13375796
+          }
+        }
+      },
+      "K=3-5": {
+        "N": 100,
+        "GoldAInHistory_rate": 0.98,
+        "GoldABInHistory_rate": 0.65,
+        "GoldABCInHistory_rate": 0.38,
+        "novelty": {
+          "H": {
+            "count": 38,
+            "rate": 0.38
+          },
+          "N2": {
+            "count": 27,
+            "rate": 0.27
+          },
+          "N1": {
+            "count": 33,
+            "rate": 0.33
+          },
+          "N0": {
+            "count": 2,
+            "rate": 0.02
+          }
+        }
+      },
+      "K=6-10": {
+        "N": 13,
+        "GoldAInHistory_rate": 1.0,
+        "GoldABInHistory_rate": 0.84615385,
+        "GoldABCInHistory_rate": 0.69230769,
+        "novelty": {
+          "H": {
+            "count": 9,
+            "rate": 0.69230769
+          },
+          "N2": {
+            "count": 2,
+            "rate": 0.15384615
+          },
+          "N1": {
+            "count": 2,
+            "rate": 0.15384615
+          },
+          "N0": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "K=11+": {
+        "N": 0,
+        "GoldAInHistory_rate": 0.0,
+        "GoldABInHistory_rate": 0.0,
+        "GoldABCInHistory_rate": 0.0,
+        "novelty": {
+          "H": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N2": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N0": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "living": {
+      "K=1": {
+        "N": 2888,
+        "GoldAInHistory_rate": 0.43421053,
+        "GoldABInHistory_rate": 0.23891967,
+        "GoldABCInHistory_rate": 0.14231302,
+        "novelty": {
+          "H": {
+            "count": 411,
+            "rate": 0.14231302
+          },
+          "N2": {
+            "count": 279,
+            "rate": 0.09660665
+          },
+          "N1": {
+            "count": 564,
+            "rate": 0.19529086
+          },
+          "N0": {
+            "count": 1634,
+            "rate": 0.56578947
+          }
+        }
+      },
+      "K=2": {
+        "N": 147,
+        "GoldAInHistory_rate": 0.53061224,
+        "GoldABInHistory_rate": 0.29931973,
+        "GoldABCInHistory_rate": 0.10884354,
+        "novelty": {
+          "H": {
+            "count": 16,
+            "rate": 0.10884354
+          },
+          "N2": {
+            "count": 28,
+            "rate": 0.19047619
+          },
+          "N1": {
+            "count": 34,
+            "rate": 0.23129252
+          },
+          "N0": {
+            "count": 69,
+            "rate": 0.46938776
+          }
+        }
+      },
+      "K=3-5": {
+        "N": 36,
+        "GoldAInHistory_rate": 0.69444444,
+        "GoldABInHistory_rate": 0.5,
+        "GoldABCInHistory_rate": 0.11111111,
+        "novelty": {
+          "H": {
+            "count": 4,
+            "rate": 0.11111111
+          },
+          "N2": {
+            "count": 14,
+            "rate": 0.38888889
+          },
+          "N1": {
+            "count": 7,
+            "rate": 0.19444444
+          },
+          "N0": {
+            "count": 11,
+            "rate": 0.30555556
+          }
+        }
+      },
+      "K=6-10": {
+        "N": 6,
+        "GoldAInHistory_rate": 0.66666667,
+        "GoldABInHistory_rate": 0.66666667,
+        "GoldABCInHistory_rate": 0.5,
+        "novelty": {
+          "H": {
+            "count": 3,
+            "rate": 0.5
+          },
+          "N2": {
+            "count": 1,
+            "rate": 0.16666667
+          },
+          "N1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N0": {
+            "count": 2,
+            "rate": 0.33333333
+          }
+        }
+      },
+      "K=11+": {
+        "N": 1,
+        "GoldAInHistory_rate": 1.0,
+        "GoldABInHistory_rate": 1.0,
+        "GoldABCInHistory_rate": 0.0,
+        "novelty": {
+          "H": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N2": {
+            "count": 1,
+            "rate": 1.0
+          },
+          "N1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "N0": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    }
+  }
+}

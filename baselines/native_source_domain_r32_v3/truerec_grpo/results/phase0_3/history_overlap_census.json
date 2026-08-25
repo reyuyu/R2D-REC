@@ -1,0 +1,145 @@
+{
+  "overall": {
+    "N": 20531,
+    "GoldAInHistory_rate": 0.55671911,
+    "GoldABInHistory_rate": 0.20154888,
+    "GoldABCInHistory_rate": 0.07749257,
+    "novelty": {
+      "H": {
+        "count": 1591,
+        "rate": 0.07749257
+      },
+      "N2": {
+        "count": 2547,
+        "rate": 0.12405631
+      },
+      "N1": {
+        "count": 7292,
+        "rate": 0.35517023
+      },
+      "N0": {
+        "count": 9101,
+        "rate": 0.44328089
+      }
+    }
+  },
+  "domains": {
+    "video": {
+      "N": 10902,
+      "GoldAInHistory_rate": 0.55732893,
+      "GoldABInHistory_rate": 0.14712897,
+      "GoldABCInHistory_rate": 0.01834526,
+      "novelty": {
+        "H": {
+          "count": 200,
+          "rate": 0.01834526
+        },
+        "N2": {
+          "count": 1404,
+          "rate": 0.12878371
+        },
+        "N1": {
+          "count": 4472,
+          "rate": 0.41019996
+        },
+        "N0": {
+          "count": 4826,
+          "rate": 0.44267107
+        }
+      }
+    },
+    "prod": {
+      "N": 3125,
+      "GoldAInHistory_rate": 0.52288,
+      "GoldABInHistory_rate": 0.21888,
+      "GoldABCInHistory_rate": 0.16704,
+      "novelty": {
+        "H": {
+          "count": 522,
+          "rate": 0.16704
+        },
+        "N2": {
+          "count": 162,
+          "rate": 0.05184
+        },
+        "N1": {
+          "count": 950,
+          "rate": 0.304
+        },
+        "N0": {
+          "count": 1491,
+          "rate": 0.47712
+        }
+      }
+    },
+    "ad": {
+      "N": 3426,
+      "GoldAInHistory_rate": 0.6882662,
+      "GoldABInHistory_rate": 0.31903094,
+      "GoldABCInHistory_rate": 0.12697023,
+      "novelty": {
+        "H": {
+          "count": 435,
+          "rate": 0.12697023
+        },
+        "N2": {
+          "count": 658,
+          "rate": 0.19206071
+        },
+        "N1": {
+          "count": 1265,
+          "rate": 0.36923526
+        },
+        "N0": {
+          "count": 1068,
+          "rate": 0.3117338
+        }
+      }
+    },
+    "living": {
+      "N": 3078,
+      "GoldAInHistory_rate": 0.44249513,
+      "GoldABInHistory_rate": 0.24593892,
+      "GoldABCInHistory_rate": 0.14100065,
+      "novelty": {
+        "H": {
+          "count": 434,
+          "rate": 0.14100065
+        },
+        "N2": {
+          "count": 323,
+          "rate": 0.10493827
+        },
+        "N1": {
+          "count": 605,
+          "rate": 0.19655621
+        },
+        "N0": {
+          "count": 1716,
+          "rate": 0.55750487
+        }
+      }
+    }
+  },
+  "class_exclusive": "PASS",
+  "class_exhaustive": "PASS",
+  "definitions": {
+    "H": "GoldABCInHistory=true",
+    "N2": "GoldABCInHistory=false and GoldABInHistory=true",
+    "N1": "GoldABInHistory=false and GoldAInHistory=true",
+    "N0": "GoldAInHistory=false"
+  },
+  "source": {
+    "path": "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl",
+    "sha256": "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "source_route_rows": {
+      "recommendation_cot": 32179,
+      "recommendation_nocot": 16090
+    }
+  },
+  "group_key": "recommendation_group_id",
+  "gold_contract": "unique recommendation_all_gold_sids",
+  "history_contract": "target-domain SID only from behavior-history blocks"
+}
