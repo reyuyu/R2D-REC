@@ -1,0 +1,123 @@
+{
+  "name": "truerec_grpo_frozen_rl_split_v1",
+  "seed": "20260825",
+  "hash_contract": "sha256(seed + recommendation_group_id)",
+  "stratum": "target_domain x novelty",
+  "allocation": "proportional largest remainder; Final then Dev in stable stratum order",
+  "source": {
+    "path": "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl",
+    "sha256": "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "source_route_rows": {
+      "recommendation_cot": 32179,
+      "recommendation_nocot": 16090
+    }
+  },
+  "counts": {
+    "full": 20531,
+    "train_pool": 17971,
+    "dev": 512,
+    "final_rl_heldout": 2048,
+    "probe20_dev_subset": 20
+  },
+  "stratum_allocations": {
+    "ad|H": {
+      "full": 435,
+      "final": 43,
+      "dev": 11,
+      "train": 381
+    },
+    "ad|N0": {
+      "full": 1068,
+      "final": 107,
+      "dev": 27,
+      "train": 934
+    },
+    "ad|N1": {
+      "full": 1265,
+      "final": 126,
+      "dev": 32,
+      "train": 1107
+    },
+    "ad|N2": {
+      "full": 658,
+      "final": 66,
+      "dev": 16,
+      "train": 576
+    },
+    "living|H": {
+      "full": 434,
+      "final": 43,
+      "dev": 11,
+      "train": 380
+    },
+    "living|N0": {
+      "full": 1716,
+      "final": 171,
+      "dev": 43,
+      "train": 1502
+    },
+    "living|N1": {
+      "full": 605,
+      "final": 60,
+      "dev": 15,
+      "train": 530
+    },
+    "living|N2": {
+      "full": 323,
+      "final": 32,
+      "dev": 8,
+      "train": 283
+    },
+    "prod|H": {
+      "full": 522,
+      "final": 52,
+      "dev": 13,
+      "train": 457
+    },
+    "prod|N0": {
+      "full": 1491,
+      "final": 149,
+      "dev": 37,
+      "train": 1305
+    },
+    "prod|N1": {
+      "full": 950,
+      "final": 95,
+      "dev": 24,
+      "train": 831
+    },
+    "prod|N2": {
+      "full": 162,
+      "final": 16,
+      "dev": 4,
+      "train": 142
+    },
+    "video|H": {
+      "full": 200,
+      "final": 20,
+      "dev": 5,
+      "train": 175
+    },
+    "video|N0": {
+      "full": 4826,
+      "final": 482,
+      "dev": 120,
+      "train": 4224
+    },
+    "video|N1": {
+      "full": 4472,
+      "final": 446,
+      "dev": 111,
+      "train": 3915
+    },
+    "video|N2": {
+      "full": 1404,
+      "final": 140,
+      "dev": 35,
+      "train": 1229
+    }
+  },
+  "heldout_semantics": "Dev and Final never enter RL optimizer; RL-heldout, not SFT-unseen"
+}

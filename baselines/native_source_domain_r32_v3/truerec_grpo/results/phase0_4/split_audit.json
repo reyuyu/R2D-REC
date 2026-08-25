@@ -1,0 +1,1161 @@
+{
+  "gates": {
+    "source_groups": 20531,
+    "train_pool_groups": 17971,
+    "dev_groups": 512,
+    "final_groups": 2048,
+    "probe_groups": 20,
+    "train_dev_overlap": 0,
+    "train_final_overlap": 0,
+    "dev_final_overlap": 0,
+    "probe_subset_of_dev": "PASS",
+    "all_groups_covered_once": "PASS",
+    "k1_removed_from_train": "NO",
+    "split_deterministic": "PASS"
+  },
+  "summaries": {
+    "full": {
+      "N": 20531,
+      "domain": {
+        "video": {
+          "count": 10902,
+          "rate": 0.5310019
+        },
+        "prod": {
+          "count": 3125,
+          "rate": 0.15220885
+        },
+        "ad": {
+          "count": 3426,
+          "rate": 0.16686961
+        },
+        "living": {
+          "count": 3078,
+          "rate": 0.14991963
+        }
+      },
+      "novelty": {
+        "H": {
+          "count": 1591,
+          "rate": 0.07749257
+        },
+        "N2": {
+          "count": 2547,
+          "rate": 0.12405631
+        },
+        "N1": {
+          "count": 7292,
+          "rate": 0.35517023
+        },
+        "N0": {
+          "count": 9101,
+          "rate": 0.44328089
+        }
+      },
+      "K_mean": 2.332522,
+      "K_median": 1,
+      "K_bucket": {
+        "K=1": {
+          "count": 12743,
+          "rate": 0.62067118
+        },
+        "K=2": {
+          "count": 2961,
+          "rate": 0.14422093
+        },
+        "K=3-5": {
+          "count": 3019,
+          "rate": 0.14704593
+        },
+        "K=6-10": {
+          "count": 1234,
+          "rate": 0.06010423
+        },
+        "K=11+": {
+          "count": 574,
+          "rate": 0.02795772
+        }
+      },
+      "domain_novelty": {
+        "video|H": {
+          "count": 200,
+          "rate": 0.00974137
+        },
+        "video|N2": {
+          "count": 1404,
+          "rate": 0.06838439
+        },
+        "video|N1": {
+          "count": 4472,
+          "rate": 0.21781696
+        },
+        "video|N0": {
+          "count": 4826,
+          "rate": 0.23505918
+        },
+        "prod|H": {
+          "count": 522,
+          "rate": 0.02542497
+        },
+        "prod|N2": {
+          "count": 162,
+          "rate": 0.00789051
+        },
+        "prod|N1": {
+          "count": 950,
+          "rate": 0.04627149
+        },
+        "prod|N0": {
+          "count": 1491,
+          "rate": 0.07262189
+        },
+        "ad|H": {
+          "count": 435,
+          "rate": 0.02118747
+        },
+        "ad|N2": {
+          "count": 658,
+          "rate": 0.0320491
+        },
+        "ad|N1": {
+          "count": 1265,
+          "rate": 0.06161414
+        },
+        "ad|N0": {
+          "count": 1068,
+          "rate": 0.0520189
+        },
+        "living|H": {
+          "count": 434,
+          "rate": 0.02113877
+        },
+        "living|N2": {
+          "count": 323,
+          "rate": 0.01573231
+        },
+        "living|N1": {
+          "count": 605,
+          "rate": 0.02946763
+        },
+        "living|N0": {
+          "count": 1716,
+          "rate": 0.08358093
+        }
+      },
+      "domain_K_bucket": {
+        "video|K=1": {
+          "count": 4113,
+          "rate": 0.20033121
+        },
+        "video|K=2": {
+          "count": 2217,
+          "rate": 0.10798305
+        },
+        "video|K=3-5": {
+          "count": 2790,
+          "rate": 0.13589207
+        },
+        "video|K=6-10": {
+          "count": 1209,
+          "rate": 0.05888656
+        },
+        "video|K=11+": {
+          "count": 573,
+          "rate": 0.02790902
+        },
+        "prod|K=1": {
+          "count": 2743,
+          "rate": 0.13360284
+        },
+        "prod|K=2": {
+          "count": 283,
+          "rate": 0.01378403
+        },
+        "prod|K=3-5": {
+          "count": 93,
+          "rate": 0.00452974
+        },
+        "prod|K=6-10": {
+          "count": 6,
+          "rate": 0.00029224
+        },
+        "prod|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "ad|K=1": {
+          "count": 2999,
+          "rate": 0.14607179
+        },
+        "ad|K=2": {
+          "count": 314,
+          "rate": 0.01529395
+        },
+        "ad|K=3-5": {
+          "count": 100,
+          "rate": 0.00487068
+        },
+        "ad|K=6-10": {
+          "count": 13,
+          "rate": 0.00063319
+        },
+        "ad|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=1": {
+          "count": 2888,
+          "rate": 0.14066534
+        },
+        "living|K=2": {
+          "count": 147,
+          "rate": 0.0071599
+        },
+        "living|K=3-5": {
+          "count": 36,
+          "rate": 0.00175345
+        },
+        "living|K=6-10": {
+          "count": 6,
+          "rate": 0.00029224
+        },
+        "living|K=11+": {
+          "count": 1,
+          "rate": 4.871e-05
+        }
+      }
+    },
+    "train": {
+      "N": 17971,
+      "domain": {
+        "video": {
+          "count": 9543,
+          "rate": 0.5310222
+        },
+        "prod": {
+          "count": 2735,
+          "rate": 0.15218964
+        },
+        "ad": {
+          "count": 2998,
+          "rate": 0.16682433
+        },
+        "living": {
+          "count": 2695,
+          "rate": 0.14996383
+        }
+      },
+      "novelty": {
+        "H": {
+          "count": 1393,
+          "rate": 0.07751377
+        },
+        "N2": {
+          "count": 2230,
+          "rate": 0.12408881
+        },
+        "N1": {
+          "count": 6383,
+          "rate": 0.35518335
+        },
+        "N0": {
+          "count": 7965,
+          "rate": 0.44321407
+        }
+      },
+      "K_mean": 2.327138,
+      "K_median": 1,
+      "K_bucket": {
+        "K=1": {
+          "count": 11200,
+          "rate": 0.62322631
+        },
+        "K=2": {
+          "count": 2546,
+          "rate": 0.14167269
+        },
+        "K=3-5": {
+          "count": 2641,
+          "rate": 0.14695899
+        },
+        "K=6-10": {
+          "count": 1094,
+          "rate": 0.06087586
+        },
+        "K=11+": {
+          "count": 490,
+          "rate": 0.02726615
+        }
+      },
+      "domain_novelty": {
+        "video|H": {
+          "count": 175,
+          "rate": 0.00973791
+        },
+        "video|N2": {
+          "count": 1229,
+          "rate": 0.06838796
+        },
+        "video|N1": {
+          "count": 3915,
+          "rate": 0.21785098
+        },
+        "video|N0": {
+          "count": 4224,
+          "rate": 0.23504535
+        },
+        "prod|H": {
+          "count": 457,
+          "rate": 0.02542986
+        },
+        "prod|N2": {
+          "count": 142,
+          "rate": 0.00790162
+        },
+        "prod|N1": {
+          "count": 831,
+          "rate": 0.04624117
+        },
+        "prod|N0": {
+          "count": 1305,
+          "rate": 0.07261699
+        },
+        "ad|H": {
+          "count": 381,
+          "rate": 0.02120082
+        },
+        "ad|N2": {
+          "count": 576,
+          "rate": 0.03205164
+        },
+        "ad|N1": {
+          "count": 1107,
+          "rate": 0.06159924
+        },
+        "ad|N0": {
+          "count": 934,
+          "rate": 0.05197262
+        },
+        "living|H": {
+          "count": 380,
+          "rate": 0.02114518
+        },
+        "living|N2": {
+          "count": 283,
+          "rate": 0.01574759
+        },
+        "living|N1": {
+          "count": 530,
+          "rate": 0.02949196
+        },
+        "living|N0": {
+          "count": 1502,
+          "rate": 0.0835791
+        }
+      },
+      "domain_K_bucket": {
+        "video|K=1": {
+          "count": 3623,
+          "rate": 0.20160258
+        },
+        "video|K=2": {
+          "count": 1918,
+          "rate": 0.10672751
+        },
+        "video|K=3-5": {
+          "count": 2441,
+          "rate": 0.13582995
+        },
+        "video|K=6-10": {
+          "count": 1072,
+          "rate": 0.05965166
+        },
+        "video|K=11+": {
+          "count": 489,
+          "rate": 0.02721051
+        },
+        "prod|K=1": {
+          "count": 2413,
+          "rate": 0.13427188
+        },
+        "prod|K=2": {
+          "count": 235,
+          "rate": 0.01307662
+        },
+        "prod|K=3-5": {
+          "count": 82,
+          "rate": 0.00456291
+        },
+        "prod|K=6-10": {
+          "count": 5,
+          "rate": 0.00027823
+        },
+        "prod|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "ad|K=1": {
+          "count": 2632,
+          "rate": 0.14645818
+        },
+        "ad|K=2": {
+          "count": 267,
+          "rate": 0.01485727
+        },
+        "ad|K=3-5": {
+          "count": 88,
+          "rate": 0.00489678
+        },
+        "ad|K=6-10": {
+          "count": 11,
+          "rate": 0.0006121
+        },
+        "ad|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=1": {
+          "count": 2532,
+          "rate": 0.14089366
+        },
+        "living|K=2": {
+          "count": 126,
+          "rate": 0.0070113
+        },
+        "living|K=3-5": {
+          "count": 30,
+          "rate": 0.00166936
+        },
+        "living|K=6-10": {
+          "count": 6,
+          "rate": 0.00033387
+        },
+        "living|K=11+": {
+          "count": 1,
+          "rate": 5.565e-05
+        }
+      }
+    },
+    "dev": {
+      "N": 512,
+      "domain": {
+        "video": {
+          "count": 271,
+          "rate": 0.52929688
+        },
+        "prod": {
+          "count": 78,
+          "rate": 0.15234375
+        },
+        "ad": {
+          "count": 86,
+          "rate": 0.16796875
+        },
+        "living": {
+          "count": 77,
+          "rate": 0.15039062
+        }
+      },
+      "novelty": {
+        "H": {
+          "count": 40,
+          "rate": 0.078125
+        },
+        "N2": {
+          "count": 63,
+          "rate": 0.12304688
+        },
+        "N1": {
+          "count": 182,
+          "rate": 0.35546875
+        },
+        "N0": {
+          "count": 227,
+          "rate": 0.44335938
+        }
+      },
+      "K_mean": 2.455078,
+      "K_median": 1.0,
+      "K_bucket": {
+        "K=1": {
+          "count": 305,
+          "rate": 0.59570312
+        },
+        "K=2": {
+          "count": 84,
+          "rate": 0.1640625
+        },
+        "K=3-5": {
+          "count": 74,
+          "rate": 0.14453125
+        },
+        "K=6-10": {
+          "count": 32,
+          "rate": 0.0625
+        },
+        "K=11+": {
+          "count": 17,
+          "rate": 0.03320312
+        }
+      },
+      "domain_novelty": {
+        "video|H": {
+          "count": 5,
+          "rate": 0.00976562
+        },
+        "video|N2": {
+          "count": 35,
+          "rate": 0.06835938
+        },
+        "video|N1": {
+          "count": 111,
+          "rate": 0.21679688
+        },
+        "video|N0": {
+          "count": 120,
+          "rate": 0.234375
+        },
+        "prod|H": {
+          "count": 13,
+          "rate": 0.02539062
+        },
+        "prod|N2": {
+          "count": 4,
+          "rate": 0.0078125
+        },
+        "prod|N1": {
+          "count": 24,
+          "rate": 0.046875
+        },
+        "prod|N0": {
+          "count": 37,
+          "rate": 0.07226562
+        },
+        "ad|H": {
+          "count": 11,
+          "rate": 0.02148438
+        },
+        "ad|N2": {
+          "count": 16,
+          "rate": 0.03125
+        },
+        "ad|N1": {
+          "count": 32,
+          "rate": 0.0625
+        },
+        "ad|N0": {
+          "count": 27,
+          "rate": 0.05273438
+        },
+        "living|H": {
+          "count": 11,
+          "rate": 0.02148438
+        },
+        "living|N2": {
+          "count": 8,
+          "rate": 0.015625
+        },
+        "living|N1": {
+          "count": 15,
+          "rate": 0.02929688
+        },
+        "living|N0": {
+          "count": 43,
+          "rate": 0.08398438
+        }
+      },
+      "domain_K_bucket": {
+        "video|K=1": {
+          "count": 90,
+          "rate": 0.17578125
+        },
+        "video|K=2": {
+          "count": 66,
+          "rate": 0.12890625
+        },
+        "video|K=3-5": {
+          "count": 67,
+          "rate": 0.13085938
+        },
+        "video|K=6-10": {
+          "count": 31,
+          "rate": 0.06054688
+        },
+        "video|K=11+": {
+          "count": 17,
+          "rate": 0.03320312
+        },
+        "prod|K=1": {
+          "count": 68,
+          "rate": 0.1328125
+        },
+        "prod|K=2": {
+          "count": 8,
+          "rate": 0.015625
+        },
+        "prod|K=3-5": {
+          "count": 1,
+          "rate": 0.00195312
+        },
+        "prod|K=6-10": {
+          "count": 1,
+          "rate": 0.00195312
+        },
+        "prod|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "ad|K=1": {
+          "count": 75,
+          "rate": 0.14648438
+        },
+        "ad|K=2": {
+          "count": 6,
+          "rate": 0.01171875
+        },
+        "ad|K=3-5": {
+          "count": 5,
+          "rate": 0.00976562
+        },
+        "ad|K=6-10": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "ad|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=1": {
+          "count": 72,
+          "rate": 0.140625
+        },
+        "living|K=2": {
+          "count": 4,
+          "rate": 0.0078125
+        },
+        "living|K=3-5": {
+          "count": 1,
+          "rate": 0.00195312
+        },
+        "living|K=6-10": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "final": {
+      "N": 2048,
+      "domain": {
+        "video": {
+          "count": 1088,
+          "rate": 0.53125
+        },
+        "prod": {
+          "count": 312,
+          "rate": 0.15234375
+        },
+        "ad": {
+          "count": 342,
+          "rate": 0.16699219
+        },
+        "living": {
+          "count": 306,
+          "rate": 0.14941406
+        }
+      },
+      "novelty": {
+        "H": {
+          "count": 158,
+          "rate": 0.07714844
+        },
+        "N2": {
+          "count": 254,
+          "rate": 0.12402344
+        },
+        "N1": {
+          "count": 727,
+          "rate": 0.35498047
+        },
+        "N0": {
+          "count": 909,
+          "rate": 0.44384766
+        }
+      },
+      "K_mean": 2.349121,
+      "K_median": 1.0,
+      "K_bucket": {
+        "K=1": {
+          "count": 1238,
+          "rate": 0.60449219
+        },
+        "K=2": {
+          "count": 331,
+          "rate": 0.16162109
+        },
+        "K=3-5": {
+          "count": 304,
+          "rate": 0.1484375
+        },
+        "K=6-10": {
+          "count": 108,
+          "rate": 0.05273438
+        },
+        "K=11+": {
+          "count": 67,
+          "rate": 0.03271484
+        }
+      },
+      "domain_novelty": {
+        "video|H": {
+          "count": 20,
+          "rate": 0.00976562
+        },
+        "video|N2": {
+          "count": 140,
+          "rate": 0.06835938
+        },
+        "video|N1": {
+          "count": 446,
+          "rate": 0.21777344
+        },
+        "video|N0": {
+          "count": 482,
+          "rate": 0.23535156
+        },
+        "prod|H": {
+          "count": 52,
+          "rate": 0.02539062
+        },
+        "prod|N2": {
+          "count": 16,
+          "rate": 0.0078125
+        },
+        "prod|N1": {
+          "count": 95,
+          "rate": 0.04638672
+        },
+        "prod|N0": {
+          "count": 149,
+          "rate": 0.07275391
+        },
+        "ad|H": {
+          "count": 43,
+          "rate": 0.02099609
+        },
+        "ad|N2": {
+          "count": 66,
+          "rate": 0.03222656
+        },
+        "ad|N1": {
+          "count": 126,
+          "rate": 0.06152344
+        },
+        "ad|N0": {
+          "count": 107,
+          "rate": 0.05224609
+        },
+        "living|H": {
+          "count": 43,
+          "rate": 0.02099609
+        },
+        "living|N2": {
+          "count": 32,
+          "rate": 0.015625
+        },
+        "living|N1": {
+          "count": 60,
+          "rate": 0.02929688
+        },
+        "living|N0": {
+          "count": 171,
+          "rate": 0.08349609
+        }
+      },
+      "domain_K_bucket": {
+        "video|K=1": {
+          "count": 400,
+          "rate": 0.1953125
+        },
+        "video|K=2": {
+          "count": 233,
+          "rate": 0.11376953
+        },
+        "video|K=3-5": {
+          "count": 282,
+          "rate": 0.13769531
+        },
+        "video|K=6-10": {
+          "count": 106,
+          "rate": 0.05175781
+        },
+        "video|K=11+": {
+          "count": 67,
+          "rate": 0.03271484
+        },
+        "prod|K=1": {
+          "count": 262,
+          "rate": 0.12792969
+        },
+        "prod|K=2": {
+          "count": 40,
+          "rate": 0.01953125
+        },
+        "prod|K=3-5": {
+          "count": 10,
+          "rate": 0.00488281
+        },
+        "prod|K=6-10": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "prod|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "ad|K=1": {
+          "count": 292,
+          "rate": 0.14257812
+        },
+        "ad|K=2": {
+          "count": 41,
+          "rate": 0.02001953
+        },
+        "ad|K=3-5": {
+          "count": 7,
+          "rate": 0.00341797
+        },
+        "ad|K=6-10": {
+          "count": 2,
+          "rate": 0.00097656
+        },
+        "ad|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=1": {
+          "count": 284,
+          "rate": 0.13867188
+        },
+        "living|K=2": {
+          "count": 17,
+          "rate": 0.00830078
+        },
+        "living|K=3-5": {
+          "count": 5,
+          "rate": 0.00244141
+        },
+        "living|K=6-10": {
+          "count": 0,
+          "rate": 0.0
+        },
+        "living|K=11+": {
+          "count": 0,
+          "rate": 0.0
+        }
+      }
+    }
+  },
+  "full_vs_split_drift": {
+    "train": {
+      "K_mean_difference": -0.005384,
+      "K_median_difference": 0,
+      "domain_percentage_point_drift": {
+        "video": 0.00203,
+        "prod": -0.001921,
+        "ad": -0.004528,
+        "living": 0.00442
+      },
+      "novelty_percentage_point_drift": {
+        "H": 0.00212,
+        "N2": 0.00325,
+        "N1": 0.001312,
+        "N0": -0.006682
+      },
+      "K_bucket_percentage_point_drift": {
+        "K=1": 0.255513,
+        "K=2": -0.254824,
+        "K=3-5": -0.008694,
+        "K=6-10": 0.077163,
+        "K=11+": -0.069157
+      },
+      "domain_novelty_percentage_point_drift": {
+        "video|H": -0.000346,
+        "video|N2": 0.000357,
+        "video|N1": 0.003402,
+        "video|N0": -0.001383,
+        "prod|H": 0.000489,
+        "prod|N2": 0.001111,
+        "prod|N1": -0.003032,
+        "prod|N0": -0.00049,
+        "ad|H": 0.001335,
+        "ad|N2": 0.000254,
+        "ad|N1": -0.00149,
+        "ad|N0": -0.004628,
+        "living|H": 0.000641,
+        "living|N2": 0.001528,
+        "living|N1": 0.002433,
+        "living|N0": -0.000183
+      },
+      "domain_K_bucket_percentage_point_drift": {
+        "video|K=1": 0.127137,
+        "video|K=2": -0.125554,
+        "video|K=3-5": -0.006212,
+        "video|K=6-10": 0.07651,
+        "video|K=11+": -0.069851,
+        "prod|K=1": 0.066904,
+        "prod|K=2": -0.070741,
+        "prod|K=3-5": 0.003317,
+        "prod|K=6-10": -0.001401,
+        "prod|K=11+": 0.0,
+        "ad|K=1": 0.038639,
+        "ad|K=2": -0.043668,
+        "ad|K=3-5": 0.00261,
+        "ad|K=6-10": -0.002109,
+        "ad|K=11+": 0.0,
+        "living|K=1": 0.022832,
+        "living|K=2": -0.01486,
+        "living|K=3-5": -0.008409,
+        "living|K=6-10": 0.004163,
+        "living|K=11+": 0.000694
+      }
+    },
+    "dev": {
+      "K_mean_difference": 0.122556,
+      "K_median_difference": 0.0,
+      "domain_percentage_point_drift": {
+        "video": -0.170502,
+        "prod": 0.01349,
+        "ad": 0.109914,
+        "living": 0.047099
+      },
+      "novelty_percentage_point_drift": {
+        "H": 0.063243,
+        "N2": -0.100943,
+        "N1": 0.029852,
+        "N0": 0.007849
+      },
+      "K_bucket_percentage_point_drift": {
+        "K=1": -2.496806,
+        "K=2": 1.984157,
+        "K=3-5": -0.251468,
+        "K=6-10": 0.239577,
+        "K=11+": 0.52454
+      },
+      "domain_novelty_percentage_point_drift": {
+        "video|H": 0.002425,
+        "video|N2": -0.002501,
+        "video|N1": -0.102008,
+        "video|N0": -0.068418,
+        "prod|H": -0.003435,
+        "prod|N2": -0.007801,
+        "prod|N1": 0.060351,
+        "prod|N0": -0.035627,
+        "ad|H": 0.029691,
+        "ad|N2": -0.07991,
+        "ad|N1": 0.088586,
+        "ad|N0": 0.071548,
+        "living|H": 0.034561,
+        "living|N2": -0.010731,
+        "living|N1": -0.017075,
+        "living|N0": 0.040345
+      },
+      "domain_K_bucket_percentage_point_drift": {
+        "video|K=1": -2.454996,
+        "video|K=2": 2.09232,
+        "video|K=3-5": -0.503269,
+        "video|K=6-10": 0.166032,
+        "video|K=11+": 0.52941,
+        "prod|K=1": -0.079034,
+        "prod|K=2": 0.184097,
+        "prod|K=3-5": -0.257662,
+        "prod|K=6-10": 0.166088,
+        "prod|K=11+": 0.0,
+        "ad|K=1": 0.041259,
+        "ad|K=2": -0.35752,
+        "ad|K=3-5": 0.489494,
+        "ad|K=6-10": -0.063319,
+        "ad|K=11+": 0.0,
+        "living|K=1": -0.004034,
+        "living|K=2": 0.06526,
+        "living|K=3-5": 0.019967,
+        "living|K=6-10": -0.029224,
+        "living|K=11+": -0.004871
+      }
+    },
+    "final": {
+      "K_mean_difference": 0.016599,
+      "K_median_difference": 0.0,
+      "domain_percentage_point_drift": {
+        "video": 0.02481,
+        "prod": 0.01349,
+        "ad": 0.012258,
+        "living": -0.050557
+      },
+      "novelty_percentage_point_drift": {
+        "H": -0.034413,
+        "N2": -0.003287,
+        "N1": -0.018976,
+        "N0": 0.056677
+      },
+      "K_bucket_percentage_point_drift": {
+        "K=1": -1.617899,
+        "K=2": 1.740016,
+        "K=3-5": 0.139157,
+        "K=6-10": -0.736985,
+        "K=11+": 0.475712
+      },
+      "domain_novelty_percentage_point_drift": {
+        "video|H": 0.002425,
+        "video|N2": -0.002501,
+        "video|N1": -0.004352,
+        "video|N0": 0.029238,
+        "prod|H": -0.003435,
+        "prod|N2": -0.007801,
+        "prod|N1": 0.011523,
+        "prod|N0": 0.013202,
+        "ad|H": -0.019138,
+        "ad|N2": 0.017746,
+        "ad|N1": -0.00907,
+        "ad|N0": 0.022719,
+        "living|H": -0.014268,
+        "living|N2": -0.010731,
+        "living|N1": -0.017075,
+        "living|N0": -0.008484
+      },
+      "domain_K_bucket_percentage_point_drift": {
+        "video|K=1": -0.501871,
+        "video|K=2": 0.578648,
+        "video|K=3-5": 0.180324,
+        "video|K=6-10": -0.712875,
+        "video|K=11+": 0.480582,
+        "prod|K=1": -0.567315,
+        "prod|K=2": 0.574722,
+        "prod|K=3-5": 0.035307,
+        "prod|K=6-10": -0.029224,
+        "prod|K=11+": 0.0,
+        "ad|K=1": -0.349367,
+        "ad|K=2": 0.472558,
+        "ad|K=3-5": -0.145271,
+        "ad|K=6-10": 0.034337,
+        "ad|K=11+": 0.0,
+        "living|K=1": -0.199346,
+        "living|K=2": 0.114088,
+        "living|K=3-5": 0.068796,
+        "living|K=6-10": -0.029224,
+        "living|K=11+": -0.004871
+      }
+    }
+  },
+  "stratum_allocations": {
+    "ad|H": {
+      "full": 435,
+      "final": 43,
+      "dev": 11,
+      "train": 381
+    },
+    "ad|N0": {
+      "full": 1068,
+      "final": 107,
+      "dev": 27,
+      "train": 934
+    },
+    "ad|N1": {
+      "full": 1265,
+      "final": 126,
+      "dev": 32,
+      "train": 1107
+    },
+    "ad|N2": {
+      "full": 658,
+      "final": 66,
+      "dev": 16,
+      "train": 576
+    },
+    "living|H": {
+      "full": 434,
+      "final": 43,
+      "dev": 11,
+      "train": 380
+    },
+    "living|N0": {
+      "full": 1716,
+      "final": 171,
+      "dev": 43,
+      "train": 1502
+    },
+    "living|N1": {
+      "full": 605,
+      "final": 60,
+      "dev": 15,
+      "train": 530
+    },
+    "living|N2": {
+      "full": 323,
+      "final": 32,
+      "dev": 8,
+      "train": 283
+    },
+    "prod|H": {
+      "full": 522,
+      "final": 52,
+      "dev": 13,
+      "train": 457
+    },
+    "prod|N0": {
+      "full": 1491,
+      "final": 149,
+      "dev": 37,
+      "train": 1305
+    },
+    "prod|N1": {
+      "full": 950,
+      "final": 95,
+      "dev": 24,
+      "train": 831
+    },
+    "prod|N2": {
+      "full": 162,
+      "final": 16,
+      "dev": 4,
+      "train": 142
+    },
+    "video|H": {
+      "full": 200,
+      "final": 20,
+      "dev": 5,
+      "train": 175
+    },
+    "video|N0": {
+      "full": 4826,
+      "final": 482,
+      "dev": 120,
+      "train": 4224
+    },
+    "video|N1": {
+      "full": 4472,
+      "final": 446,
+      "dev": 111,
+      "train": 3915
+    },
+    "video|N2": {
+      "full": 1404,
+      "final": 140,
+      "dev": 35,
+      "train": 1229
+    }
+  },
+  "source": {
+    "path": "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl",
+    "sha256": "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "source_route_rows": {
+      "recommendation_cot": 32179,
+      "recommendation_nocot": 16090
+    }
+  }
+}

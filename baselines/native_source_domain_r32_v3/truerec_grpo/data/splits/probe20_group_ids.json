@@ -1,0 +1,142 @@
+[
+  {
+    "recommendation_group_id": "2e88e7643b5849bbd6b71dbb0cc388366ef1debdf4e72e3006868ea6f47a459c",
+    "target_domain": "video",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "8b89f551b263c1cf2f10b384d3caa048f4b0848bcbbeae9f3878f769eb3583bd",
+    "target_domain": "video",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "6b205292c46e1d538042f52de4d3e56b72ef15008602c1b1af2fcdf87c7ed1e3",
+    "target_domain": "video",
+    "novelty": "N1",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "6cdc3c3c4426ac091845db8786c0b21011d14aa389c516d852a5d59ca432147a",
+    "target_domain": "video",
+    "novelty": "N2",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "8bc7880620849e6896b6d5a0ceeb119ab1ffeb21ae6c9830b6ba7e00c4755b57",
+    "target_domain": "video",
+    "novelty": "H",
+    "K": 2,
+    "K_bucket": "K=2"
+  },
+  {
+    "recommendation_group_id": "ae85d8af7042c884eddd0a15a2b010b55d55b8ba15c38727a13c0b50fbc550c7",
+    "target_domain": "prod",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "33a72f5cae3b6b331eae9e9151b8b1ebe95532ea6a4f96e00bd6adbaf7638b7f",
+    "target_domain": "prod",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "4b031bb236b7533fa34e52ff921a7df25e93f49d5aaa93d4d1a5ca4ed1085bc5",
+    "target_domain": "prod",
+    "novelty": "N1",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "b5da280b9e163c44fa30253682118d7a0bd36b529badd6537c23be91f8251b3f",
+    "target_domain": "prod",
+    "novelty": "N2",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "ad2b8241ddf6ac36170084aaff2ca6731beb1fd9b7dbb34ff18be0c633e6b895",
+    "target_domain": "prod",
+    "novelty": "H",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "175498ed69eaf6865078ae39cbca28b383eeaab1e849245688acc17d7ea57b7e",
+    "target_domain": "ad",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "e2af7b8b78f573e25df5760a7e0db312d20a2514ecf042a0da0c2f8bfe43e386",
+    "target_domain": "ad",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "660e0fb979ff1420e950eab9e08fa728e885fcb3f6914057cbaeb7251608b2f0",
+    "target_domain": "ad",
+    "novelty": "N1",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "44c9026fa48f6d61721876782f0ad4452518101e57ccfca24e8a7162a35bd893",
+    "target_domain": "ad",
+    "novelty": "N2",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "22aa83e11f389d33ce60246ef0a7ecf1d4ed544bbdcaedde04b1277529ebff48",
+    "target_domain": "ad",
+    "novelty": "H",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "c641306d97e5dd5ea83650c90d72d2c0f00f023d5782339866e6977ef9afcd35",
+    "target_domain": "living",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "8041ac8d215b4fcf657cd7a262bad3b11b07e778f9b95ca3aa698935befabda4",
+    "target_domain": "living",
+    "novelty": "N0",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "c255d273fa269700dfb12f0387b8b0bac9e14919cff861036d9cb5dfe1e49473",
+    "target_domain": "living",
+    "novelty": "N1",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "1602f60fb94357050814dda0d939936b74174c1a47ca113839e17dea6afd1488",
+    "target_domain": "living",
+    "novelty": "N2",
+    "K": 1,
+    "K_bucket": "K=1"
+  },
+  {
+    "recommendation_group_id": "416bbcf6f35db60e3d737d598797c656ef227b141fd3dd9ff9b22f1b052236b8",
+    "target_domain": "living",
+    "novelty": "H",
+    "K": 1,
+    "K_bucket": "K=1"
+  }
+]
