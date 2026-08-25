@@ -1,0 +1,78 @@
+{
+  "source": {
+    "path": "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl",
+    "sha256": "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "canonical_prompt_conflict_groups": 0,
+    "canonical_prompt_conflict_examples": [],
+    "think_derived_nothink_groups": 10589,
+    "route_marker_only_transformation": "PASS",
+    "renderer_contract": {
+      "beta_gamma_run": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+      "tokenizer_json": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/tokenizer.json",
+      "tokenizer_json_sha256": "0be9ef1be1eac715f9a14a78277f70b3f0596d0cb61a8dbc8fc4aad2abb20a9a",
+      "tokenizer_config_sha256": "47fb9a938aadb92d2023e81b4b4eca16772853d8a4da9654f1444e0e2c89373a",
+      "exported_chat_template": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/chat_template.jinja",
+      "exported_chat_template_sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
+      "source_config_sha256": "b6286f6e96f6dd8a34c816ffa93aa0ddfd7bec7c927fa14aec3c2ab2f83d7b5a",
+      "training_renderer": "LLaMA-Factory qwen3_nothink",
+      "llamafactory_reference": "/data/reference/llamafactory-01398eb",
+      "llamafactory_commit": "01398eb18dd475a6e27c36f15b970aeacf0d4a60",
+      "template_py_sha256": "68f289bb28c434e7d26cb36bd4351ea4636f9e102bf374d9a84f642565d9f84e",
+      "converter_py_sha256": "c596efb447fb50fc915f6aa5c4f228d5409fba83808e23015a1bcf3387a3ffbf",
+      "alpaca_user_join": "newline join of non-empty instruction and input"
+    }
+  },
+  "records": {
+    "source_groups": 20531,
+    "train_records": 17971,
+    "dev_records": 512,
+    "final_records": 2048,
+    "probe_records": 20,
+    "canonical_prompt_conflict_groups": 0,
+    "bridge_contaminated_records": 0,
+    "domain_is_context": "YES",
+    "domain_is_rl_action": "NO",
+    "rl_action_levels": [
+      "A",
+      "B",
+      "C"
+    ],
+    "rl_action_token_count": 3,
+    "empty_gold_records": 0,
+    "gold_domain_mismatch_records": 0,
+    "probe_subset_of_dev": "PASS",
+    "train_dev_final_match_frozen_manifests": "PASS",
+    "probe_optimizer_eligible": false,
+    "frozen_split": {
+      "sha256": {
+        "train_pool_group_ids.json": "ef645cf62cf50f619b62f2d0fbfb267dd4f8df6c5cfc89c70a7977df3aecf724",
+        "dev_group_ids.json": "70341b476c57e4d7dc961ccf423ab3991a42375af1989bad040be4134e8f4fe4",
+        "final_group_ids.json": "e6be46befa8ed320fb0762e6df23f553c6646297bdf5649003e332c04b2e61d0",
+        "probe20_group_ids.json": "7193f540ee229ef53b7ca09e541f065396fe212a8cfd43893cceff499d83abdf"
+      },
+      "counts": {
+        "train_pool": 17971,
+        "dev": 512,
+        "final": 2048,
+        "probe": 20
+      }
+    },
+    "renderer": {
+      "beta_gamma_run": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+      "tokenizer_json": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/tokenizer.json",
+      "tokenizer_json_sha256": "0be9ef1be1eac715f9a14a78277f70b3f0596d0cb61a8dbc8fc4aad2abb20a9a",
+      "tokenizer_config_sha256": "47fb9a938aadb92d2023e81b4b4eca16772853d8a4da9654f1444e0e2c89373a",
+      "exported_chat_template": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/chat_template.jinja",
+      "exported_chat_template_sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
+      "source_config_sha256": "b6286f6e96f6dd8a34c816ffa93aa0ddfd7bec7c927fa14aec3c2ab2f83d7b5a",
+      "training_renderer": "LLaMA-Factory qwen3_nothink",
+      "llamafactory_reference": "/data/reference/llamafactory-01398eb",
+      "llamafactory_commit": "01398eb18dd475a6e27c36f15b970aeacf0d4a60",
+      "template_py_sha256": "68f289bb28c434e7d26cb36bd4351ea4636f9e102bf374d9a84f642565d9f84e",
+      "converter_py_sha256": "c596efb447fb50fc915f6aa5c4f228d5409fba83808e23015a1bcf3387a3ffbf",
+      "alpaca_user_join": "newline join of non-empty instruction and input"
+    }
+  }
+}

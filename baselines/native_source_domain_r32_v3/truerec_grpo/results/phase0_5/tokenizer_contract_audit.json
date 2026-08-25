@@ -1,0 +1,39 @@
+{
+  "domain_token_ids": {
+    "video": [
+      176245
+    ],
+    "prod": [
+      176247
+    ],
+    "ad": [
+      176251
+    ],
+    "living": [
+      176249
+    ]
+  },
+  "domain_token_single_token": "PASS",
+  "component_unique_counts": {
+    "A": 4190,
+    "B": 2757,
+    "C": 3948
+  },
+  "component_failure_counts": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+  },
+  "component_failure_examples": {
+    "A": [],
+    "B": [],
+    "C": []
+  },
+  "A_component_single_token": "PASS",
+  "B_component_single_token": "PASS",
+  "C_component_single_token": "PASS",
+  "abc_unique_actions": 46284,
+  "abc_failure_count": 0,
+  "abc_failure_examples": [],
+  "abc_action_exactly_3_tokens": "PASS"
+}

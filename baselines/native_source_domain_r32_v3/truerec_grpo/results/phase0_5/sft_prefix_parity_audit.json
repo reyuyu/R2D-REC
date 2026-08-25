@@ -1,0 +1,8 @@
+{
+  "sft_prefix_parity_rows": 16090,
+  "sft_prefix_parity_pass": 16090,
+  "sft_prefix_parity_fail": 0,
+  "failure_examples": [],
+  "real_nothink_unique_prompt_cache": 9942,
+  "contract": "RL_CONTEXT_IDS == SFT full input_ids before first A action token"
+}
