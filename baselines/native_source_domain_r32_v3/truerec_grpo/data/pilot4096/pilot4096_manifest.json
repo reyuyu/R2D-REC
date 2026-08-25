@@ -1,0 +1,340 @@
+{
+  "name": "truerec_grpo_signal_aware_pilot4096_v1",
+  "seed": "20260825",
+  "source": {
+    "path": "/data/GRPO/truerec_grpo/data/fixed_domain_abc/train_records.jsonl",
+    "sha256": "97edc2d3c600dbd073f6c694a3d497c5dba10e42ce0350628b63eddbca79ca7e",
+    "groups": 17971
+  },
+  "groups": 4096,
+  "domain_policy": "exact 1024 per domain",
+  "novelty_policy": "PRESERVE_WITHIN_DOMAIN_TRAIN_DISTRIBUTION",
+  "K_weight": "min(2.0, sqrt(K))",
+  "weighted_priority": "-log(SHA256-derived open-interval uniform) / K_weight",
+  "K_weighting_constraint": "applied only within fixed Domain x Novelty cells; cannot change novelty composition",
+  "performance_claim": "none; this manifest records a sampling contract only",
+  "quota": {
+    "policy": "PRESERVE_WITHIN_DOMAIN_TRAIN_DISTRIBUTION",
+    "domain_quota": 1024,
+    "train_cell_counts": {
+      "video": {
+        "H": 175,
+        "N2": 1229,
+        "N1": 3915,
+        "N0": 4224
+      },
+      "prod": {
+        "H": 457,
+        "N2": 142,
+        "N1": 831,
+        "N0": 1305
+      },
+      "ad": {
+        "H": 381,
+        "N2": 576,
+        "N1": 1107,
+        "N0": 934
+      },
+      "living": {
+        "H": 380,
+        "N2": 283,
+        "N1": 530,
+        "N0": 1502
+      }
+    },
+    "pilot_cell_quota": {
+      "video": {
+        "H": 19,
+        "N2": 132,
+        "N1": 420,
+        "N0": 453
+      },
+      "prod": {
+        "H": 171,
+        "N2": 53,
+        "N1": 311,
+        "N0": 489
+      },
+      "ad": {
+        "H": 130,
+        "N2": 197,
+        "N1": 378,
+        "N0": 319
+      },
+      "living": {
+        "H": 144,
+        "N2": 108,
+        "N1": 201,
+        "N0": 571
+      }
+    },
+    "K_weighting_scope": "within fixed target_domain x novelty cells only"
+  },
+  "safety": {
+    "train_pool_groups": 17971,
+    "pilot_groups": 4096,
+    "pilot_unique_groups": 4096,
+    "domain_counts": {
+      "video": 1024,
+      "prod": 1024,
+      "ad": 1024,
+      "living": 1024
+    },
+    "novelty_counts": {
+      "H": 464,
+      "N2": 490,
+      "N1": 1310,
+      "N0": 1832
+    },
+    "pilot_subset_of_train": "PASS",
+    "pilot_dev_overlap": 0,
+    "pilot_final_overlap": 0,
+    "pilot_probe_overlap": 0,
+    "domain_quota_exact": "PASS",
+    "novelty_quota_exact": "PASS",
+    "K1_present_in_pilot": "PASS",
+    "N0_present_in_every_domain": "PASS",
+    "pilot_record_mutation_count": 0
+  },
+  "pilot_distribution": {
+    "N": 4096,
+    "domain": {
+      "video": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "prod": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "ad": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "living": {
+        "count": 1024,
+        "rate": 0.25
+      }
+    },
+    "novelty": {
+      "H": {
+        "count": 464,
+        "rate": 0.11328125
+      },
+      "N2": {
+        "count": 490,
+        "rate": 0.11962891
+      },
+      "N1": {
+        "count": 1310,
+        "rate": 0.31982422
+      },
+      "N0": {
+        "count": 1832,
+        "rate": 0.44726562
+      }
+    },
+    "domain_novelty": {
+      "video|H": {
+        "count": 19,
+        "rate": 0.00463867
+      },
+      "video|N2": {
+        "count": 132,
+        "rate": 0.03222656
+      },
+      "video|N1": {
+        "count": 420,
+        "rate": 0.10253906
+      },
+      "video|N0": {
+        "count": 453,
+        "rate": 0.1105957
+      },
+      "prod|H": {
+        "count": 171,
+        "rate": 0.04174805
+      },
+      "prod|N2": {
+        "count": 53,
+        "rate": 0.01293945
+      },
+      "prod|N1": {
+        "count": 311,
+        "rate": 0.07592773
+      },
+      "prod|N0": {
+        "count": 489,
+        "rate": 0.11938477
+      },
+      "ad|H": {
+        "count": 130,
+        "rate": 0.03173828
+      },
+      "ad|N2": {
+        "count": 197,
+        "rate": 0.0480957
+      },
+      "ad|N1": {
+        "count": 378,
+        "rate": 0.09228516
+      },
+      "ad|N0": {
+        "count": 319,
+        "rate": 0.07788086
+      },
+      "living|H": {
+        "count": 144,
+        "rate": 0.03515625
+      },
+      "living|N2": {
+        "count": 108,
+        "rate": 0.02636719
+      },
+      "living|N1": {
+        "count": 201,
+        "rate": 0.04907227
+      },
+      "living|N0": {
+        "count": 571,
+        "rate": 0.1394043
+      }
+    },
+    "K_mean": 1.893311,
+    "K_median": 1.0,
+    "K_bucket": {
+      "K=1": {
+        "count": 2957,
+        "rate": 0.72192383
+      },
+      "K=2": {
+        "count": 481,
+        "rate": 0.11743164
+      },
+      "K=3-5": {
+        "count": 430,
+        "rate": 0.10498047
+      },
+      "K=6-10": {
+        "count": 158,
+        "rate": 0.03857422
+      },
+      "K=11+": {
+        "count": 70,
+        "rate": 0.01708984
+      }
+    },
+    "domain_K": {
+      "video": {
+        "N": 1024,
+        "K_mean": 3.97168,
+        "K_median": 3.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 288,
+            "rate": 0.28125
+          },
+          "K=2": {
+            "count": 196,
+            "rate": 0.19140625
+          },
+          "K=3-5": {
+            "count": 323,
+            "rate": 0.31542969
+          },
+          "K=6-10": {
+            "count": 147,
+            "rate": 0.14355469
+          },
+          "K=11+": {
+            "count": 70,
+            "rate": 0.06835938
+          }
+        }
+      },
+      "prod": {
+        "N": 1024,
+        "K_mean": 1.243164,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 861,
+            "rate": 0.84082031
+          },
+          "K=2": {
+            "count": 112,
+            "rate": 0.109375
+          },
+          "K=3-5": {
+            "count": 48,
+            "rate": 0.046875
+          },
+          "K=6-10": {
+            "count": 3,
+            "rate": 0.00292969
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "ad": {
+        "N": 1024,
+        "K_mean": 1.241211,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 868,
+            "rate": 0.84765625
+          },
+          "K=2": {
+            "count": 112,
+            "rate": 0.109375
+          },
+          "K=3-5": {
+            "count": 38,
+            "rate": 0.03710938
+          },
+          "K=6-10": {
+            "count": 6,
+            "rate": 0.00585938
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "living": {
+        "N": 1024,
+        "K_mean": 1.117188,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 940,
+            "rate": 0.91796875
+          },
+          "K=2": {
+            "count": 61,
+            "rate": 0.05957031
+          },
+          "K=3-5": {
+            "count": 21,
+            "rate": 0.02050781
+          },
+          "K=6-10": {
+            "count": 2,
+            "rate": 0.00195312
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    }
+  },
+  "pilot_group_ids_sha256": "35febc34c0b08d365b3091e1d34b7dcc121ca15ece11f78ad367dd7c48321b5a",
+  "pilot_records_sha256": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879"
+}

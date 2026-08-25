@@ -1,0 +1,803 @@
+{
+  "train_pool": {
+    "N": 17971,
+    "domain": {
+      "video": {
+        "count": 9543,
+        "rate": 0.5310222
+      },
+      "prod": {
+        "count": 2735,
+        "rate": 0.15218964
+      },
+      "ad": {
+        "count": 2998,
+        "rate": 0.16682433
+      },
+      "living": {
+        "count": 2695,
+        "rate": 0.14996383
+      }
+    },
+    "novelty": {
+      "H": {
+        "count": 1393,
+        "rate": 0.07751377
+      },
+      "N2": {
+        "count": 2230,
+        "rate": 0.12408881
+      },
+      "N1": {
+        "count": 6383,
+        "rate": 0.35518335
+      },
+      "N0": {
+        "count": 7965,
+        "rate": 0.44321407
+      }
+    },
+    "domain_novelty": {
+      "video|H": {
+        "count": 175,
+        "rate": 0.00973791
+      },
+      "video|N2": {
+        "count": 1229,
+        "rate": 0.06838796
+      },
+      "video|N1": {
+        "count": 3915,
+        "rate": 0.21785098
+      },
+      "video|N0": {
+        "count": 4224,
+        "rate": 0.23504535
+      },
+      "prod|H": {
+        "count": 457,
+        "rate": 0.02542986
+      },
+      "prod|N2": {
+        "count": 142,
+        "rate": 0.00790162
+      },
+      "prod|N1": {
+        "count": 831,
+        "rate": 0.04624117
+      },
+      "prod|N0": {
+        "count": 1305,
+        "rate": 0.07261699
+      },
+      "ad|H": {
+        "count": 381,
+        "rate": 0.02120082
+      },
+      "ad|N2": {
+        "count": 576,
+        "rate": 0.03205164
+      },
+      "ad|N1": {
+        "count": 1107,
+        "rate": 0.06159924
+      },
+      "ad|N0": {
+        "count": 934,
+        "rate": 0.05197262
+      },
+      "living|H": {
+        "count": 380,
+        "rate": 0.02114518
+      },
+      "living|N2": {
+        "count": 283,
+        "rate": 0.01574759
+      },
+      "living|N1": {
+        "count": 530,
+        "rate": 0.02949196
+      },
+      "living|N0": {
+        "count": 1502,
+        "rate": 0.0835791
+      }
+    },
+    "K_mean": 2.327138,
+    "K_median": 1,
+    "K_bucket": {
+      "K=1": {
+        "count": 11200,
+        "rate": 0.62322631
+      },
+      "K=2": {
+        "count": 2546,
+        "rate": 0.14167269
+      },
+      "K=3-5": {
+        "count": 2641,
+        "rate": 0.14695899
+      },
+      "K=6-10": {
+        "count": 1094,
+        "rate": 0.06087586
+      },
+      "K=11+": {
+        "count": 490,
+        "rate": 0.02726615
+      }
+    },
+    "domain_K": {
+      "video": {
+        "N": 9543,
+        "K_mean": 3.366027,
+        "K_median": 2,
+        "K_bucket": {
+          "K=1": {
+            "count": 3623,
+            "rate": 0.37965001
+          },
+          "K=2": {
+            "count": 1918,
+            "rate": 0.20098502
+          },
+          "K=3-5": {
+            "count": 2441,
+            "rate": 0.25578958
+          },
+          "K=6-10": {
+            "count": 1072,
+            "rate": 0.11233365
+          },
+          "K=11+": {
+            "count": 489,
+            "rate": 0.05124175
+          }
+        }
+      },
+      "prod": {
+        "N": 2735,
+        "K_mean": 1.171115,
+        "K_median": 1,
+        "K_bucket": {
+          "K=1": {
+            "count": 2413,
+            "rate": 0.88226691
+          },
+          "K=2": {
+            "count": 235,
+            "rate": 0.08592322
+          },
+          "K=3-5": {
+            "count": 82,
+            "rate": 0.02998172
+          },
+          "K=6-10": {
+            "count": 5,
+            "rate": 0.00182815
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "ad": {
+        "N": 2998,
+        "K_mean": 1.185791,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 2632,
+            "rate": 0.87791861
+          },
+          "K=2": {
+            "count": 267,
+            "rate": 0.08905937
+          },
+          "K=3-5": {
+            "count": 88,
+            "rate": 0.0293529
+          },
+          "K=6-10": {
+            "count": 11,
+            "rate": 0.00366911
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "living": {
+        "N": 2695,
+        "K_mean": 1.09128,
+        "K_median": 1,
+        "K_bucket": {
+          "K=1": {
+            "count": 2532,
+            "rate": 0.93951763
+          },
+          "K=2": {
+            "count": 126,
+            "rate": 0.04675325
+          },
+          "K=3-5": {
+            "count": 30,
+            "rate": 0.01113173
+          },
+          "K=6-10": {
+            "count": 6,
+            "rate": 0.00222635
+          },
+          "K=11+": {
+            "count": 1,
+            "rate": 0.00037106
+          }
+        }
+      }
+    }
+  },
+  "pilot4096": {
+    "N": 4096,
+    "domain": {
+      "video": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "prod": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "ad": {
+        "count": 1024,
+        "rate": 0.25
+      },
+      "living": {
+        "count": 1024,
+        "rate": 0.25
+      }
+    },
+    "novelty": {
+      "H": {
+        "count": 464,
+        "rate": 0.11328125
+      },
+      "N2": {
+        "count": 490,
+        "rate": 0.11962891
+      },
+      "N1": {
+        "count": 1310,
+        "rate": 0.31982422
+      },
+      "N0": {
+        "count": 1832,
+        "rate": 0.44726562
+      }
+    },
+    "domain_novelty": {
+      "video|H": {
+        "count": 19,
+        "rate": 0.00463867
+      },
+      "video|N2": {
+        "count": 132,
+        "rate": 0.03222656
+      },
+      "video|N1": {
+        "count": 420,
+        "rate": 0.10253906
+      },
+      "video|N0": {
+        "count": 453,
+        "rate": 0.1105957
+      },
+      "prod|H": {
+        "count": 171,
+        "rate": 0.04174805
+      },
+      "prod|N2": {
+        "count": 53,
+        "rate": 0.01293945
+      },
+      "prod|N1": {
+        "count": 311,
+        "rate": 0.07592773
+      },
+      "prod|N0": {
+        "count": 489,
+        "rate": 0.11938477
+      },
+      "ad|H": {
+        "count": 130,
+        "rate": 0.03173828
+      },
+      "ad|N2": {
+        "count": 197,
+        "rate": 0.0480957
+      },
+      "ad|N1": {
+        "count": 378,
+        "rate": 0.09228516
+      },
+      "ad|N0": {
+        "count": 319,
+        "rate": 0.07788086
+      },
+      "living|H": {
+        "count": 144,
+        "rate": 0.03515625
+      },
+      "living|N2": {
+        "count": 108,
+        "rate": 0.02636719
+      },
+      "living|N1": {
+        "count": 201,
+        "rate": 0.04907227
+      },
+      "living|N0": {
+        "count": 571,
+        "rate": 0.1394043
+      }
+    },
+    "K_mean": 1.893311,
+    "K_median": 1.0,
+    "K_bucket": {
+      "K=1": {
+        "count": 2957,
+        "rate": 0.72192383
+      },
+      "K=2": {
+        "count": 481,
+        "rate": 0.11743164
+      },
+      "K=3-5": {
+        "count": 430,
+        "rate": 0.10498047
+      },
+      "K=6-10": {
+        "count": 158,
+        "rate": 0.03857422
+      },
+      "K=11+": {
+        "count": 70,
+        "rate": 0.01708984
+      }
+    },
+    "domain_K": {
+      "video": {
+        "N": 1024,
+        "K_mean": 3.97168,
+        "K_median": 3.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 288,
+            "rate": 0.28125
+          },
+          "K=2": {
+            "count": 196,
+            "rate": 0.19140625
+          },
+          "K=3-5": {
+            "count": 323,
+            "rate": 0.31542969
+          },
+          "K=6-10": {
+            "count": 147,
+            "rate": 0.14355469
+          },
+          "K=11+": {
+            "count": 70,
+            "rate": 0.06835938
+          }
+        }
+      },
+      "prod": {
+        "N": 1024,
+        "K_mean": 1.243164,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 861,
+            "rate": 0.84082031
+          },
+          "K=2": {
+            "count": 112,
+            "rate": 0.109375
+          },
+          "K=3-5": {
+            "count": 48,
+            "rate": 0.046875
+          },
+          "K=6-10": {
+            "count": 3,
+            "rate": 0.00292969
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "ad": {
+        "N": 1024,
+        "K_mean": 1.241211,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 868,
+            "rate": 0.84765625
+          },
+          "K=2": {
+            "count": 112,
+            "rate": 0.109375
+          },
+          "K=3-5": {
+            "count": 38,
+            "rate": 0.03710938
+          },
+          "K=6-10": {
+            "count": 6,
+            "rate": 0.00585938
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "living": {
+        "N": 1024,
+        "K_mean": 1.117188,
+        "K_median": 1.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 940,
+            "rate": 0.91796875
+          },
+          "K=2": {
+            "count": 61,
+            "rate": 0.05957031
+          },
+          "K=3-5": {
+            "count": 21,
+            "rate": 0.02050781
+          },
+          "K=6-10": {
+            "count": 2,
+            "rate": 0.00195312
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      }
+    }
+  },
+  "old_grpo_1549": {
+    "N": 1549,
+    "domain": {
+      "video": {
+        "count": 550,
+        "rate": 0.35506779
+      },
+      "prod": {
+        "count": 382,
+        "rate": 0.24661072
+      },
+      "ad": {
+        "count": 427,
+        "rate": 0.27566172
+      },
+      "living": {
+        "count": 190,
+        "rate": 0.12265978
+      }
+    },
+    "novelty": {
+      "H": {
+        "count": 260,
+        "rate": 0.16785023
+      },
+      "N2": {
+        "count": 393,
+        "rate": 0.25371207
+      },
+      "N1": {
+        "count": 634,
+        "rate": 0.40929632
+      },
+      "N0": {
+        "count": 262,
+        "rate": 0.16914138
+      }
+    },
+    "domain_novelty": {
+      "video|H": {
+        "count": 52,
+        "rate": 0.03357005
+      },
+      "video|N2": {
+        "count": 203,
+        "rate": 0.13105229
+      },
+      "video|N1": {
+        "count": 279,
+        "rate": 0.1801162
+      },
+      "video|N0": {
+        "count": 16,
+        "rate": 0.01032924
+      },
+      "prod|H": {
+        "count": 84,
+        "rate": 0.05422853
+      },
+      "prod|N2": {
+        "count": 35,
+        "rate": 0.02259522
+      },
+      "prod|N1": {
+        "count": 143,
+        "rate": 0.09231762
+      },
+      "prod|N0": {
+        "count": 120,
+        "rate": 0.07746934
+      },
+      "ad|H": {
+        "count": 101,
+        "rate": 0.06520336
+      },
+      "ad|N2": {
+        "count": 111,
+        "rate": 0.07165913
+      },
+      "ad|N1": {
+        "count": 171,
+        "rate": 0.1103938
+      },
+      "ad|N0": {
+        "count": 44,
+        "rate": 0.02840542
+      },
+      "living|H": {
+        "count": 23,
+        "rate": 0.01484829
+      },
+      "living|N2": {
+        "count": 44,
+        "rate": 0.02840542
+      },
+      "living|N1": {
+        "count": 41,
+        "rate": 0.02646869
+      },
+      "living|N0": {
+        "count": 82,
+        "rate": 0.05293738
+      }
+    },
+    "K_mean": 7.114267,
+    "K_median": 3,
+    "K_bucket": {
+      "K=1": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "K=2": {
+        "count": 744,
+        "rate": 0.48030988
+      },
+      "K=3-5": {
+        "count": 229,
+        "rate": 0.14783731
+      },
+      "K=6-10": {
+        "count": 25,
+        "rate": 0.01613944
+      },
+      "K=11+": {
+        "count": 551,
+        "rate": 0.35571336
+      }
+    },
+    "domain_K": {
+      "video": {
+        "N": 550,
+        "K_mean": 15.54,
+        "K_median": 15.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=2": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=3-5": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=6-10": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=11+": {
+            "count": 550,
+            "rate": 1.0
+          }
+        }
+      },
+      "prod": {
+        "N": 382,
+        "K_mean": 2.429319,
+        "K_median": 2.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=2": {
+            "count": 283,
+            "rate": 0.7408377
+          },
+          "K=3-5": {
+            "count": 93,
+            "rate": 0.2434555
+          },
+          "K=6-10": {
+            "count": 6,
+            "rate": 0.01570681
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "ad": {
+        "N": 427,
+        "K_mean": 2.512881,
+        "K_median": 2,
+        "K_bucket": {
+          "K=1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=2": {
+            "count": 314,
+            "rate": 0.735363
+          },
+          "K=3-5": {
+            "count": 100,
+            "rate": 0.23419204
+          },
+          "K=6-10": {
+            "count": 13,
+            "rate": 0.03044496
+          },
+          "K=11+": {
+            "count": 0,
+            "rate": 0.0
+          }
+        }
+      },
+      "living": {
+        "N": 190,
+        "K_mean": 2.484211,
+        "K_median": 2.0,
+        "K_bucket": {
+          "K=1": {
+            "count": 0,
+            "rate": 0.0
+          },
+          "K=2": {
+            "count": 147,
+            "rate": 0.77368421
+          },
+          "K=3-5": {
+            "count": 36,
+            "rate": 0.18947368
+          },
+          "K=6-10": {
+            "count": 6,
+            "rate": 0.03157895
+          },
+          "K=11+": {
+            "count": 1,
+            "rate": 0.00526316
+          }
+        }
+      }
+    }
+  },
+  "pilot_minus_train": {
+    "K_mean_difference": -0.433827,
+    "K_median_difference": 0.0,
+    "domain_percentage_point": {
+      "video": -28.10222,
+      "prod": 9.781036,
+      "ad": 8.317567,
+      "living": 10.003617
+    },
+    "novelty_percentage_point": {
+      "H": 3.576748,
+      "N2": -0.44599,
+      "N1": -3.535913,
+      "N0": 0.405155
+    },
+    "domain_novelty_percentage_point": {
+      "video|H": -0.509924,
+      "video|N2": -3.61614,
+      "video|N1": -11.531192,
+      "video|N0": -12.444965,
+      "prod|H": 1.631819,
+      "prod|N2": 0.503783,
+      "prod|N1": 2.968656,
+      "prod|N0": 4.676778,
+      "ad|H": 1.053746,
+      "ad|N2": 1.604406,
+      "ad|N1": 3.068592,
+      "ad|N0": 2.590824,
+      "living|H": 1.401107,
+      "living|N2": 1.06196,
+      "living|N1": 1.958031,
+      "living|N0": 5.58252
+    },
+    "K_bucket_percentage_point": {
+      "K=1": 9.869752,
+      "K=2": -2.424105,
+      "K=3-5": -4.197852,
+      "K=6-10": -2.230164,
+      "K=11+": -1.017631
+    }
+  },
+  "old_minus_train": {
+    "K_mean_difference": 4.787129,
+    "K_median_difference": 2,
+    "domain_percentage_point": {
+      "video": -17.595441,
+      "prod": 9.442108,
+      "ad": 10.883739,
+      "living": -2.730405
+    },
+    "novelty_percentage_point": {
+      "H": 9.033646,
+      "N2": 12.962326,
+      "N1": 5.411297,
+      "N0": -27.407269
+    },
+    "domain_novelty_percentage_point": {
+      "video|H": 2.383214,
+      "video|N2": 6.266433,
+      "video|N1": -3.773478,
+      "video|N0": -22.471611,
+      "prod|H": 2.879867,
+      "prod|N2": 1.46936,
+      "prod|N1": 4.607645,
+      "prod|N0": 0.485235,
+      "ad|H": 4.400254,
+      "ad|N2": 3.960749,
+      "ad|N1": 4.879456,
+      "ad|N0": -2.35672,
+      "living|H": -0.629689,
+      "living|N2": 1.265783,
+      "living|N1": -0.302327,
+      "living|N0": -3.064172
+    },
+    "K_bucket_percentage_point": {
+      "K=1": -62.322631,
+      "K=2": 33.863719,
+      "K=3-5": 0.087832,
+      "K=6-10": -4.473642,
+      "K=11+": 32.844721
+    }
+  },
+  "old_reference_role": "distribution reference only; never used for Pilot selection",
+  "heldout_read_order": "Dev/Final metadata and IDs loaded only after Pilot selection"
+}

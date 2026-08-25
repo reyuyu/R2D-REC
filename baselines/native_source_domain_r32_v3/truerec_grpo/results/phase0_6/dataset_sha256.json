@@ -1,0 +1,7 @@
+{
+  "train_source": "97edc2d3c600dbd073f6c694a3d497c5dba10e42ce0350628b63eddbca79ca7e",
+  "pilot4096_group_ids.json": "35febc34c0b08d365b3091e1d34b7dcc121ca15ece11f78ad367dd7c48321b5a",
+  "pilot4096_records.jsonl": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879",
+  "pilot4096_manifest.json": "5cfbdcf5fc784c7d52e10ec3336fdef7ce43b5238a5fe6211a5852ea46934396",
+  "rerun_manifest_sha256": "5cfbdcf5fc784c7d52e10ec3336fdef7ce43b5238a5fe6211a5852ea46934396"
+}

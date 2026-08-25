@@ -1,0 +1,57 @@
+{
+  "policy": "PRESERVE_WITHIN_DOMAIN_TRAIN_DISTRIBUTION",
+  "domain_quota": 1024,
+  "train_cell_counts": {
+    "video": {
+      "H": 175,
+      "N2": 1229,
+      "N1": 3915,
+      "N0": 4224
+    },
+    "prod": {
+      "H": 457,
+      "N2": 142,
+      "N1": 831,
+      "N0": 1305
+    },
+    "ad": {
+      "H": 381,
+      "N2": 576,
+      "N1": 1107,
+      "N0": 934
+    },
+    "living": {
+      "H": 380,
+      "N2": 283,
+      "N1": 530,
+      "N0": 1502
+    }
+  },
+  "pilot_cell_quota": {
+    "video": {
+      "H": 19,
+      "N2": 132,
+      "N1": 420,
+      "N0": 453
+    },
+    "prod": {
+      "H": 171,
+      "N2": 53,
+      "N1": 311,
+      "N0": 489
+    },
+    "ad": {
+      "H": 130,
+      "N2": 197,
+      "N1": 378,
+      "N0": 319
+    },
+    "living": {
+      "H": 144,
+      "N2": 108,
+      "N1": 201,
+      "N0": 571
+    }
+  },
+  "K_weighting_scope": "within fixed target_domain x novelty cells only"
+}

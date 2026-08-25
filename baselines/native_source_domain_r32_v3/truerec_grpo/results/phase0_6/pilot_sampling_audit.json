@@ -1,0 +1,39 @@
+{
+  "train_pool_groups": 17971,
+  "pilot_groups": 4096,
+  "pilot_unique_groups": 4096,
+  "domain_counts": {
+    "video": 1024,
+    "prod": 1024,
+    "ad": 1024,
+    "living": 1024
+  },
+  "novelty_counts": {
+    "H": 464,
+    "N2": 490,
+    "N1": 1310,
+    "N0": 1832
+  },
+  "pilot_subset_of_train": "PASS",
+  "pilot_dev_overlap": 0,
+  "pilot_final_overlap": 0,
+  "pilot_probe_overlap": 0,
+  "domain_quota_exact": "PASS",
+  "novelty_quota_exact": "PASS",
+  "K1_present_in_pilot": "PASS",
+  "N0_present_in_every_domain": "PASS",
+  "pilot_record_mutation_count": 0,
+  "seed": "20260825",
+  "uniform_contract": "first 52 SHA256 bits mapped to strict 0<u<1",
+  "weight_contract": "min(2.0, sqrt(K)) within fixed Domain x Novelty cell",
+  "K1_rate_gate": {
+    "minimum": 0.4,
+    "actual": 0.72192383,
+    "pass": true
+  },
+  "K11plus_rate_gate": {
+    "maximum": 0.1,
+    "actual": 0.01708984,
+    "pass": true
+  }
+}
