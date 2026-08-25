@@ -27,6 +27,7 @@ try:
         is_composite_manifest,
         summary as composite_summary_rows,
     )
+    from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
 except ImportError:  # Direct execution: python monitor/server.py
     from advantage_adapter import reconstruct_groups
     from composite_interest_adapter import (
@@ -35,6 +36,7 @@ except ImportError:  # Direct execution: python monitor/server.py
         is_composite_manifest,
         summary as composite_summary_rows,
     )
+    from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -280,6 +282,7 @@ def create_app(
     app.state.eval_dir = eval_root
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
+    plus_gamma_exposure_index = load_plus_gamma_exposure_index()
 
     def run_paths() -> list[Path]:
         """Return monitor runs plus direct and one-level categorized User runs."""
@@ -611,6 +614,9 @@ def create_app(
             log_tail = "\n".join((job_dir / "evaluation.log").read_text(encoding="utf-8", errors="replace").splitlines()[-40:])
         except OSError:
             log_tail = ""
+        for checkpoint in results.get("checkpoints", []):
+            if isinstance(checkpoint, dict):
+                annotate_plus_gamma_exposure(checkpoint.get("examples", []), plus_gamma_exposure_index)
         return {
             "job_id": job_dir.name, "run_id": config.get("run_id"),
             "checkpoints": config.get("checkpoints", []), "sample_size": config.get("sample_size"),
@@ -1010,6 +1016,7 @@ def create_app(
                 continue
         rows = queried_rows(rows, from_step, to_step, route, rollout_id)
         enrich_source_fields(rows, source_rows(selected_run(run_id), "train"))
+        annotate_plus_gamma_exposure(rows, plus_gamma_exposure_index)
         return rows
 
     @app.get("/api/advantages")
@@ -1034,6 +1041,7 @@ def create_app(
                 group_id=group_id,
                 limit=limit,
             )
+            annotate_plus_gamma_exposure(groups, plus_gamma_exposure_index)
             return composite_payload(groups)
 
         rows = []
@@ -1089,14 +1097,16 @@ def create_app(
                 "provenance": {"mode": None, "label": None},
                 "groups": [],
             }
-        return composite_payload(adapt_composite_events(
+        groups = adapt_composite_events(
             read_jsonl(selected / "composite_interest.jsonl"),
             from_step=from_step,
             to_step=to_step,
             rollout_id=rollout_id,
             group_id=group_id,
             limit=limit,
-        ))
+        )
+        annotate_plus_gamma_exposure(groups, plus_gamma_exposure_index)
+        return composite_payload(groups)
 
     @app.get("/api/composite-interest/summary")
     def composite_interest_summary(run_id: str | None = None):
@@ -1198,6 +1208,7 @@ def create_app(
             to_step=to_step,
         )
         enrich_source_fields(rows, source_rows(selected, "probe"), one_per_source=True)
+        annotate_plus_gamma_exposure(rows, plus_gamma_exposure_index)
         if group_id is not None:
             rows = [row for row in rows if row.get("group_id") == group_id]
         return rows

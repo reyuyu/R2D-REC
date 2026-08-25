@@ -100,7 +100,7 @@
   renderProbes=()=>enabled()?compositeProbes():old.renderProbes();renderOverview=()=>{old.renderOverview();drawOverview()};ensureOverview();
   function modelInput(g){
     const first=(g.candidates||[])[0]||{};
-    return `<details class="composite-input" open><summary>Model Input</summary><div class="composite-input-meta"><span class="summary-chip">recommendation_group_id: ${escapeHtml(String(g.group_id??'—'))}</span><span class="summary-chip">target_domain: ${escapeHtml(String(first.target_domain??'—'))}</span></div><pre>${escapeHtml(first.prompt||'该历史记录未捕获完整模型输入。')}</pre></details>`;
+    return `<details class="composite-input" open><summary>Model Input</summary><div class="composite-input-meta"><span class="summary-chip">recommendation_group_id: ${escapeHtml(String(g.group_id??'—'))}</span><span class="summary-chip">target_domain: ${escapeHtml(String(first.target_domain??'—'))}</span>${window.plusGammaExposureBadge(g.plus_gamma_exposure||first.plus_gamma_exposure)}</div><pre>${escapeHtml(first.prompt||'该历史记录未捕获完整模型输入。')}</pre></details>`;
   }
   function rewardReference(g){
     const units=(g.gold_interest_units||[]).map(unit=>`<div><b>Gold #${unit.index}</b> ${escapeHtml(unit.normalized_text||'—')} <span class="beam-meta">${escapeHtml(JSON.stringify(unit.grounded_evidence_sids||[]))}</span></div>`).join('');
