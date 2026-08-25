@@ -132,8 +132,11 @@ def manifest_contract(path: Path, source: str) -> dict[str, dict[str, Any]]:
         bridge = str(item.get("exact_original_bridge", item.get("exact_bridge", "")))
         bridge_tokens = item.get("exact_original_bridge_token_ids", item.get("exact_bridge_token_ids"))
         recorded_bridge_sha = str(item.get("bridge_sha256", item.get("exact_bridge_sha256", "")))
-        actual_bridge_sha = hashlib.sha256(bridge.encode("utf-8")).hexdigest()
-        if recorded_bridge_sha and actual_bridge_sha != recorded_bridge_sha:
+        bridge_bytes_sha = hashlib.sha256(bridge.encode("utf-8")).hexdigest()
+        actual_bridge_token_sha = hashlib.sha256(
+            json.dumps(bridge_tokens, separators=(",", ":")).encode("ascii")
+        ).hexdigest()
+        if recorded_bridge_sha and actual_bridge_token_sha != recorded_bridge_sha:
             raise RuntimeError(f"BRIDGE_SHA_MISMATCH={source}:{group}")
         result[group] = {
             "source": source,
@@ -144,8 +147,8 @@ def manifest_contract(path: Path, source: str) -> dict[str, dict[str, Any]]:
             "official_system_sha256": hashlib.sha256(str(item["official_system"]).encode("utf-8")).hexdigest(),
             "official_prompt_token_ids_sha256": stable_sha(item["official_prompt_token_ids"]),
             "frozen_cot_sha256": str(item["frozen_cot_sha256"]),
-            "exact_bridge_sha256": actual_bridge_sha,
-            "exact_bridge_token_ids_sha256": stable_sha(bridge_tokens),
+            "exact_bridge_bytes_sha256": bridge_bytes_sha,
+            "exact_bridge_token_ids_sha256": actual_bridge_token_sha,
             "domain_token_ids_sha256": stable_sha(item["domain_token_ids"]),
             "gold_in_history": bool(item["gold_sid_in_history"]),
         }
@@ -159,7 +162,7 @@ def combine_manifest_contracts() -> tuple[dict[str, dict[str, Any]], dict[str, A
     overlap, conflicts = 0, []
     comparable = (
         "group_id", "domain", "K", "gold_sids_sha256", "official_system_sha256",
-        "official_prompt_token_ids_sha256", "frozen_cot_sha256", "exact_bridge_sha256",
+        "official_prompt_token_ids_sha256", "frozen_cot_sha256", "exact_bridge_bytes_sha256",
         "exact_bridge_token_ids_sha256", "domain_token_ids_sha256", "gold_in_history",
     )
     for group, value in phase151.items():
@@ -280,7 +283,7 @@ def four_way(
             "other_group_max_unique_frequency": frequency[group]["other_group_max_unique_frequency"],
             "bare_context_sha256": values["MiniFix"]["BARE"]["context_sha256"],
             "bridge_context_sha256": values["MiniFix"]["EXACT_BRIDGE"]["context_sha256"],
-            "exact_bridge_sha256": manifests[group]["exact_bridge_sha256"],
+            "exact_bridge_bytes_sha256": manifests[group]["exact_bridge_bytes_sha256"],
             "official_prompt_token_ids_sha256": manifests[group]["official_prompt_token_ids_sha256"],
             "frozen_cot_sha256": manifests[group]["frozen_cot_sha256"],
             "domain_token_ids_sha256": manifests[group]["domain_token_ids_sha256"],
