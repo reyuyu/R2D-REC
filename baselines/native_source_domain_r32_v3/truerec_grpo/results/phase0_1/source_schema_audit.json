@@ -1,0 +1,112 @@
+{
+  "beta": {
+    "label": "Beta/BATA",
+    "path": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+    "sha256": "f84f288b8a9685b4c9cb769c937a5250407723dfab11bdc548486ac7751ec8ca",
+    "total_rows": 222001,
+    "recommendation_rows": 48269,
+    "recommendation_groups": 20531,
+    "row_detection": "data_source == recommend",
+    "row_keys": [
+      "aux_metadata_json",
+      "data_source",
+      "history",
+      "input",
+      "instruction",
+      "output",
+      "source_segment",
+      "system"
+    ],
+    "metadata_keys": [
+      "recommendation_all_gold_sids",
+      "recommendation_current_gold_sid",
+      "recommendation_group_id",
+      "recommendation_group_size"
+    ],
+    "route_field": "source_segment",
+    "route_mapping": {
+      "recommendation_cot": "think",
+      "recommendation_nocot": "nothink"
+    },
+    "group_field": "aux_metadata_json.recommendation_group_id",
+    "target_domain_field": null,
+    "target_domain_derivation": "domain parsed from aux_metadata_json.recommendation_current_gold_sid",
+    "all_gold_field": "aux_metadata_json.recommendation_all_gold_sids",
+    "current_gold_field": "aux_metadata_json.recommendation_current_gold_sid",
+    "history_source": "instruction + input; retain through last paragraph containing a SID; remove task template and route marker",
+    "source_segments": {
+      "recommendation_nocot": 16090,
+      "recommendation_cot": 32179
+    },
+    "answer_suffix_classes": {
+      "NATURAL_LANGUAGE_BRIDGE": 48269
+    },
+    "natural_language_bridge_counts": {
+      "该用户最近喜欢的视频有:": 36833,
+      "该用户最近感兴趣的广告有:": 4087,
+      "该用户最近点击了商品:": 3988,
+      "该用户最近首次打赏了主播:": 3361
+    }
+  },
+  "gamma": {
+    "label": "Gamma answer-only",
+    "path": "/data/lf_data_versions/alltrain/mini_fix_eval_align_answer_only_v1/onereason_mini_fix_eval_align_answer_only.jsonl",
+    "sha256": "216857d8c5d0049a3e9642279acd89051c40f5bcddb1d4afe513e36080b086cf",
+    "total_rows": 49490,
+    "recommendation_rows": 11192,
+    "recommendation_groups": 1549,
+    "row_detection": "data_source == recommend",
+    "row_keys": [
+      "aux_metadata_json",
+      "data_source",
+      "history",
+      "input",
+      "instruction",
+      "output",
+      "source_segment",
+      "system"
+    ],
+    "metadata_keys": [
+      "recommendation_all_gold_sids",
+      "recommendation_current_gold_sid",
+      "recommendation_group_id",
+      "recommendation_group_size"
+    ],
+    "route_field": "source_segment",
+    "route_mapping": {
+      "recommendation_cot": "think",
+      "recommendation_nocot": "nothink"
+    },
+    "group_field": "aux_metadata_json.recommendation_group_id",
+    "target_domain_field": null,
+    "target_domain_derivation": "domain parsed from aux_metadata_json.recommendation_current_gold_sid",
+    "all_gold_field": "aux_metadata_json.recommendation_all_gold_sids",
+    "current_gold_field": "aux_metadata_json.recommendation_current_gold_sid",
+    "history_source": "instruction + input; retain through last paragraph containing a SID; remove task template and route marker",
+    "source_segments": {
+      "recommendation_cot": 6235,
+      "recommendation_nocot": 4957
+    },
+    "answer_suffix_classes": {
+      "DIRECT_DOMAIN_SID": 11192
+    },
+    "natural_language_bridge_counts": {}
+  },
+  "beta_gamma_provenance": {
+    "beta_checkpoint": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+    "gamma_checkpoint": "/root/data_checkpoints_backup_20260824/outputs/baselines/native_source_domain_r32_v3/mini_gamma/checkpoint-136",
+    "beta_source": "/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl",
+    "gamma_source": "/data/lf_data_versions/alltrain/mini_fix_eval_align_answer_only_v1/onereason_mini_fix_eval_align_answer_only.jsonl",
+    "gamma_groups_subset_of_beta": true,
+    "group_intersection": 1549,
+    "gold_contract_parity_on_intersection": true,
+    "checkpoint_to_dataset_evidence": "Direct corpus scan plus repository diagnostic model/dataset mapping; checkpoint training_args.bin does not embed dataset path.",
+    "beta_after_think_contract": "NATURAL_LANGUAGE_BRIDGE_THEN_DOMAIN_SID",
+    "gamma_after_think_contract": "DIRECT_DOMAIN_SID",
+    "gamma_has_natural_language_bridge": false
+  },
+  "schema_status": "PASS",
+  "cpu_only": true,
+  "torch_imported": false,
+  "cuda_visible_devices": ""
+}

@@ -1,0 +1,19 @@
+{
+  "canonical_groups": 20531,
+  "unique_recommendation_group_ids": 20531,
+  "canonical_group_uniqueness": "PASS",
+  "route_group_counts": {
+    "think_only": 10589,
+    "nothink_only": 4588,
+    "think_nothink": 5354
+  },
+  "conflict_counts": {
+    "target_domain": 0,
+    "all_gold": 0,
+    "current_gold": 5276,
+    "history": 0
+  },
+  "invalid_gold_sid_count": 0,
+  "gold_domain_mismatch_count": 0,
+  "test_status": "PASS"
+}
