@@ -1,0 +1,11 @@
+{
+  "wrong_history_by_frontier": {
+    "A_FAIL": 2501,
+    "B_FAIL": 305,
+    "C_FAIL": 73,
+    "EXACT": 0
+  },
+  "wrong_history_candidates": 2879,
+  "correct_history_candidates": 208,
+  "history_penalty_added": false
+}

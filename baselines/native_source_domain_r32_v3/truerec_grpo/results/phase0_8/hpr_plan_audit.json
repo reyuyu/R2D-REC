@@ -1,0 +1,45 @@
+{
+  "contract": {
+    "objective": "multi-positive next-token log-sum-probability",
+    "site_reduction": "mean_within_group",
+    "extra_hpr_model_forward": false
+  },
+  "trigger_counts": {
+    "HPR_A": 2651,
+    "HPR_B": 1012,
+    "HPR_C": 219,
+    "HPR_NONE": 214
+  },
+  "site_counts": {
+    "A": 2651,
+    "B": 1102,
+    "C": 224
+  },
+  "site_without_onpolicy_position": 0,
+  "target_cardinality": {
+    "A": {
+      "sites": 2651,
+      "mean": 1.55827989,
+      "median": 1,
+      "max": 18
+    },
+    "B": {
+      "sites": 1102,
+      "mean": 1.12341198,
+      "median": 1.0,
+      "max": 6
+    },
+    "C": {
+      "sites": 224,
+      "mean": 1.04017857,
+      "median": 1.0,
+      "max": 3
+    }
+  },
+  "runtime_plan": {
+    "path": "/data/GRPO/truerec_grpo/results/phase0_8/raw/hpr_plan_v1.jsonl",
+    "sha256": "c958f5064049bc680d7f22ce062391d84dc8dc213d7eec7dab53dfb72f6e2e85",
+    "groups": 4096,
+    "pushed": false
+  }
+}

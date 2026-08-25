@@ -1,0 +1,10 @@
+{
+  "legacy_zero_signal_groups": 2651,
+  "frontier_active_groups": 4096,
+  "hpr_trigger_groups": 3882,
+  "only_negative_frontier_groups": 2651,
+  "positive_frontier_present_groups": 1445,
+  "hpr_rescue_needed_groups": 3882,
+  "exact_reached_groups": 214,
+  "interpretation_limit": "offline signal coverage only; no claim that gradients are effective"
+}
