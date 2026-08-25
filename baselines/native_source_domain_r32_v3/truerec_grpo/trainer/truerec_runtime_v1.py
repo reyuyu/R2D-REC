@@ -2,9 +2,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+import sys
 from typing import Any, Callable, Sequence
 
 import torch
+
+CREDIT_DIR = Path(__file__).resolve().parents[1] / "credit"
+if str(CREDIT_DIR) not in sys.path:
+    sys.path.insert(0, str(CREDIT_DIR))
 
 from action_alignment import align_action
 from frontier_credit_v1 import GATED, NEGATIVE, POSITIVE, plan_frontier_credit
