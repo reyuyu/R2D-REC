@@ -54,6 +54,8 @@ def test_composite_filters_and_alignment():
             row['beam_utility_mean'] is not None and row['composite_reward_std'] is not None
             for row in summary
         )
+        assert all('interest_tiebreak_scale_mean' in row and 'strict_reversal_count' in row
+                   for row in summary)
     finally:
         temporary.cleanup()
 
@@ -245,6 +247,8 @@ def test_frontend_composite_contract_and_no_js_reward_math():
                    'U_beam', 'probeCandidate', 'old.renderCandidate', 'selected.gold_sids',
                    'compositeBeamRawChart', '原始 Beam Reward（旧口径，仅对照）',
                    'r.beam_raw_mean',
+                   'Beam-first Composite Reward', '实际 Tie-break Scale / 上限',
+                   'STRICT REVERSAL 0', 'r.cot_contribution_mean',
                    "rawDiagnosticCharts.add('compositeSignalChart')"):
         assert marker in source
     shell = (Path(__file__).parent / 'static' / 'index.html').read_text(encoding='utf-8')

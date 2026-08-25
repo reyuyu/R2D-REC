@@ -139,6 +139,12 @@ def summary(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             "beam_raw_mean": mean(candidate.get("beam_raw") for candidate in candidates),
             "beam_utility_mean": mean(candidate.get("beam_utility") for candidate in candidates),
             "cot_utility_mean": mean(candidate.get("cot_utility") for candidate in candidates),
+            "interest_tiebreak_scale_mean": mean(
+                candidate.get("interest_tiebreak_scale") for candidate in candidates
+            ),
+            "cot_contribution_mean": mean(
+                candidate.get("cot_contribution") for candidate in candidates
+            ),
             "composite_reward_mean": mean(candidate.get("composite_reward") for candidate in candidates),
             "composite_reward_std": population_std(
                 candidate.get("composite_reward") for candidate in candidates
@@ -152,6 +158,9 @@ def summary(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
             "rescued_rate": rescued / count,
             "cot_active_rate": sum(bool(group.get("cot_active")) for group in groups) / count,
             "q_active_rate": sum(_finite(candidate.get("Q")) not in (None, 0.0) for candidate in candidates) / len(candidates),
+            "strict_reversal_count": sum(
+                bool(group.get("strict_beam_reversal")) for group in groups
+            ),
         })
     return result
 

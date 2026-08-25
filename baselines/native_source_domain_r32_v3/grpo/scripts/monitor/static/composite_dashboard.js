@@ -3,6 +3,9 @@
   const EXPERIMENT = 'GR_REC_Think_CompositeInterest_v1';
   const old = {advantageMatches, provenanceBadge, renderAdvantages, renderCandidate, renderOverview, renderProbes};
   const enabled = () => state.manifest?.experiment === EXPERIMENT;
+  const beamFirstEnabled = () => enabled() && String(
+    state.manifest?.frozen_contract?.reward || ''
+  ).includes('min(0.25,0.5*min_positive_beam_gap)');
   const rewardPanel=$('rewardChart').closest('.panel'),rewardHelp=rewardPanel.querySelector('.metric-help .help-content'),rewardTrend=rewardPanel.querySelector('.trend-guide');
   const rewardCompare=rewardPanel.querySelector('.reward-compare-controls'),rewardCompareNote=$('rewardCompareNote');
   const signalPanel=$('signal').closest('.panel'),rewardStdPanel=$('rewardStd').closest('.panel');
@@ -28,14 +31,14 @@
   function ensureOverview(){
     if($('compositeOverviewPanels'))return;
     const panel=document.createElement('section');panel.id='compositeOverviewPanels';panel.className='composite-panels';panel.hidden=true;
-    panel.innerHTML=`<div class="diagnostic-head"><h2>Composite Interest 辅助诊断</h2><p>最终 Composite 主奖励与原始 Beam Reward 纵向分图对照，避免不同量纲叠线；下方再拆分 0-1 量纲的 U_beam 与 U_cot。</p></div><section class="charts">
-      <div class="panel composite-wide"><h2>原始 Beam Reward（旧口径，仅对照）</h2><div class="legend"><span class="key" style="--c:#2d6cdf">Beam Raw</span></div><canvas class="chart" id="compositeBeamRawChart"></canvas></div>
-      <div class="panel"><h2>奖励分量对照</h2><div class="legend"><span class="key" style="--c:#2d6cdf">U_beam（Beam 命中得分）</span><span class="key" style="--c:#7654b5">U_cot（CoT 兴趣命中得分）</span></div><canvas class="chart" id="compositeRewardChart"></canvas></div>
+    panel.innerHTML=`<div class="diagnostic-head"><h2>Composite Interest 辅助诊断</h2><p id="compositeOverviewDescription">最终 Composite 主奖励与原始 Beam Reward 纵向分图对照，避免不同量纲叠线。</p></div><section class="charts">
+      <div class="panel composite-wide"><h2 id="compositeBeamRawTitle">原始 Beam Reward</h2><div class="legend"><span class="key" style="--c:#2d6cdf">Beam Raw</span></div><canvas class="chart" id="compositeBeamRawChart"></canvas></div>
+      <div class="panel"><h2 id="compositeRewardComponentsTitle">奖励分量对照</h2><div class="legend" id="compositeRewardComponentsLegend"></div><canvas class="chart" id="compositeRewardChart"></canvas></div>
       <div class="panel"><h2>零方差与救活率</h2><div class="legend"><span class="key" style="--c:#bd3f4c">Beam Zero</span><span class="key" style="--c:#b36b08">Composite Zero</span><span class="key" style="--c:#16835f">Rescued</span><span class="key" style="--c:#2d6cdf">CoT Active</span></div><canvas class="chart" id="compositeSignalChart"></canvas></div>
       <div class="panel"><h2>兴趣结构</h2><div class="legend"><span class="key" style="--c:#16835f">Matched</span><span class="key" style="--c:#7654b5">Raw N</span><span class="key" style="--c:#2d6cdf">Grounded N</span><span class="key" style="--c:#b36b08">Q Active</span></div><canvas class="chart" id="compositeInterestChart"></canvas></div></section>`;
     $('overview').querySelector('.wrap').appendChild(panel);
     chartLabels.compositeBeamRawChart=['原始 Beam Reward'];
-    chartLabels.compositeRewardChart=['U_beam','U_cot'];
+    chartLabels.compositeRewardChart=['U_cot','兴趣加成'];
     chartLabels.compositeSignalChart=['Beam Zero','Composite Zero','Rescued','CoT Active'];
     chartLabels.compositeInterestChart=['Matched','Raw N','Grounded N','Q Active'];
     rawDiagnosticCharts.add('compositeSignalChart');
@@ -61,12 +64,26 @@
     signalPanel.querySelector('.label').textContent='Composite 有效信号密度';signalPanel.querySelector('p').textContent='1 - Composite zero-std rate';
     rewardStdPanel.querySelector('.label').textContent='Composite 奖励离散度';rewardStdPanel.querySelector('p').textContent='当前最终奖励 population std';
     if(latest){setText('reward',fmt(latest.composite_reward_mean));setText('signal',pct(1-num(latest.composite_zero_std_rate)));setText('rewardStd',fmt(latest.composite_reward_std));}
-    if(rewardHelp)rewardHelp.innerHTML='<p><strong>名词解释：</strong>最终 Composite Reward 是 Beam 贡献与 CoT 兴趣命中贡献按冻结公式合成的实际训练主奖励。</p><p class="trend-good"><strong>健康趋势：</strong>平滑均值稳定改善，同时有效信号密度不持续下降。</p>';
-    if(rewardTrend)rewardTrend.innerHTML='<strong>怎么看：</strong>这里只看最终 Composite 主奖励；Beam 与 CoT 分量在下方辅助诊断中分开查看。';
+    if(rewardHelp)rewardHelp.innerHTML=beamFirstEnabled()
+      ? '<p><strong>名词解释：</strong>最终奖励 = Beam raw + 实际 tie-break scale × U_cot。Beam 层级绝对优先，兴趣分只负责层内排序。</p><p class="trend-good"><strong>健康趋势：</strong>主奖励随 Beam 改善，STRICT_REVERSAL_COUNT 始终为 0。</p>'
+      : '<p><strong>名词解释：</strong>最终 Composite Reward 是 Beam 贡献与 CoT 兴趣命中贡献按冻结公式合成的实际训练主奖励。</p><p class="trend-good"><strong>健康趋势：</strong>平滑均值稳定改善，同时有效信号密度不持续下降。</p>';
+    if(rewardTrend)rewardTrend.innerHTML=beamFirstEnabled()
+      ? '<strong>怎么看：</strong>先看 Beam raw，再看同 Beam 内的兴趣加成；低 Beam 不允许越过高 Beam。'
+      : '<strong>怎么看：</strong>这里只看最终 Composite 主奖励；Beam 与 CoT 分量在下方辅助诊断中分开查看。';
   }
   function drawOverview(){ensureOverview();const panel=$('compositeOverviewPanels'),rows=state.compositeSummary?.rows||[];panel.hidden=!enabled();configurePrimaryReward(rows);if(!enabled())return;
+    const beamFirst=beamFirstEnabled();
+    setText('compositeOverviewDescription',beamFirst?'Beam raw 是主层级；兴趣分仅以不跨 Beam 层级的实际 scale 做 tie-break。所有曲线均来自训练时 Python 实采。':'最终 Composite 主奖励与原始 Beam Reward 纵向分图对照，避免不同量纲叠线。');
+    setText('compositeBeamRawTitle',beamFirst?'Beam 主奖励（第一优先级）':'原始 Beam Reward（旧口径，仅对照）');
+    setText('compositeRewardComponentsTitle',beamFirst?'兴趣 Tie-break（辅助信号）':'奖励分量对照');
+    $('compositeRewardComponentsLegend').innerHTML=beamFirst
+      ? '<span class="key" style="--c:#7654b5">U_cot</span><span class="key" style="--c:#16835f">实际兴趣加成</span>'
+      : '<span class="key" style="--c:#2d6cdf">U_beam（Beam 命中得分）</span><span class="key" style="--c:#7654b5">U_cot（CoT 兴趣命中得分）</span>';
     draw('compositeBeamRawChart',[{data:rows.map(r=>[r.step,r.beam_raw_mean]),color:colors[0]}]);
-    draw('compositeRewardChart',[{data:rows.map(r=>[r.step,r.beam_utility_mean]),color:colors[0]},{data:rows.map(r=>[r.step,r.cot_utility_mean]),color:colors[4]}]);
+    chartLabels.compositeRewardChart=beamFirst?['U_cot','实际兴趣加成']:['U_beam','U_cot'];
+    draw('compositeRewardChart',beamFirst
+      ? [{data:rows.map(r=>[r.step,r.cot_utility_mean]),color:colors[4]},{data:rows.map(r=>[r.step,r.cot_contribution_mean]),color:colors[1]}]
+      : [{data:rows.map(r=>[r.step,r.beam_utility_mean]),color:colors[0]},{data:rows.map(r=>[r.step,r.cot_utility_mean]),color:colors[4]}]);
     draw('compositeSignalChart',[{data:rows.map(r=>[r.step,r.beam_zero_std_rate]),color:colors[3]},{data:rows.map(r=>[r.step,r.composite_zero_std_rate]),color:colors[2]},{data:rows.map(r=>[r.step,r.rescued_rate]),color:colors[1]},{data:rows.map(r=>[r.step,r.cot_active_rate]),color:colors[0]}]);
     draw('compositeInterestChart',[{data:rows.map(r=>[r.step,r.matched_interest_mean]),color:colors[1]},{data:rows.map(r=>[r.step,r.raw_n_mean]),color:colors[4]},{data:rows.map(r=>[r.step,r.grounded_n_mean]),color:colors[0]},{data:rows.map(r=>[r.step,r.q_active_rate]),color:colors[2]}]);if(!state.compositeSummary)loadSummary();
   }
@@ -94,7 +111,11 @@
   }
   function richCard(c,g){
     const a=num(c.final_sequence_advantage),tone=a>0?'positive':a<0?'negative':'';
-    return `<article class="composite-card ${tone}"><div class="composite-card-head"><span>Candidate #${c.candidate_id}</span><span class="summary-chip">${c.parser_success===false?'Parser failure':`Matched ${c.matched_interest_count}/${c.gold_interest_count}`}</span></div><div class="composite-primary"><div><span class="label">Composite Reward</span><b>${fmt(c.composite_reward,4)}</b></div><div><span class="label">Final Advantage</span><b class="adv-${creditTone(a)}">${signed(a,4)}</b></div><div><span class="label">K</span><b>${c.matched_interest_count??'—'}</b></div></div><div class="composite-secondary"><div><span class="label">Beam raw</span><b>${fmt(c.beam_raw)}</b></div><div><span class="label">U_beam</span><b>${fmt(c.beam_utility)}</b></div><div><span class="label">U_cot</span><b>${fmt(c.cot_utility)}</b></div><div><span class="label">Completion Length</span><b>${c.completion_length??'—'}</b></div><div><span class="label">Raw N / Grounded N</span><b>${c.raw_n??'—'} / ${c.grounded_n??'—'}</b></div><div><span class="label">Grounding Coverage</span><b>${c.grounding_coverage==null?'未定义':pct(c.grounding_coverage)}</b></div><div><span class="label">Parser Status</span><b>${c.parser_success===false?escapeHtml(c.parser_failure_reason||'失败'):'成功'}</b></div><div><span class="label">Reward Contributions</span><b>Beam ${fmt(c.beam_contribution)} + CoT ${fmt(c.cot_contribution)}</b></div></div><div class="sampled-cot"><h4>Sampled CoT</h4><pre>${escapeHtml(c.completion||'—')}</pre></div>${capturedBeamSummary(c,g)}<div class="match-list">${matching(c,g)}</div></article>`;
+    const beamFirst=c.interest_tiebreak_scale!=null;
+    const rewardDetail=beamFirst
+      ? `<div><span class="label">实际 Tie-break Scale / 上限</span><b>${fmt(c.interest_tiebreak_scale,4)} / 0.2500</b></div><div><span class="label">兴趣加成</span><b>${fmt(c.cot_contribution,4)}</b></div><div><span class="label">Reward 公式</span><b>${fmt(c.beam_raw)} + ${fmt(c.cot_contribution,4)}</b></div><div><span class="label">U_beam（仅监控）</span><b>${fmt(c.beam_utility)}</b></div>`
+      : `<div><span class="label">U_beam</span><b>${fmt(c.beam_utility)}</b></div><div><span class="label">Reward Contributions</span><b>Beam ${fmt(c.beam_contribution)} + CoT ${fmt(c.cot_contribution)}</b></div>`;
+    return `<article class="composite-card ${tone}"><div class="composite-card-head"><span>Candidate #${c.candidate_id}</span><span class="summary-chip">${c.parser_success===false?'Parser failure':`Matched ${c.matched_interest_count}/${c.gold_interest_count}`}</span></div><div class="composite-primary"><div><span class="label">${beamFirst?'Beam-first Reward':'Composite Reward'}</span><b>${fmt(c.composite_reward,4)}</b></div><div><span class="label">Final Advantage</span><b class="adv-${creditTone(a)}">${signed(a,4)}</b></div><div><span class="label">Beam 主层级</span><b>${fmt(c.beam_raw)}</b></div></div><div class="composite-secondary"><div><span class="label">U_cot</span><b>${fmt(c.cot_utility)}</b></div>${rewardDetail}<div><span class="label">Completion Length</span><b>${c.completion_length??'—'}</b></div><div><span class="label">Raw N / Grounded N</span><b>${c.raw_n??'—'} / ${c.grounded_n??'—'}</b></div><div><span class="label">Grounding Coverage</span><b>${c.grounding_coverage==null?'未定义':pct(c.grounding_coverage)}</b></div><div><span class="label">Parser Status</span><b>${c.parser_success===false?escapeHtml(c.parser_failure_reason||'失败'):'成功'}</b></div></div><div class="sampled-cot"><h4>Sampled CoT</h4><pre>${escapeHtml(c.completion||'—')}</pre></div>${capturedBeamSummary(c,g)}<div class="match-list">${matching(c,g)}</div></article>`;
   }
   function relationLabel(value){return value==='VALID_NO_HIT'?'VALID NO HIT':value||'—'}
   function renderBeamDetails(payload){
@@ -129,8 +150,10 @@
     });
   }
   window.renderCompositeThinkAdvantage=g=>{
-    const flags=[g.beam_all_equal&&!g.composite_all_equal?'<span class="summary-chip good">CoT Reward 救活零方差组 · RESCUED</span>':'',g.composite_all_equal?'<span class="summary-chip alert">Composite 仍无组内信号</span>':'',g.top_set_tie_break?'<span class="summary-chip good">Beam 并列第一 → CoT 负责打破平局</span>':'',g.strict_beam_reversal?'<span class="summary-chip alert">Composite 改变 Beam 排名</span>':''].join('');
-    return `<section class="adv-group"><header class="adv-group-head"><div><div class="adv-title">Step ${g.step??'—'} · Think G4 · Balanced Composite Reward ${capturedBadge()}</div><div class="adv-sub">Sequence-level Advantage：整个 CoT 共享一个 final advantage。兴趣匹配用于解释 Composite Reward，不是 token advantage。</div></div><div class="summary-chips">${flags}</div></header>${modelInput(g)}${rewardReference(g)}<div class="composite-callout">Beam ${vector(g.beam_raw_vector)} · U_cot ${vector(g.cot_utility_vector)} · Composite ${vector(g.composite_reward_vector)} · population std ${fmt(g.composite_reward_population_std,5)} · Beam ${g.beam_active?'active':'zero'} / CoT ${g.cot_active?'active':'zero'} / Composite ${g.composite_active?'active':'zero'}</div><div class="composite-card-grid">${(g.candidates||[]).map(c=>richCard(c,g)).join('')}</div></section>`;
+    const beamFirst=g.interest_tiebreak_scale!=null||(g.candidates||[]).some(c=>c.interest_tiebreak_scale!=null);
+    const flags=[beamFirst&&g.strict_reversal_count===0?'<span class="summary-chip good">Beam-first 排序已校验 · STRICT REVERSAL 0</span>':'',g.beam_all_equal&&!g.composite_all_equal?'<span class="summary-chip good">同 Beam 内由 CoT 打破平局 · RESCUED</span>':'',g.composite_all_equal?'<span class="summary-chip alert">Composite 仍无组内信号</span>':'',g.top_set_tie_break?'<span class="summary-chip good">Beam 并列第一 → CoT 负责打破平局</span>':'',g.strict_beam_reversal?'<span class="summary-chip alert">错误：兴趣分跨越 Beam 层级</span>':''].join('');
+    const formula=beamFirst?`实际 scale ${fmt(g.interest_tiebreak_scale,4)}（上限 0.25） · R = Beam raw + scale × U_cot · strict reversal ${g.strict_reversal_count??0}`:'旧版 Balanced Composite 公式';
+    return `<section class="adv-group"><header class="adv-group-head"><div><div class="adv-title">Step ${g.step??'—'} · Think G4 · ${beamFirst?'Beam-first Composite Reward':'Balanced Composite Reward'} ${capturedBadge()}</div><div class="adv-sub">${beamFirst?'Beam 决定主层级，CoT 兴趣分只在安全边界内辅助排序。':'Sequence-level Advantage：整个 CoT 共享一个 final advantage。'} 最终 Advantage 仍按组内 population std 归一化。</div></div><div class="summary-chips">${flags}</div></header>${modelInput(g)}${rewardReference(g)}<div class="composite-callout">${formula}<br>Beam ${vector(g.beam_raw_vector)} · U_cot ${vector(g.cot_utility_vector)} · Final Reward ${vector(g.composite_reward_vector)} · population std ${fmt(g.composite_reward_population_std,5)}</div><div class="composite-card-grid">${(g.candidates||[]).map(c=>richCard(c,g)).join('')}</div></section>`;
   };
   const refreshWithoutCompositeSummary=refresh;
   refresh=async function(force=false){
