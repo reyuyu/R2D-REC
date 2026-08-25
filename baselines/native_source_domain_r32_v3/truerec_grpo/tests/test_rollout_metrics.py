@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -61,10 +62,20 @@ class RolloutMetricsTest(unittest.TestCase):
             row = {**assess(frontier_ids), "domain": "video", "novelty": "H", "K_bucket": "K=2"}; candidates.append(row)
         group = {**module.group_summary(candidates), "domain": "video", "novelty": "H", "K_bucket": "K=2"}
         result = module.census(candidates, [group]); self.assertEqual(sum(v["count"] for v in result["candidate_frontier"]["overall"]["overall"]["frontier"].values()), 5)
-    def test_24_dataset_sha_gate_constants(self):
-        self.assertEqual("ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879", "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879")
-    def test_25_probe_sha_gate_constants(self):
-        self.assertEqual("5f06976e12e60c4576ee0dc0d083d367d423251cf3e65eedbbd728f607ffa913", "5f06976e12e60c4576ee0dc0d083d367d423251cf3e65eedbbd728f607ffa913")
+    def test_24_dataset_sha_and_count_gate(self):
+        raw = b'{"recommendation_group_id":"g1"}\n{"recommendation_group_id":"g2"}\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "pilot.jsonl"; path.write_bytes(raw)
+            rows = module.load_jsonl_gate(path, hashlib.sha256(raw).hexdigest(), 2)
+            self.assertEqual(len(rows), 2)
+            with self.assertRaisesRegex(module.RolloutMetricError, "COUNT_OR_UNIQUE"):
+                module.load_jsonl_gate(path, hashlib.sha256(raw).hexdigest(), 3)
+    def test_25_probe_sha_gate(self):
+        raw = b'{"recommendation_group_id":"g1"}\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.jsonl"; path.write_bytes(raw)
+            with self.assertRaisesRegex(module.RolloutMetricError, "DATASET_SHA_FAIL"):
+                module.load_jsonl_gate(path, "0" * 64, 1)
 
 
 if __name__ == "__main__":

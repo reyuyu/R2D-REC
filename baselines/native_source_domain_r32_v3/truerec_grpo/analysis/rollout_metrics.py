@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 from collections import Counter
+import hashlib
+import json
+from pathlib import Path
 import re
 import statistics
 from typing import Any, Iterable
@@ -16,6 +19,20 @@ LEGACY_REWARD = {"INVALID_FORMAT": -1.0, "A_FAIL": 0.0, "B_FAIL": 0.5, "C_FAIL":
 
 class RolloutMetricError(RuntimeError):
     pass
+
+
+def load_jsonl_gate(path: Path, expected_sha: str, expected_count: int) -> list[dict[str, Any]]:
+    raw = path.read_bytes()
+    actual_sha = hashlib.sha256(raw).hexdigest()
+    if actual_sha != expected_sha:
+        raise RolloutMetricError(f"DATASET_SHA_FAIL={path}:{actual_sha}")
+    rows = [json.loads(line) for line in raw.decode("utf-8").splitlines()]
+    group_ids = [str(row["recommendation_group_id"]) for row in rows]
+    if len(rows) != expected_count or len(set(group_ids)) != expected_count:
+        raise RolloutMetricError(
+            f"DATASET_COUNT_OR_UNIQUE_FAIL={path}:{len(rows)},{len(set(group_ids))}"
+        )
+    return rows
 
 
 def parse_raw_abc(raw_token_ids: list[int], id_to_token) -> tuple[str, str, str] | None:

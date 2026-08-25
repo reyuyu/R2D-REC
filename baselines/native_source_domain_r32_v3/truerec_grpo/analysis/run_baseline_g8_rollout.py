@@ -43,7 +43,7 @@ GENERATION_KWARGS = {
 sys.path.insert(0, str(DATA_DIR))
 sys.path.insert(0, str(ANALYSIS_DIR))
 from beta_gamma_renderer import BetaGammaRenderer, file_sha  # noqa: E402
-from rollout_metrics import assess_candidate, census, group_summary  # noqa: E402
+from rollout_metrics import assess_candidate, census, group_summary, load_jsonl_gate  # noqa: E402
 
 
 class Phase07Error(RuntimeError):
@@ -69,7 +69,7 @@ def load_records(kind: str) -> list[dict[str, Any]]:
     actual = file_sha(path)
     if actual != expected_sha:
         raise Phase07Error(f"{kind.upper()}_SHA_FAIL={actual}")
-    rows = read_jsonl(path)
+    rows = load_jsonl_gate(path, expected_sha, EXPECTED[kind])
     ids = [row["recommendation_group_id"] for row in rows]
     if len(rows) != EXPECTED[kind] or len(set(ids)) != len(rows) or ids != sorted(ids):
         raise Phase07Error(f"{kind.upper()}_GROUP_CONTRACT_FAIL={len(rows)},{len(set(ids))}")
@@ -146,14 +146,15 @@ def _model_and_tokenizer(local_rank: int):
     from peft import PeftModel
     from transformers import AutoModelForCausalLM
 
-    torch.cuda.set_device(local_rank)
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
     renderer = BetaGammaRenderer()
     tokenizer = renderer.tokenizer
     base = AutoModelForCausalLM.from_pretrained(
         BASE, local_files_only=True, trust_remote_code=True, torch_dtype=torch.bfloat16,
         attn_implementation="flash_attention_2", low_cpu_mem_usage=True,
-    ).to(local_rank)
-    model = PeftModel.from_pretrained(base, CHECKPOINT, is_trainable=False).to(local_rank)
+    ).to(device)
+    model = PeftModel.from_pretrained(base, CHECKPOINT, is_trainable=False).to(device)
     model.eval()
     model.requires_grad_(False)
     if model.training or any(parameter.requires_grad for parameter in model.parameters()):
@@ -179,7 +180,8 @@ def rollout(kind: str, repro_only: bool = False) -> None:
             seed = group_seed(row["recommendation_group_id"])
             random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
             context = renderer.rl_context_ids(row["system"], row["user_content_nothink"], row["fixed_domain_token"])
-            input_ids = torch.tensor([context], dtype=torch.long, device=local_rank)
+            device = torch.device("cuda", local_rank)
+            input_ids = torch.tensor([context], dtype=torch.long, device=device)
             attention_mask = torch.ones_like(input_ids)
             generated = model.generate(input_ids=input_ids, attention_mask=attention_mask, **GENERATION_KWARGS)
             tails = generated[:, input_ids.shape[1]:].tolist()
@@ -197,7 +199,8 @@ def rollout(kind: str, repro_only: bool = False) -> None:
             if (group_index + 1) % 50 == 0:
                 handle.flush(); print(f"rank={rank} kind={kind} groups={group_index + 1}/{len(assigned)} wall={time.perf_counter()-started:.1f}", flush=True)
     torch.cuda.synchronize(local_rank)
-    meta = {"rank": rank, "world_size": world, "groups": len(assigned), "candidates": len(assigned) * G, "wall_sec": time.perf_counter() - started, "device": torch.cuda.get_device_name(local_rank), "peak_allocated": torch.cuda.max_memory_allocated(local_rank), "peak_reserved": torch.cuda.max_memory_reserved(local_rank), "torch": torch.__version__}
+    import transformers
+    meta = {"rank": rank, "world_size": world, "groups": len(assigned), "candidates": len(assigned) * G, "first_group_id": assigned[0]["recommendation_group_id"] if assigned else None, "last_group_id": assigned[-1]["recommendation_group_id"] if assigned else None, "wall_sec": time.perf_counter() - started, "device": torch.cuda.get_device_name(local_rank), "peak_allocated": torch.cuda.max_memory_allocated(local_rank), "peak_reserved": torch.cuda.max_memory_reserved(local_rank), "torch": torch.__version__, "transformers": transformers.__version__, "cuda": torch.version.cuda}
     write_json(RAW / f"{kind}_{'repro16' if repro_only else 'main'}_rank{rank}_meta.json", meta)
     print(json.dumps(meta), flush=True)
 
