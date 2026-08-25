@@ -70,10 +70,10 @@ The existing Phase 1.5.1 SN/UN Beam records were joined without rerunning infere
 
 | Split | Groups | Same-group exact ABC seen | Other-group A | Other-group AB | Other-group ABC | Existing Beam GoldABC Hit@32 |
 |---|---:|---:|---:|---:|---:|---:|
-| SN | 4 | 1/4 | 3/4 | 3/4 | 0/4 | 0/4 for every model/route |
+| SN | 4 | 4/4 | 3/4 | 3/4 | 0/4 | 0/4 for every model/route |
 | UN | 4 | 0/4 | 3/4 | 1/4 | 0/4 | 0/4 for every model/route |
 
-SN is the key counterexample to a coverage-only explanation: one group had the exact ABC supervised in the same group, yet the existing Beam32 diagnostic still failed to place it in the top 32. The sample is small, so this supports a decoder-ranking limitation at moderate rather than strong confidence.
+SN is the key counterexample to a coverage-only explanation: all four groups had at least one exact gold ABC supervised in the same group, yet the existing Beam32 diagnostic still failed to place any gold ABC in the top 32. The sample is small, so this supports a decoder-ranking limitation at moderate rather than strong confidence.
 
 ## Root-cause decision
 
@@ -102,4 +102,3 @@ The bounded follow-up justified by this audit is a coverage-controlled, teacher-
 - Training started: NO
 - External evaluation started: NO
 - Next experiment started: NO
-
