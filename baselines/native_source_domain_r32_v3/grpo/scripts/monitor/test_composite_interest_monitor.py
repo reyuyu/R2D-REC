@@ -179,6 +179,32 @@ def test_server_has_no_gold_source_path_reader():
     assert 'gold_source_path' not in source
 
 
+def test_composite_summary_refreshes_with_monitor_poll():
+    static_dir = Path(__file__).parent / "static"
+    script = (static_dir / "composite_dashboard.js").read_text(encoding="utf-8")
+    index = (static_dir / "index.html").read_text(encoding="utf-8")
+
+    assert "const refreshWithoutCompositeSummary=refresh;" in script
+    assert "await refreshWithoutCompositeSummary(force);" in script
+    assert "if(enabled()&&(autoRefresh||force))await loadSummary();" in script
+    assert "if(loading||!enabled())return" in script
+    assert "composite-live-v5" in index
+
+
+def test_rollout_preserves_model_input_and_marks_history_answer_provenance():
+    index = (Path(__file__).parent / "static" / "index.html").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Model Input · 模型真实输入" in index
+    assert "Reward-only Reference · NOT MODEL INPUT" in index
+    assert "prompt.includes(sid)" in index
+    assert "题目答案来自历史：存在" in index
+    assert "题目答案来自历史：不存在" in index
+    assert "仅用于监控解释，不参与 reward 或训练" in index
+    assert '<span class="provenance-badge">复算</span>' in index
+
+
 def test_fixed_probe_ids_and_effective_max_steps_contract():
     with tempfile.TemporaryDirectory() as directory:
         run = Path(directory) / 'formal'

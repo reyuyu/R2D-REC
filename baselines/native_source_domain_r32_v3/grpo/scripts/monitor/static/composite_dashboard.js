@@ -132,6 +132,11 @@
     const flags=[g.beam_all_equal&&!g.composite_all_equal?'<span class="summary-chip good">CoT Reward 救活零方差组 · RESCUED</span>':'',g.composite_all_equal?'<span class="summary-chip alert">Composite 仍无组内信号</span>':'',g.top_set_tie_break?'<span class="summary-chip good">Beam 并列第一 → CoT 负责打破平局</span>':'',g.strict_beam_reversal?'<span class="summary-chip alert">Composite 改变 Beam 排名</span>':''].join('');
     return `<section class="adv-group"><header class="adv-group-head"><div><div class="adv-title">Step ${g.step??'—'} · Think G4 · Balanced Composite Reward ${capturedBadge()}</div><div class="adv-sub">Sequence-level Advantage：整个 CoT 共享一个 final advantage。兴趣匹配用于解释 Composite Reward，不是 token advantage。</div></div><div class="summary-chips">${flags}</div></header>${modelInput(g)}${rewardReference(g)}<div class="composite-callout">Beam ${vector(g.beam_raw_vector)} · U_cot ${vector(g.cot_utility_vector)} · Composite ${vector(g.composite_reward_vector)} · population std ${fmt(g.composite_reward_population_std,5)} · Beam ${g.beam_active?'active':'zero'} / CoT ${g.cot_active?'active':'zero'} / Composite ${g.composite_active?'active':'zero'}</div><div class="composite-card-grid">${(g.candidates||[]).map(c=>richCard(c,g)).join('')}</div></section>`;
   };
+  const refreshWithoutCompositeSummary=refresh;
+  refresh=async function(force=false){
+    await refreshWithoutCompositeSummary(force);
+    if(enabled()&&(autoRefresh||force))await loadSummary();
+  };
   const renderCompositeAdvantages=renderAdvantages;
   renderAdvantages=function(){renderCompositeAdvantages();if(enabled())bindBeamToggles()};
 })();
