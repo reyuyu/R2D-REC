@@ -1,0 +1,4 @@
+TrueRec-GRPO Phase 1.1 CPU integration audit: PASS
+One recommendation_group_id remains one G8 business group. Rollout-policy old logps are captured before training and remain separate from perturbed current logps.
+Frontier PPO and HPR consume one shared mock-policy logits tensor; invalid-format credit is normalized only over actual completion tokens.
+Probe20 and Dev512 are inference-only interfaces; Final2048 checkpoint selection is disabled. No GPU, real model forward, backward, optimizer, or training was started.

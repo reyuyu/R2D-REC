@@ -1,0 +1,18 @@
+{
+  "actual_completion_length": 2,
+  "context_terms": 0,
+  "credit_mask": [
+    true,
+    true,
+    false
+  ],
+  "credit_total": -0.09375,
+  "domain_terms": 0,
+  "format_invalid_total_contract": -0.09375,
+  "invalid_candidate_index": 5,
+  "invalid_frontier": "INVALID_FORMAT",
+  "per_actual_token_credit": [
+    -0.046875,
+    -0.046875
+  ]
+}

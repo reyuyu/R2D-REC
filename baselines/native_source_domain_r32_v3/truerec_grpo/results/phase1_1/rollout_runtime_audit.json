@@ -1,0 +1,40 @@
+{
+  "G": 8,
+  "backward_started": false,
+  "business_group_unit": true,
+  "generation_contract": {
+    "do_sample": true,
+    "max_new_tokens": 3,
+    "num_return_sequences": 8,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 0,
+    "top_p": 1.0
+  },
+  "github_runtime_parity": true,
+  "gpu_inference_started": false,
+  "optimizer_started": false,
+  "phase07_parser_reused": true,
+  "phase08_sha_unchanged": true,
+  "phase10_core_sha_unchanged": true,
+  "real_model_forward_started": false,
+  "source_runtime_sha": {
+    "trainer/batch_collator_v1.py": {
+      "runtime": "cafec7b6ac097cc4e95affe1681869fd7e4b58c56de48e9a9ff7b7bb62c93351",
+      "source": "cafec7b6ac097cc4e95affe1681869fd7e4b58c56de48e9a9ff7b7bb62c93351"
+    },
+    "trainer/evaluation_runtime_v1.py": {
+      "runtime": "2a9f75eddfd8663d263a31364ba5ef1ea3cb2d52089aaa21d56e839952db12bd",
+      "source": "2a9f75eddfd8663d263a31364ba5ef1ea3cb2d52089aaa21d56e839952db12bd"
+    },
+    "trainer/rollout_runtime_v1.py": {
+      "runtime": "c21f9d79ccc9f3e43b55e01278ea31b07ce92d7230b520302848beed8a896b81",
+      "source": "c21f9d79ccc9f3e43b55e01278ea31b07ce92d7230b520302848beed8a896b81"
+    },
+    "trainer/truerec_grpo_trainer_v1.py": {
+      "runtime": "1bf73e7b9888025cb5cc5ba7fb92788bb7841881fecbf566926b6814eb12f552",
+      "source": "1bf73e7b9888025cb5cc5ba7fb92788bb7841881fecbf566926b6814eb12f552"
+    }
+  },
+  "training_started": false
+}

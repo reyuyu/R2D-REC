@@ -1,0 +1,13 @@
+{
+  "dev512": {
+    "backward": false,
+    "groups": 512,
+    "optimizer": false
+  },
+  "final2048_checkpoint_selection_allowed": false,
+  "probe20": {
+    "backward": false,
+    "groups": 20,
+    "optimizer": false
+  }
+}

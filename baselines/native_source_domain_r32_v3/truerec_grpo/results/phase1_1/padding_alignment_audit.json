@@ -1,0 +1,21 @@
+{
+  "attention_mask_actual_token_counts": [
+    7,
+    7,
+    7,
+    7,
+    7,
+    6,
+    7,
+    7
+  ],
+  "attention_mask_gate": true,
+  "left_padding_short_candidate_offset": 1,
+  "pad_token_id": 0,
+  "right_padding_alignment": true,
+  "variable_context_lengths": [
+    2,
+    4,
+    9
+  ]
+}

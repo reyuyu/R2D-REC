@@ -1,0 +1,7 @@
+{
+  "current_changed_after_perturbation": true,
+  "old_logps_from_rollout_policy": true,
+  "old_unchanged_after_current_perturbation": true,
+  "ratio_not_one_count": 23,
+  "reconstruction_exact": true
+}
