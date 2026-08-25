@@ -6,7 +6,7 @@ import unittest
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.calibrate_similarity import auc_rank, counter_f1, lcs_f1, matching_count
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.data_adapter import DataProvenanceError, build_think_composite_dataset, planned_topology
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.g4_activation_audit import audit_reward_vectors
-from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.interest_metric import MATCH_QUALITY_FLOOR, MATCH_THRESHOLD, beam_utility, composite_reward, coverage_tier, evidence_similarity, maximum_weight_matching, pair_similarity, population_advantages, score_interest_cot
+from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_composite_interest_v1.interest_metric import INTEREST_TIEBREAK_SCALE, MATCH_QUALITY_FLOOR, MATCH_THRESHOLD, beam_primary_composite_rewards, beam_utility, composite_reward, coverage_tier, evidence_similarity, maximum_weight_matching, pair_similarity, population_advantages, score_interest_cot
 from baselines.native_source_domain_r32_v3.grpo.ablations.gr_rec_think_exact_clamp_v1.think_diagnostics import InterestUnit, extract_interest_units
 
 SID1 = "<|video_begin|><s_a_1><s_b_2><s_c_3>"
@@ -135,11 +135,26 @@ class MetricTests(unittest.TestCase):
         for invalid in (-1, None, float("nan"), float("inf"), "bad"):
             self.assertEqual(beam_utility(invalid), 0.0)
 
-    def test_composite_is_bounded(self):
-        for beam in (-1, 0, 0.5, 2, 8, 16, 100):
-            for cot_value in (-2, 0, 0.5, 1, 2):
-                self.assertGreaterEqual(composite_reward(beam, cot_value), 0.0)
-                self.assertLessEqual(composite_reward(beam, cot_value), 1.0)
+    def test_composite_uses_raw_beam_plus_bounded_interest_tiebreak(self):
+        self.assertEqual(INTEREST_TIEBREAK_SCALE, 0.25)
+        self.assertEqual(composite_reward(12, 0), 12.0)
+        self.assertEqual(composite_reward(8, 1), 8.25)
+
+    def test_any_higher_beam_stays_above_lower_beam(self):
+        totals, scale = beam_primary_composite_rewards(
+            [12.0, 8.0, 0.625, 0.5], [0.0, 1.0, 0.0, 1.0]
+        )
+        self.assertLess(scale, 0.25)
+        beams = [12.0, 8.0, 0.625, 0.5]
+        for high in range(4):
+            for low in range(4):
+                if beams[high] > beams[low]:
+                    self.assertGreater(totals[high], totals[low])
+
+    def test_equal_beam_higher_interest_wins(self):
+        totals, scale = beam_primary_composite_rewards([8.0, 8.0], [0.0, 1.0])
+        self.assertEqual(scale, 0.25)
+        self.assertGreater(totals[1], totals[0])
 
     def test_population_advantage_exact_and_equal_zero(self):
         rewards = [0.0, 1.0, 2.0, 3.0]
@@ -165,7 +180,7 @@ class GroupActivationTests(unittest.TestCase):
     def test_composite_order_and_population_correction_zero(self):
         cot_values = [0.56, 0.0, 0.36, 0.16]
         result = audit_reward_vectors([2.0] * 4, cot_values)
-        expected = [composite_reward(2.0, value) for value in cot_values]
+        expected, _ = beam_primary_composite_rewards([2.0] * 4, cot_values)
         self.assertEqual(result["composite_reward_vector"], expected)
         self.assertEqual(
             sorted(range(4), key=lambda index: result["composite_reward_vector"][index]),

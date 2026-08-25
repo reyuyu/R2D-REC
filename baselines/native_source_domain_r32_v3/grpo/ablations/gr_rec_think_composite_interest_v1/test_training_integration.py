@@ -297,7 +297,10 @@ class TrainingChainTests(unittest.TestCase):
 
     def test_formal_path_does_not_call_dry_run_report(self):
         self.assertNotIn("dry_run_report", inspect.getsource(launch_training))
-        self.assertEqual(frozen_contract()["reward"], "0.60*U_beam+0.40*U_cot")
+        self.assertEqual(
+            frozen_contract()["reward"],
+            "R_beam+min(0.25,0.5*min_positive_beam_gap)*U_cot",
+        )
 
     def test_candidate_parser_failure_is_zero_not_exception(self):
         row = score_candidate("invalid", GOLD, PROMPT, 2.0)
@@ -320,6 +323,19 @@ class TrainingChainTests(unittest.TestCase):
         ])
         self.assertEqual(runtime["advantages"], expected)
         self.assertNotEqual(runtime["advantages"], [0.0] * 4)
+        self.assertEqual(runtime["strict_reversal_count"], 0)
+
+    def test_runtime_never_reverses_beam_order(self):
+        runtime = build_global_runtime(
+            records([GOOD, OTHER, GOOD, OTHER]), [0.625, 0.5, 12.0, 8.0]
+        )
+        self.assertEqual(runtime["strict_reversal_count"], 0)
+        self.assertTrue(all(group["strict_reversal_count"] == 0 for group in runtime["groups"]))
+        candidates = runtime["candidates"]
+        for high in candidates:
+            for low in candidates:
+                if high["beam_raw"] > low["beam_raw"]:
+                    self.assertGreater(high["composite_reward"], low["composite_reward"])
 
     def test_zero_std_stays_exact_zero(self):
         runtime = build_global_runtime(records([GOOD] * 4), [2.0] * 4)

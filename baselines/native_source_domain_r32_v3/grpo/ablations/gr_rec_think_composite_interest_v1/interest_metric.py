@@ -15,6 +15,7 @@ from ..gr_rec_think_exact_clamp_v1.think_diagnostics import (
 
 MATCH_THRESHOLD = 0.30
 MATCH_QUALITY_FLOOR = 0.60
+INTEREST_TIEBREAK_SCALE = 0.25
 
 
 @dataclass(frozen=True)
@@ -243,9 +244,47 @@ def beam_utility(raw_reward: float | int | None) -> float:
     return min(1.0, math.log1p(value) / math.log(17.0))
 
 
-def composite_reward(raw_beam_reward: float | int | None, cot_utility: float) -> float:
+def composite_reward(
+    raw_beam_reward: float | int | None,
+    cot_utility: float,
+    tiebreak_scale: float = INTEREST_TIEBREAK_SCALE,
+) -> float:
+    """Add a bounded interest tie-break to the unmodified raw Beam reward."""
+    try:
+        beam = float(raw_beam_reward)
+    except (TypeError, ValueError):
+        beam = 0.0
+    if not math.isfinite(beam) or beam < 0.0:
+        beam = 0.0
     cot = min(1.0, max(0.0, float(cot_utility)))
-    return min(1.0, max(0.0, 0.60 * beam_utility(raw_beam_reward) + 0.40 * cot))
+    scale = min(INTEREST_TIEBREAK_SCALE, max(0.0, float(tiebreak_scale)))
+    return beam + scale * cot
+
+
+def effective_interest_tiebreak_scale(raw_beam_rewards: Sequence[float]) -> float:
+    """Return a G4-local scale that cannot cross any observed Beam boundary."""
+    unique = sorted(set(float(value) for value in raw_beam_rewards))
+    gaps = [right - left for left, right in zip(unique, unique[1:]) if right > left]
+    if not gaps:
+        return INTEREST_TIEBREAK_SCALE
+    return min(INTEREST_TIEBREAK_SCALE, 0.5 * min(gaps))
+
+
+def beam_primary_composite_rewards(
+    raw_beam_rewards: Sequence[float], cot_utilities: Sequence[float]
+) -> tuple[list[float], float]:
+    if len(raw_beam_rewards) != len(cot_utilities):
+        raise ValueError("Beam and CoT utility vectors must align")
+    scale = effective_interest_tiebreak_scale(raw_beam_rewards)
+    totals = [
+        composite_reward(beam, cot, scale)
+        for beam, cot in zip(raw_beam_rewards, cot_utilities)
+    ]
+    for left in range(len(totals)):
+        for right in range(len(totals)):
+            if raw_beam_rewards[left] > raw_beam_rewards[right] and not totals[left] > totals[right]:
+                raise RuntimeError("STRICT_BEAM_REVERSAL_DETECTED")
+    return totals, scale
 
 
 def population_advantages(rewards: Sequence[float], epsilon: float = 1e-4) -> list[float]:
@@ -273,11 +312,17 @@ def diversity_monitor(parsed_candidates: Sequence[InterestParse]) -> dict[str, f
     }
 
 
-def monitor_record(raw_beam_reward: float, score: InterestScore, raw_n: int, grounded_n: int) -> dict:
+def monitor_record(
+    raw_beam_reward: float,
+    score: InterestScore,
+    raw_n: int,
+    grounded_n: int,
+    tiebreak_scale: float = INTEREST_TIEBREAK_SCALE,
+) -> dict:
     beam_value = beam_utility(raw_beam_reward)
-    beam_contribution = 0.60 * beam_value
-    cot_contribution = 0.40 * score.cot_utility
-    total = composite_reward(raw_beam_reward, score.cot_utility)
+    beam_contribution = float(raw_beam_reward)
+    cot_contribution = tiebreak_scale * score.cot_utility
+    total = composite_reward(raw_beam_reward, score.cot_utility, tiebreak_scale)
     if not math.isclose(beam_contribution + cot_contribution, total, abs_tol=1e-12):
         raise RuntimeError("Composite display contribution drift")
     return {
@@ -285,6 +330,7 @@ def monitor_record(raw_beam_reward: float, score: InterestScore, raw_n: int, gro
         "beam_utility": beam_value,
         "beam_contribution": beam_contribution,
         "cot_contribution": cot_contribution,
+        "interest_tiebreak_scale": tiebreak_scale,
         "gold_interest_count": score.n_gold,
         "pred_interest_count": score.n_pred,
         "matched_interest_count": score.matched_interest_count,

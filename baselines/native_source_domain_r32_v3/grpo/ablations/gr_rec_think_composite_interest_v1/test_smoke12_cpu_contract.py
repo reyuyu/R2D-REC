@@ -290,7 +290,7 @@ class SmokeSummaryTests(unittest.TestCase):
         self.assertGreater(self.summary["rescued_zero_count"], 0)
         self.assertGreater(self.summary["composite_zero_std_count"], 0)
         self.assertGreater(self.summary["tie_break_count"], 0)
-        self.assertGreater(self.summary["strict_reversal_count"], 0)
+        self.assertEqual(self.summary["strict_reversal_count"], 0)
         self.assertGreater(self.summary["parser_failure_rate"], 0)
         self.assertTrue(evaluate_smoke_conditions(self.summary)["smoke_pass"])
 

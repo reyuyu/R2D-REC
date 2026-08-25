@@ -281,7 +281,6 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
             beam_equal = case in (0, 1)
             composite_equal = case == 1
             tie_break = case == 2
-            reversal = case == 3
             group_candidates = []
             for candidate_id in range(4):
                 matched = (rollout * 16 + offset * 4 + candidate_id) % 5
@@ -294,8 +293,8 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
                     beam_raw = float(4 if candidate_id == 0 else 0)
                     beam_utility = 0.5 if candidate_id == 0 else 0.0
                 cot = 0.5 if composite_equal else candidate_id / 3
-                beam_contribution = 0.6 * beam_utility
-                cot_contribution = 0.4 * cot
+                beam_contribution = beam_raw
+                cot_contribution = 0.25 * cot
                 reward = beam_contribution + cot_contribution
                 advantage = 0.0 if composite_equal else (-1.0, -0.3, 0.3, 1.0)[candidate_id]
                 candidate = {
@@ -313,6 +312,7 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
                     "beam_contribution": beam_contribution,
                     "cot_utility": cot,
                     "cot_contribution": cot_contribution,
+                    "interest_tiebreak_scale": 0.25,
                     "composite_reward": reward,
                     "final_sequence_advantage": advantage,
                     "matched_interest_count": matched,
@@ -343,8 +343,9 @@ def synthetic_smoke12_fixture() -> dict[str, Any]:
                 "matched_candidate_count": sum(row["matched_interest_count"] > 0 for row in group_candidates),
                 "quality_active_candidate_count": sum(row["Q"] > 0 for row in group_candidates),
                 "beam_top_set": [0, 1, 2, 3] if beam_equal else [0, 1] if tie_break else [0],
-                "beam_stable_winner": 0, "composite_winner": 1 if tie_break else 3,
-                "top_set_tie_break": tie_break, "strict_beam_reversal": reversal,
+                "beam_stable_winner": 0, "composite_winner": 1 if tie_break else 0,
+                "top_set_tie_break": tie_break, "strict_beam_reversal": False,
+                "strict_reversal_count": 0,
                 "pairwise_interest_similarity": 0.0, "unique_interest_set_count": 4,
             })
         events.append({

@@ -14,6 +14,7 @@ from typing import Iterable, Sequence
 from .interest_metric import (
     MATCH_QUALITY_FLOOR,
     MATCH_THRESHOLD,
+    beam_primary_composite_rewards,
     beam_utility,
     composite_reward,
     population_advantages,
@@ -114,13 +115,14 @@ def audit_reward_vectors(raw_beam: Sequence[float], cot_utility: Sequence[float]
         raise ValueError("activation audit requires an intact G4")
     raw = [float(value) for value in raw_beam]
     cot = [float(value) for value in cot_utility]
-    composite = [composite_reward(value, utility) for value, utility in zip(raw, cot)]
+    composite, tiebreak_scale = beam_primary_composite_rewards(raw, cot)
     return {
         "raw_beam_reward_vector": raw,
         "beam_utility_vector": [beam_utility(value) for value in raw],
         "A_beam_raw": population_advantages(raw),
         "U_cot_vector": cot,
         "composite_reward_vector": composite,
+        "interest_tiebreak_scale": tiebreak_scale,
         "A_composite": population_advantages(composite),
         "beam_raw_population_std": population_std(raw),
         "composite_population_std": population_std(composite),

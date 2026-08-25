@@ -69,7 +69,7 @@ def frozen_contract():
         "beam_domain_prefix": "fixed_target_domain",
         "beam_context": "prompt+cot+</think>+fixed_target_domain_prefix",
         "beam_search_space": "ABC_CONTINUATION_AFTER_FIXED_DOMAIN",
-        "reward": "0.60*U_beam+0.40*U_cot",
+        "reward": "R_beam+min(0.25,0.5*min_positive_beam_gap)*U_cot",
         "advantage": "(R-mean)/(population_std+1e-4); correction=0",
     }
 

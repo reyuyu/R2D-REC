@@ -175,7 +175,8 @@ def main(argv=None):
         groups = runtime["groups"]
         candidates = runtime["candidates"]
         composite_formula_parity = all(abs(row["composite_reward"] - composite_reward(
-            row["beam_raw"], row["cot_utility"])) < 1e-7 for row in candidates)
+            row["beam_raw"], row["cot_utility"], row["interest_tiebreak_scale"]
+        )) < 1e-7 for row in candidates)
         fixed_domain_tasks = beam_call.get("fixed_domain_tasks", [])
         fixed_domain_mismatches = [
             task for task in fixed_domain_tasks
