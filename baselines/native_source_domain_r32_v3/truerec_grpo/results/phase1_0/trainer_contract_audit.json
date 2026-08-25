@@ -1,0 +1,84 @@
+{
+  "code": {
+    "implement_commit": "3c15c6567e5218699bf1df7a81616b705a24a1f0",
+    "push_status": "PASS",
+    "git_status_short": "EMPTY",
+    "github_runtime_parity": "PASS",
+    "files": {
+      "baselines/native_source_domain_r32_v3/truerec_grpo/trainer/action_alignment.py": {
+        "github": "2ca6c2b1ca034e84be55e359100ed86cf01503200fefa789e30abb2661f505e1",
+        "source": "2ca6c2b1ca034e84be55e359100ed86cf01503200fefa789e30abb2661f505e1",
+        "runtime": "2ca6c2b1ca034e84be55e359100ed86cf01503200fefa789e30abb2661f505e1"
+      },
+      "baselines/native_source_domain_r32_v3/truerec_grpo/trainer/truerec_loss_v1.py": {
+        "github": "4a52f40639c332824e5dc45d6e4da1defcdbf4fc9f8e0c0dc380d5c4e5287d57",
+        "source": "4a52f40639c332824e5dc45d6e4da1defcdbf4fc9f8e0c0dc380d5c4e5287d57",
+        "runtime": "4a52f40639c332824e5dc45d6e4da1defcdbf4fc9f8e0c0dc380d5c4e5287d57"
+      },
+      "baselines/native_source_domain_r32_v3/truerec_grpo/trainer/truerec_runtime_v1.py": {
+        "github": "2f18378f165d523e8eceaf85f8d575c7a237faacb99a072d8f22d326cef254f7",
+        "source": "2f18378f165d523e8eceaf85f8d575c7a237faacb99a072d8f22d326cef254f7",
+        "runtime": "2f18378f165d523e8eceaf85f8d575c7a237faacb99a072d8f22d326cef254f7"
+      },
+      "baselines/native_source_domain_r32_v3/truerec_grpo/trainer/truerec_trainer_v1.py": {
+        "github": "7b5da094f7cb000fe5d66123eb4310a208e6fd963c0443b55efe9fb2cdddbdfb",
+        "source": "7b5da094f7cb000fe5d66123eb4310a208e6fd963c0443b55efe9fb2cdddbdfb",
+        "runtime": "7b5da094f7cb000fe5d66123eb4310a208e6fd963c0443b55efe9fb2cdddbdfb"
+      }
+    },
+    "phase08_unchanged_sha": {
+      "frontier_credit_v1.py": "639e9a24dd1885798f49a4efd9bbf6b6b9dc8daed833fe9ba8560a86a747788b",
+      "hpr_plan_v1.py": "fadb19056853f898bd85d6779f3d6718bf70bf4ddbd5b7ac44520de88197fe32"
+    }
+  },
+  "contract": {
+    "HPR_LAMBDA": 0.02,
+    "FRONTIER_LEVELS": [
+      "A",
+      "B",
+      "C"
+    ],
+    "DOMAIN_IS_RL_ACTION": false,
+    "DOMAIN_DIRECT_LOSS_TERMS": 0,
+    "CONTEXT_NONACTION_DIRECT_LOSS_TERMS": 0,
+    "FRONTIER_REDUCTION": "candidate credited-token SUM -> G8 mean -> business-group batch mean",
+    "HPR_SITE_REDUCTION": "mean over on-policy positions within site",
+    "HPR_GROUP_REDUCTION": "mean over sites within business group; HPR_NONE=0",
+    "history_penalty": false,
+    "KL_beta": 0.0,
+    "old_logps_contract": "caller-provided rollout-policy logps; never synthesized from current_logps",
+    "action_indices": [
+      10,
+      11,
+      12
+    ],
+    "causal_logit_indices": [
+      9,
+      10,
+      11
+    ],
+    "LOSS_POSITION_GATE": "PASS",
+    "monitoring_fields": [
+      "group_count",
+      "candidate_count",
+      "A_hit_rate",
+      "AB_hit_rate",
+      "exact_rate",
+      "HPR_A_groups",
+      "HPR_B_groups",
+      "HPR_C_groups",
+      "HPR_NONE_groups",
+      "frontier_A_positive",
+      "frontier_A_negative",
+      "frontier_B_positive",
+      "frontier_B_negative",
+      "frontier_C_positive",
+      "frontier_C_negative",
+      "frontier_loss",
+      "hpr_loss_raw",
+      "hpr_loss_weighted",
+      "total_loss",
+      "wrong_history_copy_rate"
+    ]
+  }
+}

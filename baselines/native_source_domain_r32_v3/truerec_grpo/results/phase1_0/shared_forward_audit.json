@@ -1,0 +1,30 @@
+{
+  "POLICY_FORWARD_CALLS_PER_GROUP": 1,
+  "HPR_EXTRA_FORWARD_CALLS": 0,
+  "SHARED_FORWARD_TEST": "PASS",
+  "parameter_mutation": false,
+  "real_model_loaded": false,
+  "real_model_forward": false,
+  "mock_monitoring": {
+    "candidate_count": 8,
+    "A_hit_rate": 0.0,
+    "AB_hit_rate": 0.0,
+    "exact_rate": 0.0,
+    "frontier_A_positive": 0,
+    "frontier_A_negative": 8,
+    "frontier_B_positive": 0,
+    "frontier_B_negative": 0,
+    "frontier_C_positive": 0,
+    "frontier_C_negative": 0,
+    "wrong_history_copy_rate": 0.125,
+    "group_count": 1,
+    "HPR_A_groups": 1,
+    "HPR_B_groups": 0,
+    "HPR_C_groups": 0,
+    "HPR_NONE_groups": 0,
+    "frontier_loss": 0.0625,
+    "hpr_loss_raw": 3.0515599250793457,
+    "hpr_loss_weighted": 0.061031196266412735,
+    "total_loss": 0.12353119254112244
+  }
+}

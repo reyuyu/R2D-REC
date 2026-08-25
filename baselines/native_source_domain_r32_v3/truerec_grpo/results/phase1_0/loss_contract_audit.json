@@ -1,0 +1,60 @@
+{
+  "PPO_RATIO1_TEST": "PASS",
+  "PPO_CLIP_POSITIVE_TEST": "PASS",
+  "PPO_CLIP_NEGATIVE_TEST": "PASS",
+  "MULTIPOSITIVE_HPR_TEST": "PASS",
+  "TOTAL_LOSS_COMPOSITION_TEST": "PASS",
+  "ratio1": [
+    [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        1.0,
+        1.0,
+        1.0
+      ]
+    ]
+  ],
+  "positive_clipped_loss": -1.2000000476837158,
+  "negative_clipped_loss": 2.0,
+  "multi_positive_loss": 0.09434428811073303,
+  "total_components": {
+    "frontier_loss": 2.0,
+    "hpr_loss_raw": 3.0,
+    "hpr_loss_weighted": 0.05999999865889549,
+    "total_loss": 2.059999942779541
+  }
+}
