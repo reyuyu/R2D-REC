@@ -39,6 +39,113 @@
 
 SFT 系列已把总分稳定推到约 1.33，但 Mini 实验表明，单纯扩充懂用户数据或延长 epoch 不能稳定换取收益：Mini-Fix-U3K 和 Mini-Fix-E3 均为负结果。GRPO 系列因此不再同时改数据、训练轮数和 loss，而从 BETA-baseline 出发，只针对懂推荐的实际生成结果进行 outcome 优化，并用外部 11 项评测检查收益是否外溢或损害其他能力。
 
+### 方案总览
+
+当前 GRPO 不是单一算法，而是四条严格隔离的研究路线。它们共享 OneReason-8B、LoRA-only 更新、group-relative advantage、PPO ratio/clipping 和被动监控，但训练路由、credit placement 与研究问题不同。
+
+| 路线 | 代表实验 | 参与优化的路由 | 主要信号 | 研究问题 |
+| --- | --- | --- | --- | --- |
+| **混合懂推荐 GRPO** | `GR_REC_v1`、`GR_REC_DSR_Ablation_v1`、`GR_REC_ThinkExactClamp_Ablation_v1` | Think + NoThink | Beam outcome；SID outcome 或分层 token credit | 两条推荐路径联合训练能否提高外部懂推荐分数 |
+| **NoThink-only GRPO** | `GR_REC_NoThinkOnly_Hier_v1`、`GR_REC_NoThinkOnly_Frontier_v1` | 仅 NoThink；Think 只做 probe | Domain/A/B/C credit、dead-zero bridge、首错 frontier | 直接 SID 路径能否独立提升 |
+| **Think-only GRPO** | `GR_REC_Think_CompositeInterest_v1` | 仅 Think | Beam 命中 + CoT 兴趣结构/覆盖 | 如何避免只追 Beam、忽略推理结构 |
+| **懂用户 GRPO** | `GR_USER_v1`、`MC_USER_v1`、`MC_USER Hybrid K4` | Action + Chain | Set-F1、Action/Logic alignment、局部 token credit | 懂用户提升及共享 LoRA 的跨任务干扰 |
+
+不同路线会改变 loss 尺度，不能横向比较训练 loss 的绝对值。最终判断统一依赖固定 probe、结构监控与外部 11 项评测。
+
+### 共同底座与基础数学
+
+`GR_REC_v1` 是懂推荐实验的母合同，也是当前外部最高分方案的来源：
+
+- Think：`G=4`、temperature `0.9`、top-p `0.95`、route multiplier `1.0`；每条 sampled CoT 再执行 Beam32。基础 reward 为 Exact=`8`、AB=`2`、A=`0.5`，同一 Gold 前缀去重并按排名几何衰减。
+- NoThink：`G=8`、temperature `1.0`、top-p `1.0`、route multiplier `0.5`；按最终 SID 使用互斥六档 reward `-1/-0.25/0/0.5/2/8`。
+- 组内 advantage 为 `A=(R-mean)/(std_population+1e-4)`；严格同分组 advantage 为 0。
+- PPO/GRPO 固定为 `beta=0`、`epsilon=0.2`、`loss_type=grpo`；一个 rollout 复用两个 optimizer steps。base 冻结，只更新 LoRA。
+- `G4 x 1.0` 与 `G8 x 0.5` 的 trick 是让两条路线每个 group 的总权重大致可比，不是修改 NoThink reward 数值。
+
+基础版 Think Beam32 会生成较长 continuation 再解析最终 SID。后来的 Fixed-domain Strict ABC3 是新的 Think-only 语义，不能反向重解释 `GR_REC_v1` 的历史结果。
+
+### 混合懂推荐 GRPO
+
+#### GR_REC_v1：Outcome 混合母版
+
+Think 用 Beam32 outcome，NoThink 用六档 SID outcome，两条路线交替训练并共享 LoRA。关键 trick 是动态 `G4/G8`、route weight 对齐、精确 `</think>` stopping、从真实 completion IDs 重建 Beam context，以及只在完整 rollout 边界保存/恢复。
+
+后期风险是 Think CoT 变短、Raw N/Grounded N 下降及 zero-std 上升，因此 checkpoint 不能按“越晚越好”选择。
+
+#### GR_REC_DSR_Ablation_v1：Diversity & Signal Rescue
+
+DSR 保持 `GR_REC_v1` primary reward 不变，只增加隔离辅助项：
+
+- Think 仅认可包含原 prompt 完整真实 SID 的 grounded interest bullet；用兴趣数量、evidence Jaccard diversity、Beam prefix/exploration 构造独立组归一化 advantage，再以 `0.10` 加入同一 PPO surrogate。
+- NoThink 仅在真实 `[0]*8` 组触发 sampled-A token unlikelihood；按重复频率加权，`lambda_A` 根据 Gold-A 多样性取 `0.10/0.20`。
+- 不增加 forward、generation、Beam、collective 或 CUDA sync。
+
+该方案研究“结构坍缩”和“dead group 无梯度”能否分别获救。Pilot200 forensic 已落盘，但不是新的外部最佳分数结论。
+
+#### Think ExactClamp + NoThink Hierarchical Bridge
+
+尽管目录名是 `GR_REC_ThinkExactClamp_Ablation_v1`，正式组合版同时训练两条路线：
+
+- Think：`raw=(reward-group_mean)/8`；当 `reward>=8` 且 `raw<0` 时 clamp 为 0，避免 Exact candidate 收到负更新。
+- NoThink：sequence-wide scalar advantage 改为稀疏 token credit。Domain/A/B/C 系数为 `0.25/0.5/1.5/6`，统一除以 8，并按前缀条件逐级 gating。
+- Domain credit 位于 `</think>` 后、最终 SID 前的自然语言 decision token；A/B/C 位于最终 SID component token。无关 token advantage 为 0，credited-token loss 使用 SUM，避免 completion 长度稀释。
+- 仅精确 `[0]*8` 启用 Gold-A teacher bridge，`lambda_bridge=0.02`；不教 B/C，不与旧 sequence objective 双计数。
+
+该组合版 checkpoint 1000 外部得分 `1.3383`，仍在约 `+/-0.01` 波动参考内；checkpoint 1500 回落到 `1.3064`。工程稳定不等于有效，晚期 Think 结构收缩仍是主要风险。
+
+### NoThink-only GRPO
+
+#### NoThinkOnly Hier
+
+从 fresh BETA/BATA parent 只训练 NoThink，没有 Think rollout/reward/loss/optimizer update；Think 仅做固定 inference probe。算法沿用 earliest Domain commitment + A/B/C hierarchical credit、`0.25/0.5/1.5/6`、scale 8、route multiplier `0.5` 与 `[0]*8` Gold-A bridge `0.02`。
+
+它用于严格归因：NoThink 改善而 Think probe 下降时，说明共享 LoRA 仍会产生跨路由干扰。仓库保留 runner、sampler audit 和正式合同，效果以对应结果记录为准。
+
+#### NoThinkOnly Frontier
+
+Frontier 在 Hier 上只改两点：严格格式 gate，以及“第一个失败层级”的绝对负 credit。
+
+- 合法输出只能是 SFT domain declaration + 完整 SID，或 direct-SID fallback；非空 think、额外 prose、非法 SID、模板错误触发固定总质量 sequence penalty。
+- 合法 candidate 保留正向 milestone credit；Domain/A/B/C 首个失败点分别给 `-0.03125/-0.0625/-0.1875/-0.75`，后续层级 gated。
+- `[0]*8` 时 Frontier A-negative 与独立 Gold-A bridge 可同时存在；bridge lambda 仍为 `0.02`。
+
+正式 full epoch 已完成 `1544` steps，工程稳定，但晚期 zero-std 上升，未训练 Think probe 的 Exact/Beam 明显退化。未运行外部 benchmark，因此只能判定“训练链成立、效果未定”。
+
+### Think-only GRPO：Composite Interest
+
+该路线只训练 Think G4。它把 sampled CoT 的 `【兴趣归纳】` 与 reward-only Gold CoT 做一对一兴趣匹配：
+
+```text
+K = matched interest count
+coverage = K / N_gold
+Q = clip((mean_similarity - 0.60) / 0.40, 0, 1)
+U_cot = 0.8 * coverage_tier + 0.2 * Q
+U_beam = clip(log(1 + max(R_beam, 0)) / log(17), 0, 1)
+R_total = 0.60 * U_beam + 0.40 * U_cot
+```
+
+核心 trick：
+
+- 字符 bigram multiset F1，阈值 `0.30`；maximum-cardinality 一对一 matching，total similarity 仅作确定性 tie-break，防止重复消费一个 Gold interest。
+- Gold CoT 只进入 reward，绝不进入 prompt、Beam context 或 generation。
+- 当前 production Beam 是 Fixed-domain Strict ABC3：`Prompt + sampled CoT + fixed target-domain prefix` 后 Beam32，严格生成 3 个 raw token（A/B/C），`min_new_tokens=max_new_tokens=3`，reward 直接解析 raw IDs。
+- 旧 free-domain/128-token/generic `final_sid` 路径出现过 long-continuation parse artifact，只能作工程历史。
+- Monitor 展示 Beam raw、`U_beam`、`U_cot`、Composite、K、Raw N、Grounded N、grounding coverage 和 lazy-loaded 32 条真实 Beam；前端不重算 reward。
+
+Composite 已完成 CPU 校准、4-GPU zero-update preflight 与 Smoke12 合同验证，但尚无可替代 `1.3510` 的完整外部评测。若 parent 使用 plus-gamma epoch1/epoch2，现有 12 个固定 probe 中有 `8/12` 的 group ID 与训练数据重合，不能作为干净泛化集，正式比较需重建 group-disjoint probe。
+
+### 懂用户系列 GRPO
+
+懂用户项目与懂推荐代码隔离，包含 Action 与 Chain 两条 NoCoT 路由：
+
+- Action reward 是合法 SID 集合的 Set-F1。
+- Chain reward 是 `0.5 * ActionAlignmentF1 + 0.5 * LogicAlignmentF1`，使用保序一对一 event matching。
+- `G=4`、temperature `0.9`、top-p `0.95`、population-std advantage、`beta=0`、clip `0.2`。
+- 对 hallucinated SID、date/action mismatch、duplicate 等白名单局部 span，使用 `lambda_eff=0.50/sqrt(token_count)`；token advantage 取 `min(sequence_advantage,-lambda_eff)`，重叠处罚只取最强值。
+- `wrong_selection_sid` 与 format/schema violation 保持诊断语义，不被隐式加入局部 penalty。
+
+`GR_USER_v1` full epoch 的内部 Action/Chain probe 改善，但外部总分为 `1.3146`，主要因为 Recommendation 相对 BETA 下降 `0.0213`。`MC_USER Hybrid K4` 从 `GR_REC_v1 step1500` 加入懂用户目标后，User 上升而 Recommendation 持续下降，说明共享 LoRA 的跨任务干扰不能只靠目标任务 probe 判断。
+
 当前实验链路如下：
 
 1. **BETA-baseline（GRPO 基线）**：不是新的训练实验，而是 GRPO policy 的初始 Adapter。使用多次评测中较高的 `1.3313` 作保守对照，动机是避免以偏低测次夸大 GRPO 收益。
@@ -46,7 +153,9 @@ SFT 系列已把总分稳定推到约 1.33，但 Mini 实验表明，单纯扩�
 3. **Checkpoint 选择**：不按“越晚越好”选择，也不只看训练 reward。先比较 Step 1000/1500/2000/final 的外部 11 项，再结合 CoT 长度、多样性、zero-std、Beam invalid 和固定四域 Probe。当前 Step 1500 是优先复测候选。
 4. **后续实验隔离原则**：CoT 后期单一兴趣收缩与 NoThink/Think 零方差是两类不同问题。后续若分别测试多样性约束或稀疏 reward 改进，必须单变量立项，不在同一实验中同时改 G、reward、sampler 或数据顺序。
 
-### GR_REC_v1 外部评测
+### 当前高光：GR_REC_v1 Step 1500 = 1.3510
+
+> **当前仓库最高的已记录外部总分是 `1.3510`。** 它来自最基础的混合方案 `GR_REC_v1 checkpoint-1500`，相对保守 BETA 基线 `1.3313` 提升 `+0.0197`，其中懂推荐合计从 `0.6594` 提升到 `0.6800`。这是优先复测和模型选择候选，不是已完成统计复现的最终结论。
 
 | 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对 `1.3313` | 结论 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -81,11 +190,20 @@ Recommendation Gold 相对 History 的纯 CPU 任务结构审计见 [Recommendat
 
 Hybrid 训练健康完成，但外部任务呈现随 step 增强的 User/Recommendation 权衡：相对 Parent，User 从 `+0.0034` 增至 `+0.0060`，Recommendation 从 `-0.0110` 扩大到 `-0.0212`。这更支持 User-only objective 的跨任务干扰，而不是“学习率低到没有学到”；`1e-6` 已经产生稳定方向性变化，提高学习率本身不能保证保留 Recommendation。完整原始 11 项、逐项 delta 和保留策略见 [MC_USER Hybrid 外部评测记录](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md)。
 
-GRPO 记录入口：
+### 代码、Runner、文档和结果入口
 
-- [GR_REC_v1：动机、冻结合同、训练完成记录、问题侧证据与完整分项](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md)
-- [GRPO 代码、监控与测试入口](./baselines/native_source_domain_r32_v3/grpo/README.md)
-- [实验记录总索引](./实验记录/README.md)
+| 路线 / 实验 | 正式入口 | 核心实现 | 说明与结果 |
+| --- | --- | --- | --- |
+| GR_REC 基础混合 | [`run_grpo_trl_train.py`](./baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py) | [`grpo_trl_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py) | [`GR_REC_v1` 完整记录](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_v1.md) |
+| DSR 混合消融 | [`run_dsr_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/run_dsr_train.py) | [`dsr_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/dsr_trainer.py) | [实验文档](./baselines/native_source_domain_r32_v3/docs/experiment_GR_REC_DSR_Ablation_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/README.md) / [Pilot200 forensic](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/results/pilot200_forensic_20260818/GR_REC_DSR_PILOT200_FORENSIC_REPORT.md) |
+| ExactClamp + Hier Bridge 混合 | [`run_think_exact_clamp_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/run_think_exact_clamp_train.py) | [`think_exact_clamp_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/think_exact_clamp_trainer.py) / [`nothink_hierarchical_credit.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/nothink_hierarchical_credit.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_ThinkExactClamp_Ablation_v1.md) / [Formal1500 forensic](./baselines/native_source_domain_r32_v3/grpo/results/gr_rec_clamp_bridge_v1_formal1500_forensic_20260821.md) |
+| NoThink-only Hier | [`run_nothink_only_hier_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_hier_v1/run_nothink_only_hier_train.py) | 复用 ExactClamp 目录中的 hierarchy/bridge | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_NoThinkOnly_Hier_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_hier_v1/README.md) |
+| NoThink-only Frontier | [`run_nothink_only_frontier_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/run_nothink_only_frontier_train.py) | [`frontier_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_trainer.py) / [`frontier_credit.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_credit.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_NoThinkOnly_Frontier_v1.md) / [Formal forensic](./baselines/native_source_domain_r32_v3/grpo/results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.md) |
+| Think-only Composite | [`run_gr_rec_think_composite_interest_v1.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/run_gr_rec_think_composite_interest_v1.py) | [`composite_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/composite_trainer.py) / [`interest_metric.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/interest_metric.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_Think_CompositeInterest_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/README.md) |
+| GR_USER_v1 | [`run_user_full_epoch.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_user_full_epoch.py) | [`user_grpo_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_grpo_trainer.py) | [项目入口](./baselines/native_source_domain_r32_v3/grpo/user/README.md) / [Reward 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/reward_contract_v1.md) / [Trainer 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/trainer_objective_contract_v1.md) / [Full epoch](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md) |
+| MC_USER Hybrid K4 | [`run_mc_user_formal_hybrid_k4_ddp_v1.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_mc_user_formal_hybrid_k4_ddp_v1.py) | [`user_mc_hybrid_objective.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_mc_hybrid_objective.py) | [外部评测与跨任务权衡](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md) |
+
+总入口：[GRPO 工程 README](./baselines/native_source_domain_r32_v3/grpo/README.md) / [实验记录总索引](./实验记录/README.md)。
 
 ## Alpha 系列
 
