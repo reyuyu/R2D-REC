@@ -10,6 +10,6 @@ TrueRec-GRPO is a recommendation-only GRPO data and training track. Phase 0.1 is
 - Routes: `recommendation_cot` and `recommendation_nocot` from `source_segment`.
 - Target domain: parsed from `recommendation_current_gold_sid`; the source has no separate target-domain field.
 - History: extracted from `instruction + input`, excluding the terminal task paragraph and `/think` or `/no_think` marker.
-- Gamma is audited separately for source/template provenance and is not mixed into BATA canonical-group counts.
+- Beta-Gamma is audited against its run-local dataset manifest and complete transformed JSONL. It must preserve Beta's row count, recommendation groups, and Gold contracts while removing only the recommendation answer bridge.
 
 Phase 0.1 does not create splits, novelty classes, rendered GRPO data, rewards, or training jobs.

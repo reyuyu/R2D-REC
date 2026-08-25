@@ -22,19 +22,18 @@ RUNTIME_SCRIPT = RUNTIME / "truerec_grpo/data/build_canonical_groups.py"
 OUTPUT = RUNTIME / "truerec_grpo/results/phase0_1"
 BATA_SOURCE = Path("/data/lf_data_versions/alltrain/bata_baseline_v1/onereason_bata_baseline.jsonl")
 GAMMA_SOURCE = Path(
-    "/data/lf_data_versions/alltrain/mini_fix_eval_align_answer_only_v1/"
-    "onereason_mini_fix_eval_align_answer_only.jsonl"
+    "/data/lf_data_versions/alltrain/beta_gamma_v1/onereason_beta_gamma.jsonl"
 )
 BETA_CHECKPOINT = Path(
     "/data/outputs/baselines/native_source_domain_r32_v3/"
     "BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106"
 )
 GAMMA_CHECKPOINT = Path(
-    "/root/data_checkpoints_backup_20260824/outputs/baselines/native_source_domain_r32_v3/"
-    "mini_gamma/checkpoint-136"
+    "/data/outputs/baselines/native_source_domain_r32_v3/"
+    "BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127/checkpoint-1102"
 )
 EXPECTED_BATA_SHA = "f84f288b8a9685b4c9cb769c937a5250407723dfab11bdc548486ac7751ec8ca"
-EXPECTED_GAMMA_SHA = "216857d8c5d0049a3e9642279acd89051c40f5bcddb1d4afe513e36080b086cf"
+EXPECTED_GAMMA_SHA = "72170e142a3db1ee7d0dd5b76ffb884f143a9fbf074906ea9fc91c9e8883ad28"
 SID_RE = re.compile(r"<\|(video|prod|ad|living)_begin\|><s_a_(\d+)><s_b_(\d+)><s_c_(\d+)>")
 ROUTES = {"recommendation_cot": "think", "recommendation_nocot": "nothink"}
 DOMAINS = ("video", "prod", "ad", "living")
@@ -321,12 +320,12 @@ def render_review(audit: dict[str, Any], beta: dict[str, Any], gamma: dict[str, 
         f"SOURCE_PATH={beta['path']}", f"SOURCE_SHA256={beta['sha256']}", f"TOTAL_ROWS={beta['total_rows']}",
         f"RECOMMENDATION_ROWS={beta['recommendation_rows']}", f"UNIQUE_RECOMMENDATION_GROUPS={beta['recommendation_groups']}",
         f"VIDEO_GROUPS={domain_counts['video']}", f"PROD_GROUPS={domain_counts['prod']}", f"AD_GROUPS={domain_counts['ad']}", f"LIVING_GROUPS={domain_counts['living']}",
-        "", "--- Beta/Gamma Template ---", "", f"BETA_RECOMMENDATION_SOURCE={beta['path']}", f"GAMMA_RECOMMENDATION_SOURCE={gamma['path']}",
-        f"GAMMA_SOURCE_SHA256={gamma['sha256']}", f"BETA_AFTER_THINK_DIRECT_SID_ROWS={beta['answer_suffix_classes'].get('DIRECT_DOMAIN_SID', 0)}",
+        "", "--- Beta/Beta-Gamma Template ---", "", f"BETA_RECOMMENDATION_SOURCE={beta['path']}", f"BETA_GAMMA_RECOMMENDATION_SOURCE={gamma['path']}",
+        f"BETA_GAMMA_SOURCE_SHA256={gamma['sha256']}", f"BETA_AFTER_THINK_DIRECT_SID_ROWS={beta['answer_suffix_classes'].get('DIRECT_DOMAIN_SID', 0)}",
         f"BETA_AFTER_THINK_BRIDGE_ROWS={beta['answer_suffix_classes'].get('NATURAL_LANGUAGE_BRIDGE', 0)}",
-        f"GAMMA_AFTER_THINK_DIRECT_SID_ROWS={gamma['answer_suffix_classes'].get('DIRECT_DOMAIN_SID', 0)}",
-        f"GAMMA_AFTER_THINK_BRIDGE_ROWS={gamma['answer_suffix_classes'].get('NATURAL_LANGUAGE_BRIDGE', 0)}",
-        f"GAMMA_AFTER_THINK_TEMPLATE=DIRECT_DOMAIN_PLUS_SID_NO_NATURAL_LANGUAGE_BRIDGE", "", "--- Canonical Contract ---", "",
+        f"BETA_GAMMA_AFTER_THINK_DIRECT_SID_ROWS={gamma['answer_suffix_classes'].get('DIRECT_DOMAIN_SID', 0)}",
+        f"BETA_GAMMA_AFTER_THINK_BRIDGE_ROWS={gamma['answer_suffix_classes'].get('NATURAL_LANGUAGE_BRIDGE', 0)}",
+        f"BETA_GAMMA_AFTER_THINK_TEMPLATE=DIRECT_DOMAIN_PLUS_SID_NO_NATURAL_LANGUAGE_BRIDGE", "", "--- Canonical Contract ---", "",
         f"THINK_ONLY_GROUPS={routes['think_only']}", f"NOTHINK_ONLY_GROUPS={routes['nothink_only']}", f"THINK_NOTHINK_GROUPS={routes['think_nothink']}",
         f"TARGET_DOMAIN_CONFLICT_GROUPS={conflicts['target_domain']}", f"ALL_GOLD_CONFLICT_GROUPS={conflicts['all_gold']}",
         f"CURRENT_GOLD_CONFLICT_GROUPS={conflicts['current_gold']}", f"HISTORY_CONFLICT_GROUPS={conflicts['history']}",
@@ -344,7 +343,7 @@ def run(test_status: str) -> None:
         raise RuntimeError("TEST_STATUS_GATE_FAIL")
     audit = code_audit()
     beta = scan_source(BATA_SOURCE, "Beta/BATA", build_groups=True)
-    gamma = scan_source(GAMMA_SOURCE, "Gamma answer-only", build_groups=False)
+    gamma = scan_source(GAMMA_SOURCE, "Beta-Gamma", build_groups=False)
     if beta["sha256"] != EXPECTED_BATA_SHA or gamma["sha256"] != EXPECTED_GAMMA_SHA:
         raise RuntimeError("SOURCE_SHA_MISMATCH")
     canonical, conflicts = aggregate_normalized(beta["normalized_rows"])
@@ -369,15 +368,23 @@ def run(test_status: str) -> None:
     }
     beta_groups, gamma_groups = set(beta["group_gold_contract"]), set(gamma["group_gold_contract"])
     intersection = beta_groups & gamma_groups
+    if gamma["total_rows"] != beta["total_rows"] or gamma["recommendation_rows"] != beta["recommendation_rows"]:
+        raise RuntimeError("BETA_GAMMA_ROW_COUNT_PARITY_FAIL")
+    if gamma_groups != beta_groups:
+        raise RuntimeError("BETA_GAMMA_GROUP_SET_PARITY_FAIL")
+    if any(beta["group_gold_contract"][group] != gamma["group_gold_contract"][group] for group in beta_groups):
+        raise RuntimeError("BETA_GAMMA_GOLD_CONTRACT_PARITY_FAIL")
     beta_gamma = {
         "beta_checkpoint": str(BETA_CHECKPOINT),
         "gamma_checkpoint": str(GAMMA_CHECKPOINT),
         "beta_source": str(BATA_SOURCE),
         "gamma_source": str(GAMMA_SOURCE),
-        "gamma_groups_subset_of_beta": gamma_groups <= beta_groups,
+        "total_row_count_parity": gamma["total_rows"] == beta["total_rows"],
+        "recommendation_row_count_parity": gamma["recommendation_rows"] == beta["recommendation_rows"],
+        "group_set_parity": gamma_groups == beta_groups,
         "group_intersection": len(intersection),
         "gold_contract_parity_on_intersection": all(beta["group_gold_contract"][group] == gamma["group_gold_contract"][group] for group in intersection),
-        "checkpoint_to_dataset_evidence": "Direct corpus scan plus repository diagnostic model/dataset mapping; checkpoint training_args.bin does not embed dataset path.",
+        "checkpoint_to_dataset_evidence": "Run-local metadata/source_config.yaml and dataset_manifest.json name onereason_beta_gamma and the exact beta_gamma_v1 JSONL path/SHA.",
         "beta_after_think_contract": "NATURAL_LANGUAGE_BRIDGE_THEN_DOMAIN_SID",
         "gamma_after_think_contract": "DIRECT_DOMAIN_SID",
         "gamma_has_natural_language_bridge": gamma["answer_suffix_classes"].get("NATURAL_LANGUAGE_BRIDGE", 0) > 0,
@@ -386,7 +393,7 @@ def run(test_status: str) -> None:
     canonical_sha = write_jsonl(OUTPUT / "canonical_groups.jsonl", canonical)
     schema_audit = {
         "beta": public_schema(beta),
-        "gamma": public_schema(gamma),
+        "beta_gamma": public_schema(gamma),
         "beta_gamma_provenance": beta_gamma,
         "schema_status": "PASS",
         "cpu_only": True,
@@ -398,7 +405,7 @@ def run(test_status: str) -> None:
     write_json(OUTPUT / "domain_counts.json", {domain: domain_counts[domain] for domain in DOMAINS})
     write_json(OUTPUT / "conflict_groups.json", conflicts)
     write_json(OUTPUT / "dataset_sha256.json", {
-        "beta_bata_source": beta["sha256"], "gamma_source": gamma["sha256"],
+        "beta_bata_source": beta["sha256"], "beta_gamma_source": gamma["sha256"],
         "canonical_groups_jsonl": canonical_sha,
     })
     review = render_review(audit, beta, gamma, canonical_audit, domain_counts, canonical_sha, test_status)

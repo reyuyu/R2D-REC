@@ -78,7 +78,7 @@ class CanonicalGroupsTest(unittest.TestCase):
         self.assertEqual(len(groups), len(set(row["group_id"] for row in rows)))
         self.assertEqual(len(ids), len(set(ids)))
 
-    def test_answer_suffix_beta_bridge_vs_gamma_direct(self):
+    def test_answer_suffix_beta_bridge_vs_beta_gamma_direct(self):
         gold = sid("video")
         beta = module.classify_answer_suffix("<think>x</think>该用户最近喜欢的视频有: " + gold)
         gamma = module.classify_answer_suffix("<think>x</think>" + gold)
