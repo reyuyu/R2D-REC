@@ -23,8 +23,8 @@ from grpo_beam_domain import (
 from .run_gr_rec_think_composite_interest_v1 import (
     AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_DOMAIN_ORDER, PROBE_IDS, PROBE_ROUNDS,
     PROBE_STEPS, SAVE_TOTAL_LIMIT, SEED,
-    checkpoint_save_config, frozen_contract, launch_training,
-    should_save_checkpoint,
+    checkpoint_save_config, frozen_contract, launch_training, parser,
+    should_save_checkpoint, validate_args,
 )
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
 
@@ -294,6 +294,15 @@ class TrainingChainTests(unittest.TestCase):
         self.assertEqual(checkpoint_save_config(), {
             "save_strategy": "steps", "save_steps": 10000, "save_total_limit": 4,
         })
+
+    def test_custom_checkpoint_300_is_isolated_to_explicit_schedule(self):
+        args = parser().parse_args([
+            "--checkpoint-steps", "200", "300", "400", "600", "716",
+        ])
+        validate_args(args)
+        self.assertEqual(args.checkpoint_steps, [200, 300, 400, 600, 716])
+        self.assertEqual(checkpoint_save_config(args.checkpoint_steps)["save_total_limit"], 5)
+        self.assertNotIn(300, CHECKPOINT_STEPS)
 
     def test_formal_path_does_not_call_dry_run_report(self):
         self.assertNotIn("dry_run_report", inspect.getsource(launch_training))

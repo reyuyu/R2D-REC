@@ -74,18 +74,24 @@ def frozen_contract():
     }
 
 
-def checkpoint_save_config():
+def checkpoint_save_config(checkpoint_steps=CHECKPOINT_STEPS):
     return {"save_strategy": "steps", "save_steps": AUTO_SAVE_STEPS,
-            "save_total_limit": SAVE_TOTAL_LIMIT}
+            "save_total_limit": len(tuple(checkpoint_steps))}
 
 
-def launch_contract(*, enable_probes=True, enable_checkpoints=True, smoke_mode=False):
+def launch_contract(
+    *, enable_probes=True, enable_checkpoints=True, smoke_mode=False,
+    checkpoint_steps=CHECKPOINT_STEPS,
+):
     """Pure launch switches shared by formal training and the Smoke12 runner."""
     return {
         "enable_probes": bool(enable_probes),
         "enable_checkpoints": bool(enable_checkpoints),
         "smoke_mode": bool(smoke_mode),
-        "save_config": checkpoint_save_config() if enable_checkpoints else {"save_strategy": "no"},
+        "save_config": (
+            checkpoint_save_config(checkpoint_steps)
+            if enable_checkpoints else {"save_strategy": "no"}
+        ),
     }
 
 
@@ -106,6 +112,7 @@ def parser():
     ap.add_argument("--parent-adapter", type=Path)
     ap.add_argument("--parent-adapter-sha256")
     ap.add_argument("--parent-label", default="fresh-original-bata")
+    ap.add_argument("--checkpoint-steps", type=int, nargs="+", default=CHECKPOINT_STEPS)
     ap.add_argument("--grpo-data", type=Path, default=DEFAULT_GRPO)
     ap.add_argument("--gold-data", type=Path, default=DEFAULT_SOURCE)
     return ap
@@ -116,6 +123,14 @@ def validate_args(args):
         raise ValueError("invalid --run-id")
     if not 1 <= args.max_steps <= 716:
         raise ValueError("--max-steps must be within 1..716")
+    checkpoint_steps = tuple(getattr(args, "checkpoint_steps", CHECKPOINT_STEPS))
+    if (
+        not checkpoint_steps
+        or checkpoint_steps != tuple(sorted(set(checkpoint_steps)))
+        or any(step < 1 or step > args.max_steps for step in checkpoint_steps)
+    ):
+        raise ValueError("--checkpoint-steps must be unique, sorted, and within 1..max_steps")
+    args.checkpoint_steps = list(checkpoint_steps)
 
 
 def file_sha256(path):
@@ -251,7 +266,7 @@ def dry_run_report(args, plan):
         "train_probe_overlap": plan["train_probe_overlap"],
         "sampler_dropped_group_ids": plan["dropped_group_ids"],
         "effective_max_steps": args.max_steps,
-        "checkpoint_steps": list(CHECKPOINT_STEPS),
+        "checkpoint_steps": list(args.checkpoint_steps),
         "probe_steps": list(PROBE_STEPS),
         "single_node_nccl_socket_ifname": "lo",
         "frozen_contract": frozen_contract(),
@@ -271,6 +286,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
         enable_probes=enable_probes,
         enable_checkpoints=enable_checkpoints,
         smoke_mode=smoke_mode,
+        checkpoint_steps=args.checkpoint_steps,
     )
     os.environ["GRPO_PARENT_ADAPTER"] = plan["parent_adapter"]["path"]
     from .runtime_import_provenance import assert_runtime_import_provenance
@@ -318,7 +334,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             "gold_source_path": str(args.gold_data), "gold_cot_reward_only": True,
             "sampler_audit": plan["topology"], "fixed_probe_ids": plan["probe_ids"],
             "effective_max_steps": args.max_steps,
-            "checkpoint_steps": list(CHECKPOINT_STEPS),
+            "checkpoint_steps": list(args.checkpoint_steps),
             "probe_steps": list(PROBE_STEPS),
             "probe_rounds": plan["probe_rounds"],
             "smoke_mode": contract["smoke_mode"],
@@ -354,7 +370,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
 
     class MilestoneSaveCallback(TrainerCallback):
         def on_step_end(self, training_args, state, control, **kwargs):
-            if should_save_checkpoint(state.global_step):
+            if int(state.global_step) in args.checkpoint_steps:
                 control.should_save = True
             return control
 
