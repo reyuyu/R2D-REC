@@ -28,7 +28,10 @@ from truerec_runtime_v1 import build_group_runtime_plan
 ROUTE_MULTIPLIER = None
 FORMAT_PENALTY_CONTEXT_TERMS = 0
 FORMAT_PENALTY_DOMAIN_TERMS = 0
-TRAINER_MICROBATCH_SIZE = 2
+DEFAULT_STREAMING_MICROBATCH_SIZE = 2
+LONG_CONTEXT_STREAMING_MICROBATCH_SIZE = 1
+VALID_STREAMING_MICROBATCH_SIZES = (1, 2)
+TRAINER_MICROBATCH_SIZE = DEFAULT_STREAMING_MICROBATCH_SIZE
 LOGICAL_POLICY_SCORING_PASSES_PER_GROUP = 1
 PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP = G // TRAINER_MICROBATCH_SIZE
 
@@ -102,19 +105,30 @@ def hpr_loss_padded(logits: torch.Tensor, batch: PaddedBusinessGroup, runtime_hp
 
 
 class TrueRecGRPOTrainerV1:
-    def __init__(self, policy, token_to_id, pad_token_id: int, epsilon: float = 0.2, padding_side: str = "right", device=None):
+    def __init__(
+        self, policy, token_to_id, pad_token_id: int, epsilon: float = 0.2,
+        padding_side: str = "right", device=None,
+        streaming_microbatch_size: int = DEFAULT_STREAMING_MICROBATCH_SIZE,
+    ):
         self.policy = policy
         self.token_to_id = token_to_id
         self.pad_token_id = int(pad_token_id)
         self.epsilon = epsilon
         self.padding_side = padding_side
         self.device = device
+        self.set_streaming_microbatch_size(streaming_microbatch_size)
         self.logical_policy_scoring_passes = 0
         self.physical_policy_forward_calls = 0
         self.train_policy_forward_calls = 0
         self.hpr_extra_forward_calls = 0
         self.streaming_backward_calls = 0
         self.streaming_full_g8_plan_builds = 0
+
+    def set_streaming_microbatch_size(self, value: int) -> None:
+        value = int(value)
+        if value not in VALID_STREAMING_MICROBATCH_SIZES:
+            raise ValueError(f"streaming_microbatch_size must be one of {VALID_STREAMING_MICROBATCH_SIZES}")
+        self.streaming_microbatch_size = value
 
     def backward_group_streaming(self, group: BusinessGroupRollout) -> StreamingGroupBackward:
         """Backpropagate one logical G8 objective while retaining only one chunk graph at a time."""
@@ -128,8 +142,10 @@ class TrueRecGRPOTrainerV1:
         hpr_value_raw = 0.0
         backpropagated_chunk_total_value = 0.0
         self.logical_policy_scoring_passes += 1
-        for start in range(0, G, TRAINER_MICROBATCH_SIZE):
-            stop = min(start + TRAINER_MICROBATCH_SIZE, G)
+        microbatch_size = self.streaming_microbatch_size
+        physical_calls = G // microbatch_size
+        for start in range(0, G, microbatch_size):
+            stop = min(start + microbatch_size, G)
             input_ids = batch.input_ids[start:stop]
             attention_mask = batch.attention_mask[start:stop]
             if self.device is not None:
@@ -177,8 +193,9 @@ class TrueRecGRPOTrainerV1:
             "business_group_count": 1,
             "rollout_candidate_count": G,
             "logical_policy_scoring_passes": LOGICAL_POLICY_SCORING_PASSES_PER_GROUP,
-            "physical_policy_forward_calls": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
-            "physical_policy_backward_calls": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
+            "streaming_microbatch_size": microbatch_size,
+            "physical_policy_forward_calls": physical_calls,
+            "physical_policy_backward_calls": physical_calls,
             "frontier_loss": frontier_value,
             "hpr_loss_raw": hpr_value_raw,
             "hpr_loss_weighted": hpr_value_weighted,

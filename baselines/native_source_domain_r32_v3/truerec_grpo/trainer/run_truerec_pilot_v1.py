@@ -40,10 +40,13 @@ from rollout_runtime_v1 import (  # noqa: E402
     extract_generation_artifacts, rescore_business_group_from_completions,
 )
 from training_driver_v1 import (  # noqa: E402
-    HPR_LAMBDA, KL_BETA, LEARNING_RATE, TRAINER_MICROBATCH_SIZE, WEIGHT_DECAY,
+    HPR_LAMBDA, KL_BETA, LEARNING_RATE, LONG_CONTEXT_THRESHOLD_TOKENS,
+    TRAINER_MICROBATCH_SIZE, WEIGHT_DECAY,
     TrueRecTrainingDriverV1, frozen_contract,
 )
-from truerec_grpo_trainer_v1 import TrueRecGRPOTrainerV1  # noqa: E402
+from truerec_grpo_trainer_v1 import (  # noqa: E402
+    LONG_CONTEXT_STREAMING_MICROBATCH_SIZE, TrueRecGRPOTrainerV1,
+)
 from truerec_runtime_v1 import build_group_runtime_plan  # noqa: E402
 
 
@@ -56,6 +59,14 @@ MODEL_CONTEXT_KEYS = ("max_position_embeddings", "model_max_length", "max_sequen
 
 class ProductionTrainingError(RuntimeError):
     pass
+
+
+def select_streaming_microbatch_size(context_token_count: int) -> int:
+    if context_token_count < 1:
+        raise ProductionTrainingError("context token count must be positive")
+    if context_token_count > LONG_CONTEXT_THRESHOLD_TOKENS:
+        return LONG_CONTEXT_STREAMING_MICROBATCH_SIZE
+    return TRAINER_MICROBATCH_SIZE
 
 
 def run_index_loop(
@@ -132,6 +143,9 @@ def context_length_census(records_by_id, order, renderer, legal_context_window: 
         "max": int(values.max()), "max_context_group_id": max_group,
         "max_context_domain": max_domain, "legal_context_window": legal_context_window,
         "truncation_applied": False,
+        "long_context_threshold_tokens": LONG_CONTEXT_THRESHOLD_TOKENS,
+        "microbatch1_group_count": sum(length > LONG_CONTEXT_THRESHOLD_TOKENS for length in lengths),
+        "microbatch2_group_count": sum(length <= LONG_CONTEXT_THRESHOLD_TOKENS for length in lengths),
     }
     if result["max"] > legal_context_window:
         raise ProductionTrainingError(f"context length exceeds model window: {result}")
@@ -225,6 +239,8 @@ def run(args) -> None:
     def rollout(record):
         started = time.perf_counter(); model.eval()
         context_ids = renderer.rl_context_ids(record["system"], record["user_content_nothink"], record["fixed_domain_token"])
+        streaming_microbatch_size = select_streaming_microbatch_size(len(context_ids))
+        trainer.set_streaming_microbatch_size(streaming_microbatch_size)
         versions = parameter_versions(model)
         input_ids = torch.tensor([context_ids], dtype=torch.long, device=device)
         attention_mask = torch.ones_like(input_ids)
@@ -238,7 +254,10 @@ def run(args) -> None:
         artifacts = extract_generation_artifacts(context_ids, output, FORMAL_PAD_TOKEN_ID, FORMAL_EOS_TOKEN_IDS)
         torch.cuda.synchronize(device)
         trace["timing"]["rollout_seconds"] = time.perf_counter() - started
-        trace["rollout"] = {"context_ids": context_ids, "artifacts": artifacts, "versions": versions}
+        trace["rollout"] = {
+            "context_ids": context_ids, "artifacts": artifacts, "versions": versions,
+            "streaming_microbatch_size": streaming_microbatch_size,
+        }
         return trace["rollout"]
 
     def old_rescore(record, rollout_value):
@@ -301,9 +320,11 @@ def run(args) -> None:
         if base_parameter_versions(model) != base_versions_start:
             raise ProductionTrainingError("base parameter mutation detected")
         monitoring = result.backward_result.monitoring
+        streaming_microbatch_size = trace["rollout"]["streaming_microbatch_size"]
+        expected_physical_calls = G // streaming_microbatch_size
         if (
-            trainer.physical_policy_forward_calls - forward_before != 4
-            or trainer.streaming_backward_calls - backward_before != 4
+            trainer.physical_policy_forward_calls - forward_before != expected_physical_calls
+            or trainer.streaming_backward_calls - backward_before != expected_physical_calls
             or trainer.hpr_extra_forward_calls != 0
         ):
             raise ProductionTrainingError("streaming physical call contract changed")
@@ -324,6 +345,9 @@ def run(args) -> None:
             "global_step": driver.state.global_step, "group_index": group_index,
             "recommendation_group_id": group_id, "target_domain": record["target_domain"],
             "context_token_count": len(group.context_ids), "Gold_K": len(record["all_gold_abc"]),
+            "streaming_microbatch_size": streaming_microbatch_size,
+            "physical_forward_calls": expected_physical_calls,
+            "physical_backward_calls": expected_physical_calls,
             "format_valid_rate": sum(item["format_valid"] for item in candidate_metrics) / G,
             "A_hit_rate": sum(item["A_hit"] for item in candidate_metrics) / G,
             "AB_hit_rate": sum(item["AB_hit"] for item in candidate_metrics) / G,

@@ -55,7 +55,7 @@ def _gradient_max_abs(reference: TinyPolicy, streaming: TinyPolicy) -> float:
     return maximum
 
 
-def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
+def run_audit(output_dir: Path | None = None, streaming_microbatch_size: int = TRAINER_MICROBATCH_SIZE) -> dict[str, Any]:
     torch.manual_seed(12031)
     initial = TinyPolicy()
     cases = {}
@@ -68,7 +68,10 @@ def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
         streaming_policy.load_state_dict(initial.state_dict())
         reference, runtime = full_g8_reference(reference_policy, group)
         reference.total_loss.backward()
-        trainer = TrueRecGRPOTrainerV1(streaming_policy, TOKEN_IDS.__getitem__, 0)
+        trainer = TrueRecGRPOTrainerV1(
+            streaming_policy, TOKEN_IDS.__getitem__, 0,
+            streaming_microbatch_size=streaming_microbatch_size,
+        )
         streamed = trainer.backward_group_streaming(group)
         reference_values = {
             "frontier": float(reference.frontier_loss.detach()),
@@ -103,8 +106,8 @@ def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
             maxima[key] = max(maxima[key], value)
         if (
             trainer.logical_policy_scoring_passes != 1
-            or trainer.physical_policy_forward_calls != PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP
-            or trainer.streaming_backward_calls != PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP
+            or trainer.physical_policy_forward_calls != G // streaming_microbatch_size
+            or trainer.streaming_backward_calls != G // streaming_microbatch_size
             or trainer.streaming_full_g8_plan_builds != 1
             or trainer.hpr_extra_forward_calls != 0
         ):
@@ -130,10 +133,10 @@ def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
     audit = {
         "status": "PASS",
         "G": G,
-        "trainer_microbatch_size": TRAINER_MICROBATCH_SIZE,
+        "trainer_microbatch_size": streaming_microbatch_size,
         "streaming_backward_implemented": True,
-        "physical_forward_calls_per_group": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
-        "physical_backward_calls_per_group": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
+        "physical_forward_calls_per_group": G // streaming_microbatch_size,
+        "physical_backward_calls_per_group": G // streaming_microbatch_size,
         "full_g8_plan_built_once": True,
         "frontier_value_equivalent": True,
         "hpr_value_equivalent": True,

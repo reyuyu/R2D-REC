@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from rollout_runtime_v1 import G, PPO_OLD_LOGP_SOURCE
-from truerec_grpo_trainer_v1 import TRAINER_MICROBATCH_SIZE
+from truerec_grpo_trainer_v1 import (
+    LONG_CONTEXT_STREAMING_MICROBATCH_SIZE,
+    TRAINER_MICROBATCH_SIZE,
+)
 from truerec_loss_v1 import HPR_LAMBDA
 
 
@@ -23,6 +26,8 @@ OPTIMIZER_FAMILY = "AdamW"
 LEARNING_RATE = 1e-6
 WEIGHT_DECAY = 0.0
 DEFAULT_GROUPS_PER_OPTIMIZER_STEP = 1
+ADAPTIVE_STREAMING_MICROBATCH = True
+LONG_CONTEXT_THRESHOLD_TOKENS = 2200
 
 
 class DriverContractError(RuntimeError):
@@ -225,6 +230,9 @@ def frozen_contract() -> dict[str, Any]:
         "ppo_old_logp_source": PPO_OLD_LOGP_SOURCE,
         "policy_mode": POLICY_MODE,
         "trainer_microbatch_size": TRAINER_MICROBATCH_SIZE,
+        "adaptive_streaming_microbatch": ADAPTIVE_STREAMING_MICROBATCH,
+        "long_context_threshold_tokens": LONG_CONTEXT_THRESHOLD_TOKENS,
+        "long_context_microbatch_size": LONG_CONTEXT_STREAMING_MICROBATCH_SIZE,
         "hpr_lambda": HPR_LAMBDA,
         "kl_beta": KL_BETA,
         "optimizer_family": OPTIMIZER_FAMILY,
