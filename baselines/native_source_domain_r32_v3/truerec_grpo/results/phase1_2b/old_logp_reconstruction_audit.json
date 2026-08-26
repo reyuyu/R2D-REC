@@ -1,0 +1,7 @@
+{
+  "policy_family": "BETA_BASELINE",
+  "token_count": 24,
+  "reconstruction": "PASS",
+  "max_abs_diff": 0.0,
+  "independent_method": "per-step log_softmax(output.scores[t]) then gather sampled token"
+}

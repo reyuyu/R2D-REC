@@ -1,0 +1,9 @@
+{
+  "physical_gpu_id": 0,
+  "visible_cuda_device": 0,
+  "gpu_name": "NVIDIA A800-SXM4-80GB",
+  "free_memory_at_start_gb": 78.91192626953125,
+  "total_memory_gb": 79.32501220703125,
+  "peak_reserved_gb": 18.822265625,
+  "generation_wall_sec": 1.4974979823455215
+}

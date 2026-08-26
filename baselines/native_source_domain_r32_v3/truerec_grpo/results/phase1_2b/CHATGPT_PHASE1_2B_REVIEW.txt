@@ -1,0 +1,3 @@
+TrueRec-GRPO Phase 1.2B single-group Beta rollout audit: PASS
+One deterministically selected Pilot4096 group used the frozen no-bridge fixed-domain context and a real stochastic G8 Beta-Baseline generation.
+Raw IDs/text and rollout-policy old logps were retained; independent reconstruction passed. No loss, Frontier, HPR, backward, optimizer, or training ran.
