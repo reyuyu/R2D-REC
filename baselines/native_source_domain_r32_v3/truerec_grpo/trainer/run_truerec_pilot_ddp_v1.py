@@ -213,6 +213,15 @@ def optimizer_driver_state() -> dict[str, int | bool]:
     }
 
 
+def apply_optimizer_gate_outcome(optimizer, gate_diagnostic: dict[str, Any]) -> bool:
+    """Apply the accepted gate outcome and return whether an optimizer step occurred."""
+    if gate_diagnostic.get("pass_with_no_update"):
+        optimizer.zero_grad(set_to_none=True)
+        return False
+    optimizer.step()
+    return True
+
+
 def distributed_restore_gate(restored: dict[str, Any], ranks: list[dict[str, Any]]) -> bool:
     return (
         restored["driver_state"]["global_step"] == 1
@@ -344,15 +353,6 @@ def run_loaded_group(
         "hpr_trigger": backward.runtime_monitoring_plan["hpr_trigger"],
         "hpr_site_count": len(backward.runtime_monitoring_plan["hpr_sites"]),
     }
-
-
-def apply_optimizer_gate_outcome(optimizer, gate_diagnostic: dict[str, Any]) -> bool:
-    """Apply the accepted gate outcome and return whether an optimizer step occurred."""
-    if gate_diagnostic.get("pass_with_no_update"):
-        optimizer.zero_grad(set_to_none=True)
-        return False
-    optimizer.step()
-    return True
     gate_diagnostic = build_pre_optimizer_gate_diagnostic(
         ratio=ratio, selected_mb=selected_mb, expected_calls=expected_calls,
         losses=losses, rank_states=rank_states, training_signal=training_signal,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import inspect
 import sys
 import unittest
 
@@ -11,7 +12,7 @@ for dependency in (ROOT / "data", ROOT / "diagnostics", ROOT / "initialization",
         sys.path.insert(0, str(dependency))
 
 from run_truerec_pilot_ddp_v1 import (  # noqa: E402
-    apply_optimizer_gate_outcome, build_pre_optimizer_gate_diagnostic,
+    apply_optimizer_gate_outcome, build_pre_optimizer_gate_diagnostic, run_loaded_group,
 )
 from v2_step2586_gate_debug import (  # noqa: E402
     CHECKPOINT_CURSOR, EPOCH2_LOCAL_INDEX, FAILED_GLOBAL_STEP, FAILED_GROUP_INDEX,
@@ -97,6 +98,12 @@ class V2Step2586GateDebugTests(unittest.TestCase):
         self.assertFalse(performed)
         self.assertEqual((optimizer.steps, optimizer.zeroes), (0, 1))
         self.assertTrue(optimizer.assert_set_to_none)
+
+    def test_production_group_reaches_gate_and_returns_report(self):
+        source = inspect.getsource(run_loaded_group)
+        self.assertIn("gate_diagnostic = build_pre_optimizer_gate_diagnostic", source)
+        self.assertIn("apply_optimizer_gate_outcome(optimizer, gate_diagnostic)", source)
+        self.assertIn("return report, group, backward, rank_monitoring", source)
 
     def test_zero_gradient_with_any_training_signal_still_fails_fast(self):
         states = [rank_state(rank, nonzero=0, norm=0.0) for rank in range(4)]
