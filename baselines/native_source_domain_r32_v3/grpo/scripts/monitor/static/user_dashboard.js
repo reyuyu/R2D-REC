@@ -1304,7 +1304,7 @@
   chartLabels.mcProbeActionChart = ['Action F1', 'User Proxy'];
   chartLabels.mcProbeChainChart = ['Chain Total'];
   document.querySelectorAll('.user-tab').forEach(button => button.onclick = () => activateView(button.dataset.view));
-  document.querySelectorAll('.kind-segment').forEach(button => button.onclick = () => selectRunKind(button.dataset.runKind));
+  document.querySelectorAll('.kind-segment[data-run-kind]').forEach(button => button.onclick = () => selectRunKind(button.dataset.runKind));
   $('userProbeRoute').onchange = renderUserProbe;
   $('userProbeGroup').onchange = renderUserProbe;
   $('userProbeStep').onchange = renderUserProbe;
