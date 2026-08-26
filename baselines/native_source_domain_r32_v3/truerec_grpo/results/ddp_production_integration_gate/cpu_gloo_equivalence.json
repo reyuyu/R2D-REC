@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "backend": "gloo",
+  "world_size": 4,
+  "global_G": 8,
+  "local_G_per_rank": 2,
+  "business_groups_per_optimizer_step": 1,
+  "ddp_world_size_scaling_required": true,
+  "wrong_scaling_gradient_ratio": 0.25,
+  "global_frontier_value_equivalent": true,
+  "global_hpr_value_equivalent": true,
+  "global_total_value_equivalent": true,
+  "pre_step_gradient_equivalent": true,
+  "post_step_model_state_equivalent": true,
+  "cases": {
+    "HPR_A": {"status": "PASS", "max_gradient_difference": 2.7755575615628914e-17, "max_state_difference": 0.0},
+    "HPR_B": {"status": "PASS", "max_gradient_difference": 1.1102230246251565e-16, "max_state_difference": 0.0},
+    "HPR_C": {"status": "PASS", "max_gradient_difference": 8.881784197001252e-16, "max_state_difference": 8.673617379884035e-19},
+    "HPR_NONE": {"status": "PASS", "max_gradient_difference": 0.0, "max_state_difference": 0.0},
+    "FORMAT_INVALID": {"status": "PASS", "max_gradient_difference": 1.3877787807814457e-17, "max_state_difference": 6.938893903907228e-18}
+  },
+  "max_abs_differences": {
+    "frontier": 5.551115123125783e-17,
+    "hpr": 0.0,
+    "total": 5.551115123125783e-17,
+    "gradient": 8.881784197001252e-16,
+    "state": 6.938893903907228e-18
+  }
+}

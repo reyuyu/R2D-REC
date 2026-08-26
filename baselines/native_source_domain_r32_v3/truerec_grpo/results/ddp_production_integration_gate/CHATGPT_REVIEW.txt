@@ -1,0 +1,29 @@
+TrueRec-GRPO 4GPU Production Integration Gate: PASS
+
+The four-rank path preserves one recommendation_group_id as one logical G8
+business sample and one optimizer step. Rank-major ownership is fixed at local
+G=2, yielding global candidate indices 0..7. Frontier and HPR plans are built
+from the full gathered G8; local contributions retain global denominators and
+are multiplied by world_size before DDP's gradient average.
+
+The real four-process gloo audit passed for HPR_A, HPR_B, HPR_C, HPR_NONE, and
+FORMAT_INVALID. Full objective values, pre-step gradients, and post-step model
+states match the single-process G8 reference. The deliberate missing-world-size
+counterexample produced gradient ratio 0.25, confirming that the scaling is
+required.
+
+The normal GPU scene processed frozen order index 0 exactly once with matched
+old/current microbatch=2, current/old max difference 0, finite loss and finite
+LoRA-only gradients. A rank-0 distributed checkpoint was saved. Fresh Process B
+restored the exact LoRA state, AdamW step=1, cursor=1, and all Python, NumPy,
+torch CPU, and torch CUDA RNG states for all four ranks. It did not start index 1.
+
+The fresh worst-context scene used context length 3489 and matched old/current
+microbatch=1. Its max old/current difference was 0 and all initial PPO ratios
+were 1. Loss and gradients were finite, LoRA changed, the base did not mutate,
+and all four ranks completed without OOM. Maximum rank peak allocation was
+55.826408 GiB and maximum reserved memory was 57.947266 GiB.
+
+No formal Pilot4096, evaluation, Probe20, Dev512, Beam32, or subsequent
+experiment was started. The production gate supports proceeding to a separately
+authorized fresh four-GPU Pilot4096 launch.
