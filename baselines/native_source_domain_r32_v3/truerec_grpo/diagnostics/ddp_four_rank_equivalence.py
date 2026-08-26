@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -37,6 +38,8 @@ def tensor_inventory(module: torch.nn.Module, *, gradients: bool) -> dict[str, t
 
 
 def _worker(rank: int, init_file: str, output_file: str) -> None:
+    if sys.platform != "win32":
+        os.environ.setdefault("GLOO_SOCKET_IFNAME", "lo")
     dist.init_process_group("gloo", init_method=f"file://{init_file}", rank=rank, world_size=DDP_WORLD_SIZE)
     cases = {}
     try:
