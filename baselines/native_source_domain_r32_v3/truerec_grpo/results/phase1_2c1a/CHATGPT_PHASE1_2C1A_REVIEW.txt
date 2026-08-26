@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2C1a deterministic RL policy mode validation: PASS
+The trainable Beta LoRA remained in eval mode for no-grad old rescore and autograd-enabled current scoring. No generation, backward, optimizer, Trainer, PPO, Frontier, or HPR contract was changed.
