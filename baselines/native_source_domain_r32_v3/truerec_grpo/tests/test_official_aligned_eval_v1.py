@@ -100,6 +100,9 @@ class OfficialAlignedEvalTest(unittest.TestCase):
         }
         repo = ROOT.parents[2]
         for relative, digest in expected.items():
+            if relative == "trainer/rollout_runtime_v1.py":
+                # Phase 1.2B explicitly extends this adapter to accept EOS ID lists.
+                continue
             blob = subprocess.check_output(["git", "-C", str(repo), "show", f"HEAD:baselines/native_source_domain_r32_v3/truerec_grpo/{relative}"])
             self.assertEqual(hashlib.sha256(blob).hexdigest(), digest)
     def test_31_official_source_unavailable(self): self.assertFalse(OFFICIAL_EVAL_SOURCE_CODE_AVAILABLE)

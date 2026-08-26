@@ -43,6 +43,13 @@ class BusinessGroupRollout:
             raise ValueError("one business group must preserve exactly sample_index 0..7")
 
 
+@dataclass(frozen=True)
+class RolloutGenerationArtifacts:
+    group: BusinessGroupRollout
+    completion_ids: tuple[tuple[int, ...], ...]
+    generation_scores: torch.Tensor
+
+
 def generation_contract() -> dict[str, Any]:
     return dict(GENERATION_KWARGS)
 
@@ -69,10 +76,14 @@ def capture_sampled_logps(
     return [tuple(values.tolist()) for values in flat.split(lengths)]
 
 
-def _trim_generated(ids: Sequence[int], eos_token_id: int | None, pad_token_id: int | None) -> list[int]:
+def trim_generated_completion(
+    ids: Sequence[int], eos_token_id: int | Sequence[int] | None, pad_token_id: int | None,
+) -> list[int]:
     values = [int(value) for value in ids]
-    if eos_token_id is not None and eos_token_id in values:
-        return values[:values.index(eos_token_id) + 1]
+    eos_values = {int(eos_token_id)} if isinstance(eos_token_id, int) else {int(value) for value in (eos_token_id or ())}
+    eos_positions = [index for index, value in enumerate(values) if value in eos_values]
+    if eos_positions:
+        return values[:eos_positions[0] + 1]
     if pad_token_id is not None:
         while len(values) > 1 and values[-1] == pad_token_id:
             values.pop()
@@ -85,7 +96,7 @@ def rollout_business_group(
     renderer,
     id_to_token: Callable[[int], str],
     pad_token_id: int,
-    eos_token_id: int | None,
+    eos_token_id: int | Sequence[int] | None,
     device: torch.device | str | None = None,
 ) -> BusinessGroupRollout:
     """Execute the fixed G8 generation contract and retain its sampled-policy scores."""
@@ -100,12 +111,28 @@ def rollout_business_group(
         output_scores=True,
         **GENERATION_KWARGS,
     )
-    if not getattr(output, "scores", None):
+    return build_rollout_artifacts(
+        record, context_ids, output, id_to_token, pad_token_id, eos_token_id,
+    ).group
+
+
+def build_rollout_artifacts(
+    record: dict[str, Any],
+    context_ids: Sequence[int],
+    generate_output,
+    id_to_token: Callable[[int], str],
+    pad_token_id: int,
+    eos_token_id: int | Sequence[int] | None,
+) -> RolloutGenerationArtifacts:
+    if not getattr(generate_output, "scores", None):
         raise ValueError("generate must return per-step rollout-policy scores")
-    generation_logits = torch.stack(tuple(output.scores), dim=1)
-    raw = output.sequences[:, len(context_ids):]
-    completion_ids = [_trim_generated(row.tolist(), eos_token_id, pad_token_id) for row in raw]
-    return build_rollout_group(record, context_ids, completion_ids, generation_logits, id_to_token)
+    generation_scores = torch.stack(tuple(generate_output.scores), dim=1)
+    raw = generate_output.sequences[:, len(context_ids):]
+    completion_ids = tuple(
+        tuple(trim_generated_completion(row.tolist(), eos_token_id, pad_token_id)) for row in raw
+    )
+    group = build_rollout_group(record, context_ids, completion_ids, generation_scores, id_to_token)
+    return RolloutGenerationArtifacts(group, completion_ids, generation_scores)
 
 
 def build_rollout_group(
