@@ -1,0 +1,105 @@
+{
+  "G": 8,
+  "cases": {
+    "FORMAT_INVALID": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 6.938893903907228e-18,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "full_g8_plan_builds": 1,
+      "graph_bearing_state_retained_across_chunks": false,
+      "logical_policy_scoring_passes": 1,
+      "physical_backward_calls": 4,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_NONE",
+      "status": "PASS"
+    },
+    "HPR_A": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 1.3877787807814457e-17,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "full_g8_plan_builds": 1,
+      "graph_bearing_state_retained_across_chunks": false,
+      "logical_policy_scoring_passes": 1,
+      "physical_backward_calls": 4,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_A",
+      "status": "PASS"
+    },
+    "HPR_B": {
+      "differences": {
+        "frontier": 2.7755575615628914e-17,
+        "gradient": 5.551115123125783e-17,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "full_g8_plan_builds": 1,
+      "graph_bearing_state_retained_across_chunks": false,
+      "logical_policy_scoring_passes": 1,
+      "physical_backward_calls": 4,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_B",
+      "status": "PASS"
+    },
+    "HPR_C": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 8.881784197001252e-16,
+        "hpr": 0.0,
+        "total": 4.440892098500626e-16
+      },
+      "full_g8_plan_builds": 1,
+      "graph_bearing_state_retained_across_chunks": false,
+      "logical_policy_scoring_passes": 1,
+      "physical_backward_calls": 4,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_C",
+      "status": "PASS"
+    },
+    "HPR_NONE": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 0.0,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "full_g8_plan_builds": 1,
+      "graph_bearing_state_retained_across_chunks": false,
+      "logical_policy_scoring_passes": 1,
+      "physical_backward_calls": 4,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_NONE",
+      "status": "PASS"
+    }
+  },
+  "execution": {
+    "gpu_inference_started": false,
+    "next_experiment_started": false,
+    "optimizer_steps": 0,
+    "real_model_backward_started": false
+  },
+  "frontier_value_equivalent": true,
+  "full_g8_plan_built_once": true,
+  "gradient_equivalent": true,
+  "graph_bearing_state_retained_across_chunks": false,
+  "hpr_lambda": 0.02,
+  "hpr_value_equivalent": true,
+  "max_abs_differences": {
+    "frontier": 2.7755575615628914e-17,
+    "gradient": 8.881784197001252e-16,
+    "hpr": 0.0,
+    "total": 4.440892098500626e-16
+  },
+  "physical_backward_calls_per_group": 4,
+  "physical_forward_calls_per_group": 4,
+  "ppo_old_logp_source": "FULL_FORWARD_RESCORE",
+  "status": "PASS",
+  "streaming_backward_implemented": true,
+  "total_value_equivalent": true,
+  "trainer_microbatch_size": 2
+}
