@@ -36,7 +36,7 @@ EXPECTED_TRAIN_SHA256 = (
     "97edc2d3c600dbd073f6c694a3d497c5dba10e42ce0350628b63eddbca79ca7e"
 )
 EXPECTED_SPLIT_SHA256 = {
-    "train_pool_group_ids.json": "ef645cf62cf50f619b62f2d0fbfb267dd4f8df6c5cfc899c70a7977df3aecf724",
+    "train_pool_group_ids.json": "ef645cf62cf50f619b62f2d0fbfb267dd4f8df6c5cfc89c70a7977df3aecf724",
     "dev_group_ids.json": "70341b476c57e4d7dc961ccf423ab3991a42375af1989bad040be4134e8f4fe4",
     "final_group_ids.json": "e6be46befa8ed320fb0762e6df23f553c6646297bdf5649003ee332c04b2e61d0",
     "probe20_group_ids.json": "7193f540ee229ef53b7ca09e541f065396fe212a8cfd438933cceff499d83abdf",

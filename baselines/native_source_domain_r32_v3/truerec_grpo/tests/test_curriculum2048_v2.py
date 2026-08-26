@@ -37,6 +37,12 @@ def record(group_id: str, domain: str, gold: list[tuple[int, int, int]], context
 
 
 class Curriculum2048Tests(unittest.TestCase):
+    def test_frozen_train_split_sha(self):
+        self.assertEqual(
+            MODULE.EXPECTED_SPLIT_SHA256["train_pool_group_ids.json"],
+            "ef645cf62cf50f619b62f2d0fbfb267dd4f8df6c5cfc89c70a7977df3aecf724",
+        )
+
     def test_gold_hierarchy_and_domain_validation(self):
         row = record("g", "video", [(1, 2, 3), (1, 2, 4), (5, 6, 7)])
         self.assertEqual((row["K_A"], row["K_AB"], row["K_ABC"]), (2, 2, 3))
