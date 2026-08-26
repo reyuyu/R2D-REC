@@ -131,6 +131,8 @@ def checkpoint_rows(
         cursor = metadata.get("next_group_index", metadata.get("cursor"))
         if cursor is None and isinstance(metadata.get("driver_state"), dict):
             cursor = metadata["driver_state"].get("next_group_index")
+        if cursor is None and isinstance(metadata.get("training_cursor"), dict):
+            cursor = metadata["training_cursor"].get("next_group_index")
         world_size = metadata.get("world_size", metadata.get("cuda_device_count_saved", 4))
         rows.append({
             "checkpoint": path.name, "step": step, "cursor": cursor, "path": str(path),

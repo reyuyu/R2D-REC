@@ -43,7 +43,9 @@ def build_run(root: Path) -> Path:
     jsonl(probe / "groups.jsonl", [{"probe_step": 0, "recommendation_group_id": "group-1"}])
     jsonl(probe / "explain.jsonl", [{**explain, "mode": "PROBE", "optimizer_update": False}])
     checkpoint = run / "checkpoints" / "checkpoint-step-256"
-    dump(checkpoint / "metadata.json", {"global_step": 256, "next_group_index": 256, "world_size": 4})
+    dump(checkpoint / "metadata.json", {
+        "global_step": 256, "training_cursor": {"epoch": 0, "next_group_index": 256}, "world_size": 4,
+    })
     jsonl(root.parent / "data" / "pilot4096" / "pilot4096_records.jsonl", [{
         "recommendation_group_id": "group-1", "target_domain": "video", "K": 2,
         "all_gold_abc": ["<s_a_1><s_b_2><s_c_3>", "<s_a_1><s_b_4><s_c_5>"],
@@ -91,6 +93,7 @@ class TrueRecDashboardTests(unittest.TestCase):
         self.assertIs(comparison["a"]["optimizer_update"], False)
         checkpoints = client.get("/api/truerec/checkpoints", params={"run_id": run.name}).json()
         self.assertEqual(checkpoints[0]["step"], 256)
+        self.assertEqual(checkpoints[0]["cursor"], 256)
         self.assertEqual(checkpoints[0]["world_size"], 4)
         after = {str(path): (path.stat().st_mtime_ns, hashlib.sha256(path.read_bytes()).hexdigest()) for path in watched}
         self.assertEqual(after, before)
