@@ -95,6 +95,16 @@ def optimizer_driver_state() -> dict[str, int | bool]:
     }
 
 
+def distributed_restore_gate(restored: dict[str, Any], ranks: list[dict[str, Any]]) -> bool:
+    return (
+        restored["driver_state"]["global_step"] == 1
+        and restored["next_group_index"] == 1
+        and all(item["model_restore_exact"] for item in ranks)
+        and all(all(item["rng_restored"].values()) for item in ranks)
+        and all(item["optimizer_step"] == 1 for item in ranks)
+    )
+
+
 def initialize() -> tuple[int, torch.device, dict[str, Any]]:
     os.environ.setdefault("NCCL_SOCKET_IFNAME", "lo")
     dist.init_process_group("nccl")
@@ -275,12 +285,7 @@ def main() -> None:
                 "optimizer_step": optimizer_step_value(optimizer),
             }
             ranks = gather_rank_objects(local)
-            passed = (
-                restored["global_step"] == 1 and restored["next_group_index"] == 1
-                and all(item["model_restore_exact"] for item in ranks)
-                and all(all(item["rng_restored"].values()) for item in ranks)
-                and all(item["optimizer_step"] == 1 for item in ranks)
-            )
+            passed = distributed_restore_gate(restored, ranks)
             distributed_fail_if(not passed, "distributed checkpoint restore gate failed", device)
             report = {
                 "status": "PASS", "world_size": 4, "global_step": 1, "cursor": 1,

@@ -18,7 +18,7 @@ for dependency in (ROOT / "diagnostics", ROOT / "trainer"):
 from checkpoint_ddp_v1 import DistributedCheckpointError, validate_world_size  # noqa: E402
 from distributed_trainer_v1 import DDP_WORLD_SIZE, LOCAL_G, DistributedTrueRecGRPOTrainerV1  # noqa: E402
 from policy_scoring_v1 import score_full_sequences  # noqa: E402
-from run_truerec_pilot_ddp_v1 import run_one_group  # noqa: E402
+from run_truerec_pilot_ddp_v1 import distributed_restore_gate, run_one_group  # noqa: E402
 from training_driver_v1 import frozen_contract  # noqa: E402
 
 
@@ -52,6 +52,20 @@ class DDPProductionContractTests(unittest.TestCase):
         validate_world_size(4)
         with self.assertRaises(DistributedCheckpointError):
             validate_world_size(1)
+
+    def test_distributed_restore_gate_reads_nested_driver_state(self):
+        restored = {"driver_state": {"global_step": 1}, "next_group_index": 1}
+        ranks = [
+            {
+                "model_restore_exact": True,
+                "rng_restored": {"python": True, "numpy": True, "torch_cpu": True, "torch_cuda": True},
+                "optimizer_step": 1,
+            }
+            for _ in range(4)
+        ]
+        self.assertTrue(distributed_restore_gate(restored, ranks))
+        ranks[2]["optimizer_step"] = 0
+        self.assertFalse(distributed_restore_gate(restored, ranks))
 
     def test_world_size_scaling_and_one_selection_are_mechanical(self):
         trainer_source = inspect.getsource(DistributedTrueRecGRPOTrainerV1.backward_global_group)
