@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "trainer"))
 from batch_collator_v1 import collate_business_group
 from evaluation_runtime_v1 import evaluate_dev512, evaluate_probe20, final_checkpoint_selection_interface
 from frontier_credit_v1 import FORMAT_INVALID_TOTAL
-from rollout_runtime_v1 import G, OLD_LOGPS_FROM_ROLLOUT_POLICY, build_rollout_group, capture_sampled_logps, generation_contract, rollout_business_group
+from rollout_runtime_v1 import GENERATION_SCORE_LOGPS_ROLE, GENERATION_SCORES_USED_FOR_PPO, G, OLD_LOGPS_FROM_FULL_FORWARD_RESCORE, OLD_LOGPS_FROM_ROLLOUT_POLICY, PPO_OLD_LOGP_SOURCE, build_rollout_group, capture_sampled_logps, generation_contract, rollout_business_group
+from policy_scoring_v1 import POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE
 from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, ROUTE_MULTIPLIER, TrueRecGRPOTrainerV1, format_credit_tensors, gather_padded_action_logps
 from truerec_loss_v1 import HPR_LAMBDA
 from truerec_runtime_v1 import build_group_runtime_plan
@@ -70,8 +71,8 @@ class MockRenderer:
     def rl_context_ids(self, system, user, domain): return [10, 11, 12, 13]
 
 
-class MockGenerateModel:
-    def __init__(self): self.kwargs = None; self.scores = None
+class MockGenerateModel(torch.nn.Module):
+    def __init__(self): super().__init__(); self.kwargs = None; self.scores = None; self.anchor = torch.nn.Parameter(torch.tensor(0.0))
     def generate(self, **kwargs):
         self.kwargs = kwargs
         completions = torch.tensor([[1, 2, 3]] * 8)
@@ -80,6 +81,9 @@ class MockGenerateModel:
         torch.manual_seed(99)
         output.scores = tuple(torch.randn(8, VOCAB) for _ in range(3)); self.scores = output.scores
         return output
+    def forward(self, input_ids, attention_mask):
+        values = torch.arange(input_ids.shape[0] * input_ids.shape[1] * VOCAB, dtype=torch.float32, device=input_ids.device)
+        return MockOutput(values.reshape(input_ids.shape[0], input_ids.shape[1], VOCAB) / 1000.0 + self.anchor * 0.0)
 
 
 class Phase11IntegrationTest(unittest.TestCase):
@@ -207,8 +211,29 @@ class Phase11IntegrationTest(unittest.TestCase):
     def test_36_generate_adapter_captures_score_logps(self):
         model = MockGenerateModel(); value = record(); value.update({"system": "s", "user_content_nothink": "u"})
         group = rollout_business_group(model, value, MockRenderer(), id_to_token, 0, 31)
-        expected = torch.log_softmax(torch.stack(model.scores, dim=1), -1)[0, torch.arange(3), torch.tensor([1, 2, 3])]
-        self.assertTrue(torch.equal(torch.tensor(group.candidates[0].old_logps), expected))
+        generation = torch.log_softmax(torch.stack(model.scores, dim=1), -1)[0, torch.arange(3), torch.tensor([1, 2, 3])]
+        sequence = torch.tensor([[10, 11, 12, 13, 1, 2, 3]] * 2)
+        logits = model(sequence, torch.ones_like(sequence)).logits
+        rescored = torch.log_softmax(logits[0, torch.tensor([3, 4, 5])], -1)[torch.arange(3), torch.tensor([1, 2, 3])]
+        self.assertTrue(torch.equal(torch.tensor(group.candidates[0].generation_score_logps), generation))
+        self.assertTrue(torch.equal(torch.tensor(group.candidates[0].old_logps), rescored))
+        self.assertFalse(torch.equal(torch.tensor(group.candidates[0].old_logps), generation))
+
+    def test_37_formal_old_logp_contract(self):
+        self.assertEqual(PPO_OLD_LOGP_SOURCE, "FULL_FORWARD_RESCORE")
+        self.assertTrue(OLD_LOGPS_FROM_FULL_FORWARD_RESCORE)
+        self.assertFalse(GENERATION_SCORES_USED_FOR_PPO)
+        self.assertEqual(GENERATION_SCORE_LOGPS_ROLE, "DIAGNOSTIC_ONLY")
+        self.assertEqual((POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE), ("eval", 2))
+
+    def test_38_rescore_preserves_ids_metadata_and_order(self):
+        model = MockGenerateModel(); value = record("preserved"); value.update({"system": "s", "user_content_nothink": "u"})
+        group = rollout_business_group(model, value, MockRenderer(), id_to_token, 0, 31)
+        self.assertEqual(group.recommendation_group_id, "preserved")
+        self.assertEqual(group.context_ids, (10, 11, 12, 13))
+        self.assertEqual([candidate.sample_index for candidate in group.candidates], list(range(8)))
+        self.assertEqual([candidate.completion_ids for candidate in group.candidates], [(1, 2, 3)] * 8)
+        self.assertEqual(group.all_gold_abc, GOLD)
 
     def _assert_head_shas(self, folder, expected):
         repo = ROOT.parents[2]

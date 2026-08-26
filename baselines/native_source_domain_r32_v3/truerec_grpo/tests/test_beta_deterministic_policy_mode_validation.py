@@ -19,10 +19,9 @@ from beta_deterministic_policy_mode_validation import (
     TRAINER_SHA256,
     audit_dropout_modules,
     dropout_config_values,
-    graph_connected_to_parameters,
     parameter_trainability,
-    score_full_sequences,
 )
+from policy_scoring_v1 import graph_connected_to_parameters, score_full_sequences
 
 
 class TinyPolicy(torch.nn.Module):
@@ -106,11 +105,29 @@ class DeterministicPolicyModeValidationTest(unittest.TestCase):
                 return SimpleNamespace(logits=super().forward(values))
         policy = TokenPolicy().eval()
         lora = [parameter for name, parameter in policy.named_parameters() if "lora_" in name]
-        old, old_grad, old_graph = score_full_sequences(policy, batch, "cpu", lora, False)
-        current, current_grad, current_graph = score_full_sequences(policy, batch, "cpu", lora, True)
-        self.assertTrue(torch.equal(old, current))
-        self.assertFalse(any(old_grad) or any(old_graph))
-        self.assertTrue(all(current_grad) and all(current_graph))
+        completions = tuple(tuple(row) for row in batch.completion_ids.tolist())
+        old = score_full_sequences(policy, [0, 1], completions, 0, "cpu", grad_enabled=False, trainable_parameters=lora)
+        current = score_full_sequences(policy, [0, 1], completions, 0, "cpu", grad_enabled=True, trainable_parameters=lora)
+        self.assertEqual(old.logps, current.logps)
+        self.assertFalse(any(old.requires_grad_by_microbatch) or any(old.graph_connected_by_microbatch))
+        self.assertTrue(all(current.requires_grad_by_microbatch) and all(current.graph_connected_by_microbatch))
+
+    def test_11_microbatch_preserves_g8_order(self):
+        from types import SimpleNamespace
+
+        class FixedPolicy(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.anchor = torch.nn.Parameter(torch.tensor(0.0))
+            def forward(self, input_ids, attention_mask):
+                base = torch.tensor([0.0, 1.0, 2.0]) + self.anchor * 0.0
+                return SimpleNamespace(logits=base.expand(input_ids.shape[0], input_ids.shape[1], 3))
+
+        completions = ((0,), (1,), (2,), (2, 1), (1, 0), (0, 2), (2, 0, 1), (1, 2, 0))
+        result = score_full_sequences(FixedPolicy().eval(), [2, 1], completions, 0, "cpu", grad_enabled=False)
+        token_logps = torch.log_softmax(torch.tensor([0.0, 1.0, 2.0]), -1)
+        expected = tuple(tuple(float(token_logps[token]) for token in row) for row in completions)
+        self.assertEqual(result.logps, expected)
 
 
 if __name__ == "__main__":

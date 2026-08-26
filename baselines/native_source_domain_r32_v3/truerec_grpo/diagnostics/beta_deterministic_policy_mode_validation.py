@@ -5,7 +5,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
-from typing import Any, Iterable
+from typing import Any
 
 
 TRUE_REC_ROOT = Path(__file__).resolve().parents[1]
@@ -18,11 +18,10 @@ from beta_gamma_renderer import BetaGammaRenderer  # noqa: E402
 from beta_old_logp_rescore_validation import REPEAT_ABS_MAX_THRESHOLD, TRAINER_SHA256, comparison_stats  # noqa: E402
 from beta_single_group_loss_audit import GROUP_ID, PAD_TOKEN_ID, load_phase12b_artifact, load_pilot_record, reconstruct_business_group  # noqa: E402
 from batch_collator_v1 import collate_business_group  # noqa: E402
+from policy_scoring_v1 import POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE, score_full_sequences  # noqa: E402
 
 
-POLICY_SCORING_MODE = "eval"
 EXPECTED_LORA_DROPOUT = 0.05
-SCORING_MICROBATCH_SIZE = 2
 
 
 class Phase12C1aError(RuntimeError):
@@ -65,54 +64,6 @@ def parameter_trainability(model) -> dict[str, int]:
         "base_trainable_param_count": sum(parameter.numel() for _, parameter in base if parameter.requires_grad),
         "base_trainable_tensor_count": sum(parameter.requires_grad for _, parameter in base),
     }
-
-
-def graph_connected_to_parameters(tensor, parameters: Iterable) -> bool:
-    """Inspect autograd leaves without executing backward or computing gradients."""
-    targets = {id(parameter) for parameter in parameters if parameter.requires_grad}
-    pending = [tensor.grad_fn]
-    visited: set[Any] = set()
-    while pending:
-        node = pending.pop()
-        if node is None or node in visited:
-            continue
-        # Keep node wrappers alive; CPython may otherwise reuse their ids while
-        # traversing next_functions and make distinct graph nodes look visited.
-        visited.add(node)
-        variable = getattr(node, "variable", None)
-        if variable is not None and id(variable) in targets:
-            return True
-        pending.extend(child for child, _ in getattr(node, "next_functions", ()) if child is not None)
-    return False
-
-
-def score_full_sequences(model, batch, device, trainable_lora: Iterable, grad_enabled: bool):
-    """Score complete context+ABC rows in bounded, identical old/current chunks."""
-    import torch
-
-    values = []
-    requires_grad = []
-    graph_connected = []
-    parameters = tuple(trainable_lora)
-    for start in range(0, 8, SCORING_MICROBATCH_SIZE):
-        stop = min(start + SCORING_MICROBATCH_SIZE, 8)
-        input_ids = batch.input_ids[start:stop].to(device)
-        attention_mask = batch.attention_mask[start:stop].to(device)
-        with torch.set_grad_enabled(grad_enabled):
-            output = model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = output.logits
-            rows = torch.arange(stop - start, device=device).unsqueeze(1).expand(stop - start, 3)
-            causal = batch.causal_logit_indices[start:stop].to(device)
-            selected = logits[rows, causal]
-            log_probs = torch.log_softmax(selected, dim=-1)
-            token_ids = batch.completion_ids[start:stop].to(device)
-            chunk = log_probs.gather(-1, token_ids.unsqueeze(-1)).squeeze(-1)
-        requires_grad.append(bool(chunk.requires_grad))
-        graph_connected.append(graph_connected_to_parameters(chunk, parameters) if grad_enabled else False)
-        values.append(chunk.detach().float().cpu())
-        del chunk, log_probs, selected, logits, output, input_ids, attention_mask
-        torch.cuda.empty_cache()
-    return torch.cat(values), requires_grad, graph_connected
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -170,19 +121,24 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
         raise Phase12C1aError(f"trainability gate failed: {trainability}")
 
     trainable_lora = [parameter for name, parameter in model.named_parameters() if "lora_" in name and parameter.requires_grad]
-    old_cpu, old_requires_grad, old_graph_connected = score_full_sequences(
-        model, batch, device, trainable_lora, grad_enabled=False,
+    completion_ids = tuple(candidate.completion_ids for candidate in group.candidates)
+    old_score = score_full_sequences(
+        model, group.context_ids, completion_ids, PAD_TOKEN_ID, device,
+        grad_enabled=False, trainable_parameters=trainable_lora,
     )
-    if any(old_requires_grad) or any(old_graph_connected):
+    if any(old_score.requires_grad_by_microbatch) or any(old_score.graph_connected_by_microbatch):
         raise Phase12C1aError("no-grad old rescore unexpectedly retained an autograd graph")
 
     if model.training or audit_dropout_modules(model)["rl_dropout_active"]:
         raise Phase12C1aError("policy mode changed before current forward")
-    current_cpu, current_grad_flags, current_graph_flags = score_full_sequences(
-        model, batch, device, trainable_lora, grad_enabled=True,
+    current_score = score_full_sequences(
+        model, group.context_ids, completion_ids, PAD_TOKEN_ID, device,
+        grad_enabled=True, trainable_parameters=trainable_lora,
     )
-    current_requires_grad = all(current_grad_flags)
-    graph_connected = all(current_graph_flags)
+    current_requires_grad = all(current_score.requires_grad_by_microbatch)
+    graph_connected = all(current_score.graph_connected_by_microbatch)
+    old_cpu = torch.tensor(old_score.logps)
+    current_cpu = torch.tensor(current_score.logps)
     sampled_ids_changed = not torch.equal(sampled_ids_before, batch.completion_ids)
     comparison = comparison_stats(old_cpu, current_cpu, batch.completion_mask)
     passed = (
