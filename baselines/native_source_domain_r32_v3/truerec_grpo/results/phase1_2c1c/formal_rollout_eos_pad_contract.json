@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "formal_generate_eos_ids": [
+    151645,
+    151643
+  ],
+  "formal_generate_pad_id": 151643,
+  "eos_passed_to_model_generate": true,
+  "pad_passed_to_model_generate": true,
+  "generation_contract": {
+    "do_sample": true,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "repetition_penalty": 1.0,
+    "max_new_tokens": 3,
+    "num_return_sequences": 8
+  },
+  "generation_contract_match_phase07": true,
+  "trim": {
+    "eos_151645": [
+      1,
+      2,
+      151645
+    ],
+    "eos_pad_151643": [
+      1,
+      2,
+      151643
+    ],
+    "no_eos_trailing_pad": [
+      1,
+      2
+    ]
+  },
+  "G": 8,
+  "ppo_old_logp_source": "FULL_FORWARD_RESCORE",
+  "generation_scores_used_for_ppo": false,
+  "generation_score_logps_role": "DIAGNOSTIC_ONLY",
+  "trainer_core_sha256": "d33b02eb9ca562b00b3555019f5502cc925ea2718bb19e445e92033b3d4ffcb1",
+  "trainer_core_modified": false,
+  "execution": {
+    "gpu_inference_started": false,
+    "real_generate_started": false,
+    "frontier_started": false,
+    "hpr_started": false,
+    "backward_started": false,
+    "optimizer_steps": 0
+  }
+}

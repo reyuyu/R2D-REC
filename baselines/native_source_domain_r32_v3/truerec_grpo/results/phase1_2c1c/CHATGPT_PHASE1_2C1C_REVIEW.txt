@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2C1c formal rollout EOS/PAD CPU contract audit: PASS
+The mock generate call received frozen EOS/PAD ids; post-generation trimming and the full-forward PPO old-logp contract remained intact. No GPU, real generation, Frontier, HPR, backward, optimizer, or training ran.
