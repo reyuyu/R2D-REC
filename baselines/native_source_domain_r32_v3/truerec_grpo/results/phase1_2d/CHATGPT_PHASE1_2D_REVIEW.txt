@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2D real Beta streaming-backward audit: STOPPED_VALIDATION_GATE_FAIL
+The frozen G8 completions were rescored through the formal full-forward old-logp runtime, then one formal streaming group executed four immediate microbatch backwards. No generation, optimizer, checkpoint, or parameter update ran.
