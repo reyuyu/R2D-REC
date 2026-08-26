@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2C0 full-forward rescore validation: PASS
+Generation scores remain diagnostic only. Two identical unchanged-policy full forwards were compared without generation, loss, Frontier, HPR, backward, or optimizer.

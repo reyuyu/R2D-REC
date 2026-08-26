@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "group_id": "22b28028744f58137b7a768de0d0898a890a4cf26dbc37af29658192900fb80c",
+  "G": 8,
+  "token_count": 24,
+  "model": {
+    "family": "BETA_BASELINE",
+    "checkpoint": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+    "provenance": {
+      "checkpoint_exists": true,
+      "pretrained_base_exists": true,
+      "required_files": {
+        "adapter_config.json": {
+          "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_config.json",
+          "size": 1077,
+          "sha256": "e1ea043db6929753b708f6261a4de5d8e6d3ed59bb6cd7f37802ae7678170fb3"
+        },
+        "adapter_model.safetensors": {
+          "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_model.safetensors",
+          "size": 349243752,
+          "sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3"
+        }
+      },
+      "adapter_base_model_name_or_path": "/data/models/onereason-8b-pretrain-competition",
+      "adapter_peft_type": "LORA",
+      "adapter_task_type": "CAUSAL_LM",
+      "pass": true
+    }
+  },
+  "generation_score_logps_role": "diagnostic_only_not_new_ppo_old_logp",
+  "rescored_old_logps_role": "candidate_ppo_old_logp_under_validation",
+  "generation_vs_rescore": {
+    "token_count": 24,
+    "abs_mean": 0.04388574883341789,
+    "abs_max": 0.14856481552124023,
+    "ratio_mean": 1.0045828819274902,
+    "ratio_min": 0.8914080262184143,
+    "ratio_max": 1.160167932510376
+  },
+  "generation_vs_rescore_by_position": {
+    "A": {
+      "abs_mean": 0.05189847946166992,
+      "abs_max": 0.13504695892333984
+    },
+    "B": {
+      "abs_mean": 0.037323206663131714,
+      "abs_max": 0.0706181526184082
+    },
+    "C": {
+      "abs_mean": 0.042435549199581146,
+      "abs_max": 0.14856481552124023
+    }
+  },
+  "rescore_repeat": {
+    "token_count": 24,
+    "abs_mean": 0.0,
+    "abs_max": 0.0,
+    "ratio_mean": 1.0,
+    "ratio_min": 1.0,
+    "ratio_max": 1.0
+  },
+  "repeat_abs_max_threshold": 1e-06,
+  "causal_alignment": "PASS",
+  "gather_independent_check": "PASS",
+  "trainer_sha256": "d33b02eb9ca562b00b3555019f5502cc925ea2718bb19e445e92033b3d4ffcb1",
+  "trainer_modified": false,
+  "ppo_old_logp_contract_changed": false,
+  "resource": {
+    "physical_gpu_id": 0,
+    "gpu_name": "NVIDIA A800-SXM4-80GB",
+    "peak_reserved_gb": 21.259765625
+  },
+  "execution": {
+    "real_model_forwards": 2,
+    "generation_started": false,
+    "frontier_started": false,
+    "hpr_started": false,
+    "backward_started": false,
+    "optimizer_steps": 0
+  }
+}
