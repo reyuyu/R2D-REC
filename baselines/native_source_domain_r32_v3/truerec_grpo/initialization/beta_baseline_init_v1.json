@@ -1,0 +1,17 @@
+{
+  "contract_id": "truerec_grpo_beta_baseline_init_v1",
+  "init_family": "BETA_BASELINE",
+  "checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+  "pretrained_base_path": "/data/models/onereason-8b-pretrain-competition",
+  "beta_gamma_used_as_init": false,
+  "bridge": false,
+  "fixed_domain_in_context": true,
+  "domain_generated_by_model": false,
+  "action_levels": ["A", "B", "C"],
+  "action_tokens": 3,
+  "rollout_g": 8,
+  "policy_rollout_source": "live_beta_policy",
+  "current_hpr_plan_source": "online_current_group",
+  "reuse_phase07_beta_gamma_raw": false,
+  "reuse_phase08_beta_gamma_plan": false
+}
