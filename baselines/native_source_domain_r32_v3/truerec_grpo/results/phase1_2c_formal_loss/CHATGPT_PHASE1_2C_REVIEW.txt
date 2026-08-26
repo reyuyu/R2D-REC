@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2C real single-group Frontier + HPR Trainer loss: STOPPED_TRAINER_G8_FORWARD_OOM
+The saved G8 IDs were rescored by the formal full-forward old-logp runtime before exactly one attempted Trainer compute_group call. No generation, backward, optimizer, or training ran.
