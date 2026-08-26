@@ -145,6 +145,20 @@ class TrueRecTrainingDriverV1:
     def run(self, records: Iterable[dict[str, Any]]) -> list[DriverStepResult]:
         return [self.run_group(record) for record in records]
 
+    def export_state(self) -> dict[str, int | bool]:
+        return asdict(self.state)
+
+    def import_state(self, value: dict[str, Any]) -> None:
+        expected = set(DriverState.__dataclass_fields__)
+        if set(value) != expected:
+            raise DriverContractError("driver checkpoint state schema mismatch")
+        restored = DriverState(**value)
+        if restored.failed or restored.groups_in_accumulation_window != 0:
+            raise DriverContractError("driver checkpoint is not at a healthy optimizer boundary")
+        if restored.optimizer_steps != restored.global_step:
+            raise DriverContractError("optimizer/global step mismatch")
+        self.state = restored
+
 
 def audit_pilot4096_admission(records_path: Path, manifest_path: Path) -> dict[str, Any]:
     """Read-only admission gate for the frozen Pilot4096 business-group records."""
