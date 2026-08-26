@@ -233,14 +233,14 @@ def load_checkpoint_weights(model: Any, checkpoint: Path) -> str | None:
     return metadata.get("model_state_sha256")
 
 
-def available_gpu(min_free_gib: float) -> dict[str, Any] | None:
+def available_gpus(min_free_gib: float, count: int = 4) -> list[dict[str, Any]]:
     try:
         output = subprocess.check_output([
             "nvidia-smi", "--query-gpu=index,name,memory.free,utilization.gpu",
             "--format=csv,noheader,nounits",
         ], text=True, timeout=15)
     except (OSError, subprocess.SubprocessError):
-        return None
+        return []
     choices = []
     for line in output.splitlines():
         values = [value.strip() for value in line.split(",")]
@@ -250,7 +250,18 @@ def available_gpu(min_free_gib: float) -> dict[str, Any] | None:
         row = {"index": int(index), "name": name, "free_gib": float(free_mib) / 1024, "utilization": int(utilization)}
         if row["free_gib"] >= min_free_gib and row["utilization"] <= 5:
             choices.append(row)
-    return max(choices, key=lambda row: row["free_gib"], default=None)
+    choices.sort(key=lambda row: (-row["free_gib"], row["index"]))
+    return choices[:count] if len(choices) >= count else []
+
+
+def distributed_launch_command(
+    script: Path, run_dir: Path, *, world_size: int = 4, min_free_gib: float = 70.0,
+) -> list[str]:
+    return [
+        sys.executable, "-m", "torch.distributed.run", "--standalone",
+        f"--nproc_per_node={world_size}", str(script), "--run-dir", str(run_dir),
+        "--min-free-gib", str(min_free_gib), "--distributed-worker",
+    ]
 
 
 def completed_steps(result_root: Path) -> set[int]:
@@ -281,7 +292,85 @@ def rebuild_curve(result_root: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def run_all(run_dir: Path, *, min_free_gib: float = 70.0, poll_seconds: int = 60) -> None:
+def run_distributed(run_dir: Path) -> None:
+    import torch
+    import torch.distributed as dist
+
+    dist.init_process_group("nccl")
+    rank = dist.get_rank()
+    world_size = dist.get_world_size()
+    local_rank = int(os.environ["LOCAL_RANK"])
+    if world_size != 4:
+        raise Beam32ProbeError(f"Beam32 checkpoint evaluation requires 4 ranks, got {world_size}")
+    device = torch.device("cuda", local_rank)
+    torch.cuda.set_device(device)
+    result_root = run_dir / RESULT_DIRNAME
+    status_path = result_root / STATUS_FILENAME
+    inventory = checkpoint_inventory(run_dir)
+    done = completed_steps(result_root)
+    pending = [row for row in inventory if row["step"] not in done]
+    model, renderer = load_model(device)
+    records = load_probe_records()
+    existing_status = {}
+    if rank == 0:
+        try:
+            existing_status = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+    try:
+        for position, item in enumerate(pending, start=len(done) + 1):
+            checkpoint = Path(item["path"])
+            if rank == 0:
+                atomic_json(status_path, {
+                    "state": "RUNNING", "run_id": run_dir.name, "total": len(inventory),
+                    "completed": position - 1, "pending": len(inventory) - position + 1,
+                    "current_checkpoint": item["checkpoint"], "current_step": item["step"],
+                    "world_size": world_size, "gpus": existing_status.get("gpus", []),
+                    "contract": CONTRACT, "pid": os.getpid(), "updated_at": time.time(),
+                })
+            model_sha = load_checkpoint_weights(model, checkpoint)
+            dist.barrier()
+            started = time.perf_counter()
+            local_groups = []
+            with torch.inference_mode():
+                for record_index in range(rank, len(records), world_size):
+                    local_groups.append((record_index, evaluate_record(model, renderer, records[record_index], device)))
+            torch.cuda.synchronize(device)
+            gathered: list[Any] | None = [None] * world_size if rank == 0 else None
+            dist.gather_object(local_groups, gathered, dst=0)
+            if rank == 0:
+                indexed = [entry for shard in gathered or [] for entry in shard]
+                groups = [group for _, group in sorted(indexed, key=lambda entry: entry[0])]
+                wall = time.perf_counter() - started
+                output_dir = result_root / item["checkpoint"]
+                summary = {
+                    "step": item["step"], "checkpoint": item["checkpoint"],
+                    "checkpoint_path": str(checkpoint), "model_state_sha256": model_sha,
+                    "world_size": world_size, "gpu_ids": [row.get("index") for row in existing_status.get("gpus", [])],
+                    **summarize_groups(groups, wall),
+                }
+                write_jsonl(output_dir / "groups.jsonl", [
+                    {key: value for key, value in group.items() if key != "candidates"} for group in groups
+                ])
+                write_jsonl(output_dir / "explain.jsonl", groups)
+                atomic_json(output_dir / "summary.json", summary)
+                rebuild_curve(result_root)
+            dist.barrier()
+        if rank == 0:
+            curve = rebuild_curve(result_root)
+            atomic_json(status_path, {
+                "state": "COMPLETED", "run_id": run_dir.name, "total": len(inventory),
+                "completed": len(curve), "pending": 0, "world_size": world_size,
+                "gpus": existing_status.get("gpus", []), "contract": CONTRACT,
+                "pid": os.getpid(), "updated_at": time.time(),
+            })
+    finally:
+        dist.destroy_process_group()
+
+
+def run_all(
+    run_dir: Path, *, min_free_gib: float = 70.0, poll_seconds: int = 60, world_size: int = 4,
+) -> None:
     result_root = run_dir / RESULT_DIRNAME
     status_path = result_root / STATUS_FILENAME
     result_root.mkdir(parents=True, exist_ok=True)
@@ -293,57 +382,29 @@ def run_all(run_dir: Path, *, min_free_gib: float = 70.0, poll_seconds: int = 60
     atomic_json(status_path, {
         "state": "WAITING_FOR_GPU", "run_id": run_dir.name, "total": len(inventory),
         "completed": len(done), "pending": len(pending), "min_free_gib": min_free_gib,
+        "world_size": world_size,
         "contract": CONTRACT, "pid": os.getpid(), "updated_at": time.time(),
     })
-    gpu = available_gpu(min_free_gib)
-    while gpu is None:
+    gpus = available_gpus(min_free_gib, world_size)
+    while not gpus:
         time.sleep(max(5, poll_seconds))
-        gpu = available_gpu(min_free_gib)
+        gpus = available_gpus(min_free_gib, world_size)
     # Training may have produced more checkpoints while this job waited for a GPU.
     inventory = checkpoint_inventory(run_dir)
     done = completed_steps(result_root)
     pending = [row for row in inventory if row["step"] not in done]
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu["index"])
-    import torch
-
-    device = torch.device("cuda", 0)
-    torch.cuda.set_device(device)
-    model, renderer = load_model(device)
-    records = load_probe_records()
-    for position, item in enumerate(pending, start=len(done) + 1):
-        checkpoint = Path(item["path"])
-        atomic_json(status_path, {
-            "state": "RUNNING", "run_id": run_dir.name, "total": len(inventory),
-            "completed": position - 1, "pending": len(inventory) - position + 1,
-            "current_checkpoint": item["checkpoint"], "current_step": item["step"],
-            "gpu": gpu, "contract": CONTRACT, "pid": os.getpid(), "updated_at": time.time(),
-        })
-        model_sha = load_checkpoint_weights(model, checkpoint)
-        started = time.perf_counter()
-        groups = []
-        with torch.inference_mode():
-            for record in records:
-                groups.append(evaluate_record(model, renderer, record, device))
-        torch.cuda.synchronize(device)
-        wall = time.perf_counter() - started
-        output_dir = result_root / item["checkpoint"]
-        summary = {
-            "step": item["step"], "checkpoint": item["checkpoint"],
-            "checkpoint_path": str(checkpoint), "model_state_sha256": model_sha,
-            **summarize_groups(groups, wall),
-        }
-        write_jsonl(output_dir / "groups.jsonl", [
-            {key: value for key, value in group.items() if key != "candidates"} for group in groups
-        ])
-        write_jsonl(output_dir / "explain.jsonl", groups)
-        atomic_json(output_dir / "summary.json", summary)
-        rebuild_curve(result_root)
-    curve = rebuild_curve(result_root)
     atomic_json(status_path, {
-        "state": "COMPLETED", "run_id": run_dir.name, "total": len(inventory),
-        "completed": len(curve), "pending": 0, "gpu": gpu, "contract": CONTRACT,
+        "state": "QUEUED", "run_id": run_dir.name, "total": len(inventory),
+        "completed": len(done), "pending": len(pending), "min_free_gib": min_free_gib,
+        "world_size": world_size, "gpus": gpus, "contract": CONTRACT,
         "pid": os.getpid(), "updated_at": time.time(),
     })
+    environment = os.environ.copy()
+    environment["CUDA_VISIBLE_DEVICES"] = ",".join(str(row["index"]) for row in gpus)
+    subprocess.run(
+        distributed_launch_command(Path(__file__).resolve(), run_dir, world_size=world_size, min_free_gib=min_free_gib),
+        env=environment, check=True,
+    )
 
 
 def main() -> None:
@@ -351,9 +412,17 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--min-free-gib", type=float, default=70.0)
     parser.add_argument("--poll-seconds", type=int, default=60)
+    parser.add_argument("--world-size", type=int, default=4)
+    parser.add_argument("--distributed-worker", action="store_true")
     args = parser.parse_args()
     try:
-        run_all(args.run_dir.resolve(), min_free_gib=args.min_free_gib, poll_seconds=args.poll_seconds)
+        if args.distributed_worker:
+            run_distributed(args.run_dir.resolve())
+        else:
+            run_all(
+                args.run_dir.resolve(), min_free_gib=args.min_free_gib,
+                poll_seconds=args.poll_seconds, world_size=args.world_size,
+            )
     except Exception as exc:
         atomic_json(args.run_dir / RESULT_DIRNAME / STATUS_FILENAME, {
             "state": "FAILED", "error": f"{type(exc).__name__}: {exc}", "updated_at": time.time(),

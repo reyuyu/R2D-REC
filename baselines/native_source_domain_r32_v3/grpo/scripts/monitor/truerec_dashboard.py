@@ -489,7 +489,7 @@ def install_truerec_routes(
         queued = {
             "state": "QUEUED", "run_id": run.name, "total": len(checkpoints),
             "completed": completed, "pending": max(0, len(checkpoints) - completed),
-            "min_free_gib": 70.0, "updated_at": time.time(),
+            "min_free_gib": 70.0, "world_size": 4, "updated_at": time.time(),
         }
         temporary = root / f".status.json.tmp-{os.getpid()}"
         temporary.write_text(json.dumps(queued, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -497,7 +497,10 @@ def install_truerec_routes(
         log_handle = (root / "worker.log").open("ab")
         try:
             process = subprocess.Popen(
-                [sys.executable, str(beam_worker), "--run-dir", str(run), "--min-free-gib", "70"],
+                [
+                    sys.executable, str(beam_worker), "--run-dir", str(run),
+                    "--min-free-gib", "70", "--world-size", "4",
+                ],
                 stdin=subprocess.DEVNULL, stdout=log_handle, stderr=subprocess.STDOUT,
                 start_new_session=True, close_fds=True,
             )

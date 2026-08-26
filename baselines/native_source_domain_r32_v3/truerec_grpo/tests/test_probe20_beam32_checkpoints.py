@@ -11,11 +11,25 @@ ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "eval"))
 
 from run_probe20_beam32_checkpoints import (  # noqa: E402
-    CONTRACT, checkpoint_inventory, generation_kwargs, summarize_groups,
+    CONTRACT, available_gpus, checkpoint_inventory, distributed_launch_command,
+    generation_kwargs, summarize_groups,
 )
+from unittest.mock import patch
 
 
 class Probe20Beam32CheckpointTests(unittest.TestCase):
+    def test_four_gpu_selection_and_torchrun_contract(self):
+        output = "\n".join([
+            "0, NVIDIA A800, 80000, 0", "1, NVIDIA A800, 79000, 1",
+            "2, NVIDIA A800, 78000, 2", "3, NVIDIA A800, 77000, 3",
+            "4, NVIDIA A800, 76000, 8",
+        ])
+        with patch("subprocess.check_output", return_value=output):
+            self.assertEqual([row["index"] for row in available_gpus(70, 4)], [0, 1, 2, 3])
+        command = distributed_launch_command(Path("worker.py"), Path("/run"))
+        self.assertIn("--nproc_per_node=4", command)
+        self.assertIn("--distributed-worker", command)
+
     def test_frozen_nothink_fixed_domain_abc3_contract(self):
         kwargs = generation_kwargs()
         self.assertEqual((kwargs["num_beams"], kwargs["num_return_sequences"]), (32, 32))

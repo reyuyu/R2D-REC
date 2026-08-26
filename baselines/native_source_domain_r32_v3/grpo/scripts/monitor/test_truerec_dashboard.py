@@ -232,7 +232,10 @@ class TrueRecDashboardTests(unittest.TestCase):
         self.assertEqual(queued.status_code, 200)
         self.assertEqual(queued.json()["state"], "QUEUED")
         self.assertEqual(queued.json()["pid"], 321)
+        self.assertEqual(queued.json()["world_size"], 4)
         popen.assert_called_once()
+        self.assertIn("--world-size", popen.call_args.args[0])
+        self.assertIn("4", popen.call_args.args[0])
 
         result = run / "beam32_probe" / "checkpoint-step-256"
         dump(result / "summary.json", {"step": 256, "group_any_exact_rate": .5})
