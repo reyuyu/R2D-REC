@@ -13,7 +13,7 @@ for dependency in (ROOT / "data", ROOT / "diagnostics", ROOT / "initialization",
 from run_truerec_pilot_ddp_v1 import build_pre_optimizer_gate_diagnostic  # noqa: E402
 from v2_step2586_gate_debug import (  # noqa: E402
     CHECKPOINT_CURSOR, EPOCH2_LOCAL_INDEX, FAILED_GLOBAL_STEP, FAILED_GROUP_INDEX,
-    EXPECTED_FAILED_GROUP_ID, trajectory_payload, zero_gradient_assessment,
+    EXPECTED_FAILED_GROUP_ID, trajectory_payload, trajectory_structure, zero_gradient_assessment,
 )
 
 
@@ -77,6 +77,21 @@ class V2Step2586GateDebugTests(unittest.TestCase):
     def test_trajectory_payload_ignores_only_writer_metadata(self):
         value = {"global_step": 1, "group_index": 0, "mode": "TRAIN", "optimizer_update": True, "x": [1]}
         self.assertEqual(trajectory_payload(value), {"x": [1]})
+
+    def test_trajectory_structure_ignores_float_drift_but_not_sample_ids(self):
+        value = {
+            "recommendation_group_id": "g", "hpr_trigger": "HPR_NONE", "hpr_sites": [],
+            "candidates": [{
+                "candidate_index": 0, "source_rank": 0, "completion_ids": [1, 2, 3],
+                "parsed_abc": [1, 2, 3], "format_valid": True, "A_hit": False,
+                "AB_hit": False, "exact": False, "wrong_history_copy": False,
+                "action_tokens": [{"old_logp": -1.0}],
+            }],
+        }
+        drifted = {**value, "candidates": [{**value["candidates"][0], "action_tokens": [{"old_logp": -2.0}]}]}
+        self.assertEqual(trajectory_structure(value), trajectory_structure(drifted))
+        drifted["candidates"][0]["completion_ids"] = [9, 2, 3]
+        self.assertNotEqual(trajectory_structure(value), trajectory_structure(drifted))
 
     def test_frozen_failure_coordinates(self):
         self.assertEqual((CHECKPOINT_CURSOR, FAILED_GROUP_INDEX, FAILED_GLOBAL_STEP), (2560, 2585, 2586))

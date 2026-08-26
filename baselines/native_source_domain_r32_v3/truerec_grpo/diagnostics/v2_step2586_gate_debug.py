@@ -55,6 +55,64 @@ def trajectory_payload(explain: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def trajectory_structure(explain: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "recommendation_group_id": explain["recommendation_group_id"],
+        "candidates": [
+            {
+                key: candidate[key] for key in (
+                    "candidate_index", "source_rank", "completion_ids", "parsed_abc",
+                    "format_valid", "A_hit", "AB_hit", "exact", "wrong_history_copy",
+                )
+            }
+            for candidate in explain["candidates"]
+        ],
+        "hpr_trigger": explain["hpr_trigger"],
+        "hpr_sites": [
+            {
+                "site_index": site["site_index"],
+                "target_position": site["target_position"],
+                "target_token_ids": site["target_token_ids"],
+                "onpolicy_positions": [
+                    (row["candidate_index"], row["action_position"])
+                    for row in site["onpolicy_positions"]
+                ],
+            }
+            for site in explain["hpr_sites"]
+        ],
+    }
+
+
+def first_payload_difference(actual: Any, expected: Any, path: str = "$") -> dict[str, Any] | None:
+    if type(actual) is not type(expected):
+        return {"path": path, "actual": actual, "expected": expected, "kind": "type"}
+    if isinstance(actual, dict):
+        if set(actual) != set(expected):
+            return {
+                "path": path, "actual_keys": sorted(actual),
+                "expected_keys": sorted(expected), "kind": "keys",
+            }
+        for key in actual:
+            difference = first_payload_difference(actual[key], expected[key], f"{path}.{key}")
+            if difference is not None:
+                return difference
+        return None
+    if isinstance(actual, list):
+        if len(actual) != len(expected):
+            return {"path": path, "actual_length": len(actual), "expected_length": len(expected), "kind": "length"}
+        for index, (actual_item, expected_item) in enumerate(zip(actual, expected)):
+            difference = first_payload_difference(actual_item, expected_item, f"{path}[{index}]")
+            if difference is not None:
+                return difference
+        return None
+    if actual != expected:
+        output = {"path": path, "actual": actual, "expected": expected, "kind": "value"}
+        if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+            output["absolute_difference"] = abs(float(actual) - float(expected))
+        return output
+    return None
+
+
 def zero_gradient_assessment(
     diagnostic: dict[str, Any], explain: dict[str, Any],
 ) -> dict[str, Any]:
@@ -98,7 +156,7 @@ def group_metadata(record: dict[str, Any], selected_mb: int) -> dict[str, Any]:
     }
 
 
-def run(output_dir: Path) -> None:
+def run(output_dir: Path, *, allow_divergent_replay: bool = False) -> None:
     rank, device, resource = initialize()
     try:
         records, epoch1_order, _ = load_curriculum()
@@ -152,18 +210,35 @@ def run(output_dir: Path) -> None:
                     renderer.tokenizer.convert_ids_to_tokens,
                 )
                 expected = original_explain[group_index]
-                replay_match = (
-                    expected["recommendation_group_id"] == group_id
-                    and trajectory_payload(explain) == trajectory_payload(expected)
-                )
+                replay_match = trajectory_structure(explain) == trajectory_structure(expected)
+                payload_exact = trajectory_payload(explain) == trajectory_payload(expected)
+                if not payload_exact and not (output_dir / "first_numeric_drift.json").exists():
+                    json_write_atomic(output_dir / "first_numeric_drift.json", {
+                        "group_index": group_index,
+                        "recommendation_group_id": group_id,
+                        "discrete_trajectory_match": replay_match,
+                        "first_difference": first_payload_difference(
+                            trajectory_payload(explain), trajectory_payload(expected),
+                        ),
+                    })
+                if not replay_match:
+                    json_write_atomic(output_dir / "discrete_trajectory_mismatch.json", {
+                        "group_index": group_index,
+                        "recommendation_group_id": group_id,
+                        "first_difference": first_payload_difference(
+                            trajectory_structure(explain), trajectory_structure(expected),
+                        ),
+                    })
                 replay_rows.append({
                     "group_index": group_index, "global_step": group_index + 1,
                     "recommendation_group_id": group_id,
-                    "trajectory_payload_exact": replay_match,
+                    "discrete_trajectory_exact": replay_match,
+                    "monitoring_payload_bitwise_exact": payload_exact,
                     "runtime_plan_hash": backward.runtime_plan_hash,
                     "loss": report["loss"], "gradient": report["gradient"],
                 })
-            distributed_fail_if(not replay_match, "debug replay trajectory differs from original run", device)
+            if not allow_divergent_replay:
+                distributed_fail_if(not replay_match, "debug replay trajectory differs from original run", device)
 
         def write_target_diagnostic(diagnostic, group, backward, payloads) -> None:
             explain = build_train_explain(
@@ -178,7 +253,13 @@ def run(output_dir: Path) -> None:
             zero_gradient = zero_gradient_assessment(diagnostic, explain)
             metadata = group_metadata(records[failed_group_id], diagnostic["call_gate"]["selected_mb"])
             summary = {
-                "status": "GATE_FAILURE_REPRODUCED" if diagnostic["EXACT_FAILED_SUBGATES"] else "GATE_PASS_UNEXPECTED",
+                "status": (
+                    "GATE_FAILURE_REPRODUCED"
+                    if diagnostic["EXACT_FAILED_SUBGATES"] and all(row["discrete_trajectory_exact"] for row in replay_rows)
+                    else "NON_EXACT_REPLAY_GATE_FAILURE"
+                    if diagnostic["EXACT_FAILED_SUBGATES"]
+                    else "GATE_PASS_UNEXPECTED"
+                ),
                 "checkpoint": str(CHECKPOINT), "checkpoint_cursor": CHECKPOINT_CURSOR,
                 "failed_group_index": FAILED_GROUP_INDEX,
                 "global_step_if_success": FAILED_GLOBAL_STEP,
@@ -188,9 +269,13 @@ def run(output_dir: Path) -> None:
                 "epoch2_order_sha256": epoch2_manifest["epoch2_order_sha256"],
                 "replay_optimizer_steps": len(replay_rows),
                 "replay_range": [CHECKPOINT_CURSOR, FAILED_GROUP_INDEX - 1],
-                "replay_trajectory_exact_count": sum(row["trajectory_payload_exact"] for row in replay_rows),
-                "replay_trajectory_all_exact": all(row["trajectory_payload_exact"] for row in replay_rows),
+                "replay_trajectory_exact_count": sum(row["discrete_trajectory_exact"] for row in replay_rows),
+                "replay_trajectory_all_exact": all(row["discrete_trajectory_exact"] for row in replay_rows),
+                "replay_monitoring_payload_bitwise_exact_count": sum(
+                    row["monitoring_payload_bitwise_exact"] for row in replay_rows
+                ),
                 "target_optimizer_step": False,
+                "allow_divergent_replay": allow_divergent_replay,
                 "gate_diagnostic": diagnostic,
                 "EXACT_FAILED_SUBGATES": diagnostic["EXACT_FAILED_SUBGATES"],
                 "zero_gradient_assessment": zero_gradient,
@@ -236,8 +321,9 @@ def run(output_dir: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--allow-divergent-replay", action="store_true")
     args = parser.parse_args()
-    run(args.output_dir)
+    run(args.output_dir, allow_divergent_replay=args.allow_divergent_replay)
 
 
 if __name__ == "__main__":
