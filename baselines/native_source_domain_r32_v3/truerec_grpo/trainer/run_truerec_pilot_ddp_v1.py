@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 from pathlib import Path
 import random
 import sys
@@ -95,11 +96,12 @@ def optimizer_driver_state() -> dict[str, int | bool]:
 
 
 def initialize() -> tuple[int, torch.device, dict[str, Any]]:
+    os.environ.setdefault("NCCL_SOCKET_IFNAME", "lo")
     dist.init_process_group("nccl")
     rank, world_size = dist.get_rank(), dist.get_world_size()
     if world_size != DDP_WORLD_SIZE:
         raise DDPProductionError("production runner requires exactly four ranks")
-    local_rank = int(__import__("os").environ["LOCAL_RANK"])
+    local_rank = int(os.environ["LOCAL_RANK"])
     device = torch.device("cuda", local_rank); torch.cuda.set_device(device)
     free, total = torch.cuda.mem_get_info(device)
     resource = {
