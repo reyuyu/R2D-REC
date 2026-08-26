@@ -49,6 +49,7 @@ def score_full_sequences(
     *,
     grad_enabled: bool,
     trainable_parameters: Iterable = (),
+    scoring_microbatch_size: int | None = None,
 ) -> FullSequenceScore:
     """Score sampled tokens from complete context+completion rows in fixed chunks."""
     if model.training:
@@ -63,13 +64,16 @@ def score_full_sequences(
         raise ValueError("empty rollout context")
     if device is None:
         device = next(model.parameters()).device
+    microbatch_size = SCORING_MICROBATCH_SIZE if scoring_microbatch_size is None else int(scoring_microbatch_size)
+    if microbatch_size not in (1, 2):
+        raise ValueError("scoring_microbatch_size must be 1 or 2")
 
     values: list[tuple[float, ...]] = []
     requires_grad: list[bool] = []
     graph_connected: list[bool] = []
     parameters = tuple(trainable_parameters)
-    for start in range(0, 8, SCORING_MICROBATCH_SIZE):
-        rows = normalized[start:start + SCORING_MICROBATCH_SIZE]
+    for start in range(0, 8, microbatch_size):
+        rows = normalized[start:start + microbatch_size]
         lengths = [len(row) for row in rows]
         completion_width = max(lengths)
         sequence_length = len(context) + completion_width
