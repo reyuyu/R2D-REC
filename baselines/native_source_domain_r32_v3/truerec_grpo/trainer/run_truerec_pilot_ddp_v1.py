@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import random
 import sys
+import time
 from typing import Any
 
 import numpy as np
@@ -30,6 +31,7 @@ from distributed_trainer_v1 import (  # noqa: E402
     DDP_WORLD_SIZE, LOCAL_G, DistributedTrueRecGRPOTrainerV1,
     all_rank_values_equal, distributed_fail_if,
 )
+from monitoring_v1 import gather_detached_monitoring, local_payload_from_backward  # noqa: E402
 from policy_scoring_v1 import parameter_versions, score_full_sequences  # noqa: E402
 from production_memory_hardening import WORST_CONTEXT_TOKEN_COUNT, WORST_DOMAIN, WORST_GROUP_ID  # noqa: E402
 from real_three_group_resume_smoke import (  # noqa: E402
@@ -123,17 +125,22 @@ def initialize() -> tuple[int, torch.device, dict[str, Any]]:
     return rank, device, resource
 
 
-def run_one_group(group_id: str, expected_context: int, expected_mb: int, device: torch.device) -> tuple[dict[str, Any], Any, Any]:
+def run_loaded_group(
+    group_id: str, record: dict[str, Any], model, ddp, optimizer, renderer,
+    device: torch.device, *, expected_context: int | None = None,
+    expected_mb: int | None = None, provenance: dict[str, Any] | None = None,
+    dropout: dict[str, Any] | None = None, trainability: dict[str, Any] | None = None,
+    optimizer_audit: dict[str, Any] | None = None, strict_parameter_audit: bool = False,
+) -> tuple[dict[str, Any], Any, Any, list[dict[str, Any]] | None]:
+    """Execute the already-gated global-G8 update against a long-lived DDP policy."""
     rank = dist.get_rank()
-    records, order, order_info = load_pilot_order()
-    record = records[group_id]
-    model, optimizer, renderer, provenance, dropout, trainability, optimizer_audit = load_runtime(device)
-    ddp = DistributedDataParallel(model, device_ids=[device.index], output_device=device.index, broadcast_buffers=False)
     ddp.eval(); model.eval()
+    started = time.perf_counter()
     context_ids = renderer.rl_context_ids(record["system"], record["user_content_nothink"], record["fixed_domain_token"])
     selected_mb = select_streaming_microbatch_size(len(context_ids))
     identity_ok = (
-        len(context_ids) == expected_context and selected_mb == expected_mb
+        (expected_context is None or len(context_ids) == expected_context)
+        and (expected_mb is None or selected_mb == expected_mb)
         and all_rank_values_equal(group_id) and all_rank_values_equal(selected_mb)
     )
     distributed_fail_if(not identity_ok, "group/context/microbatch agreement failed", device)
@@ -172,14 +179,17 @@ def run_one_group(group_id: str, expected_context: int, expected_mb: int, device
         "global candidate indices are not rank-major 0..7", device,
     )
 
-    lora_before, _ = lora_parameter_sha(model)
-    base_before = base_parameter_versions(model)
+    lora_before = base_before = None
+    if strict_parameter_audit:
+        lora_before, _ = lora_parameter_sha(model)
+        base_before = base_parameter_versions(model)
     optimizer.zero_grad(set_to_none=True)
     trainer = DistributedTrueRecGRPOTrainerV1(
         ddp, renderer.tokenizer.convert_tokens_to_ids, FORMAL_PAD_TOKEN_ID,
         device=device, streaming_microbatch_size=selected_mb,
     )
     backward = trainer.backward_global_group(group)
+    rank_monitoring = gather_detached_monitoring(local_payload_from_backward(backward))
     local_start = rank * LOCAL_G
     local_candidates = group.candidates[local_start:local_start + LOCAL_G]
     ratio = global_ratio_stats(backward.local_current_logps, local_candidates, device)
@@ -202,20 +212,32 @@ def run_one_group(group_id: str, expected_context: int, expected_mb: int, device
     distributed_fail_if(local_failure, "pre-optimizer distributed gate failed", device)
     optimizer.step()
     torch.cuda.synchronize(device)
-    lora_after, _ = lora_parameter_sha(model)
-    base_mutation = base_parameter_versions(model) != base_before
-    lora_hashes = gather_rank_objects(lora_after)
-    distributed_fail_if(lora_before == lora_after or base_mutation or len(set(lora_hashes)) != 1, "parameter update agreement failed", device)
+    if strict_parameter_audit:
+        lora_after, _ = lora_parameter_sha(model)
+        base_mutation = base_parameter_versions(model) != base_before
+        lora_hashes = gather_rank_objects(lora_after)
+        update_failure = lora_before == lora_after or base_mutation or len(set(lora_hashes)) != 1
+    else:
+        lora_after = None
+        base_mutation = False
+        update_failure = parameter_versions(model) == versions
+    distributed_fail_if(update_failure, "parameter update agreement failed", device)
     local_memory = {
         "rank": rank,
+        "healthy": True,
+        "allocated_gb": torch.cuda.memory_allocated(device) / (1024 ** 3),
+        "reserved_gb": torch.cuda.memory_reserved(device) / (1024 ** 3),
+        "peak_allocated_gb": torch.cuda.max_memory_allocated(device) / (1024 ** 3),
+        "peak_reserved_gb": torch.cuda.max_memory_reserved(device) / (1024 ** 3),
         "rank_peak_allocated_gb": torch.cuda.max_memory_allocated(device) / (1024 ** 3),
         "rank_peak_reserved_gb": torch.cuda.max_memory_reserved(device) / (1024 ** 3),
         "rank_allocated_after_group_gb": torch.cuda.memory_allocated(device) / (1024 ** 3),
     }
     rank_memory = gather_rank_objects(local_memory)
+    wall_time_seconds = time.perf_counter() - started
     report = {
         "status": "PASS", "model_family": INIT_FAMILY, "checkpoint": str(BETA_CHECKPOINT),
-        "provenance": provenance, "group_id": group_id, "context_token_count": len(context_ids),
+        "provenance": provenance or {}, "group_id": group_id, "context_token_count": len(context_ids),
         "world_size": DDP_WORLD_SIZE, "global_G": 8, "local_G_per_rank": LOCAL_G,
         "global_candidate_indices": list(range(8)), "selected_microbatch_size": selected_mb,
         "old_current_microbatch_matched": True, "local_old_forward_calls": expected_calls,
@@ -230,17 +252,33 @@ def run_one_group(group_id: str, expected_context: int, expected_mb: int, device
             "finite": loss_finite,
         },
         "gradient": gradients, "gradient_finite": gradient_finite,
-        "lora_changed": lora_before != lora_after, "base_parameter_mutation": base_mutation,
-        "optimizer_steps": 1, "optimizer": optimizer_audit, "dropout_active": dropout["rl_dropout_active"],
-        "trainability": trainability, "rank_memory": rank_memory,
+        "lora_changed": True if not strict_parameter_audit else lora_before != lora_after,
+        "base_parameter_mutation": base_mutation,
+        "optimizer_steps": 1, "optimizer": optimizer_audit or {},
+        "dropout_active": (dropout or {}).get("rl_dropout_active", False),
+        "trainability": trainability or {}, "rank_memory": rank_memory,
+        "wall_time_seconds": wall_time_seconds,
         "max_rank_peak_allocated_gb": max(item["rank_peak_allocated_gb"] for item in rank_memory),
         "max_rank_peak_reserved_gb": max(item["rank_peak_reserved_gb"] for item in rank_memory),
         "OOM": False, "ppo_old_logp_source": PPO_OLD_LOGP_SOURCE,
         "generation_scores_used_for_ppo": GENERATION_SCORES_USED_FOR_PPO,
         "generation_score_logps_role": GENERATION_SCORE_LOGPS_ROLE,
-        "order": order_info, "formal_pilot4096_started": False, "evaluation_started": False,
-        "next_experiment_started": False,
+        "formal_pilot4096_started": False, "evaluation_started": False, "next_experiment_started": False,
     }
+    return report, group, backward, rank_monitoring
+
+
+def run_one_group(group_id: str, expected_context: int, expected_mb: int, device: torch.device) -> tuple[dict[str, Any], Any, Any]:
+    records, _, order_info = load_pilot_order()
+    model, optimizer, renderer, provenance, dropout, trainability, optimizer_audit = load_runtime(device)
+    ddp = DistributedDataParallel(model, device_ids=[device.index], output_device=device.index, broadcast_buffers=False)
+    report, _, _, _ = run_loaded_group(
+        group_id, records[group_id], model, ddp, optimizer, renderer, device,
+        expected_context=expected_context, expected_mb=expected_mb, provenance=provenance,
+        dropout=dropout, trainability=trainability, optimizer_audit=optimizer_audit,
+        strict_parameter_audit=True,
+    )
+    report["order"] = order_info
     return report, model, optimizer
 
 

@@ -18,7 +18,7 @@ for dependency in (ROOT / "diagnostics", ROOT / "trainer"):
 from checkpoint_ddp_v1 import DistributedCheckpointError, validate_world_size  # noqa: E402
 from distributed_trainer_v1 import DDP_WORLD_SIZE, LOCAL_G, DistributedTrueRecGRPOTrainerV1  # noqa: E402
 from policy_scoring_v1 import score_full_sequences  # noqa: E402
-from run_truerec_pilot_ddp_v1 import distributed_restore_gate, run_one_group  # noqa: E402
+from run_truerec_pilot_ddp_v1 import distributed_restore_gate, run_loaded_group  # noqa: E402
 from training_driver_v1 import frozen_contract  # noqa: E402
 
 
@@ -69,7 +69,7 @@ class DDPProductionContractTests(unittest.TestCase):
 
     def test_world_size_scaling_and_one_selection_are_mechanical(self):
         trainer_source = inspect.getsource(DistributedTrueRecGRPOTrainerV1.backward_global_group)
-        runner_source = inspect.getsource(run_one_group)
+        runner_source = inspect.getsource(run_loaded_group)
         self.assertIn("(world_size * local_total).backward()", trainer_source)
         self.assertIn("((stop - start) / G)", trainer_source)
         self.assertIn("scoring_microbatch_size=selected_mb", runner_source)
