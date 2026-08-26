@@ -42,6 +42,15 @@ class IntegratedGroupLoss:
     monitoring: dict[str, float | int]
 
 
+@dataclass(frozen=True)
+class StreamingGroupBackward:
+    frontier_value: float
+    hpr_value_raw: float
+    hpr_value_weighted: float
+    total_value: float
+    monitoring: dict[str, float | int]
+
+
 def gather_padded_action_logps(logits: torch.Tensor, batch: PaddedBusinessGroup) -> torch.Tensor:
     return gather_padded_action_logps_rows(logits, batch, 0, G)
 
@@ -104,6 +113,78 @@ class TrueRecGRPOTrainerV1:
         self.physical_policy_forward_calls = 0
         self.train_policy_forward_calls = 0
         self.hpr_extra_forward_calls = 0
+        self.streaming_backward_calls = 0
+        self.streaming_full_g8_plan_builds = 0
+
+    def backward_group_streaming(self, group: BusinessGroupRollout) -> StreamingGroupBackward:
+        """Backpropagate one logical G8 objective while retaining only one chunk graph at a time."""
+        batch = collate_business_group(group, self.pad_token_id, self.padding_side)
+        candidate_metrics = [candidate.metrics for candidate in group.candidates]
+        runtime = build_group_runtime_plan(candidate_metrics, group.all_gold_abc, self.token_to_id)
+        self.streaming_full_g8_plan_builds += 1
+        format_credits, format_mask = format_credit_tensors(group)
+        site_count = len(runtime.hpr.sites)
+        frontier_value = 0.0
+        hpr_value_raw = 0.0
+        total_value = 0.0
+        self.logical_policy_scoring_passes += 1
+        for start in range(0, G, TRAINER_MICROBATCH_SIZE):
+            stop = min(start + TRAINER_MICROBATCH_SIZE, G)
+            input_ids = batch.input_ids[start:stop]
+            attention_mask = batch.attention_mask[start:stop]
+            if self.device is not None:
+                input_ids = input_ids.to(self.device)
+                attention_mask = attention_mask.to(self.device)
+            output = self.policy(input_ids=input_ids, attention_mask=attention_mask)
+            self.physical_policy_forward_calls += 1
+            self.train_policy_forward_calls += 1
+            logits = output.logits if hasattr(output, "logits") else output
+            current = gather_padded_action_logps_rows(logits, batch, start, stop)
+            old_logps = batch.old_logps[start:stop].to(current.device)
+            hierarchy = frontier_ppo_loss(
+                current.unsqueeze(0), old_logps.unsqueeze(0),
+                runtime.token_credits[start:stop].to(current.device).unsqueeze(0),
+                runtime.token_credit_mask[start:stop].to(current.device).unsqueeze(0), self.epsilon,
+            )
+            format_loss = frontier_ppo_loss(
+                current.unsqueeze(0), old_logps.unsqueeze(0),
+                format_credits[start:stop].to(current.device).unsqueeze(0),
+                format_mask[start:stop].to(current.device).unsqueeze(0), self.epsilon,
+            )
+            frontier_contribution = (hierarchy.loss + format_loss.loss) * ((stop - start) / G)
+            hpr_contribution = logits.sum() * 0.0
+            if site_count:
+                for site in runtime.hpr.sites:
+                    position_weight = 1.0 / (site_count * len(site.onpolicy_positions))
+                    for sample_index, action_position in site.onpolicy_positions:
+                        if start <= sample_index < stop:
+                            causal_index = int(batch.causal_logit_indices[sample_index, action_position])
+                            hpr_contribution = hpr_contribution + position_weight * multi_positive_log_mass_loss(
+                                logits[sample_index - start, causal_index], site.target_token_ids,
+                            )
+            chunk_total = frontier_contribution + HPR_LAMBDA * hpr_contribution
+            frontier_value += float(frontier_contribution.detach())
+            hpr_value_raw += float(hpr_contribution.detach())
+            total_value += float(chunk_total.detach())
+            chunk_total.backward()
+            self.streaming_backward_calls += 1
+            del chunk_total, hpr_contribution, frontier_contribution
+            del format_loss, hierarchy, old_logps, current, logits, output, attention_mask, input_ids
+        monitoring = dict(runtime.monitoring)
+        monitoring.update({
+            "business_group_count": 1,
+            "rollout_candidate_count": G,
+            "logical_policy_scoring_passes": LOGICAL_POLICY_SCORING_PASSES_PER_GROUP,
+            "physical_policy_forward_calls": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
+            "physical_policy_backward_calls": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
+            "frontier_loss": frontier_value,
+            "hpr_loss_raw": hpr_value_raw,
+            "hpr_loss_weighted": HPR_LAMBDA * hpr_value_raw,
+            "total_loss": total_value,
+        })
+        return StreamingGroupBackward(
+            frontier_value, hpr_value_raw, HPR_LAMBDA * hpr_value_raw, total_value, monitoring,
+        )
 
     def compute_group(self, group: BusinessGroupRollout) -> IntegratedGroupLoss:
         batch = collate_business_group(group, self.pad_token_id, self.padding_side)
