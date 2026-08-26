@@ -59,7 +59,33 @@ BRIDGES = (
     "该用户最近首次打赏了主播:",
 )
 K_BUCKETS = ("1", "2", "3", "4", "5+")
-K_QUALITY_WEIGHT = {"1": 0.75, "2": 1.10, "3": 1.25, "4": 1.40, "5+": 1.55}
+HIERARCHY_CLASSES = ("A_RICH", "B_RICH", "C_RICH", "SINGLETON", "OTHER")
+STAGE_CATEGORY_QUOTAS = {
+    "video": {
+        "stage1": {"A_RICH": 128, "B_RICH": 0, "C_RICH": 0, "SINGLETON": 0},
+        "stage2": {"A_RICH": 80, "B_RICH": 40, "C_RICH": 0, "SINGLETON": 8},
+        "stage3": {"A_RICH": 24, "B_RICH": 45, "C_RICH": 9, "SINGLETON": 50},
+        "stage4": {"A_RICH": 8, "B_RICH": 6, "C_RICH": 4, "SINGLETON": 110},
+    },
+    "prod": {
+        "stage1": {"A_RICH": 128, "B_RICH": 0, "C_RICH": 0, "SINGLETON": 0},
+        "stage2": {"A_RICH": 96, "B_RICH": 28, "C_RICH": 0, "SINGLETON": 4},
+        "stage3": {"A_RICH": 24, "B_RICH": 32, "C_RICH": 4, "SINGLETON": 68},
+        "stage4": {"A_RICH": 4, "B_RICH": 4, "C_RICH": 2, "SINGLETON": 118},
+    },
+    "ad": {
+        "stage1": {"A_RICH": 128, "B_RICH": 0, "C_RICH": 0, "SINGLETON": 0},
+        "stage2": {"A_RICH": 112, "B_RICH": 12, "C_RICH": 0, "SINGLETON": 4},
+        "stage3": {"A_RICH": 24, "B_RICH": 14, "C_RICH": 2, "SINGLETON": 88},
+        "stage4": {"A_RICH": 4, "B_RICH": 3, "C_RICH": 2, "SINGLETON": 119},
+    },
+    "living": {
+        "stage1": {"A_RICH": 128, "B_RICH": 0, "C_RICH": 0, "SINGLETON": 0},
+        "stage2": {"A_RICH": 10, "B_RICH": 5, "C_RICH": 0, "SINGLETON": 113},
+        "stage3": {"A_RICH": 3, "B_RICH": 6, "C_RICH": 4, "SINGLETON": 115},
+        "stage4": {"A_RICH": 2, "B_RICH": 2, "C_RICH": 3, "SINGLETON": 121},
+    },
+}
 REJECTION_REASONS = (
     "duplicate_group_id", "duplicate_group_metadata_conflict", "missing_group_id",
     "not_in_frozen_train_pool", "split_not_train_pool", "invalid_target_domain",
@@ -148,6 +174,18 @@ def parse_gold(record: dict[str, Any]) -> tuple[list[tuple[int, int, int]], list
     return unique, sorted(set(reasons))
 
 
+def hierarchy_class(k_a: int, k_ab: int, k_abc: int) -> str:
+    if k_a >= 2:
+        return "A_RICH"
+    if k_a == 1 and k_ab >= 2:
+        return "B_RICH"
+    if k_ab == 1 and k_abc >= 2:
+        return "C_RICH"
+    if (k_a, k_ab, k_abc) == (1, 1, 1):
+        return "SINGLETON"
+    return "OTHER"
+
+
 def static_eligibility(record: dict[str, Any], train_ids: set[str]) -> tuple[dict[str, Any] | None, list[str]]:
     reasons: list[str] = []
     group_id = str(record.get("recommendation_group_id", ""))
@@ -181,6 +219,7 @@ def static_eligibility(record: dict[str, Any], train_ids: set[str]) -> tuple[dic
     enriched["K_A"] = len(unique_a)
     enriched["K_AB"] = len(unique_ab)
     enriched["K_ABC"] = len(gold)
+    enriched["hierarchy_class"] = hierarchy_class(len(unique_a), len(unique_ab), len(gold))
     enriched["gold_duplicate_count"] = len(record["all_gold_abc"]) - len(gold)
     enriched["prefix_rich"] = bool(len(unique_a) >= 2 or len(unique_ab) >= 2 or len(gold) >= 2)
     return enriched, []
@@ -227,75 +266,42 @@ def quality_key(record: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
-def select_domain(records: list[dict[str, Any]], count: int = DOMAIN_GROUPS) -> list[dict[str, Any]]:
-    by_bucket = {name: [row for row in records if bucket(int(row["K_ABC"])) == name] for name in K_BUCKETS}
-    weighted = {name: len(by_bucket[name]) * K_QUALITY_WEIGHT[name] for name in K_BUCKETS}
-    exact = {name: count * weighted[name] / sum(weighted.values()) for name in K_BUCKETS}
-    quota = {name: min(len(by_bucket[name]), math.floor(exact[name])) for name in K_BUCKETS}
-    remaining = count - sum(quota.values())
-    while remaining:
-        candidates = [name for name in K_BUCKETS if quota[name] < len(by_bucket[name])]
-        if not candidates:
-            raise CurriculumError(f"DOMAIN_BUCKET_CAPACITY_FAIL={len(records)},{quota}")
-        name = min(candidates, key=lambda key: (-(exact[key] - quota[key]), K_BUCKETS.index(key)))
-        quota[name] += 1
-        remaining -= 1
-    selected = []
-    for name in K_BUCKETS:
-        selected.extend(sorted(by_bucket[name], key=quality_key)[: quota[name]])
-    selected.sort(key=quality_key)
-    for rank, row in enumerate(selected):
-        row["selection_tier"] = f"K_ABC_{bucket(int(row['K_ABC']))}"
-        row["quality_rank_within_domain"] = rank
-        row["domain_k_bucket_quota"] = quota[bucket(int(row["K_ABC"]))]
-    return selected
-
-
-def largest_remainder(total: int, weights: Sequence[float]) -> list[int]:
-    raw = [total * weight / sum(weights) for weight in weights]
-    result = [math.floor(value) for value in raw]
-    for index in sorted(range(len(weights)), key=lambda i: (-(raw[i] - result[i]), i))[: total - sum(result)]:
-        result[index] += 1
-    return result
-
-
-def rich_stage_counts(rich_count: int) -> list[int]:
-    counts = largest_remainder(rich_count, (0.50, 0.25, 0.15, 0.10))
-    for source in range(len(counts)):
-        overflow = max(0, counts[source] - STAGE_DOMAIN_GROUPS)
-        counts[source] -= overflow
-        for target in range(source + 1, len(counts)):
-            moved = min(overflow, STAGE_DOMAIN_GROUPS - counts[target])
-            counts[target] += moved
-            overflow -= moved
-        if overflow:
-            raise CurriculumError(f"RICH_STAGE_CAPACITY_FAIL={rich_count},{counts}")
-    if sum(counts) != rich_count or any(value > STAGE_DOMAIN_GROUPS for value in counts):
-        raise CurriculumError(f"RICH_STAGE_COUNT_FAIL={rich_count},{counts}")
-    return counts
-
-
-def assign_domain_stages(selected: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
-    rich = sorted((row for row in selected if row["prefix_rich"]), key=quality_key)
-    hard = sorted((row for row in selected if not row["prefix_rich"]), key=quality_key)
-    rich_counts = rich_stage_counts(len(rich))
+def assign_domain_stages(records: list[dict[str, Any]], domain: str) -> dict[str, list[dict[str, Any]]]:
+    pools = {
+        name: sorted((row for row in records if row["hierarchy_class"] == name), key=quality_key)
+        for name in HIERARCHY_CLASSES
+    }
+    required = Counter()
+    for stage in STAGES:
+        quotas = STAGE_CATEGORY_QUOTAS[domain][stage]
+        if sum(quotas.values()) != STAGE_DOMAIN_GROUPS:
+            raise CurriculumError(f"STAGE_QUOTA_SUM_FAIL={domain},{stage},{quotas}")
+        required.update(quotas)
+    for name, count in required.items():
+        if len(pools[name]) < count:
+            raise CurriculumError(f"HIERARCHY_CAPACITY_FAIL={domain},{name},{len(pools[name])},{count}")
     result: dict[str, list[dict[str, Any]]] = {}
-    rich_cursor = hard_cursor = 0
+    cursors = Counter()
     for stage_index, stage in enumerate(STAGES):
-        rich_n = rich_counts[stage_index]
-        hard_n = STAGE_DOMAIN_GROUPS - rich_n
-        rows = rich[rich_cursor: rich_cursor + rich_n] + hard[hard_cursor: hard_cursor + hard_n]
-        rich_cursor += rich_n
-        hard_cursor += hard_n
+        rows = []
+        for name in ("A_RICH", "B_RICH", "C_RICH", "SINGLETON"):
+            count = STAGE_CATEGORY_QUOTAS[domain][stage][name]
+            start = cursors[name]
+            chosen = pools[name][start: start + count]
+            cursors[name] += count
+            for rank, row in enumerate(chosen, start=start):
+                row["selection_tier"] = name
+                row["quality_rank_within_hierarchy_class"] = rank
+            rows.extend(chosen)
         rows.sort(key=quality_key)
         for row in rows:
             row["stage"] = stage
             row["stage_index"] = stage_index
         result[stage] = rows
-    if rich_cursor != len(rich) or hard_cursor != len(hard):
-        raise CurriculumError("STAGE_ASSIGNMENT_DID_NOT_CONSUME_SELECTION")
-    if any(not any(row["prefix_rich"] for row in result[stage]) for stage in STAGES):
-        raise CurriculumError("PREFIX_RICH_MISSING_FROM_STAGE")
+    if any(len(result[stage]) != STAGE_DOMAIN_GROUPS for stage in STAGES):
+        raise CurriculumError(f"STAGE_ASSIGNMENT_SIZE_FAIL={domain}")
+    if any(row["hierarchy_class"] != "A_RICH" for row in result["stage1"]):
+        raise CurriculumError(f"STAGE1_NOT_ALL_A_RICH={domain}")
     return result
 
 
@@ -321,6 +327,43 @@ def distribution(records: list[dict[str, Any]], field: str) -> dict[str, dict[st
     for domain in DOMAINS:
         counts = Counter(bucket(int(row[field])) for row in records if row["target_domain"] == domain)
         result[domain] = {name: counts[name] for name in ("1", "2", "3", "4", "5+")}
+    return result
+
+
+def joint_hierarchy_census(records: list[dict[str, Any]]) -> dict[str, Any]:
+    result = {"groups": len(records), "domains": {}}
+    for domain in DOMAINS:
+        rows = [row for row in records if row["target_domain"] == domain]
+        categories = Counter(row["hierarchy_class"] for row in rows)
+        combinations = Counter((int(row["K_A"]), int(row["K_AB"]), int(row["K_ABC"])) for row in rows)
+        result["domains"][domain] = {
+            "N": len(rows),
+            "hierarchy_classes": {name: categories[name] for name in HIERARCHY_CLASSES},
+            "joint_K_A_K_AB_K_ABC": [
+                {"K_A": values[0], "K_AB": values[1], "K_ABC": values[2], "count": count}
+                for values, count in sorted(combinations.items())
+            ],
+            "K_A": distribution(rows, "K_A")[domain],
+            "K_AB": distribution(rows, "K_AB")[domain],
+            "K_ABC": distribution(rows, "K_ABC")[domain],
+        }
+    return result
+
+
+def stage_domain_census(records: list[dict[str, Any]]) -> dict[str, Any]:
+    result = {}
+    for stage in STAGES:
+        result[stage] = {}
+        for domain in DOMAINS:
+            rows = [row for row in records if row["stage"] == stage and row["target_domain"] == domain]
+            categories = Counter(row["hierarchy_class"] for row in rows)
+            result[stage][domain] = {
+                "N": len(rows),
+                "hierarchy_classes": {name: categories[name] for name in HIERARCHY_CLASSES},
+                "K_A": distribution(rows, "K_A")[domain],
+                "K_AB": distribution(rows, "K_AB")[domain],
+                "K_ABC": distribution(rows, "K_ABC")[domain],
+            }
     return result
 
 
@@ -374,9 +417,10 @@ def compact_quality(record: dict[str, Any]) -> dict[str, Any]:
         "stage": record["stage"],
         "epoch1_index": record["epoch1_index"],
         "quality_features": {
+            "hierarchy_class": record["hierarchy_class"],
             "prefix_rich": record["prefix_rich"],
             "selection_tier": record["selection_tier"],
-            "quality_rank_within_domain": record["quality_rank_within_domain"],
+            "quality_rank_within_hierarchy_class": record["quality_rank_within_hierarchy_class"],
             "context_token_count": record["context_token_count"],
             "context_length_percentile": record["context_length_percentile"],
             "context_outlier": record["context_outlier"],
@@ -451,8 +495,9 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
     selected_by_domain = {}
     staged = {}
     for domain in DOMAINS:
-        selected_by_domain[domain] = select_domain([row for row in eligible if row["target_domain"] == domain])
-        staged[domain] = assign_domain_stages(selected_by_domain[domain])
+        domain_rows = [row for row in eligible if row["target_domain"] == domain]
+        staged[domain] = assign_domain_stages(domain_rows, domain)
+        selected_by_domain[domain] = [row for stage in STAGES for row in staged[domain][stage]]
     ordered = build_epoch1_order(staged)
     order_audit = validate_order(ordered, split_ids["train"], split_ids["probe"], split_ids["dev"], split_ids["final"])
 
@@ -467,62 +512,46 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
     metadata_sha, metadata_count = write_jsonl(output_dir / "records_metadata.jsonl", (compact_quality(row) for row in ordered))
 
     selected = [row for domain in DOMAINS for row in selected_by_domain[domain]]
-    pool_census = {
-        "groups": len(eligible),
-        "domain_counts": dict(Counter(row["target_domain"] for row in eligible)),
-        "K_ABC": distribution(eligible, "K_ABC"),
-        "K_A": distribution(eligible, "K_A"),
-        "K_AB": distribution(eligible, "K_AB"),
+    pool_census = joint_hierarchy_census(eligible)
+    selected_categories = {
+        domain: {
+            name: sum(row["target_domain"] == domain and row["hierarchy_class"] == name for row in selected)
+            for name in HIERARCHY_CLASSES
+        }
+        for domain in DOMAINS
     }
     selected_census = {
         "groups": len(selected),
         "domain_counts": dict(Counter(row["target_domain"] for row in selected)),
+        "hierarchy_classes": selected_categories,
         "K_ABC": distribution(selected, "K_ABC"),
         "K_A": distribution(selected, "K_A"),
         "K_AB": distribution(selected, "K_AB"),
-        "stage_domain": {
-            stage: {domain: sum(row["stage"] == stage and row["target_domain"] == domain for row in selected) for domain in DOMAINS}
-            for stage in STAGES
-        },
-        "stage_prefix_rich": {
-            stage: {domain: sum(row["stage"] == stage and row["target_domain"] == domain and row["prefix_rich"] for row in selected) for domain in DOMAINS}
-            for stage in STAGES
-        },
-        "stage_domain_hierarchy": {
-            stage: {
-                field: {
-                    domain: {
-                        name: sum(
-                            row["stage"] == stage
-                            and row["target_domain"] == domain
-                            and bucket(int(row[field])) == name
-                            for row in selected
-                        )
-                        for name in K_BUCKETS
-                    }
-                    for domain in DOMAINS
-                }
-                for field in ("K_A", "K_AB", "K_ABC")
-            }
-            for stage in STAGES
-        },
+        "stage_domain": stage_domain_census(selected),
     }
-    pool_video_tail = pool_census["K_ABC"]["video"]["5+"] / pool_census["domain_counts"]["video"]
+    pool_video_tail = pool_census["domains"]["video"]["K_ABC"]["5+"] / pool_census["domains"]["video"]["N"]
     selected_video_tail = selected_census["K_ABC"]["video"]["5+"] / DOMAIN_GROUPS
     video_tail_gate = "PASS" if selected_census["K_ABC"]["video"]["5+"] > 0 and selected_video_tail >= pool_video_tail else "FAIL"
     if video_tail_gate != "PASS":
         raise CurriculumError("VIDEO_HIGH_K_TAIL_NOT_PRESERVED")
+    if sum(
+        selected_census["stage_domain"]["stage1"][domain]["hierarchy_classes"]["A_RICH"]
+        for domain in DOMAINS
+    ) != STAGE_GROUPS:
+        raise CurriculumError("STAGE1_A_RICH_512_GATE_FAIL")
     census = {"eligible_pool": pool_census, "selected": selected_census}
     selection_report = {
         "seed": SEED,
-        "ranking": ["K_A descending", "K_AB descending", "K_ABC descending", "context outlier avoidance", "context median distance", "stable SHA256 tie-break"],
-        "domain_specific_policy": "Domain-local natural K-bucket census with a mild monotonic quality weight; ranking within each bucket is K_A, K_AB, K_ABC. No cross-domain K quota.",
-        "K_quality_weight": K_QUALITY_WEIGHT,
-        "curriculum_policy": "Overlapping rich/hard stage allocation with exact 128/domain/stage; stage4 retains prefix-rich groups.",
+        "ranking": ["hierarchy curriculum class", "K_A descending", "K_AB descending", "K_ABC descending", "context outlier avoidance", "context median distance", "stable SHA256 tie-break"],
+        "domain_specific_policy": "Select for hierarchical credit exposure; do not match the source natural K distribution and do not impose a shared cross-domain K distribution.",
+        "curriculum_policy": "Stage1 all A_RICH; Stage2 A/B; Stage3 B/C with rehearsal; Stage4 C/singleton with A/B rehearsal. Scarce B/C groups are fully used.",
+        "stage_category_quotas": STAGE_CATEGORY_QUOTAS,
+        "capacity_note": "After Stage1, living has only 15 A_RICH and 20 total B_RICH+C_RICH in the full pool; singleton fill is mechanically necessary.",
         "source_train_groups": EXPECTED_TRAIN_GROUPS,
         "eligible_groups": len(eligible),
         "rejection_reason_counts": rejection,
         "order_audit": order_audit,
+        "stage_domain_census": selected_census["stage_domain"],
         "video_high_k_tail": {
             "eligible_rate": round(pool_video_tail, 8),
             "selected_rate": round(selected_video_tail, 8),
@@ -530,7 +559,8 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
         },
         "epoch2_order_generated": False,
     }
-    census_sha = write_json(output_dir / "census.json", census)
+    census_sha = write_json(output_dir / "joint_hierarchy_census.json", census)
+    write_json(output_dir / "census.json", census)
     report_sha = write_json(output_dir / "selection_report.json", selection_report)
     manifest = {
         "name": "truerec_v2_curriculum2048",
@@ -545,7 +575,7 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
         "records": {"path": str(output_dir / "records.jsonl"), "sha256": records_sha, "count": records_count},
         "records_metadata": {"path": str(output_dir / "records_metadata.jsonl"), "sha256": metadata_sha, "count": metadata_count},
         "epoch1_order": {"path": str(output_dir / "epoch1_order.json"), "sha256": order_sha, "count": len(order_payload)},
-        "census_sha256": census_sha,
+        "joint_hierarchy_census_sha256": census_sha,
         "selection_report_sha256": report_sha,
         "selected_unique_2048": "PASS" if order_audit["selected_unique_groups"] == TOTAL_GROUPS else "FAIL",
         "domain_512_each": "PASS" if order_audit["domain_counts"] == {domain: DOMAIN_GROUPS for domain in DOMAINS} else "FAIL",
@@ -554,7 +584,7 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
         "dev_overlap": order_audit["dev_overlap"],
         "final_overlap": order_audit["final_overlap"],
         "video_high_k_tail_preserved": video_tail_gate,
-        "stage_domain_K_census": selected_census,
+        "stage_domain_hierarchy_census": selected_census["stage_domain"],
         "epoch2_order_generated": False,
         "gpu_inference_started": False,
         "training_started": False,
