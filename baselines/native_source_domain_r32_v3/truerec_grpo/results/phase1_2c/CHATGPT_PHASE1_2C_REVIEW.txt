@@ -1,0 +1,3 @@
+TrueRec-GRPO Phase 1.2C stopped at the mandatory current/old logp gate.
+The independent real full-sequence Beta forward produced CURRENT_MINUS_OLD_ABS_MAX=0.14856481552124023, above the fixed 0.05 threshold.
+Per contract, compute_group, Frontier loss, HPR loss, total loss, parameter postcheck, backward, and optimizer were not run. No generation or additional model forward was started.

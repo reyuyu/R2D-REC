@@ -1,0 +1,46 @@
+{
+  "phase": "TrueRec-GRPO Phase 1.2C",
+  "status": "STOPPED_CURRENT_OLD_GATE_FAIL",
+  "implementation_commit": "90e987ede460ede6a33371b4221e2225f309ca01",
+  "group_id": "22b28028744f58137b7a768de0d0898a890a4cf26dbc37af29658192900fb80c",
+  "G": 8,
+  "sampled_token_count": 24,
+  "rollout_policy_family": "BETA_BASELINE",
+  "current_minus_old_abs_max": 0.14856481552124023,
+  "allowed_abs_max": 0.05,
+  "current_minus_old_abs_mean": null,
+  "ratio_mean": null,
+  "ratio_min": null,
+  "ratio_max": null,
+  "uncaptured_fields_reason": "fail-fast exception occurred before result serialization; no model forward was rerun",
+  "pre_forward_contract_gates": {
+    "phase12b_artifact_group_count": "PASS",
+    "saved_old_logp_shape": "PASS",
+    "sampled_sequence_reconstruction": "PASS",
+    "fixed_domain_terminal_token_176247": "PASS",
+    "live_hpr_trigger_hpr_a": "PASS",
+    "frontier_a_negative_8_positive_0": "PASS",
+    "loss_position_plan": "PASS"
+  },
+  "trainer_compute_group_started": false,
+  "frontier_loss_computed": false,
+  "hpr_loss_computed": false,
+  "total_loss_computed": false,
+  "parameter_mutation_postcheck": "NOT_RUN_DUE_TO_REQUIRED_GATE_STOP",
+  "gpu": {
+    "physical_gpu_id": 0,
+    "gpu_name": "NVIDIA A800-SXM4-80GB",
+    "peak_reserved_gb": null
+  },
+  "execution": {
+    "real_model_forward_started": true,
+    "generation_started": false,
+    "training_loss_forward_started": false,
+    "backward_started": false,
+    "optimizer_started": false,
+    "optimizer_steps": 0,
+    "additional_model_forward_after_gate_failure": false
+  },
+  "cpu_test_status": "PASS",
+  "cpu_tests_run": 240
+}
