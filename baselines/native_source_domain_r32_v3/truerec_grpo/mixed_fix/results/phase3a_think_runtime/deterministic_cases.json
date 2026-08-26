@@ -1,0 +1,44 @@
+[
+  {
+    "a_rescue_loss_raw": 4.562808997717798,
+    "bc_hpr_loss_raw": 0.0,
+    "case": "NO_GOLD_A",
+    "format_loss": 0.0,
+    "full_loss": 0.09125617995435596
+  },
+  {
+    "a_rescue_loss_raw": 4.562808997717798,
+    "bc_hpr_loss_raw": 3.5401905516722376,
+    "case": "A_MODE_COLLAPSE_HPR_B",
+    "format_loss": 0.0,
+    "full_loss": 0.16183324728101134
+  },
+  {
+    "a_rescue_loss_raw": 4.562808997717798,
+    "bc_hpr_loss_raw": 4.967182887500163,
+    "case": "A_MODE_COLLAPSE_HPR_C",
+    "format_loss": 0.0,
+    "full_loss": 0.1890983372024616
+  },
+  {
+    "a_rescue_loss_raw": 4.562808997717798,
+    "bc_hpr_loss_raw": 0.0,
+    "case": "A_MODE_COLLAPSE_HPR_NONE",
+    "format_loss": 0.0,
+    "full_loss": 0.08853076114844832
+  },
+  {
+    "a_rescue_loss_raw": 0.0,
+    "bc_hpr_loss_raw": 0.0,
+    "case": "NO_RESCUE_EXACT",
+    "format_loss": 0.0,
+    "full_loss": -0.0027602238298609473
+  },
+  {
+    "a_rescue_loss_raw": 4.562808997717798,
+    "bc_hpr_loss_raw": 3.5401905516722376,
+    "case": "CANDIDATE0_FORMAT_INVALID_RESCUE",
+    "format_loss": 0.009375000000000001,
+    "full_loss": 0.1712082472810113
+  }
+]
