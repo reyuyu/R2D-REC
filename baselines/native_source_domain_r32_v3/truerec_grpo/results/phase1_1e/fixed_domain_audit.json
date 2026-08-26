@@ -1,0 +1,32 @@
+{
+  "action_levels": [
+    "A",
+    "B",
+    "C"
+  ],
+  "action_starts_after_fixed_domain": true,
+  "action_tokens": 3,
+  "domain_is_action": false,
+  "domain_token_ids": {
+    "ad": [
+      176251
+    ],
+    "living": [
+      176249
+    ],
+    "prod": [
+      176247
+    ],
+    "video": [
+      176245
+    ]
+  },
+  "domain_token_single_token": "PASS",
+  "domain_tokens": {
+    "ad": "<|ad_begin|>",
+    "living": "<|living_begin|>",
+    "prod": "<|prod_begin|>",
+    "video": "<|video_begin|>"
+  },
+  "fixed_domain_in_context": true
+}

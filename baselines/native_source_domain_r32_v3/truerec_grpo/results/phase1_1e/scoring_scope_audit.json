@@ -1,0 +1,16 @@
+{
+  "internal_diagnostics": [
+    "GoldSIDHit@32",
+    "GoldABHit@32",
+    "GoldAHit@32",
+    "SIDValid@32"
+  ],
+  "official_composite_formula_available": false,
+  "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE",
+  "unsupported_uninvented_fields": [
+    "sid2pid",
+    "pass_recall",
+    "token_acc",
+    "emb_sim"
+  ]
+}

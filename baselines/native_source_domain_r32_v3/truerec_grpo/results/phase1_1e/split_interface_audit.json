@@ -1,0 +1,32 @@
+{
+  "business_group_eval_unit": true,
+  "evaluation_groups_output": 1,
+  "frozen_split_sha256": {
+    "dev_group_ids.json": "70341b476c57e4d7dc961ccf423ab3991a42375af1989bad040be4134e8f4fe4",
+    "final_group_ids.json": "e6be46befa8ed320fb0762e6df23f553c6646297bdf5649003e332c04b2e61d0",
+    "probe20_group_ids.json": "7193f540ee229ef53b7ca09e541f065396fe212a8cfd43893cceff499d83abdf"
+  },
+  "interfaces": {
+    "dev512": {
+      "backward_allowed": false,
+      "checkpoint_selection_allowed": true,
+      "groups": 512,
+      "optimizer_allowed": false
+    },
+    "final2048": {
+      "backward_allowed": false,
+      "checkpoint_selection_allowed": false,
+      "groups": 2048,
+      "optimizer_allowed": false
+    },
+    "probe20": {
+      "backward_allowed": false,
+      "checkpoint_selection_allowed": false,
+      "groups": 20,
+      "optimizer_allowed": false
+    }
+  },
+  "multipositive_gold_preserved": true,
+  "probe20_subset_dev512": true,
+  "route_rows_input": 2
+}

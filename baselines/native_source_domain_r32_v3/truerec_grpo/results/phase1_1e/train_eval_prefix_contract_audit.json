@@ -1,0 +1,81 @@
+{
+  "contract_id": "official_aligned_fixed_domain_abc3_v1",
+  "contract_source": "USER_PROVIDED_OFFICIAL_PROTOCOL",
+  "eval": {
+    "action_levels": [
+      "A",
+      "B",
+      "C"
+    ],
+    "action_tokens": 3,
+    "bridge": false,
+    "domain_generated": false,
+    "fixed_domain_in_context": true,
+    "mode": "eval"
+  },
+  "eval_beam_size": 32,
+  "source_runtime_parity": {
+    "eval/beam32_contract.py": {
+      "runtime": "cedfd6f475cb842b5bbe12598306f06e37cd904dece1f9b1888320a0dbacba5c",
+      "source": "cedfd6f475cb842b5bbe12598306f06e37cd904dece1f9b1888320a0dbacba5c"
+    },
+    "eval/compare_checkpoints.py": {
+      "runtime": "83e6705dafc8253444b394be33bd08bb4e22b44937c15493b92aed8166aa835a",
+      "source": "83e6705dafc8253444b394be33bd08bb4e22b44937c15493b92aed8166aa835a"
+    },
+    "eval/eval_aggregate.py": {
+      "runtime": "0152dbe31027830fe72ffa955390f154aa74e301aafb6d6ed8a9dab53264ea83",
+      "source": "0152dbe31027830fe72ffa955390f154aa74e301aafb6d6ed8a9dab53264ea83"
+    },
+    "eval/eval_request.py": {
+      "runtime": "b1cb36d5d68929d76d6d19cd75b576b5c6c37a82c156118a5521530c9422178f",
+      "source": "b1cb36d5d68929d76d6d19cd75b576b5c6c37a82c156118a5521530c9422178f"
+    },
+    "eval/eval_result.py": {
+      "runtime": "9214a72ff431c11af3b19759b08ef72645cdde33dadfaeff9d026cbcfc94e278",
+      "source": "9214a72ff431c11af3b19759b08ef72645cdde33dadfaeff9d026cbcfc94e278"
+    },
+    "eval/model_spec.py": {
+      "runtime": "f2508e74b852bca99b617c1a8ba81798d1c955ee572ff05a591e04f1dd59743a",
+      "source": "f2508e74b852bca99b617c1a8ba81798d1c955ee572ff05a591e04f1dd59743a"
+    },
+    "eval/official_aligned_contract.py": {
+      "runtime": "f70bed84bc17906336398cd9f7bd54c8e07ddfbc1fb8ce0668eb93f20143c945",
+      "source": "f70bed84bc17906336398cd9f7bd54c8e07ddfbc1fb8ce0668eb93f20143c945"
+    },
+    "eval/official_aligned_eval_v1.yaml": {
+      "runtime": "7652a666b1cb22fdf9ed0ec3b0fd7898fc2b8e97fefb169ffa59f3df7743f405",
+      "source": "7652a666b1cb22fdf9ed0ec3b0fd7898fc2b8e97fefb169ffa59f3df7743f405"
+    },
+    "eval/official_aligned_renderer.py": {
+      "runtime": "64155cb4fbe262e7d83abd3a697887bbdbc8a32ce12b7d60e8ef4d400a119c10",
+      "source": "64155cb4fbe262e7d83abd3a697887bbdbc8a32ce12b7d60e8ef4d400a119c10"
+    },
+    "eval/run_official_aligned_audit.py": {
+      "runtime": "a4b1a3ca0ba25a4764a058f652184cbb49386c344aebddd0bc7c498f6a3046f5",
+      "source": "a4b1a3ca0ba25a4764a058f652184cbb49386c344aebddd0bc7c498f6a3046f5"
+    },
+    "eval/scoring_adapter.py": {
+      "runtime": "beed6630511aa2e067a724753f40c1684039fc8617f6a4cef030b732581cc343",
+      "source": "beed6630511aa2e067a724753f40c1684039fc8617f6a4cef030b732581cc343"
+    },
+    "tests/test_official_aligned_eval_v1.py": {
+      "runtime": "2eedf19906c73b8a7f4a9180348ebb0cd20fe95c47d5c7f7a99e11e90255c1e1",
+      "source": "2eedf19906c73b8a7f4a9180348ebb0cd20fe95c47d5c7f7a99e11e90255c1e1"
+    }
+  },
+  "train": {
+    "action_levels": [
+      "A",
+      "B",
+      "C"
+    ],
+    "action_tokens": 3,
+    "bridge": false,
+    "domain_generated": false,
+    "fixed_domain_in_context": true,
+    "mode": "train"
+  },
+  "train_eval_shared_prefix": true,
+  "train_rollout_G": 8
+}

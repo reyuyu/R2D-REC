@@ -1,0 +1,157 @@
+{
+  "rows": [
+    {
+      "checkpoint_name": "Beta-Baseline",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "model_family": "beta",
+      "overall_internal_diagnostics": {
+        "GoldABHit@32": 1.0,
+        "GoldAHit@32": 1.0,
+        "GoldSIDHit@32": 1.0,
+        "N": 1,
+        "SIDValid@32": 1.0,
+        "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+      },
+      "per_domain": {
+        "ad": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "living": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "prod": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "video": {
+          "GoldABHit@32": 1.0,
+          "GoldAHit@32": 1.0,
+          "GoldSIDHit@32": 1.0,
+          "N": 1,
+          "SIDValid@32": 1.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        }
+      },
+      "split": "dev512"
+    },
+    {
+      "checkpoint_name": "Beta-Gamma",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "model_family": "beta_gamma",
+      "overall_internal_diagnostics": {
+        "GoldABHit@32": 1.0,
+        "GoldAHit@32": 1.0,
+        "GoldSIDHit@32": 1.0,
+        "N": 1,
+        "SIDValid@32": 1.0,
+        "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+      },
+      "per_domain": {
+        "ad": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "living": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "prod": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "video": {
+          "GoldABHit@32": 1.0,
+          "GoldAHit@32": 1.0,
+          "GoldSIDHit@32": 1.0,
+          "N": 1,
+          "SIDValid@32": 1.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        }
+      },
+      "split": "dev512"
+    },
+    {
+      "checkpoint_name": "TrueRec-configurable",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "model_family": "truerec",
+      "overall_internal_diagnostics": {
+        "GoldABHit@32": 1.0,
+        "GoldAHit@32": 1.0,
+        "GoldSIDHit@32": 1.0,
+        "N": 1,
+        "SIDValid@32": 1.0,
+        "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+      },
+      "per_domain": {
+        "ad": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "living": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "prod": {
+          "GoldABHit@32": 0.0,
+          "GoldAHit@32": 0.0,
+          "GoldSIDHit@32": 0.0,
+          "N": 0,
+          "SIDValid@32": 0.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        },
+        "video": {
+          "GoldABHit@32": 1.0,
+          "GoldAHit@32": 1.0,
+          "GoldSIDHit@32": 1.0,
+          "N": 1,
+          "SIDValid@32": 1.0,
+          "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+        }
+      },
+      "split": "dev512"
+    }
+  ],
+  "same_aggregation_schema": true,
+  "schema_fields": [
+    "checkpoint_name",
+    "model_family",
+    "split",
+    "eval_contract_id",
+    "overall_internal_diagnostics",
+    "per_domain"
+  ]
+}

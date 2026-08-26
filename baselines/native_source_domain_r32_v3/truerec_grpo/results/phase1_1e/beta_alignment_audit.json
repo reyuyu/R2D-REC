@@ -1,0 +1,35 @@
+{
+  "family_changes_prompt_contract": false,
+  "model_specs": [
+    {
+      "adapter_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+      "base_model_path": "/data/models/onereason-8b-pretrain-competition",
+      "checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "family": "beta",
+      "name": "Beta-Baseline",
+      "tokenizer_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106"
+    },
+    {
+      "adapter_path": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+      "base_model_path": "/data/models/onereason-8b-pretrain-competition",
+      "checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "family": "beta_gamma",
+      "name": "Beta-Gamma",
+      "tokenizer_path": "/data/outputs/baselines/native_source_domain_r32_v3/BETA-GAMMA-R32-2E-GC04-4GPU-20260825-054127"
+    },
+    {
+      "adapter_path": "CONFIGURABLE_TRUE_REC_ADAPTER",
+      "base_model_path": "/data/models/onereason-8b-pretrain-competition",
+      "checkpoint_path": "CONFIGURABLE_TRUE_REC_CHECKPOINT",
+      "eval_contract_id": "official_aligned_fixed_domain_abc3_v1",
+      "family": "truerec",
+      "name": "TrueRec-configurable",
+      "tokenizer_path": "CONFIGURABLE_TOKENIZER_PATH"
+    }
+  ],
+  "shared_decoder_contract": true,
+  "shared_eval_contract": true,
+  "shared_renderer_contract": true
+}

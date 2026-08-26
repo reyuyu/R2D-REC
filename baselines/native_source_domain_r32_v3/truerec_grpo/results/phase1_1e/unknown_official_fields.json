@@ -1,0 +1,20 @@
+{
+  "eval_contract_source": "USER_PROVIDED_OFFICIAL_PROTOCOL",
+  "known_official_contract": {
+    "action": "ABC3",
+    "beam_size": 32,
+    "fixed_domain": true
+  },
+  "official_eval_source_code_available": false,
+  "unknown_fields_silently_hardcoded": false,
+  "unknown_official_decoding_details": [
+    "abc_vocabulary_constraint",
+    "length_penalty",
+    "early_stopping",
+    "eos_semantics",
+    "num_return_sequences",
+    "beam_score_normalization",
+    "position_constrained_decoding",
+    "special_logits_processors"
+  ]
+}

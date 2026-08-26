@@ -1,0 +1,17 @@
+{
+  "action_tokens": 3,
+  "beam_size": 32,
+  "candidate_count": 32,
+  "format_valid_count": 32,
+  "frontend_only": true,
+  "internal_diagnostics": {
+    "GoldABHit@32": 1.0,
+    "GoldAHit@32": 1.0,
+    "GoldSIDHit@32": 1.0,
+    "SIDValid@32": 1.0,
+    "score_label": "NOT_OFFICIAL_COMPOSITE_SCORE"
+  },
+  "parser_source": "Phase0.7 rollout_metrics.parse_raw_abc",
+  "raw_token_ids_retained": true,
+  "synthetic_fixture_is_official_decoder": false
+}

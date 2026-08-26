@@ -1,0 +1,4 @@
+TrueRec-GRPO Phase 1.1E CPU contract audit: PASS
+This is an Official-Aligned frontend based on the user-provided fixed-domain Beam32 ABC3 protocol, not a recovered official evaluator.
+Beta, Beta-Gamma, and TrueRec share one no-bridge prefix and one result schema. Unknown official decoding details remain explicit.
+Only internal ABC hierarchy diagnostics are implemented and labeled NOT_OFFICIAL_COMPOSITE_SCORE. No GPU, model forward, backward, optimizer, or training ran.

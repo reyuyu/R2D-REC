@@ -1,0 +1,9 @@
+{
+  "beta_special_bridge_in_eval": false,
+  "beta_special_prefix_in_eval": false,
+  "eval_bridge": false,
+  "renderer_method_hits": [],
+  "train_bridge": false,
+  "training_file_hits": [],
+  "training_runtime_bridge_insertions": 0
+}
