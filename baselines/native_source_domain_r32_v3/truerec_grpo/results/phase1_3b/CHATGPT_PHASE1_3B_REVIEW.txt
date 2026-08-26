@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.3B CPU Checkpoint / Resume Determinism Contract
+A six-group uninterrupted tiny-policy run exactly matched a fresh-process 3+3 resume, including model, AdamW state, driver state, cursor, group/random sequences, and Python/NumPy/torch CPU RNG. All identity and invalid-boundary rejection gates passed. No real model, CUDA, DDP, or training ran.

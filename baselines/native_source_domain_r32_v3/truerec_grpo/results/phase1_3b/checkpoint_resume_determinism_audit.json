@@ -1,0 +1,109 @@
+{
+  "cuda_rng_tested": false,
+  "ddp_implemented": false,
+  "equivalence": {
+    "checkpoint_only_at_optimizer_boundary": "PASS",
+    "cursor_after_load": {
+      "epoch": 0,
+      "next_group_index": 3
+    },
+    "final_driver_state": {
+      "business_groups_seen": 6,
+      "failed": false,
+      "global_step": 6,
+      "groups_in_accumulation_window": 0,
+      "old_rescores_completed": 6,
+      "optimizer_steps": 6,
+      "rollouts_completed": 6,
+      "streaming_backwards_completed": 6
+    },
+    "final_driver_state_equal": "PASS",
+    "final_global_step_equal": "PASS",
+    "final_model_state_equal": "PASS",
+    "final_next_group_index_equal": "PASS",
+    "final_optimizer_state_equal": "PASS",
+    "group_id_sequence": [
+      "2652ca78a590e57a5af87ab38557d9c03e15c4cfc3f04e907f9effd4ddaa6643",
+      "947fd1ba2ccefa852c025c8c148ce11c3917ecdd096fe7c54ceccdc67eac4bfa",
+      "bff28aafb45e7dd9dd7733d5fd038bbe228477fc252294e7740ab4b20819273f",
+      "ab4f9e865be8fe6b929ac6f958935746d54dc011b8ad19c91c4838f9230454b7",
+      "fa0e652da2d1b42c2fb6369c0096aff7ef6daec83208ef8b0babb3d3dac0b0a6",
+      "abcc6ab8622b93a3f9dccc751aeed70aaf077bcb340e88939868b0ed59f76df7"
+    ],
+    "group_id_sequence_equal": "PASS",
+    "no_duplicate_group_after_resume": "PASS",
+    "no_skipped_group_after_resume": "PASS",
+    "numpy_rng_restored": "PASS",
+    "optimizer_state_fields": [
+      "exp_avg",
+      "exp_avg_sq",
+      "step"
+    ],
+    "order": {
+      "count": 4096,
+      "seed": "truerec-v1-pilot4096-epoch-order-20260826",
+      "sha256": "b4bf02f9b0591e1e684fa1e42e4528682848c615994e926aa33236d78337b4f6"
+    },
+    "python_rng_restored": "PASS",
+    "rollout_random_output_sequence_equal": "PASS",
+    "rollout_random_outputs": [
+      [
+        0.36596240314346973,
+        0.934323378217054,
+        0.1867855191230774
+      ],
+      [
+        0.8743910314390103,
+        0.25350086122464943,
+        0.6438895463943481
+      ],
+      [
+        0.5978994611925416,
+        0.2122997436595191,
+        0.8962199091911316
+      ],
+      [
+        0.7586579599310979,
+        0.8578201041364175,
+        0.7416336536407471
+      ],
+      [
+        0.9091964142443463,
+        0.5753599606296702,
+        0.3487350344657898
+      ],
+      [
+        0.10806466567036432,
+        0.28612003039905776,
+        0.7345441579818726
+      ]
+    ],
+    "torch_cpu_rng_restored": "PASS"
+  },
+  "formal_training_started": false,
+  "gpu_started": false,
+  "next_experiment_started": false,
+  "phase": "TrueRec-GRPO Phase 1.3B",
+  "pilot4096": {
+    "all_gold_abc_nonempty_count": 4096,
+    "context_contract_present_count": 4096,
+    "fixed_domain_present_count": 4096,
+    "manifest_records_sha256": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879",
+    "pilot_admission": "PASS",
+    "record_count": 4096,
+    "records_sha256": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879",
+    "unique_recommendation_group_id": 4096
+  },
+  "real_model_loaded": false,
+  "rejection_gates": {
+    "contract_mismatch_rejected": "PASS",
+    "corrupt_checkpoint_rejected": "PASS",
+    "dataset_mismatch_rejected": "PASS",
+    "failed_state_checkpoint_rejected": "PASS",
+    "missing_checkpoint_rejected": "PASS",
+    "order_mismatch_rejected": "PASS",
+    "partial_window_checkpoint_rejected": "PASS"
+  },
+  "schema_version": 1,
+  "test_status": "PASS"
+}
