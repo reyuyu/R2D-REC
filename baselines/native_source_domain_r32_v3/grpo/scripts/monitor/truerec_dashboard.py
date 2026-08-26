@@ -258,7 +258,7 @@ def install_truerec_routes(
                 runs_root.parent / "data" / "pilot4096" / "pilot4096_records.jsonl",
                 runs_root.parent / "data" / "fixed_domain_abc" / "probe20_records.jsonl",
             )
-        )
+        ) + (CURRICULUM_V2_DIR / "records.jsonl",)
         for source in sources:
             for row in read_jsonl(source):
                 group_id = row.get("recommendation_group_id")

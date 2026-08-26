@@ -145,19 +145,25 @@ class TrueRecDashboardTests(unittest.TestCase):
         rows = [{
             "recommendation_group_id": "group-1" if index == 0 else f"group-{index + 1}",
             "target_domain": "video", "stage": "stage1", "hierarchy_class": "A_RICH",
-            "K_A": 3, "K_AB": 4, "K_ABC": 5,
+            "K_A": 3, "K_AB": 4, "K_ABC": 5, "K": 1,
+            "all_gold_abc": ["<s_a_1><s_b_2><s_c_3>"],
+            "all_gold_sids": ["<|video_begin|><s_a_1><s_b_2><s_c_3>"],
         } for index in range(2048)]
         jsonl(curriculum / "records.jsonl", rows)
         app = FastAPI()
         with patch("truerec_dashboard.CURRICULUM_V2_DIR", curriculum):
             install_truerec_routes(app, root, Path(__file__).parent / "static")
-            response = TestClient(app).get("/api/truerec/curriculum", params={"run_id": run.name})
+            client = TestClient(app)
+            response = client.get("/api/truerec/curriculum", params={"run_id": run.name})
+            explain = client.get("/api/truerec/train/explain/1", params={"run_id": run.name}).json()
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertIs(payload["available"], True)
         self.assertEqual(payload["phase"]["label"], "Epoch 1 · Stage 1")
         self.assertEqual(payload["current_sample"]["hierarchy_class"], "A_RICH")
         self.assertEqual(payload["current_sample"]["K_ABC"], 5)
+        self.assertEqual(explain["gold_reference"]["K"], 1)
+        self.assertEqual(explain["gold_reference"]["all_gold_abc"], ["<s_a_1><s_b_2><s_c_3>"])
 
     def test_checkpoint_download_exports_lora_only_adapter(self):
         root = self.tmp_path / "runs"
