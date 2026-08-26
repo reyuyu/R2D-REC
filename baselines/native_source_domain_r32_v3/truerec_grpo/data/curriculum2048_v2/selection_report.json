@@ -1,0 +1,372 @@
+{
+  "seed": "truerec-v2-curriculum2048-epoch1-20260827",
+  "ranking": [
+    "K_A descending",
+    "K_AB descending",
+    "K_ABC descending",
+    "context outlier avoidance",
+    "context median distance",
+    "stable SHA256 tie-break"
+  ],
+  "domain_specific_policy": "Domain-local natural K-bucket census with a mild monotonic quality weight; ranking within each bucket is K_A, K_AB, K_ABC. No cross-domain K quota.",
+  "K_quality_weight": {
+    "1": 0.75,
+    "2": 1.1,
+    "3": 1.25,
+    "4": 1.4,
+    "5+": 1.55
+  },
+  "curriculum_policy": "Overlapping rich/hard stage allocation with exact 128/domain/stage; stage4 retains prefix-rich groups.",
+  "source_train_groups": 17971,
+  "eligible_groups": 17971,
+  "rejection_reason_counts": {},
+  "order_audit": {
+    "selected_groups": 2048,
+    "selected_unique_groups": 2048,
+    "selected_subset_of_train": "PASS",
+    "domain_counts": {
+      "video": 512,
+      "prod": 512,
+      "ad": 512,
+      "living": 512
+    },
+    "stage_counts": {
+      "stage1": 512,
+      "stage2": 512,
+      "stage3": 512,
+      "stage4": 512
+    },
+    "every64_domain_balance": "PASS",
+    "every64_blocks": [
+      {
+        "start": 0,
+        "end": 63,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 64,
+        "end": 127,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 128,
+        "end": 191,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 192,
+        "end": 255,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 256,
+        "end": 319,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 320,
+        "end": 383,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 384,
+        "end": 447,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 448,
+        "end": 511,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 512,
+        "end": 575,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 576,
+        "end": 639,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 640,
+        "end": 703,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 704,
+        "end": 767,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 768,
+        "end": 831,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 832,
+        "end": 895,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 896,
+        "end": 959,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 960,
+        "end": 1023,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 1024,
+        "end": 1087,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 1088,
+        "end": 1151,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 1152,
+        "end": 1215,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 1216,
+        "end": 1279,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 1280,
+        "end": 1343,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 1344,
+        "end": 1407,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 1408,
+        "end": 1471,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 1472,
+        "end": 1535,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 1536,
+        "end": 1599,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 1600,
+        "end": 1663,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 1664,
+        "end": 1727,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 1728,
+        "end": 1791,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      },
+      {
+        "start": 1792,
+        "end": 1855,
+        "domain_counts": {
+          "video": 16,
+          "prod": 16,
+          "ad": 16,
+          "living": 16
+        }
+      },
+      {
+        "start": 1856,
+        "end": 1919,
+        "domain_counts": {
+          "prod": 16,
+          "ad": 16,
+          "living": 16,
+          "video": 16
+        }
+      },
+      {
+        "start": 1920,
+        "end": 1983,
+        "domain_counts": {
+          "ad": 16,
+          "living": 16,
+          "video": 16,
+          "prod": 16
+        }
+      },
+      {
+        "start": 1984,
+        "end": 2047,
+        "domain_counts": {
+          "living": 16,
+          "video": 16,
+          "prod": 16,
+          "ad": 16
+        }
+      }
+    ],
+    "probe_overlap": 0,
+    "dev_overlap": 0,
+    "final_overlap": 0
+  },
+  "video_high_k_tail": {
+    "eligible_rate": 0.21649377,
+    "selected_rate": 0.30273438,
+    "gate": "PASS"
+  },
+  "epoch2_order_generated": false
+}

@@ -1,0 +1,194 @@
+{
+  "name": "truerec_v2_curriculum2048",
+  "seed": "truerec-v2-curriculum2048-epoch1-20260827",
+  "source_pool": {
+    "path": "/data/GRPO/truerec_grpo/data/fixed_domain_abc/train_records.jsonl",
+    "sha256": "97edc2d3c600dbd073f6c694a3d497c5dba10e42ce0350628b63eddbca79ca7e",
+    "groups": 17971,
+    "identity": "Phase0.5 frozen fixed-domain ABC Train pool"
+  },
+  "frozen_split_sha256": {
+    "train_pool_group_ids.json": "ef645cf62cf50f619b62f2d0fbfb267dd4f8df6c5cfc89c70a7977df3aecf724",
+    "dev_group_ids.json": "70341b476c57e4d7dc961ccf423ab3991a42375af1989bad040be4134e8f4fe4",
+    "final_group_ids.json": "e6be46befa8ed320fb0762e6df23f553c6646297bdf5649003e332c04b2e61d0",
+    "probe20_group_ids.json": "7193f540ee229ef53b7ca09e541f065396fe212a8cfd43893cceff499d83abdf"
+  },
+  "records": {
+    "path": "/data/GRPO/truerec_grpo/data/curriculum2048_v2/records.jsonl",
+    "sha256": "5fc339377aebe1792821725f048852cb05545c480e1f8e66468f2b61cfc38a50",
+    "count": 2048
+  },
+  "records_metadata": {
+    "path": "/data/GRPO/truerec_grpo/data/curriculum2048_v2/records_metadata.jsonl",
+    "sha256": "a6a5d6c06edc86ea16b8c8f1858b3d14b2ca71aa4f2170576c6ed59c5ce53762",
+    "count": 2048
+  },
+  "epoch1_order": {
+    "path": "/data/GRPO/truerec_grpo/data/curriculum2048_v2/epoch1_order.json",
+    "sha256": "0382e6418e2e791904328a2e2909dfbd8dc47d8dc823c9f6bba65c7bc9489121",
+    "count": 2048
+  },
+  "census_sha256": "ada811709c9fa781e24f44cda8a0b0cd35013b7276af171c5bc976846c3f8d6a",
+  "selection_report_sha256": "d0a0ef2c6980bfc3689da2145a785380ba51f19221e532a2e22d219d956994f5",
+  "selected_unique_2048": "PASS",
+  "domain_512_each": "PASS",
+  "every64_domain_balance": "PASS",
+  "probe_overlap": 0,
+  "dev_overlap": 0,
+  "final_overlap": 0,
+  "video_high_k_tail_preserved": "PASS",
+  "stage_domain_K_census": {
+    "groups": 2048,
+    "domain_counts": {
+      "video": 512,
+      "prod": 512,
+      "ad": 512,
+      "living": 512
+    },
+    "K_ABC": {
+      "video": {
+        "1": 132,
+        "2": 102,
+        "3": 70,
+        "4": 53,
+        "5+": 155
+      },
+      "prod": {
+        "1": 424,
+        "2": 61,
+        "3": 16,
+        "4": 7,
+        "5+": 4
+      },
+      "ad": {
+        "1": 421,
+        "2": 62,
+        "3": 15,
+        "4": 6,
+        "5+": 8
+      },
+      "living": {
+        "1": 466,
+        "2": 34,
+        "3": 7,
+        "4": 1,
+        "5+": 4
+      }
+    },
+    "K_A": {
+      "video": {
+        "1": 132,
+        "2": 102,
+        "3": 70,
+        "4": 53,
+        "5+": 155
+      },
+      "prod": {
+        "1": 424,
+        "2": 61,
+        "3": 16,
+        "4": 7,
+        "5+": 4
+      },
+      "ad": {
+        "1": 421,
+        "2": 62,
+        "3": 15,
+        "4": 6,
+        "5+": 8
+      },
+      "living": {
+        "1": 466,
+        "2": 34,
+        "3": 8,
+        "4": 0,
+        "5+": 4
+      }
+    },
+    "K_AB": {
+      "video": {
+        "1": 132,
+        "2": 102,
+        "3": 70,
+        "4": 53,
+        "5+": 155
+      },
+      "prod": {
+        "1": 424,
+        "2": 61,
+        "3": 16,
+        "4": 7,
+        "5+": 4
+      },
+      "ad": {
+        "1": 421,
+        "2": 62,
+        "3": 15,
+        "4": 6,
+        "5+": 8
+      },
+      "living": {
+        "1": 466,
+        "2": 34,
+        "3": 7,
+        "4": 1,
+        "5+": 4
+      }
+    },
+    "stage_domain": {
+      "stage1": {
+        "video": 128,
+        "prod": 128,
+        "ad": 128,
+        "living": 128
+      },
+      "stage2": {
+        "video": 128,
+        "prod": 128,
+        "ad": 128,
+        "living": 128
+      },
+      "stage3": {
+        "video": 128,
+        "prod": 128,
+        "ad": 128,
+        "living": 128
+      },
+      "stage4": {
+        "video": 128,
+        "prod": 128,
+        "ad": 128,
+        "living": 128
+      }
+    },
+    "stage_prefix_rich": {
+      "stage1": {
+        "video": 128,
+        "prod": 44,
+        "ad": 45,
+        "living": 23
+      },
+      "stage2": {
+        "video": 128,
+        "prod": 22,
+        "ad": 23,
+        "living": 11
+      },
+      "stage3": {
+        "video": 86,
+        "prod": 13,
+        "ad": 14,
+        "living": 7
+      },
+      "stage4": {
+        "video": 38,
+        "prod": 9,
+        "ad": 9,
+        "living": 5
+      }
+    }
+  },
+  "epoch2_order_generated": false,
+  "gpu_inference_started": false,
+  "training_started": false
+}
