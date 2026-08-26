@@ -29,7 +29,6 @@ BLOCK_GROUPS = 64
 BLOCK_DOMAIN_GROUPS = 16
 STAGES = ("stage1", "stage2", "stage3", "stage4")
 SEED = "truerec-v2-curriculum2048-epoch1-20260827"
-PREFIX_RICH_TARGET = 384
 MAX_POSITION_EMBEDDINGS = 131072
 EXPECTED_TRAIN_GROUPS = 17971
 EXPECTED_TRAIN_SHA256 = (
@@ -59,6 +58,8 @@ BRIDGES = (
     "该用户最近感兴趣的广告有:",
     "该用户最近首次打赏了主播:",
 )
+K_BUCKETS = ("1", "2", "3", "4", "5+")
+K_QUALITY_WEIGHT = {"1": 0.75, "2": 1.10, "3": 1.25, "4": 1.40, "5+": 1.55}
 
 
 class CurriculumError(RuntimeError):
@@ -218,16 +219,26 @@ def quality_key(record: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def select_domain(records: list[dict[str, Any]], count: int = DOMAIN_GROUPS) -> list[dict[str, Any]]:
-    rich = sorted((row for row in records if row["prefix_rich"]), key=quality_key)
-    hard = sorted((row for row in records if not row["prefix_rich"]), key=quality_key)
-    rich_count = min(len(rich), PREFIX_RICH_TARGET, count)
-    selected = rich[:rich_count] + hard[: count - rich_count]
-    if len(selected) != count:
-        raise CurriculumError(f"DOMAIN_CAPACITY_FAIL={len(records)},{len(rich)},{len(hard)}")
+    by_bucket = {name: [row for row in records if bucket(int(row["K_ABC"])) == name] for name in K_BUCKETS}
+    weighted = {name: len(by_bucket[name]) * K_QUALITY_WEIGHT[name] for name in K_BUCKETS}
+    exact = {name: count * weighted[name] / sum(weighted.values()) for name in K_BUCKETS}
+    quota = {name: min(len(by_bucket[name]), math.floor(exact[name])) for name in K_BUCKETS}
+    remaining = count - sum(quota.values())
+    while remaining:
+        candidates = [name for name in K_BUCKETS if quota[name] < len(by_bucket[name])]
+        if not candidates:
+            raise CurriculumError(f"DOMAIN_BUCKET_CAPACITY_FAIL={len(records)},{quota}")
+        name = min(candidates, key=lambda key: (-(exact[key] - quota[key]), K_BUCKETS.index(key)))
+        quota[name] += 1
+        remaining -= 1
+    selected = []
+    for name in K_BUCKETS:
+        selected.extend(sorted(by_bucket[name], key=quality_key)[: quota[name]])
     selected.sort(key=quality_key)
     for rank, row in enumerate(selected):
-        row["selection_tier"] = "prefix_rich" if row["prefix_rich"] else "hard_fill"
+        row["selection_tier"] = f"K_ABC_{bucket(int(row['K_ABC']))}"
         row["quality_rank_within_domain"] = rank
+        row["domain_k_bucket_quota"] = quota[bucket(int(row["K_ABC"]))]
     return selected
 
 
@@ -478,7 +489,8 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
     selection_report = {
         "seed": SEED,
         "ranking": ["K_A descending", "K_AB descending", "K_ABC descending", "context outlier avoidance", "context median distance", "stable SHA256 tie-break"],
-        "domain_specific_policy": "Select up to 384 prefix-rich groups per domain, then domain-local hard fill; no cross-domain K quota.",
+        "domain_specific_policy": "Domain-local natural K-bucket census with a mild monotonic quality weight; ranking within each bucket is K_A, K_AB, K_ABC. No cross-domain K quota.",
+        "K_quality_weight": K_QUALITY_WEIGHT,
         "curriculum_policy": "Overlapping rich/hard stage allocation with exact 128/domain/stage; stage4 retains prefix-rich groups.",
         "source_train_groups": EXPECTED_TRAIN_GROUPS,
         "eligible_groups": len(eligible),
