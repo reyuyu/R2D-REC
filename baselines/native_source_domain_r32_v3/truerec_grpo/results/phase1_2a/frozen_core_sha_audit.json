@@ -1,0 +1,42 @@
+{
+  "credit/frontier_credit_v1.py": {
+    "actual": "639e9a24dd1885798f49a4efd9bbf6b6b9dc8daed833fe9ba8560a86a747788b",
+    "expected": "639e9a24dd1885798f49a4efd9bbf6b6b9dc8daed833fe9ba8560a86a747788b"
+  },
+  "credit/hpr_plan_v1.py": {
+    "actual": "fadb19056853f898bd85d6779f3d6718bf70bf4ddbd5b7ac44520de88197fe32",
+    "expected": "fadb19056853f898bd85d6779f3d6718bf70bf4ddbd5b7ac44520de88197fe32"
+  },
+  "trainer/action_alignment.py": {
+    "actual": "2ca6c2b1ca034e84be55e359100ed86cf01503200fefa789e30abb2661f505e1",
+    "expected": "2ca6c2b1ca034e84be55e359100ed86cf01503200fefa789e30abb2661f505e1"
+  },
+  "trainer/batch_collator_v1.py": {
+    "actual": "cafec7b6ac097cc4e95affe1681869fd7e4b58c56de48e9a9ff7b7bb62c93351",
+    "expected": "cafec7b6ac097cc4e95affe1681869fd7e4b58c56de48e9a9ff7b7bb62c93351"
+  },
+  "trainer/evaluation_runtime_v1.py": {
+    "actual": "2a9f75eddfd8663d263a31364ba5ef1ea3cb2d52089aaa21d56e839952db12bd",
+    "expected": "2a9f75eddfd8663d263a31364ba5ef1ea3cb2d52089aaa21d56e839952db12bd"
+  },
+  "trainer/rollout_runtime_v1.py": {
+    "actual": "c21f9d79ccc9f3e43b55e01278ea31b07ce92d7230b520302848beed8a896b81",
+    "expected": "c21f9d79ccc9f3e43b55e01278ea31b07ce92d7230b520302848beed8a896b81"
+  },
+  "trainer/truerec_grpo_trainer_v1.py": {
+    "actual": "1bf73e7b9888025cb5cc5ba7fb92788bb7841881fecbf566926b6814eb12f552",
+    "expected": "1bf73e7b9888025cb5cc5ba7fb92788bb7841881fecbf566926b6814eb12f552"
+  },
+  "trainer/truerec_loss_v1.py": {
+    "actual": "4a52f40639c332824e5dc45d6e4da1defcdbf4fc9f8e0c0dc380d5c4e5287d57",
+    "expected": "4a52f40639c332824e5dc45d6e4da1defcdbf4fc9f8e0c0dc380d5c4e5287d57"
+  },
+  "trainer/truerec_runtime_v1.py": {
+    "actual": "2f18378f165d523e8eceaf85f8d575c7a237faacb99a072d8f22d326cef254f7",
+    "expected": "2f18378f165d523e8eceaf85f8d575c7a237faacb99a072d8f22d326cef254f7"
+  },
+  "trainer/truerec_trainer_v1.py": {
+    "actual": "7b5da094f7cb000fe5d66123eb4310a208e6fd963c0443b55efe9fb2cdddbdfb",
+    "expected": "7b5da094f7cb000fe5d66123eb4310a208e6fd963c0443b55efe9fb2cdddbdfb"
+  }
+}

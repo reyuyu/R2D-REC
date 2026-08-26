@@ -1,0 +1,19 @@
+{
+  "evaluation_frontend_modified": false,
+  "frontier_math_modified": false,
+  "hpr_math_modified": false,
+  "phase07_beta_gamma_raw_used_as_beta_rollout": false,
+  "phase08_beta_gamma_plan_used_as_beta_current_plan": false,
+  "ppo_loss_modified": false,
+  "rollout_parser_modified": false,
+  "train_action": [
+    "A",
+    "B",
+    "C"
+  ],
+  "train_action_tokens": 3,
+  "train_bridge": false,
+  "train_domain_generated_by_model": false,
+  "train_fixed_domain_in_context": true,
+  "train_rollout_G": 8
+}

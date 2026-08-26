@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "action_levels": [
+      "A",
+      "B",
+      "C"
+    ],
+    "action_tokens": 3,
+    "beta_gamma_used_as_init": false,
+    "bridge": false,
+    "checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+    "contract_id": "truerec_grpo_beta_baseline_init_v1",
+    "current_hpr_plan_source": "online_current_group",
+    "domain_generated_by_model": false,
+    "fixed_domain_in_context": true,
+    "init_family": "BETA_BASELINE",
+    "policy_rollout_source": "live_beta_policy",
+    "pretrained_base_path": "/data/models/onereason-8b-pretrain-competition",
+    "reuse_phase07_beta_gamma_raw": false,
+    "reuse_phase08_beta_gamma_plan": false,
+    "rollout_g": 8
+  },
+  "model_provenance": {
+    "adapter_base_model_name_or_path": "/data/models/onereason-8b-pretrain-competition",
+    "adapter_peft_type": "LORA",
+    "adapter_task_type": "CAUSAL_LM",
+    "checkpoint_exists": true,
+    "pass": true,
+    "pretrained_base_exists": true,
+    "required_files": {
+      "adapter_config.json": {
+        "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_config.json",
+        "sha256": "e1ea043db6929753b708f6261a4de5d8e6d3ed59bb6cd7f37802ae7678170fb3",
+        "size": 1077
+      },
+      "adapter_model.safetensors": {
+        "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_model.safetensors",
+        "sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3",
+        "size": 349243752
+      }
+    }
+  },
+  "source_runtime_parity": {
+    "initialization/beta_baseline_init.py": {
+      "runtime": "5bd72d6c1b9a51d89148a7e1ac4f2b37f66cd7e03ef53d14168a35d690dc84ec",
+      "source": "5bd72d6c1b9a51d89148a7e1ac4f2b37f66cd7e03ef53d14168a35d690dc84ec"
+    },
+    "initialization/beta_baseline_init_v1.json": {
+      "runtime": "1b793b59691efb80b19e87854fd1d38364388059b500d56739354a22f5bb87de",
+      "source": "1b793b59691efb80b19e87854fd1d38364388059b500d56739354a22f5bb87de"
+    },
+    "tests/test_beta_baseline_init.py": {
+      "runtime": "f8565843da4a0d39c38fa27b9c3ae6d240bccd2cacc2780b04d9ef98182c3151",
+      "source": "f8565843da4a0d39c38fa27b9c3ae6d240bccd2cacc2780b04d9ef98182c3151"
+    }
+  }
+}
