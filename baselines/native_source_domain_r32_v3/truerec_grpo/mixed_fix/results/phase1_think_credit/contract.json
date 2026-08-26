@@ -1,0 +1,46 @@
+{
+  "source_main_commit": "ebf19906aa0ffa42f05fa8d03de5485573af9fe6",
+  "G": 8,
+  "hierarchy_scale": 8.0,
+  "deltas": {
+    "A": 0.5,
+    "B": 1.5,
+    "C": 6.0
+  },
+  "think_semantic_negative_credit": "DISABLED",
+  "A_reward": "MODE_FREQUENCY_AWARE_FRONTIER",
+  "B_reward": "POSITIVE_FRONTIER",
+  "C_reward": "POSITIVE_FRONTIER",
+  "A_rescue": {
+    "no_gold_A": "ENABLED",
+    "mode_collapse": "ENABLED",
+    "coverage_target": "min(K_A,3)",
+    "collapse_threshold": "5_OF_8",
+    "loss": "UNIFORM_POSITIVE_SOFT_CE",
+    "reduction": "one_group_level_A_distribution"
+  },
+  "HPR": {
+    "A": "DISABLED_FOR_THINK",
+    "B": "REUSED_FROM_FROZEN_hpr_plan_v1",
+    "C": "REUSED_FROM_FROZEN_hpr_plan_v1"
+  },
+  "numeric_examples": {
+    "single_correct_A_credit": 0.0546875,
+    "five_repeat_correct_A_credit": 0.0234375,
+    "uniform_positive_soft_ce_2_targets": 1.9401896985611953,
+    "multi_positive_log_mass_same_targets": 0.3916023469874534
+  },
+  "invariants": {
+    "all_semantic_credits_nonnegative": true,
+    "single_A_credit_greater_than_five_repeat_credit": true,
+    "satisfied_coverage_never_rescued": true,
+    "hpr_a_absent": true,
+    "soft_ce_differs_from_log_mass": true
+  },
+  "model_loaded": false,
+  "gpu_started": false,
+  "generation_started": false,
+  "backward_started": false,
+  "optimizer_steps": 0,
+  "phase1_contract": "PASS"
+}
