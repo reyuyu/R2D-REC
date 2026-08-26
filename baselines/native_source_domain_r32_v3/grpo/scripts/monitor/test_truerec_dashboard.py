@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-from truerec_dashboard import install_truerec_routes, read_json, read_jsonl
+from truerec_dashboard import beam32_checkpoint_rows, install_truerec_routes, read_json, read_jsonl
 
 
 def dump(path: Path, value) -> None:
@@ -251,6 +251,20 @@ class TrueRecDashboardTests(unittest.TestCase):
             params={"run_id": run.name, "group_id": "group-1"},
         ).json()
         self.assertEqual(explain["gold_reference"]["K"], 1)
+
+    def test_beam32_continuation_includes_ancestor_checkpoints(self):
+        root = self.tmp_path / "runs"
+        ancestor = build_run(root, "V2-ANCESTOR")
+        continuation = build_run(root, "V2-CONTINUATION")
+        dump(continuation / "run_manifest.json", {"continuation_source_run": str(ancestor)})
+        inherited = continuation / "checkpoints" / "checkpoint-step-256"
+        current = continuation / "checkpoints" / "checkpoint-step-512"
+        inherited.rename(current)
+        dump(current / "metadata.json", {
+            "global_step": 512, "training_cursor": {"epoch": 0, "next_group_index": 512}, "world_size": 4,
+        })
+        rows = beam32_checkpoint_rows(continuation, [])
+        self.assertEqual([row["step"] for row in rows], [256, 512])
 
 
 if __name__ == "__main__":

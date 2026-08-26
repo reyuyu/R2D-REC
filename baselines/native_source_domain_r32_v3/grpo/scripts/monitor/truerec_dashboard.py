@@ -176,6 +176,21 @@ def checkpoint_rows(
     return sorted(rows, key=lambda row: row["step"])
 
 
+def beam32_checkpoint_rows(
+    run: Path, probes: Iterable[int], adapter_source: Path = BETA_ADAPTER_SOURCE,
+) -> list[dict[str, Any]]:
+    """Include ancestor checkpoints when the selected run is a continuation branch."""
+    rows: list[dict[str, Any]] = []
+    manifest = read_json(run / "run_manifest.json", {})
+    source = manifest.get("continuation_source_run")
+    if source:
+        source_path = Path(source).expanduser().resolve()
+        if source_path.is_dir() and source_path.parent == run.resolve().parent:
+            rows.extend(checkpoint_rows(source_path, probes, adapter_source))
+    rows.extend(checkpoint_rows(run, probes, adapter_source))
+    return sorted({int(row["step"]): row for row in rows}.values(), key=lambda row: row["step"])
+
+
 def checkpoint_directory(run: Path, checkpoint: str) -> Path:
     if Path(checkpoint).name != checkpoint or not CHECKPOINT_NAME_RE.fullmatch(checkpoint):
         raise HTTPException(status_code=404, detail="checkpoint not found")
@@ -454,12 +469,12 @@ def install_truerec_routes(
         root = beam32_root(run)
         status = read_json(root / "status.json", {"state": "NOT_STARTED"})
         curve = read_json(root / "curve.json", [])
-        return {**status, "curve": curve, "available_checkpoints": len(checkpoint_rows(run, probe_steps(run), adapter_source))}
+        return {**status, "curve": curve, "available_checkpoints": len(beam32_checkpoint_rows(run, probe_steps(run), adapter_source))}
 
     @router.post("/beam32/run-all")
     def beam32_run_all(run_id: str) -> dict[str, Any]:
         run = selected_run(runs_roots, run_id)
-        checkpoints = checkpoint_rows(run, probe_steps(run), adapter_source)
+        checkpoints = beam32_checkpoint_rows(run, probe_steps(run), adapter_source)
         if not checkpoints:
             raise HTTPException(status_code=409, detail="当前实验尚无可评测 checkpoint")
         if not beam_worker.is_file():

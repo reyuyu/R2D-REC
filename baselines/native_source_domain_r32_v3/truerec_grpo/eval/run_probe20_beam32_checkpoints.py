@@ -83,8 +83,21 @@ def load_probe_records(path: Path = PROBE_RECORDS) -> list[dict[str, Any]]:
     return rows
 
 
-def checkpoint_inventory(run_dir: Path) -> list[dict[str, Any]]:
-    rows = []
+def checkpoint_inventory(run_dir: Path, _visited: set[Path] | None = None) -> list[dict[str, Any]]:
+    run_dir = run_dir.resolve()
+    visited = _visited if _visited is not None else set()
+    if run_dir in visited:
+        raise Beam32ProbeError("continuation checkpoint lineage contains a cycle")
+    visited.add(run_dir)
+    rows: list[dict[str, Any]] = []
+    manifest = {}
+    try:
+        manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        pass
+    source_run = manifest.get("continuation_source_run")
+    if source_run and Path(source_run).is_dir():
+        rows.extend(checkpoint_inventory(Path(source_run), visited))
     for checkpoint in (run_dir / "checkpoints").glob("checkpoint-step-*"):
         try:
             step = int(checkpoint.name.rsplit("-", 1)[-1])
@@ -103,7 +116,8 @@ def checkpoint_inventory(run_dir: Path) -> list[dict[str, Any]]:
             "path": str(checkpoint.resolve()),
             "model_state_sha256": metadata.get("model_state_sha256"),
         })
-    return sorted(rows, key=lambda row: row["step"])
+    # A continuation run owns the duplicate cursor checkpoint and overrides its ancestor.
+    return sorted({int(row["step"]): row for row in rows}.values(), key=lambda row: row["step"])
 
 
 def generation_kwargs() -> dict[str, Any]:

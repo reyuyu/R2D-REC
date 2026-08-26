@@ -31,7 +31,8 @@ class Probe20Beam32CheckpointTests(unittest.TestCase):
 
     def test_checkpoint_inventory_and_group_any_metrics(self):
         with tempfile.TemporaryDirectory() as temporary:
-            run = Path(temporary)
+            root = Path(temporary)
+            run = root / "ancestor"
             for step in (512, 256):
                 checkpoint = run / "checkpoints" / f"checkpoint-step-{step}"
                 checkpoint.mkdir(parents=True)
@@ -39,7 +40,16 @@ class Probe20Beam32CheckpointTests(unittest.TestCase):
                 (checkpoint / "metadata.json").write_text(
                     json.dumps({"model_state_sha256": f"sha-{step}"}), encoding="utf-8",
                 )
-            self.assertEqual([row["step"] for row in checkpoint_inventory(run)], [256, 512])
+            continuation = root / "continuation"
+            continuation.mkdir()
+            (continuation / "run_manifest.json").write_text(
+                json.dumps({"continuation_source_run": str(run)}), encoding="utf-8",
+            )
+            checkpoint = continuation / "checkpoints" / "checkpoint-step-768"
+            checkpoint.mkdir(parents=True)
+            (checkpoint / "state.pt").write_bytes(b"state")
+            (checkpoint / "metadata.json").write_text("{}", encoding="utf-8")
+            self.assertEqual([row["step"] for row in checkpoint_inventory(continuation)], [256, 512, 768])
 
         groups = []
         for index in range(20):
