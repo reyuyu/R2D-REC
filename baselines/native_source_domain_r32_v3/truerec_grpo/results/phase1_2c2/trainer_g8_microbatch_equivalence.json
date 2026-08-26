@@ -1,0 +1,97 @@
+{
+  "G": 8,
+  "business_group_unit_preserved": true,
+  "cases": {
+    "FORMAT_INVALID": {
+      "differences": {
+        "frontier": 1.3877787807814457e-17,
+        "gradient": 3.469446951953614e-18,
+        "hpr": 0.0,
+        "total": 1.3877787807814457e-17
+      },
+      "hpr_extra_forward_calls": 0,
+      "logical_policy_scoring_passes": 1,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_NONE",
+      "status": "PASS"
+    },
+    "HPR_A": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 1.1102230246251565e-16,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "hpr_extra_forward_calls": 0,
+      "logical_policy_scoring_passes": 1,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_A",
+      "status": "PASS"
+    },
+    "HPR_B": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 5.551115123125783e-17,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "hpr_extra_forward_calls": 0,
+      "logical_policy_scoring_passes": 1,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_B",
+      "status": "PASS"
+    },
+    "HPR_C": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 8.881784197001252e-16,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "hpr_extra_forward_calls": 0,
+      "logical_policy_scoring_passes": 1,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_C",
+      "status": "PASS"
+    },
+    "HPR_NONE": {
+      "differences": {
+        "frontier": 0.0,
+        "gradient": 0.0,
+        "hpr": 0.0,
+        "total": 0.0
+      },
+      "hpr_extra_forward_calls": 0,
+      "logical_policy_scoring_passes": 1,
+      "physical_policy_forward_calls": 4,
+      "runtime_trigger": "HPR_NONE",
+      "status": "PASS"
+    }
+  },
+  "execution": {
+    "gpu_inference_started": false,
+    "next_experiment_started": false,
+    "optimizer_steps": 0,
+    "real_model_backward_started": false
+  },
+  "frontier_loss_equivalent": true,
+  "frontier_reduction_preserved": true,
+  "gradient_equivalence": true,
+  "hpr_extra_forward_calls": 0,
+  "hpr_group_reduction_preserved": true,
+  "hpr_lambda": 0.02,
+  "hpr_loss_equivalent": true,
+  "hpr_site_reduction_preserved": true,
+  "logical_policy_scoring_passes_per_group": 1,
+  "max_abs_differences": {
+    "frontier_loss": 1.3877787807814457e-17,
+    "gradient": 8.881784197001252e-16,
+    "hpr_loss": 0.0,
+    "total_loss": 1.3877787807814457e-17
+  },
+  "physical_policy_forward_calls_per_group": 4,
+  "ppo_old_logp_source": "FULL_FORWARD_RESCORE",
+  "status": "PASS",
+  "total_loss_equivalent": true,
+  "trainer_microbatch_size": 2
+}

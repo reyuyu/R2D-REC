@@ -1,0 +1,3 @@
+TrueRec-GRPO Phase 1.2C2 CPU mathematical equivalence: PASS
+The logical unit remains one complete G8 business group. The full runtime plan is built once, while policy execution is physically split into four 2-row forwards.
+Frontier, HPR site/group reductions, total loss, and tiny-policy gradients match the full-G8 reference for HPR_A/B/C/NONE and invalid-format cases. No GPU, real-model backward, optimizer, or training ran.
