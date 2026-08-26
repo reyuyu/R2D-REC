@@ -28,6 +28,7 @@ try:
         summary as composite_summary_rows,
     )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
+    from .truerec_dashboard import install_truerec_routes
 except ImportError:  # Direct execution: python monitor/server.py
     from advantage_adapter import reconstruct_groups
     from composite_interest_adapter import (
@@ -37,6 +38,7 @@ except ImportError:  # Direct execution: python monitor/server.py
         summary as composite_summary_rows,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
+    from truerec_dashboard import install_truerec_routes
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -252,6 +254,7 @@ def create_app(
     outputs_dir: str | Path | None = None,
     checkpoint_outputs_dirs: Iterable[str | Path] | None = None,
     user_runs_dir: str | Path | None = None,
+    truerec_runs_dir: str | Path | None = None,
     eval_dir: str | Path | None = None,
 ) -> FastAPI:
     if (run_dir is None) == (runs_dir is None):
@@ -281,6 +284,7 @@ def create_app(
     app.state.user_runs_dir = user_runs_root
     app.state.eval_dir = eval_root
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    install_truerec_routes(app, truerec_runs_dir, STATIC_DIR)
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
     plus_gamma_exposure_index = load_plus_gamma_exposure_index()
 
@@ -1291,6 +1295,7 @@ def main() -> None:
         help="Additional approved checkpoint output root (repeatable)",
     )
     parser.add_argument("--user-runs-dir", help="Approved User-GRPO run root declared by monitor manifests")
+    parser.add_argument("--truerec-runs-dir", help="Read-only TrueRec-GRPO run root")
     parser.add_argument("--eval-dir", help="Checkpoint evaluation job root (defaults beside runs-dir)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
@@ -1303,6 +1308,7 @@ def main() -> None:
             args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir,
             checkpoint_outputs_dirs=args.checkpoint_outputs_dir,
             user_runs_dir=args.user_runs_dir, eval_dir=args.eval_dir,
+            truerec_runs_dir=args.truerec_runs_dir,
         ),
         host=args.host, port=args.port, log_level="warning",
     )

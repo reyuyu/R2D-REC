@@ -1,0 +1,19 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrueRec GRPO 训练监控</title><link rel="stylesheet" href="/static/truerec.css?v=20260827-v1"></head>
+<body><header class="topbar"><div><a class="back" href="/">‹ GRPO 监控台</a><h1>TrueRec GRPO</h1><span class="subtitle">Formal4096 · Global G8 训练监控</span></div><div class="live-tools"><span id="liveDot" class="live-dot"></span><span id="liveText">正在连接</span><button id="refreshToggle">暂停刷新</button><button id="refreshNow">立即刷新</button></div></header>
+<section class="runbar"><label for="runSelect">实验</label><select id="runSelect"></select><span id="runMeta">读取实验目录</span><span class="readonly">只读</span></section>
+<nav class="tabs" aria-label="TrueRec 页面"><button class="tab active" data-view="overview">训练总览</button><button class="tab" data-view="curves">训练曲线</button><button class="tab" data-view="inspector">Global G8 检视</button><button class="tab" data-view="probes">Probe20</button><button class="tab" data-view="checkpoints">检查点</button></nav>
+<div id="error" class="error" hidden></div>
+<main id="overview" class="view active"><div class="wrap">
+  <section class="headline"><div><span>训练进度</span><strong id="step">- / 4096</strong></div><div><span>已用 / ETA</span><strong id="time">-</strong></div><div><span>秒 / group</span><strong id="speed">-</strong></div><div><span>Rolling50 吞吐</span><strong id="throughput">-</strong></div></section>
+  <div class="progress"><div id="progressFill"></div></div>
+  <section class="band"><div class="band-title"><h2>当前业务组</h2><span id="currentGroup">等待训练数据</span></div><div class="facts" id="groupFacts"></div></section>
+  <section class="metric-grid" id="lossMetrics"></section><section class="metric-grid" id="hitMetrics"></section>
+  <section class="split"><div class="band"><div class="band-title"><h2>4 GPU 状态</h2><span>训练进程只读遥测</span></div><div id="gpuRows" class="gpu-grid"></div></div><div class="band"><div class="band-title"><h2>里程碑</h2><span>每 256 step</span></div><dl id="milestones" class="milestones"></dl></div></section>
+</div></main>
+<main id="curves" class="view"><div class="wrap"><section class="chart-tools"><span>曲线平滑</span><div class="segments" id="smoothControl"><button data-window="1" class="active">原始</button><button data-window="20">Rolling20</button><button data-window="50">Rolling50</button><button data-window="100">Rolling100</button></div><span id="curveCount"></span></section><section id="chartGrid" class="chart-grid"></section></div></main>
+<main id="inspector" class="view"><div class="wrap"><section class="picker"><label>训练 step<select id="trainStep"></select></label><span id="trainGroupMeta"></span></section><section id="candidateGrid" class="candidate-grid"></section><section id="hprPanel" class="band section-gap"></section></div></main>
+<main id="probes" class="view"><div class="wrap"><section class="picker probe-picker"><label>Step A<select id="probeStepA"></select></label><label>Step B<select id="probeStepB"></select></label><label>固定 Probe group<select id="probeGroup"></select></label><button id="probeCompare">比较</button></section><section id="probeSummary" class="metric-grid"></section><section id="probeCompareView" class="probe-compare"></section></div></main>
+<main id="checkpoints" class="view"><div class="wrap"><section class="band"><div class="band-title"><h2>训练检查点</h2><span>仅展示，不提供删除或训练控制</span></div><div class="table-scroll"><table><thead><tr><th>Step</th><th>Cursor</th><th>World size</th><th>Probe</th><th>路径</th></tr></thead><tbody id="checkpointRows"></tbody></table></div><div id="checkpointWaiting" class="waiting"></div></section></div></main>
+<dialog id="chartDialog"><div class="dialog-head"><strong id="chartTitle">曲线</strong><button id="chartClose" aria-label="关闭">×</button></div><canvas id="chartLarge"></canvas></dialog>
+<script src="/static/truerec.js?v=20260827-v1"></script></body></html>

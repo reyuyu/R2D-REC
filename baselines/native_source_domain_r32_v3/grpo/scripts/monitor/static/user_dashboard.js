@@ -86,10 +86,12 @@
         <div class="kind-segments">
           <button class="kind-segment active" type="button" data-run-kind="${RECOMMENDATION}">懂推荐 GRPO</button>
           <button class="kind-segment" type="button" data-run-kind="${USER}">懂用户 GRPO</button>
+          <button class="kind-segment" id="trueRecEntry" type="button">TrueRec GRPO</button>
         </div>
         <span class="kind-context" id="kindContext">Recommendation / DSR 训练实验</span>
       </section>`);
     const nav = document.querySelector('.tabs');
+    document.querySelector('#trueRecEntry').onclick = () => { window.location.href = '/truerec'; };
     nav.querySelectorAll('.tab').forEach(tab => tab.dataset.kind = 'recommendation');
     nav.querySelector('[data-view="explorer"]').dataset.kind = 'shared';
     nav.querySelector('[data-view="explorer"]').insertAdjacentHTML('beforebegin', `
