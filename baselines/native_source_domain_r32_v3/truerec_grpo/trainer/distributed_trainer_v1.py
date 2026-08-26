@@ -10,6 +10,7 @@ import torch
 import torch.distributed as dist
 
 from batch_collator_v1 import collate_business_group
+from monitoring_v1 import capture_frontier_chunk, capture_hpr_position, runtime_monitoring_snapshot
 from rollout_runtime_v1 import BusinessGroupRollout, G
 from truerec_grpo_trainer_v1 import format_credit_tensors, gather_padded_action_logps_rows
 from truerec_loss_v1 import HPR_LAMBDA, frontier_ppo_loss, multi_positive_log_mass_loss
@@ -31,6 +32,9 @@ class DistributedStreamingBackward:
     physical_backward_calls: int
     hpr_extra_forward_calls: int
     runtime_plan_hash: str
+    runtime_monitoring_plan: dict[str, Any]
+    local_candidate_monitoring: tuple[dict[str, Any], ...]
+    local_hpr_monitoring: tuple[dict[str, Any], ...]
 
 
 def require_four_rank_group() -> tuple[int, int]:
@@ -109,6 +113,8 @@ class DistributedTrueRecGRPOTrainerV1:
         local_frontier_value = 0.0
         local_hpr_value = 0.0
         current_rows: list[tuple[float, ...]] = []
+        candidate_monitoring: list[dict[str, Any]] = []
+        hpr_monitoring: list[dict[str, Any]] = []
         forward_calls = backward_calls = 0
         mb = self.streaming_microbatch_size
         for start in range(local_start, local_stop, mb):
@@ -132,17 +138,27 @@ class DistributedTrueRecGRPOTrainerV1:
                 format_credits[start:stop].to(current.device).unsqueeze(0),
                 format_mask[start:stop].to(current.device).unsqueeze(0), self.epsilon,
             )
+            candidate_monitoring.extend(capture_frontier_chunk(
+                group=group, start=start, stop=stop, current=current, runtime=runtime,
+                format_credits=format_credits, hierarchy=hierarchy, format_loss=format_loss,
+            ))
             local_frontier = (hierarchy.loss + format_loss.loss) * ((stop - start) / G)
             local_hpr = logits.sum() * 0.0
             if site_count:
-                for site in runtime.hpr.sites:
+                for site_index, site in enumerate(runtime.hpr.sites):
                     weight = 1.0 / (site_count * len(site.onpolicy_positions))
                     for sample_index, action_position in site.onpolicy_positions:
                         if start <= sample_index < stop:
                             causal_index = int(batch.causal_logit_indices[sample_index, action_position])
-                            local_hpr = local_hpr + weight * multi_positive_log_mass_loss(
+                            position_loss = multi_positive_log_mass_loss(
                                 logits[sample_index - start, causal_index], site.target_token_ids,
                             )
+                            local_hpr = local_hpr + weight * position_loss
+                            hpr_monitoring.append(capture_hpr_position(
+                                site_index=site_index, site=site, candidate_index=sample_index,
+                                action_position=action_position, position_loss=position_loss,
+                                position_weight=weight,
+                            ))
             local_total = local_frontier + HPR_LAMBDA * local_hpr
             local_frontier_value += float(local_frontier.detach())
             local_hpr_value += float(local_hpr.detach())
@@ -157,4 +173,6 @@ class DistributedTrueRecGRPOTrainerV1:
             global_frontier, global_hpr, HPR_LAMBDA * global_hpr,
             global_frontier + HPR_LAMBDA * global_hpr,
             tuple(current_rows), forward_calls, backward_calls, 0, plan_hash,
+            runtime_monitoring_snapshot(runtime),
+            tuple(candidate_monitoring), tuple(hpr_monitoring),
         )
