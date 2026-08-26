@@ -92,6 +92,7 @@ def global_ratio_stats(local_current, local_candidates, device: torch.device) ->
 def build_pre_optimizer_gate_diagnostic(
     *, ratio: dict[str, float | int], selected_mb: int, expected_calls: int,
     losses: dict[str, float], rank_states: list[dict[str, Any]],
+    training_signal: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Describe the existing pre-optimizer gate using detached scalar state."""
     loss_finite = {name: math.isfinite(float(value)) for name, value in losses.items()}
@@ -124,6 +125,26 @@ def build_pre_optimizer_gate_diagnostic(
         failed.add("LOSS_NONFINITE")
     if not runtime_equal:
         failed.add("RUNTIME_PLAN_HASH_MISMATCH")
+    raw_failed = set(failed)
+    training_signal = training_signal or {}
+    gradients_all_zero = all(
+        int(state["gradient"]["lora_params_with_nonzero_grad"]) == 0
+        and float(state["gradient"]["lora_grad_norm"]) == 0.0
+        for state in rank_states
+    )
+    expected_solved_noop = (
+        raw_failed == {"ZERO_GRADIENT"}
+        and all(loss_finite.values())
+        and all(float(losses[name]) == 0.0 for name in ("frontier", "hpr_raw", "hpr_weighted", "total"))
+        and runtime_equal
+        and bool(training_signal.get("frontier_credits_all_zero", False))
+        and bool(training_signal.get("format_credits_all_zero", False))
+        and training_signal.get("hpr_trigger") == "HPR_NONE"
+        and int(training_signal.get("hpr_site_count", -1)) == 0
+        and gradients_all_zero
+    )
+    if expected_solved_noop:
+        failed.remove("ZERO_GRADIENT")
     call_rows = [dict(state["calls"], rank=int(state["rank"])) for state in rank_states]
     gradient_rows = [dict(state["gradient"], rank=int(state["rank"])) for state in rank_states]
     return {
@@ -155,6 +176,7 @@ def build_pre_optimizer_gate_diagnostic(
                 )
             },
             "per_rank": gradient_rows,
+            "zero_gradient_accepted": expected_solved_noop,
             "pass": not failed.intersection({
                 "LORA_GRAD_NORM_NONFINITE", "ZERO_GRADIENT", "BASE_GRADIENT",
                 "NAN_GRADIENT", "INF_GRADIENT",
@@ -164,7 +186,21 @@ def build_pre_optimizer_gate_diagnostic(
             "each_rank_runtime_plan_hash": runtime_hashes,
             "all_equal": runtime_equal, "pass": runtime_equal,
         },
+        "training_signal_gate": {
+            "frontier_credits_all_zero": bool(training_signal.get("frontier_credits_all_zero", False)),
+            "format_credits_all_zero": bool(training_signal.get("format_credits_all_zero", False)),
+            "hpr_trigger": training_signal.get("hpr_trigger"),
+            "hpr_site_count": training_signal.get("hpr_site_count"),
+            "gradients_all_zero": gradients_all_zero,
+        },
+        "RAW_FAILED_SUBGATES": sorted(raw_failed),
         "EXACT_FAILED_SUBGATES": sorted(failed),
+        "zero_gradient_classification": "EXPECTED_SOLVED_NOOP" if expected_solved_noop else (
+            "UNEXPECTED_ZERO_GRADIENT" if "ZERO_GRADIENT" in raw_failed else "NOT_ZERO_GRADIENT"
+        ),
+        "solved_noop": expected_solved_noop,
+        "pass_with_no_update": expected_solved_noop,
+        "outcome": "PASS_WITH_NO_UPDATE" if expected_solved_noop else ("PASS" if not failed else "FAIL_FAST"),
         "pass": not failed,
     }
 
@@ -284,11 +320,6 @@ def run_loaded_group(
         "total": backward.global_total_value,
     }
     loss_finite = all(math.isfinite(value) for value in losses.values())
-    gradient_finite = (
-        gradients["lora_params_with_nonzero_grad"] > 0 and math.isfinite(gradients["lora_grad_norm"])
-        and gradients["lora_grad_norm"] > 0 and gradients["base_params_with_grad"] == 0
-        and gradients["nan_grad_count"] == gradients["inf_grad_count"] == 0
-    )
     rank_states = gather_rank_objects({
         "rank": rank,
         "calls": {
@@ -298,10 +329,33 @@ def run_loaded_group(
         },
         "gradient": gradients,
         "runtime_plan_hash": backward.runtime_plan_hash,
+        "frontier_credits_all_zero": all(
+            float(token["frontier_token_credit"]) == 0.0
+            for candidate in backward.local_candidate_monitoring for token in candidate["tokens"]
+        ),
+        "format_credits_all_zero": all(
+            float(token["format_token_credit"]) == 0.0
+            for candidate in backward.local_candidate_monitoring for token in candidate["tokens"]
+        ),
     })
+    training_signal = {
+        "frontier_credits_all_zero": all(state["frontier_credits_all_zero"] for state in rank_states),
+        "format_credits_all_zero": all(state["format_credits_all_zero"] for state in rank_states),
+        "hpr_trigger": backward.runtime_monitoring_plan["hpr_trigger"],
+        "hpr_site_count": len(backward.runtime_monitoring_plan["hpr_sites"]),
+    }
+
+
+def apply_optimizer_gate_outcome(optimizer, gate_diagnostic: dict[str, Any]) -> bool:
+    """Apply the accepted gate outcome and return whether an optimizer step occurred."""
+    if gate_diagnostic.get("pass_with_no_update"):
+        optimizer.zero_grad(set_to_none=True)
+        return False
+    optimizer.step()
+    return True
     gate_diagnostic = build_pre_optimizer_gate_diagnostic(
         ratio=ratio, selected_mb=selected_mb, expected_calls=expected_calls,
-        losses=losses, rank_states=rank_states,
+        losses=losses, rank_states=rank_states, training_signal=training_signal,
     )
     local_failure = not gate_diagnostic["pass"]
     callback_failure = False
@@ -315,17 +369,24 @@ def run_loaded_group(
     distributed_fail_if(local_failure, "pre-optimizer distributed gate failed", device)
     if stop_before_optimizer:
         raise DDPProductionError("requested diagnostic stop before optimizer")
-    optimizer.step()
+    solved_noop = bool(gate_diagnostic["pass_with_no_update"])
+    optimizer_step_performed = apply_optimizer_gate_outcome(optimizer, gate_diagnostic)
     torch.cuda.synchronize(device)
     if strict_parameter_audit:
         lora_after, _ = lora_parameter_sha(model)
         base_mutation = base_parameter_versions(model) != base_before
         lora_hashes = gather_rank_objects(lora_after)
-        update_failure = lora_before == lora_after or base_mutation or len(set(lora_hashes)) != 1
+        update_failure = (
+            (lora_before != lora_after if solved_noop else lora_before == lora_after)
+            or base_mutation or len(set(lora_hashes)) != 1
+        )
     else:
         lora_after = None
         base_mutation = False
-        update_failure = parameter_versions(model) == versions
+        update_failure = (
+            parameter_versions(model) != versions if solved_noop
+            else parameter_versions(model) == versions
+        )
     distributed_fail_if(update_failure, "parameter update agreement failed", device)
     local_memory = {
         "rank": rank,
@@ -356,10 +417,19 @@ def run_loaded_group(
             "hpr_weighted": backward.global_hpr_value_weighted, "total": backward.global_total_value,
             "finite": loss_finite,
         },
-        "gradient": gradients, "gradient_finite": gradient_finite,
-        "lora_changed": True if not strict_parameter_audit else lora_before != lora_after,
+        "gradient": gradients, "gradient_finite": (
+            math.isfinite(gradients["lora_grad_norm"])
+            and gradients["nan_grad_count"] == gradients["inf_grad_count"] == 0
+        ),
+        "solved_noop": solved_noop,
+        "optimizer_step_performed": optimizer_step_performed,
+        "gate_outcome": gate_diagnostic["outcome"],
+        "gate_diagnostic": gate_diagnostic,
+        "lora_changed": False if solved_noop else (
+            True if not strict_parameter_audit else lora_before != lora_after
+        ),
         "base_parameter_mutation": base_mutation,
-        "optimizer_steps": 1, "optimizer": optimizer_audit or {},
+        "optimizer_steps": 0 if solved_noop else 1, "optimizer": optimizer_audit or {},
         "dropout_active": (dropout or {}).get("rl_dropout_active", False),
         "trainability": trainability or {}, "rank_memory": rank_memory,
         "wall_time_seconds": wall_time_seconds,

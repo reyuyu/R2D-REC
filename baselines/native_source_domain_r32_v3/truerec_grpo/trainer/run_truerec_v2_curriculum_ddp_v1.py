@@ -177,11 +177,20 @@ def formal_group_indices(cursor: int, total_steps: int = TOTAL_STEPS) -> range:
 
 
 def driver_state_for_cursor(cursor: int) -> dict[str, int | bool]:
+    return driver_state_for_progress(cursor, optimizer_steps=cursor, solved_noop_groups=0)
+
+
+def driver_state_for_progress(
+    cursor: int, *, optimizer_steps: int, solved_noop_groups: int,
+) -> dict[str, int | bool]:
     if not 0 <= cursor <= TOTAL_STEPS:
         raise ValueError("invalid driver cursor")
+    if optimizer_steps < 0 or solved_noop_groups < 0 or optimizer_steps + solved_noop_groups != cursor:
+        raise ValueError("optimizer/noop progress does not partition the cursor")
     return {
         "business_groups_seen": cursor,
-        "optimizer_steps": cursor,
+        "optimizer_steps": optimizer_steps,
+        "solved_noop_groups": solved_noop_groups,
         "global_step": cursor,
         "rollouts_completed": cursor,
         "old_rescores_completed": cursor,
@@ -189,6 +198,21 @@ def driver_state_for_cursor(cursor: int) -> dict[str, int | bool]:
         "groups_in_accumulation_window": 0,
         "failed": False,
     }
+
+
+def validate_restored_driver_state(state: dict[str, Any], cursor: int) -> tuple[int, int]:
+    optimizer_steps = int(state["optimizer_steps"])
+    solved_noop_groups = int(state.get("solved_noop_groups", cursor - optimizer_steps))
+    expected = driver_state_for_progress(
+        cursor, optimizer_steps=optimizer_steps, solved_noop_groups=solved_noop_groups,
+    )
+    if {key: state.get(key) for key in expected if key != "solved_noop_groups"} != {
+        key: value for key, value in expected.items() if key != "solved_noop_groups"
+    }:
+        raise Formal4096Error("checkpoint driver state differs from cursor/progress")
+    if "solved_noop_groups" in state and int(state["solved_noop_groups"]) != solved_noop_groups:
+        raise Formal4096Error("checkpoint solved-noop count mismatch")
+    return optimizer_steps, solved_noop_groups
 
 
 def validate_monitoring_prefix(rows: Sequence[dict[str, Any]], order: Sequence[str], cursor: int) -> None:
@@ -440,7 +464,7 @@ def probe_one_group(record, model, ddp, renderer, device) -> tuple[dict[str, Any
 
 def run_probe20(
     *, probe_step: int, records: Sequence[dict[str, Any]], model, ddp, renderer,
-    device: torch.device, writer: MonitoringWriterV1,
+    device: torch.device, writer: MonitoringWriterV1, optimizer_steps: int | None = None,
 ) -> dict[str, Any]:
     rank = dist.get_rank()
     versions = parameter_versions(model)
@@ -468,9 +492,11 @@ def run_probe20(
     rank_rng = gather_rank_objects({"rank": rank, "restored": rng_exact})
     summary = {}
     if rank == 0:
+        actual_optimizer_steps = probe_step if optimizer_steps is None else int(optimizer_steps)
         summary = {
             "status": "PASS", "groups": len(groups), "global_G": 8,
-            "optimizer_steps_before": probe_step, "optimizer_steps_after": probe_step,
+            "optimizer_steps_before": actual_optimizer_steps,
+            "optimizer_steps_after": actual_optimizer_steps,
             "training_rng_restored": all(item["restored"] for item in rank_rng),
             "format_valid_rate": sum(row["format_valid_rate"] for row in groups) / len(groups),
             "A_hit_rate": sum(row["A_hit_rate"] for row in groups) / len(groups),
@@ -525,6 +551,8 @@ def run(args) -> None:
         )
         ddp.eval(); model.eval()
         cursor = 0
+        optimizer_steps = 0
+        solved_noop_groups = 0
         epoch2_order: list[str] | None = None
         epoch2_manifest: dict[str, Any] | None = None
         if (run_directory / "epoch2_order.json").exists():
@@ -549,8 +577,9 @@ def run(args) -> None:
                 allow_custom_dataset=True, expected_order=expected_order,
             )
             cursor = int(restored["next_group_index"])
-            if restored["driver_state"] != driver_state_for_cursor(cursor):
-                raise Formal4096Error("checkpoint driver state differs from cursor")
+            optimizer_steps, solved_noop_groups = validate_restored_driver_state(
+                restored["driver_state"], cursor,
+            )
             parent_model_sha = json.loads((run_directory / "run_manifest.json").read_text())["parent_model_sha"]
         writer = MonitoringWriterV1(run_directory, total_steps=TOTAL_STEPS, rank=rank)
         _rank0_checked(
@@ -581,6 +610,7 @@ def run(args) -> None:
             run_probe20(
                 probe_step=cursor, records=probe_records, model=model, ddp=ddp,
                 renderer=renderer, device=device, writer=writer,
+                optimizer_steps=optimizer_steps,
             )
 
         last_checkpoint_step = cursor if cursor in checkpoint_steps() else None
@@ -605,12 +635,21 @@ def run(args) -> None:
                 optimizer_audit=optimizer_audit, strict_parameter_audit=False,
             )
             completed = group_index + 1
+            if report["optimizer_step_performed"]:
+                optimizer_steps += 1
+            else:
+                solved_noop_groups += 1
+            if optimizer_steps + solved_noop_groups != completed:
+                raise Formal4096Error("optimizer/noop progress lost cursor alignment")
             if completed in checkpoint_steps() and completed != EPOCH_STEPS:
                 checkpoint = run_directory / "checkpoints" / f"checkpoint-step-{completed}"
                 checkpoint_order = order_metadata(full_order, name="v2_two_epoch_order") if epoch2_order else epoch1_info
                 save_distributed_checkpoint(
                     checkpoint, model=LoraCheckpointState(model), optimizer=optimizer,
-                    driver_state=driver_state_for_cursor(completed), dataset_identity=dataset_identity,
+                    driver_state=driver_state_for_progress(
+                        completed, optimizer_steps=optimizer_steps,
+                        solved_noop_groups=solved_noop_groups,
+                    ), dataset_identity=dataset_identity,
                     epoch=completed // EPOCH_STEPS, next_group_index=completed,
                     order=checkpoint_order, device=device, allow_custom_dataset=True,
                 )
@@ -622,11 +661,18 @@ def run(args) -> None:
                     selected_microbatch_size=report["selected_microbatch_size"],
                     gradient_norm=report["gradient"]["lora_grad_norm"],
                     wall_time_seconds=report["wall_time_seconds"], rank_memory=report["rank_memory"],
+                    solved_noop=report["solved_noop"],
+                    optimizer_step_performed=report["optimizer_step_performed"],
                 )
                 explain = build_train_explain(
                     group, backward.runtime_monitoring_plan, rank_payloads,
                     renderer.tokenizer.convert_ids_to_tokens,
                 )
+                explain.update({
+                    "solved_noop": report["solved_noop"],
+                    "optimizer_step_performed": report["optimizer_step_performed"],
+                    "gate_outcome": report["gate_outcome"],
+                })
             else:
                 group_record = explain = None
             _rank0_checked(
@@ -651,7 +697,10 @@ def run(args) -> None:
                 checkpoint = run_directory / "checkpoints" / f"checkpoint-step-{completed}"
                 save_distributed_checkpoint(
                     checkpoint, model=LoraCheckpointState(model), optimizer=optimizer,
-                    driver_state=driver_state_for_cursor(completed), dataset_identity=dataset_identity,
+                    driver_state=driver_state_for_progress(
+                        completed, optimizer_steps=optimizer_steps,
+                        solved_noop_groups=solved_noop_groups,
+                    ), dataset_identity=dataset_identity,
                     epoch=1, next_group_index=completed,
                     order=order_metadata(full_order, name="v2_two_epoch_order"), device=device,
                     allow_custom_dataset=True,
@@ -661,10 +710,15 @@ def run(args) -> None:
                 run_probe20(
                     probe_step=completed, records=probe_records, model=model, ddp=ddp,
                     renderer=renderer, device=device, writer=writer,
+                    optimizer_steps=optimizer_steps,
                 )
         if rank == 0:
             (run_directory / "formal_complete.json").write_text(
-                json.dumps({"status": "PASS", "global_step": TOTAL_STEPS}, indent=2) + "\n",
+                json.dumps({
+                    "status": "PASS", "global_step": TOTAL_STEPS,
+                    "optimizer_steps": optimizer_steps,
+                    "solved_noop_groups": solved_noop_groups,
+                }, indent=2) + "\n",
                 encoding="utf-8",
             )
     finally:

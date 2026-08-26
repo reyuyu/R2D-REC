@@ -10,7 +10,9 @@ for dependency in (ROOT / "data", ROOT / "diagnostics", ROOT / "initialization",
     if str(dependency) not in sys.path:
         sys.path.insert(0, str(dependency))
 
-from run_truerec_pilot_ddp_v1 import build_pre_optimizer_gate_diagnostic  # noqa: E402
+from run_truerec_pilot_ddp_v1 import (  # noqa: E402
+    apply_optimizer_gate_outcome, build_pre_optimizer_gate_diagnostic,
+)
 from v2_step2586_gate_debug import (  # noqa: E402
     CHECKPOINT_CURSOR, EPOCH2_LOCAL_INDEX, FAILED_GLOBAL_STEP, FAILED_GROUP_INDEX,
     EXPECTED_FAILED_GROUP_ID, trajectory_payload, trajectory_structure, zero_gradient_assessment,
@@ -42,6 +44,22 @@ def diagnostic(states):
     )
 
 
+def solved_noop_diagnostic(states, **signal_overrides):
+    signal = {
+        "frontier_credits_all_zero": True,
+        "format_credits_all_zero": True,
+        "hpr_trigger": "HPR_NONE",
+        "hpr_site_count": 0,
+        **signal_overrides,
+    }
+    return build_pre_optimizer_gate_diagnostic(
+        ratio={"abs_mean": 0.0, "abs_max": 0.0, "ratio_min": 1.0, "ratio_max": 1.0},
+        selected_mb=2, expected_calls=1,
+        losses={"frontier": 0.0, "hpr_raw": 0.0, "hpr_weighted": 0.0, "total": 0.0},
+        rank_states=states, training_signal=signal,
+    )
+
+
 class V2Step2586GateDebugTests(unittest.TestCase):
     def test_all_gate_components_pass(self):
         value = diagnostic([rank_state(rank) for rank in range(4)])
@@ -55,6 +73,50 @@ class V2Step2586GateDebugTests(unittest.TestCase):
         value = diagnostic([rank_state(rank, nonzero=0, norm=0.0) for rank in range(4)])
         self.assertEqual(value["EXACT_FAILED_SUBGATES"], ["ZERO_GRADIENT"])
         self.assertFalse(value["gradient_gate"]["pass"])
+
+    def test_expected_solved_zero_gradient_passes_without_update(self):
+        value = solved_noop_diagnostic([rank_state(rank, nonzero=0, norm=0.0) for rank in range(4)])
+        self.assertTrue(value["pass"])
+        self.assertTrue(value["pass_with_no_update"])
+        self.assertEqual(value["outcome"], "PASS_WITH_NO_UPDATE")
+        self.assertEqual(value["RAW_FAILED_SUBGATES"], ["ZERO_GRADIENT"])
+        self.assertEqual(value["EXACT_FAILED_SUBGATES"], [])
+        self.assertEqual(value["zero_gradient_classification"], "EXPECTED_SOLVED_NOOP")
+
+    def test_expected_solved_noop_never_calls_optimizer_step(self):
+        class Optimizer:
+            steps = 0
+            zeroes = 0
+            def step(self): self.steps += 1
+            def zero_grad(self, *, set_to_none):
+                self.assert_set_to_none = set_to_none
+                self.zeroes += 1
+
+        optimizer = Optimizer()
+        performed = apply_optimizer_gate_outcome(optimizer, {"pass_with_no_update": True})
+        self.assertFalse(performed)
+        self.assertEqual((optimizer.steps, optimizer.zeroes), (0, 1))
+        self.assertTrue(optimizer.assert_set_to_none)
+
+    def test_zero_gradient_with_any_training_signal_still_fails_fast(self):
+        states = [rank_state(rank, nonzero=0, norm=0.0) for rank in range(4)]
+        for override in (
+            {"format_credits_all_zero": False},
+            {"frontier_credits_all_zero": False},
+            {"hpr_trigger": "HPR_C"},
+            {"hpr_site_count": 1},
+        ):
+            with self.subTest(override=override):
+                value = solved_noop_diagnostic(states, **override)
+                self.assertFalse(value["pass"])
+                self.assertEqual(value["outcome"], "FAIL_FAST")
+
+    def test_mixed_zero_and_nonzero_rank_gradients_fail_fast(self):
+        states = [rank_state(rank, nonzero=0, norm=0.0) for rank in range(4)]
+        states[3] = rank_state(3, nonzero=1, norm=0.5)
+        value = solved_noop_diagnostic(states)
+        self.assertFalse(value["pass"])
+        self.assertFalse(value["training_signal_gate"]["gradients_all_zero"])
 
     def test_runtime_hashes_are_recorded_per_rank(self):
         states = [rank_state(rank, plan="different" if rank == 3 else "same") for rank in range(4)]

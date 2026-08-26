@@ -16,8 +16,9 @@ from run_truerec_v2_curriculum_ddp_v1 import (  # noqa: E402
     DOMAIN_ORDER, EPOCH1_ORDER_SHA256, EPOCH_STEPS, HPR_PRIORITY,
     PARENT_CHECKPOINT, PARENT_V1_STEP, RECORDS_SHA256, RUN_ID, TOTAL_STEPS,
     build_epoch2_order, checkpoint_steps, driver_state_for_cursor,
-    formal_group_indices, load_curriculum, load_parent_weights_only, probe_steps,
-    validate_every64,
+    driver_state_for_progress, formal_group_indices, load_curriculum,
+    load_parent_weights_only, probe_steps, validate_every64,
+    validate_restored_driver_state,
 )
 
 
@@ -71,6 +72,22 @@ class TrueRecV2CurriculumRunnerTests(unittest.TestCase):
         self.assertNotIn("optimizer_state_dict", source)
         self.assertNotIn("rank_rng_states", source)
         self.assertIn("if optimizer.state", source)
+
+    def test_solved_noop_advances_cursor_without_optimizer_step(self):
+        state = driver_state_for_progress(2586, optimizer_steps=2585, solved_noop_groups=1)
+        self.assertEqual(state["global_step"], 2586)
+        self.assertEqual(state["optimizer_steps"], 2585)
+        self.assertEqual(state["solved_noop_groups"], 1)
+        self.assertEqual(validate_restored_driver_state(state, 2586), (2585, 1))
+
+    def test_legacy_checkpoint_driver_state_remains_loadable(self):
+        legacy = driver_state_for_cursor(2560)
+        legacy.pop("solved_noop_groups")
+        self.assertEqual(validate_restored_driver_state(legacy, 2560), (2560, 0))
+
+    def test_optimizer_and_noop_counts_must_partition_cursor(self):
+        with self.assertRaisesRegex(ValueError, "partition"):
+            driver_state_for_progress(10, optimizer_steps=8, solved_noop_groups=1)
 
     def test_run_identity(self):
         self.assertEqual(RUN_ID, "TRUEREC-V2-V1STEP4096-CURRICULUM2048-2E-4GPU")

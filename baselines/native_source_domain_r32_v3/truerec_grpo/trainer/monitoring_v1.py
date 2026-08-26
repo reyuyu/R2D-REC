@@ -232,6 +232,7 @@ def build_train_group_record(
     *, record: dict[str, Any], group: BusinessGroupRollout, backward,
     global_step: int, group_index: int, selected_microbatch_size: int,
     gradient_norm: float, wall_time_seconds: float, rank_memory: Sequence[dict[str, Any]],
+    solved_noop: bool = False, optimizer_step_performed: bool = True,
 ) -> dict[str, Any]:
     metrics = [candidate.metrics for candidate in group.candidates]
     rank_memory = detached_jsonable(rank_memory)
@@ -252,6 +253,8 @@ def build_train_group_record(
         "hpr_value_weighted": float(backward.global_hpr_value_weighted),
         "total_value": float(backward.global_total_value),
         "gradient_norm": float(gradient_norm),
+        "solved_noop": bool(solved_noop),
+        "optimizer_step_performed": bool(optimizer_step_performed),
         "wall_time_seconds": float(wall_time_seconds),
         "rank_memory": rank_memory,
         "max_rank_allocated_gb": max(item["allocated_gb"] for item in rank_memory),
@@ -364,6 +367,8 @@ class MonitoringWriterV1:
             "rolling_50_seconds_per_group": seconds,
             "ETA_seconds": max(self.total_steps - current_step, 0) * seconds,
             "last_checkpoint_step": last_checkpoint_step,
+            "solved_noop": bool(current.get("solved_noop", False)),
+            "optimizer_step_performed": bool(current.get("optimizer_step_performed", True)),
             "rank_health": rank_health,
         }
         _atomic_json(self.run_directory / "live_state.json", live)
