@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TrueRec GRPO 训练监控</title><link rel="stylesheet" href="/static/truerec.css?v=20260827-v1"></head>
+<title>TrueRec GRPO 训练监控</title><link rel="stylesheet" href="/static/truerec.css?v=20260827-curves-gold-v2"></head>
 <body><header class="topbar"><div><a class="back" href="/">‹ GRPO 监控台</a><h1>TrueRec GRPO</h1><span class="subtitle">Formal4096 · Global G8 训练监控</span></div><div class="live-tools"><span id="liveDot" class="live-dot"></span><span id="liveText">正在连接</span><button id="refreshToggle">暂停刷新</button><button id="refreshNow">立即刷新</button></div></header>
 <section class="runbar"><label for="runSelect">实验</label><select id="runSelect"></select><span id="runMeta">读取实验目录</span><span class="readonly">只读</span></section>
 <nav class="tabs" aria-label="TrueRec 页面"><button class="tab active" data-view="overview">训练总览</button><button class="tab" data-view="curves">训练曲线</button><button class="tab" data-view="inspector">Global G8 检视</button><button class="tab" data-view="probes">Probe20</button><button class="tab" data-view="checkpoints">检查点</button></nav>
@@ -17,4 +17,4 @@
 <main id="checkpoints" class="view"><div class="wrap"><section class="band"><div class="band-title"><h2>训练检查点</h2><span>仅展示，不提供删除或训练控制</span></div><div class="table-scroll"><table><thead><tr><th>Step</th><th>Cursor</th><th>World size</th><th>Probe</th><th>路径</th></tr></thead><tbody id="checkpointRows"></tbody></table></div><div id="checkpointWaiting" class="waiting"></div></section></div></main>
 <dialog id="chartDialog"><div class="dialog-head"><strong id="chartTitle">曲线</strong><div class="zoom-ranges" id="zoomRanges"><button data-range="100">最近 100</button><button data-range="500">最近 500</button><button data-range="1000">最近 1000</button><button class="active" data-range="all">全部</button></div><button id="chartClose" aria-label="关闭">×</button></div><div class="dialog-chart"><canvas id="chartLarge"></canvas></div></dialog>
 <div class="chart-tooltip" id="chartTooltip" role="status" aria-live="polite"></div>
-<script src="/static/truerec.js?v=20260827-curves-gold-v1"></script></body></html>
+<script src="/static/truerec.js?v=20260827-curves-gold-v2"></script></body></html>
