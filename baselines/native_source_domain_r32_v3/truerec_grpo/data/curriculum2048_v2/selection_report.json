@@ -1,6 +1,7 @@
 {
   "seed": "truerec-v2-curriculum2048-epoch1-20260827",
   "ranking": [
+    "hierarchy curriculum class",
     "K_A descending",
     "K_AB descending",
     "K_ABC descending",
@@ -8,15 +9,115 @@
     "context median distance",
     "stable SHA256 tie-break"
   ],
-  "domain_specific_policy": "Domain-local natural K-bucket census with a mild monotonic quality weight; ranking within each bucket is K_A, K_AB, K_ABC. No cross-domain K quota.",
-  "K_quality_weight": {
-    "1": 0.75,
-    "2": 1.1,
-    "3": 1.25,
-    "4": 1.4,
-    "5+": 1.55
+  "domain_specific_policy": "Select for hierarchical credit exposure; do not match the source natural K distribution and do not impose a shared cross-domain K distribution.",
+  "curriculum_policy": "Stage1 all A_RICH; Stage2 A/B; Stage3 B/C with rehearsal; Stage4 C/singleton with A/B rehearsal. Scarce B/C groups are fully used.",
+  "stage_category_quotas": {
+    "video": {
+      "stage1": {
+        "A_RICH": 128,
+        "B_RICH": 0,
+        "C_RICH": 0,
+        "SINGLETON": 0
+      },
+      "stage2": {
+        "A_RICH": 80,
+        "B_RICH": 40,
+        "C_RICH": 0,
+        "SINGLETON": 8
+      },
+      "stage3": {
+        "A_RICH": 24,
+        "B_RICH": 45,
+        "C_RICH": 9,
+        "SINGLETON": 50
+      },
+      "stage4": {
+        "A_RICH": 8,
+        "B_RICH": 6,
+        "C_RICH": 4,
+        "SINGLETON": 110
+      }
+    },
+    "prod": {
+      "stage1": {
+        "A_RICH": 128,
+        "B_RICH": 0,
+        "C_RICH": 0,
+        "SINGLETON": 0
+      },
+      "stage2": {
+        "A_RICH": 96,
+        "B_RICH": 28,
+        "C_RICH": 0,
+        "SINGLETON": 4
+      },
+      "stage3": {
+        "A_RICH": 24,
+        "B_RICH": 32,
+        "C_RICH": 4,
+        "SINGLETON": 68
+      },
+      "stage4": {
+        "A_RICH": 4,
+        "B_RICH": 4,
+        "C_RICH": 2,
+        "SINGLETON": 118
+      }
+    },
+    "ad": {
+      "stage1": {
+        "A_RICH": 128,
+        "B_RICH": 0,
+        "C_RICH": 0,
+        "SINGLETON": 0
+      },
+      "stage2": {
+        "A_RICH": 112,
+        "B_RICH": 12,
+        "C_RICH": 0,
+        "SINGLETON": 4
+      },
+      "stage3": {
+        "A_RICH": 24,
+        "B_RICH": 14,
+        "C_RICH": 2,
+        "SINGLETON": 88
+      },
+      "stage4": {
+        "A_RICH": 4,
+        "B_RICH": 3,
+        "C_RICH": 2,
+        "SINGLETON": 119
+      }
+    },
+    "living": {
+      "stage1": {
+        "A_RICH": 128,
+        "B_RICH": 0,
+        "C_RICH": 0,
+        "SINGLETON": 0
+      },
+      "stage2": {
+        "A_RICH": 10,
+        "B_RICH": 5,
+        "C_RICH": 0,
+        "SINGLETON": 113
+      },
+      "stage3": {
+        "A_RICH": 3,
+        "B_RICH": 6,
+        "C_RICH": 4,
+        "SINGLETON": 115
+      },
+      "stage4": {
+        "A_RICH": 2,
+        "B_RICH": 2,
+        "C_RICH": 3,
+        "SINGLETON": 121
+      }
+    }
   },
-  "curriculum_policy": "Overlapping rich/hard stage allocation with exact 128/domain/stage; stage4 retains prefix-rich groups.",
+  "capacity_note": "After Stage1, living has only 15 A_RICH and 20 total B_RICH+C_RICH in the full pool; singleton fill is mechanically necessary.",
   "source_train_groups": 17971,
   "eligible_groups": 17971,
   "rejection_reason_counts": {
@@ -383,9 +484,515 @@
     "dev_overlap": 0,
     "final_overlap": 0
   },
+  "stage_domain_census": {
+    "stage1": {
+      "video": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 128,
+          "B_RICH": 0,
+          "C_RICH": 0,
+          "SINGLETON": 0,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 128
+        },
+        "K_AB": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 128
+        },
+        "K_ABC": {
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 128
+        }
+      },
+      "prod": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 128,
+          "B_RICH": 0,
+          "C_RICH": 0,
+          "SINGLETON": 0,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 0,
+          "2": 68,
+          "3": 41,
+          "4": 12,
+          "5+": 7
+        },
+        "K_AB": {
+          "1": 0,
+          "2": 57,
+          "3": 42,
+          "4": 18,
+          "5+": 11
+        },
+        "K_ABC": {
+          "1": 0,
+          "2": 54,
+          "3": 42,
+          "4": 20,
+          "5+": 12
+        }
+      },
+      "ad": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 128,
+          "B_RICH": 0,
+          "C_RICH": 0,
+          "SINGLETON": 0,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 0,
+          "2": 53,
+          "3": 48,
+          "4": 18,
+          "5+": 9
+        },
+        "K_AB": {
+          "1": 0,
+          "2": 37,
+          "3": 51,
+          "4": 16,
+          "5+": 24
+        },
+        "K_ABC": {
+          "1": 0,
+          "2": 35,
+          "3": 51,
+          "4": 18,
+          "5+": 24
+        }
+      },
+      "living": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 128,
+          "B_RICH": 0,
+          "C_RICH": 0,
+          "SINGLETON": 0,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 0,
+          "2": 103,
+          "3": 16,
+          "4": 2,
+          "5+": 7
+        },
+        "K_AB": {
+          "1": 0,
+          "2": 94,
+          "3": 21,
+          "4": 4,
+          "5+": 9
+        },
+        "K_ABC": {
+          "1": 0,
+          "2": 92,
+          "3": 23,
+          "4": 4,
+          "5+": 9
+        }
+      }
+    },
+    "stage2": {
+      "video": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 80,
+          "B_RICH": 40,
+          "C_RICH": 0,
+          "SINGLETON": 8,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 48,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 80
+        },
+        "K_AB": {
+          "1": 8,
+          "2": 28,
+          "3": 5,
+          "4": 6,
+          "5+": 81
+        },
+        "K_ABC": {
+          "1": 8,
+          "2": 27,
+          "3": 5,
+          "4": 6,
+          "5+": 82
+        }
+      },
+      "prod": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 96,
+          "B_RICH": 28,
+          "C_RICH": 0,
+          "SINGLETON": 4,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 32,
+          "2": 96,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 4,
+          "2": 116,
+          "3": 8,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 4,
+          "2": 111,
+          "3": 11,
+          "4": 2,
+          "5+": 0
+        }
+      },
+      "ad": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 112,
+          "B_RICH": 12,
+          "C_RICH": 0,
+          "SINGLETON": 4,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 16,
+          "2": 112,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 4,
+          "2": 119,
+          "3": 3,
+          "4": 2,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 4,
+          "2": 118,
+          "3": 4,
+          "4": 2,
+          "5+": 0
+        }
+      },
+      "living": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 10,
+          "B_RICH": 5,
+          "C_RICH": 0,
+          "SINGLETON": 113,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 118,
+          "2": 10,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 113,
+          "2": 14,
+          "3": 1,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 113,
+          "2": 14,
+          "3": 1,
+          "4": 0,
+          "5+": 0
+        }
+      }
+    },
+    "stage3": {
+      "video": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 24,
+          "B_RICH": 45,
+          "C_RICH": 9,
+          "SINGLETON": 50,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 104,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 24
+        },
+        "K_AB": {
+          "1": 59,
+          "2": 45,
+          "3": 0,
+          "4": 0,
+          "5+": 24
+        },
+        "K_ABC": {
+          "1": 50,
+          "2": 51,
+          "3": 1,
+          "4": 1,
+          "5+": 25
+        }
+      },
+      "prod": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 24,
+          "B_RICH": 32,
+          "C_RICH": 4,
+          "SINGLETON": 68,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 104,
+          "2": 24,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 72,
+          "2": 56,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 68,
+          "2": 60,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      },
+      "ad": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 24,
+          "B_RICH": 14,
+          "C_RICH": 2,
+          "SINGLETON": 88,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 104,
+          "2": 24,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 90,
+          "2": 38,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 88,
+          "2": 40,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      },
+      "living": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 3,
+          "B_RICH": 6,
+          "C_RICH": 4,
+          "SINGLETON": 115,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 125,
+          "2": 3,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 119,
+          "2": 9,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 115,
+          "2": 13,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      }
+    },
+    "stage4": {
+      "video": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 8,
+          "B_RICH": 6,
+          "C_RICH": 4,
+          "SINGLETON": 110,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 120,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5+": 8
+        },
+        "K_AB": {
+          "1": 114,
+          "2": 6,
+          "3": 0,
+          "4": 0,
+          "5+": 8
+        },
+        "K_ABC": {
+          "1": 110,
+          "2": 10,
+          "3": 0,
+          "4": 0,
+          "5+": 8
+        }
+      },
+      "prod": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 4,
+          "B_RICH": 4,
+          "C_RICH": 2,
+          "SINGLETON": 118,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 124,
+          "2": 4,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 120,
+          "2": 8,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 118,
+          "2": 10,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      },
+      "ad": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 4,
+          "B_RICH": 3,
+          "C_RICH": 2,
+          "SINGLETON": 119,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 124,
+          "2": 4,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 121,
+          "2": 7,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 119,
+          "2": 9,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      },
+      "living": {
+        "N": 128,
+        "hierarchy_classes": {
+          "A_RICH": 2,
+          "B_RICH": 2,
+          "C_RICH": 3,
+          "SINGLETON": 121,
+          "OTHER": 0
+        },
+        "K_A": {
+          "1": 126,
+          "2": 2,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_AB": {
+          "1": 124,
+          "2": 4,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        },
+        "K_ABC": {
+          "1": 121,
+          "2": 7,
+          "3": 0,
+          "4": 0,
+          "5+": 0
+        }
+      }
+    }
+  },
   "video_high_k_tail": {
     "eligible_rate": 0.21649377,
-    "selected_rate": 0.30273438,
+    "selected_rate": 0.47460938,
     "gate": "PASS"
   },
   "epoch2_order_generated": false
