@@ -3,14 +3,22 @@ from __future__ import annotations
 
 import json
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 
 CHECKPOINT_STEP_RE = re.compile(r"(?:checkpoint[-_]?step[-_]?|checkpoint[-_]?)(\d+)$", re.I)
+CHECKPOINT_NAME_RE = re.compile(r"checkpoint-step-\d+$")
+BETA_ADAPTER_SOURCE = Path(
+    "/data/outputs/baselines/native_source_domain_r32_v3/"
+    "BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106"
+)
+ADAPTER_FILES = ("adapter_config.json", "adapter_model.safetensors")
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -82,7 +90,23 @@ def probe_steps(run: Path) -> list[int]:
     return sorted(set(result))
 
 
-def checkpoint_rows(run: Path, probes: Iterable[int]) -> list[dict[str, Any]]:
+def adapter_inventory(checkpoint: Path, adapter_source: Path) -> dict[str, int]:
+    if not (checkpoint / "state.pt").is_file():
+        return {}
+    config = adapter_source / "adapter_config.json"
+    reference_weights = adapter_source / "adapter_model.safetensors"
+    if not config.is_file() or not reference_weights.is_file():
+        return {}
+    return {
+        "adapter_config.json": config.stat().st_size,
+        # The exported state must match the reference key/shape/dtype contract exactly.
+        "adapter_model.safetensors": reference_weights.stat().st_size,
+    }
+
+
+def checkpoint_rows(
+    run: Path, probes: Iterable[int], adapter_source: Path = BETA_ADAPTER_SOURCE,
+) -> list[dict[str, Any]]:
     root = run / "checkpoints"
     probe_set = set(probes)
     if not root.is_dir():
@@ -109,10 +133,68 @@ def checkpoint_rows(run: Path, probes: Iterable[int]) -> list[dict[str, Any]]:
             cursor = metadata["driver_state"].get("next_group_index")
         world_size = metadata.get("world_size", metadata.get("cuda_device_count_saved", 4))
         rows.append({
-            "step": step, "cursor": cursor, "path": str(path),
+            "checkpoint": path.name, "step": step, "cursor": cursor, "path": str(path),
             "world_size": world_size, "probe_available": step in probe_set,
+            "files": adapter_inventory(path, adapter_source),
         })
     return sorted(rows, key=lambda row: row["step"])
+
+
+def checkpoint_directory(run: Path, checkpoint: str) -> Path:
+    if Path(checkpoint).name != checkpoint or not CHECKPOINT_NAME_RE.fullmatch(checkpoint):
+        raise HTTPException(status_code=404, detail="checkpoint not found")
+    root = (run / "checkpoints").resolve()
+    candidate = (root / checkpoint).resolve()
+    if candidate.parent != root or not candidate.is_dir():
+        raise HTTPException(status_code=404, detail="checkpoint not found")
+    return candidate
+
+
+def export_adapter_safetensors(
+    checkpoint: Path, adapter_source: Path, temporary_root: Path | None = None,
+) -> Path:
+    """Export only the LoRA state from a formal training checkpoint."""
+    try:
+        import torch
+        from safetensors import safe_open
+        from safetensors.torch import save_file
+    except ImportError as exc:
+        raise RuntimeError("adapter export dependencies are unavailable") from exc
+
+    state_path = checkpoint / "state.pt"
+    reference_path = adapter_source / "adapter_model.safetensors"
+    if not state_path.is_file() or not reference_path.is_file():
+        raise RuntimeError("checkpoint adapter source is incomplete")
+    payload = torch.load(state_path, map_location="cpu", weights_only=False, mmap=True)
+    state = payload.get("model_state_dict") if isinstance(payload, dict) else None
+    if not isinstance(state, dict) or not state:
+        raise RuntimeError("checkpoint has no model_state_dict")
+    if any(not isinstance(key, str) or "lora_" not in key for key in state):
+        raise RuntimeError("checkpoint model state is not LoRA-only")
+    with safe_open(reference_path, framework="pt", device="cpu") as reference:
+        reference_keys = set(reference.keys())
+        if set(state) != reference_keys:
+            raise RuntimeError("checkpoint LoRA key contract mismatch")
+        for key, tensor in state.items():
+            if tuple(tensor.shape) != tuple(reference.get_slice(key).get_shape()):
+                raise RuntimeError(f"checkpoint LoRA shape mismatch: {key}")
+            if tensor.dtype != reference.get_tensor(key).dtype:
+                raise RuntimeError(f"checkpoint LoRA dtype mismatch: {key}")
+
+    temporary_dir = Path(temporary_root) if temporary_root else Path("/root/truerec_adapter_exports")
+    temporary_dir.mkdir(parents=True, exist_ok=True)
+    handle = tempfile.NamedTemporaryFile(
+        prefix=f"{checkpoint.name}-", suffix=".safetensors", dir=temporary_dir, delete=False
+    )
+    output = Path(handle.name)
+    handle.close()
+    try:
+        tensors = {key: tensor.detach().cpu().contiguous() for key, tensor in state.items()}
+        save_file(tensors, output, metadata={"format": "pt"})
+    except Exception:
+        output.unlink(missing_ok=True)
+        raise
+    return output
 
 
 def find_record(rows: Iterable[dict[str, Any]], *, step: int | None = None, group_id: str | None = None) -> dict[str, Any] | None:
@@ -126,9 +208,13 @@ def find_record(rows: Iterable[dict[str, Any]], *, step: int | None = None, grou
     return None
 
 
-def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) -> None:
+def install_truerec_routes(
+    app: Any, root: str | Path | None, static_dir: Path,
+    adapter_source_dir: str | Path = BETA_ADAPTER_SOURCE,
+) -> None:
     """Install an isolated read-only surface into the existing monitor service."""
     runs_root = Path(root).expanduser().resolve() if root else Path("/nonexistent/truerec-runs")
+    adapter_source = Path(adapter_source_dir).expanduser().resolve()
     router = APIRouter(prefix="/api/truerec")
     gold_cache: dict[str, dict[str, Any]] | None = None
 
@@ -182,7 +268,7 @@ def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) 
         run = selected_run(runs_root, run_id)
         live = read_json(run / "live_state.json", {})
         steps = probe_steps(run)
-        checkpoints = checkpoint_rows(run, steps)
+        checkpoints = checkpoint_rows(run, steps, adapter_source)
         current = int(live.get("current_step", 0) or 0)
         interval = 256
         return {
@@ -248,6 +334,25 @@ def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) 
     @router.get("/checkpoints")
     def checkpoints(run_id: str) -> list[dict[str, Any]]:
         run = selected_run(runs_root, run_id)
-        return checkpoint_rows(run, probe_steps(run))
+        return checkpoint_rows(run, probe_steps(run), adapter_source)
+
+    @router.get("/checkpoints/{checkpoint}/download")
+    def download_checkpoint(checkpoint: str, file: str, run_id: str):
+        if file not in ADAPTER_FILES:
+            raise HTTPException(status_code=404, detail="adapter file not found")
+        run = selected_run(runs_root, run_id)
+        directory = checkpoint_directory(run, checkpoint)
+        if not adapter_inventory(directory, adapter_source):
+            raise HTTPException(status_code=404, detail="checkpoint adapter is not ready")
+        if file == "adapter_config.json":
+            return FileResponse(adapter_source / file, filename=file)
+        try:
+            exported = export_adapter_safetensors(directory, adapter_source)
+        except (OSError, RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=500, detail=f"adapter export failed: {exc}") from exc
+        return FileResponse(
+            exported, filename=file,
+            background=BackgroundTask(exported.unlink, missing_ok=True),
+        )
 
     app.include_router(router)

@@ -4,8 +4,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import torch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from safetensors import safe_open
+from safetensors.torch import save_file
 
 from truerec_dashboard import install_truerec_routes, read_json, read_jsonl
 
@@ -98,6 +101,56 @@ class TrueRecDashboardTests(unittest.TestCase):
         client = TestClient(app)
         self.assertEqual(client.get("/api/truerec/runs").json(), [])
         self.assertEqual(client.get("/api/truerec/overview", params={"run_id": "missing"}).status_code, 404)
+
+    def test_checkpoint_download_exports_lora_only_adapter(self):
+        root = self.tmp_path / "runs"
+        run = build_run(root)
+        checkpoint = run / "checkpoints" / "checkpoint-step-256"
+        adapter_source = self.tmp_path / "beta-adapter"
+        adapter_source.mkdir()
+        dump(adapter_source / "adapter_config.json", {
+            "base_model_name_or_path": "/data/models/onereason-8b-pretrain-competition",
+            "peft_type": "LORA", "r": 32, "inference_mode": True,
+        })
+        lora_state = {
+            "base_model.model.layer.lora_A.weight": torch.arange(6, dtype=torch.float32).reshape(2, 3),
+            "base_model.model.layer.lora_B.weight": torch.arange(8, dtype=torch.float32).reshape(4, 2),
+        }
+        save_file(lora_state, adapter_source / "adapter_model.safetensors", metadata={"format": "pt"})
+        torch.save({
+            "model_state_dict": lora_state,
+            "optimizer_state_dict": {"state": {0: {"exp_avg": torch.ones(1)}}},
+            "rank_rng_states": ["must-not-export"],
+        }, checkpoint / "state.pt")
+
+        app = FastAPI()
+        install_truerec_routes(app, root, Path(__file__).parent / "static", adapter_source)
+        client = TestClient(app)
+        listed = client.get("/api/truerec/checkpoints", params={"run_id": run.name}).json()[0]
+        self.assertEqual(listed["checkpoint"], "checkpoint-step-256")
+        self.assertEqual(set(listed["files"]), {"adapter_config.json", "adapter_model.safetensors"})
+        config = client.get(
+            "/api/truerec/checkpoints/checkpoint-step-256/download",
+            params={"run_id": run.name, "file": "adapter_config.json"},
+        )
+        self.assertEqual(config.status_code, 200)
+        self.assertEqual(config.json()["peft_type"], "LORA")
+        weights = client.get(
+            "/api/truerec/checkpoints/checkpoint-step-256/download",
+            params={"run_id": run.name, "file": "adapter_model.safetensors"},
+        )
+        self.assertEqual(weights.status_code, 200)
+        downloaded = self.tmp_path / "downloaded.safetensors"
+        downloaded.write_bytes(weights.content)
+        with safe_open(downloaded, framework="pt", device="cpu") as handle:
+            self.assertEqual(set(handle.keys()), set(lora_state))
+            for key, tensor in lora_state.items():
+                torch.testing.assert_close(handle.get_tensor(key), tensor)
+        self.assertNotIn(b"optimizer_state_dict", weights.content)
+        self.assertEqual(client.get(
+            "/api/truerec/checkpoints/checkpoint-step-256/download",
+            params={"run_id": run.name, "file": "state.pt"},
+        ).status_code, 404)
 
 
 if __name__ == "__main__":
