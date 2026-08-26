@@ -254,7 +254,7 @@ def create_app(
     outputs_dir: str | Path | None = None,
     checkpoint_outputs_dirs: Iterable[str | Path] | None = None,
     user_runs_dir: str | Path | None = None,
-    truerec_runs_dir: str | Path | None = None,
+    truerec_runs_dir: str | Path | Iterable[str | Path] | None = None,
     eval_dir: str | Path | None = None,
 ) -> FastAPI:
     if (run_dir is None) == (runs_dir is None):
@@ -1295,7 +1295,12 @@ def main() -> None:
         help="Additional approved checkpoint output root (repeatable)",
     )
     parser.add_argument("--user-runs-dir", help="Approved User-GRPO run root declared by monitor manifests")
-    parser.add_argument("--truerec-runs-dir", help="Read-only TrueRec-GRPO run root")
+    parser.add_argument(
+        "--truerec-runs-dir",
+        action="append",
+        default=[],
+        help="Read-only TrueRec-GRPO run root (repeatable)",
+    )
     parser.add_argument("--eval-dir", help="Checkpoint evaluation job root (defaults beside runs-dir)")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)

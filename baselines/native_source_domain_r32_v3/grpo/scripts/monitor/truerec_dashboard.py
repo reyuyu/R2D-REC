@@ -46,30 +46,47 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def run_paths(root: Path) -> list[Path]:
-    if not root.is_dir():
-        return []
-    try:
-        children = list(root.iterdir())
-    except OSError:
-        return []
-    return [
-        path for path in children
-        if path.is_dir() and any((path / name).exists() for name in ("live_state.json", "train_groups.jsonl"))
-    ]
+def normalize_run_roots(root: str | Path | Iterable[str | Path] | None) -> tuple[Path, ...]:
+    if root is None:
+        return (Path("/nonexistent/truerec-runs"),)
+    values = (root,) if isinstance(root, (str, Path)) else tuple(root)
+    return tuple(dict.fromkeys(Path(value).expanduser().resolve() for value in values))
 
 
-def selected_run(root: Path, run_id: str) -> Path:
+def run_paths(roots: Iterable[Path]) -> list[Path]:
+    result: list[Path] = []
+    for root in roots:
+        if not root.is_dir():
+            continue
+        try:
+            children = list(root.iterdir())
+        except OSError:
+            continue
+        result.extend(
+            path for path in children
+            if path.is_dir() and any((path / name).exists() for name in ("live_state.json", "train_groups.jsonl"))
+        )
+    return list(dict.fromkeys(path.resolve() for path in result))
+
+
+def selected_run(roots: Iterable[Path], run_id: str) -> Path:
     if not run_id or Path(run_id).name != run_id or run_id in {".", ".."}:
         raise HTTPException(status_code=400, detail="a valid run_id is required")
-    candidate = (root / run_id).resolve()
-    try:
-        candidate.relative_to(root.resolve())
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail="unknown TrueRec run") from exc
-    if not candidate.is_dir():
+    matches = []
+    for root in roots:
+        candidate = (root / run_id).resolve()
+        try:
+            candidate.relative_to(root.resolve())
+        except ValueError:
+            continue
+        if candidate.is_dir():
+            matches.append(candidate)
+    matches = list(dict.fromkeys(matches))
+    if not matches:
         raise HTTPException(status_code=404, detail="unknown TrueRec run")
-    return candidate
+    if len(matches) > 1:
+        raise HTTPException(status_code=409, detail="TrueRec run_id exists in multiple roots")
+    return matches[0]
 
 
 def probe_steps(run: Path) -> list[int]:
@@ -211,11 +228,11 @@ def find_record(rows: Iterable[dict[str, Any]], *, step: int | None = None, grou
 
 
 def install_truerec_routes(
-    app: Any, root: str | Path | None, static_dir: Path,
+    app: Any, root: str | Path | Iterable[str | Path] | None, static_dir: Path,
     adapter_source_dir: str | Path = BETA_ADAPTER_SOURCE,
 ) -> None:
     """Install an isolated read-only surface into the existing monitor service."""
-    runs_root = Path(root).expanduser().resolve() if root else Path("/nonexistent/truerec-runs")
+    runs_roots = normalize_run_roots(root)
     adapter_source = Path(adapter_source_dir).expanduser().resolve()
     router = APIRouter(prefix="/api/truerec")
     gold_cache: dict[str, dict[str, Any]] | None = None
@@ -225,10 +242,13 @@ def install_truerec_routes(
         if gold_cache is not None:
             return gold_cache
         gold_cache = {}
-        project_root = runs_root.parent
-        sources = (
-            project_root / "data" / "pilot4096" / "pilot4096_records.jsonl",
-            project_root / "data" / "fixed_domain_abc" / "probe20_records.jsonl",
+        sources = tuple(
+            source
+            for runs_root in runs_roots
+            for source in (
+                runs_root.parent / "data" / "pilot4096" / "pilot4096_records.jsonl",
+                runs_root.parent / "data" / "fixed_domain_abc" / "probe20_records.jsonl",
+            )
         )
         for source in sources:
             for row in read_jsonl(source):
@@ -254,7 +274,7 @@ def install_truerec_routes(
     @router.get("/runs")
     def runs() -> list[dict[str, Any]]:
         result = []
-        for run in run_paths(runs_root):
+        for run in run_paths(runs_roots):
             live = read_json(run / "live_state.json", {})
             groups = read_jsonl(run / "train_groups.jsonl")
             latest = live.get("current_step", groups[-1].get("global_step", 0) if groups else 0)
@@ -267,7 +287,7 @@ def install_truerec_routes(
 
     @router.get("/overview")
     def overview(run_id: str) -> dict[str, Any]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         live = read_json(run / "live_state.json", {})
         steps = probe_steps(run)
         checkpoints = checkpoint_rows(run, steps, adapter_source)
@@ -283,13 +303,13 @@ def install_truerec_routes(
 
     @router.get("/curves")
     def curves(run_id: str) -> dict[str, Any]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         rows = read_jsonl(run / "train_groups.jsonl")
         return {"rows": rows, "count": len(rows)}
 
     @router.get("/train/steps")
     def train_steps(run_id: str) -> list[dict[str, Any]]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         return [
             {"global_step": row.get("global_step"), "group_id": row.get("recommendation_group_id"), "domain": row.get("target_domain")}
             for row in read_jsonl(run / "train_groups.jsonl")
@@ -297,7 +317,7 @@ def install_truerec_routes(
 
     @router.get("/train/explain/{step}")
     def train_explain(step: int, run_id: str) -> dict[str, Any]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         row = find_record(read_jsonl(run / "train_explain.jsonl"), step=step)
         if row is None:
             raise HTTPException(status_code=404, detail="training explanation not available")
@@ -305,7 +325,7 @@ def install_truerec_routes(
 
     @router.get("/probes")
     def probes(run_id: str) -> list[dict[str, Any]]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         return [{"step": step, "summary": read_json(run / "probe" / f"step{step}" / "summary.json", read_json(run / "probe" / str(step) / "summary.json", {}))} for step in probe_steps(run)]
 
     def probe_dir(run: Path, step: int) -> Path:
@@ -314,12 +334,12 @@ def install_truerec_routes(
 
     @router.get("/probe/{step}/groups")
     def probe_groups(step: int, run_id: str) -> list[dict[str, Any]]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         return read_jsonl(probe_dir(run, step) / "groups.jsonl")
 
     @router.get("/probe/{step}/explain")
     def probe_explain(step: int, group_id: str, run_id: str) -> dict[str, Any]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         row = find_record(read_jsonl(probe_dir(run, step) / "explain.jsonl"), group_id=group_id)
         if row is None:
             raise HTTPException(status_code=404, detail="probe explanation not available")
@@ -327,7 +347,7 @@ def install_truerec_routes(
 
     @router.get("/probe/compare")
     def probe_compare(step_a: int, step_b: int, group_id: str, run_id: str) -> dict[str, Any]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         def record(step: int) -> dict[str, Any] | None:
             row = find_record(read_jsonl(probe_dir(run, step) / "explain.jsonl"), group_id=group_id)
             return with_gold(row) if row is not None else None
@@ -335,14 +355,14 @@ def install_truerec_routes(
 
     @router.get("/checkpoints")
     def checkpoints(run_id: str) -> list[dict[str, Any]]:
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         return checkpoint_rows(run, probe_steps(run), adapter_source)
 
     @router.get("/checkpoints/{checkpoint}/download")
     def download_checkpoint(checkpoint: str, file: str, run_id: str):
         if file not in ADAPTER_FILES:
             raise HTTPException(status_code=404, detail="adapter file not found")
-        run = selected_run(runs_root, run_id)
+        run = selected_run(runs_roots, run_id)
         directory = checkpoint_directory(run, checkpoint)
         if not adapter_inventory(directory, adapter_source):
             raise HTTPException(status_code=404, detail="checkpoint adapter is not ready")

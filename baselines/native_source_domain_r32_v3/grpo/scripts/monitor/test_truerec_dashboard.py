@@ -24,8 +24,8 @@ def jsonl(path: Path, rows, partial=False) -> None:
     path.write_text(text + ('{"partial":' if partial else ""), encoding="utf-8")
 
 
-def build_run(root: Path) -> Path:
-    run = root / "TRUEREC-MOCK"
+def build_run(root: Path, run_id: str = "TRUEREC-MOCK") -> Path:
+    run = root / run_id
     dump(run / "live_state.json", {
         "current_step": 1, "total_steps": 4096, "current_group_id": "group-1",
         "domain": "video", "rank_health": [{"rank": i, "healthy": True} for i in range(4)],
@@ -104,6 +104,30 @@ class TrueRecDashboardTests(unittest.TestCase):
         client = TestClient(app)
         self.assertEqual(client.get("/api/truerec/runs").json(), [])
         self.assertEqual(client.get("/api/truerec/overview", params={"run_id": "missing"}).status_code, 404)
+
+    def test_multiple_run_roots_are_merged_read_only(self):
+        data_root = self.tmp_path / "data-project" / "runs"
+        root_run = self.tmp_path / "root-project" / "runs"
+        first = build_run(data_root, "TRUEREC-V1")
+        second = build_run(root_run, "TRUEREC-V2")
+        app = FastAPI()
+        install_truerec_routes(app, [data_root, root_run], Path(__file__).parent / "static")
+        client = TestClient(app)
+        run_ids = {row["run_id"] for row in client.get("/api/truerec/runs").json()}
+        self.assertEqual(run_ids, {first.name, second.name})
+        overview = client.get("/api/truerec/overview", params={"run_id": second.name})
+        self.assertEqual(overview.status_code, 200)
+        self.assertEqual(overview.json()["live"]["current_step"], 1)
+
+    def test_duplicate_run_id_across_roots_is_rejected(self):
+        first_root = self.tmp_path / "first" / "runs"
+        second_root = self.tmp_path / "second" / "runs"
+        build_run(first_root, "DUPLICATE")
+        build_run(second_root, "DUPLICATE")
+        app = FastAPI()
+        install_truerec_routes(app, [first_root, second_root], Path(__file__).parent / "static")
+        response = TestClient(app).get("/api/truerec/overview", params={"run_id": "DUPLICATE"})
+        self.assertEqual(response.status_code, 409)
 
     def test_checkpoint_download_exports_lora_only_adapter(self):
         root = self.tmp_path / "runs"
