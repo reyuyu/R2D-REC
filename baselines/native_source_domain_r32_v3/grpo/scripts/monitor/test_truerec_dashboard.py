@@ -41,6 +41,11 @@ def build_run(root: Path) -> Path:
     jsonl(probe / "explain.jsonl", [{**explain, "mode": "PROBE", "optimizer_update": False}])
     checkpoint = run / "checkpoints" / "checkpoint-step-256"
     dump(checkpoint / "metadata.json", {"global_step": 256, "next_group_index": 256, "world_size": 4})
+    jsonl(root.parent / "data" / "pilot4096" / "pilot4096_records.jsonl", [{
+        "recommendation_group_id": "group-1", "target_domain": "video", "K": 2,
+        "all_gold_abc": ["<s_a_1><s_b_2><s_c_3>", "<s_a_1><s_b_4><s_c_5>"],
+        "all_gold_sids": ["<|video_begin|><s_a_1><s_b_2><s_c_3>", "<|video_begin|><s_a_1><s_b_4><s_c_5>"],
+    }])
     return run
 
 
@@ -75,6 +80,8 @@ class TrueRecDashboardTests(unittest.TestCase):
         explain = client.get("/api/truerec/train/explain/1", params={"run_id": run.name}).json()
         self.assertEqual(explain["global_candidate_indices"], list(range(8)))
         self.assertEqual([row["candidate_index"] for row in explain["candidates"]], list(range(8)))
+        self.assertEqual(explain["gold_reference"]["K"], 2)
+        self.assertEqual(len(explain["gold_reference"]["all_gold_sids"]), 2)
         probes = client.get("/api/truerec/probes", params={"run_id": run.name}).json()
         self.assertEqual(probes[0]["summary"]["group_count"], 20)
         comparison = client.get("/api/truerec/probe/compare", params={"run_id": run.name, "step_a": 0, "step_b": 0, "group_id": "group-1"}).json()

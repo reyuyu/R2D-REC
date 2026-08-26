@@ -130,6 +130,34 @@ def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) 
     """Install an isolated read-only surface into the existing monitor service."""
     runs_root = Path(root).expanduser().resolve() if root else Path("/nonexistent/truerec-runs")
     router = APIRouter(prefix="/api/truerec")
+    gold_cache: dict[str, dict[str, Any]] | None = None
+
+    def gold_index() -> dict[str, dict[str, Any]]:
+        nonlocal gold_cache
+        if gold_cache is not None:
+            return gold_cache
+        gold_cache = {}
+        project_root = runs_root.parent
+        sources = (
+            project_root / "data" / "pilot4096" / "pilot4096_records.jsonl",
+            project_root / "data" / "fixed_domain_abc" / "probe20_records.jsonl",
+        )
+        for source in sources:
+            for row in read_jsonl(source):
+                group_id = row.get("recommendation_group_id")
+                if group_id:
+                    gold_cache[str(group_id)] = {
+                        "all_gold_abc": row.get("all_gold_abc", []),
+                        "all_gold_sids": row.get("all_gold_sids", []),
+                        "target_domain": row.get("target_domain"),
+                        "K": row.get("K"),
+                    }
+        return gold_cache
+
+    def with_gold(row: dict[str, Any]) -> dict[str, Any]:
+        result = dict(row)
+        result["gold_reference"] = gold_index().get(str(row.get("recommendation_group_id", "")), {})
+        return result
 
     @app.get("/truerec")
     def truerec_dashboard() -> FileResponse:
@@ -185,7 +213,7 @@ def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) 
         row = find_record(read_jsonl(run / "train_explain.jsonl"), step=step)
         if row is None:
             raise HTTPException(status_code=404, detail="training explanation not available")
-        return row
+        return with_gold(row)
 
     @router.get("/probes")
     def probes(run_id: str) -> list[dict[str, Any]]:
@@ -207,13 +235,14 @@ def install_truerec_routes(app: Any, root: str | Path | None, static_dir: Path) 
         row = find_record(read_jsonl(probe_dir(run, step) / "explain.jsonl"), group_id=group_id)
         if row is None:
             raise HTTPException(status_code=404, detail="probe explanation not available")
-        return row
+        return with_gold(row)
 
     @router.get("/probe/compare")
     def probe_compare(step_a: int, step_b: int, group_id: str, run_id: str) -> dict[str, Any]:
         run = selected_run(runs_root, run_id)
         def record(step: int) -> dict[str, Any] | None:
-            return find_record(read_jsonl(probe_dir(run, step) / "explain.jsonl"), group_id=group_id)
+            row = find_record(read_jsonl(probe_dir(run, step) / "explain.jsonl"), group_id=group_id)
+            return with_gold(row) if row is not None else None
         return {"step_a": step_a, "step_b": step_b, "group_id": group_id, "a": record(step_a), "b": record(step_b)}
 
     @router.get("/checkpoints")
