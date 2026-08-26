@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2C1b full-forward PPO old-logp runtime contract: PASS
+The formal runtime helper populated candidate.old_logps from eval/no-grad full-sequence rescore; generation score logps remained diagnostic only. No generation, Frontier, HPR, backward, optimizer, or training ran.
