@@ -1,0 +1,790 @@
+{
+  "explain": {
+    "candidates": [
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 0,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 0,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 1,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 0,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 2,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 1,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 3,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 1,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 4,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 2,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 5,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 2,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 6,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 3,
+        "wrong_history_copy": false
+      },
+      {
+        "AB_hit": true,
+        "A_hit": true,
+        "action_tokens": [
+          {
+            "action_position": 0,
+            "current_logp_pre_step": -0.0198974609375,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0198974609375,
+            "position_name": "A",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 159448,
+            "token_string": "<s_a_7779>"
+          },
+          {
+            "action_position": 1,
+            "current_logp_pre_step": -0.033935546875,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.033935546875,
+            "position_name": "B",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 162402,
+            "token_string": "<s_b_2541>"
+          },
+          {
+            "action_position": 2,
+            "current_logp_pre_step": -0.0019683837890625,
+            "effective_signed_credit": 0.0,
+            "format_token_credit": 0.0,
+            "frontier_loss_contribution": 0.0,
+            "frontier_token_credit": 0.0,
+            "old_logp": -0.0019683837890625,
+            "position_name": "C",
+            "ppo_clipped_surrogate": 0.0,
+            "ppo_ratio": 1.0,
+            "ppo_selected_surrogate": -0.0,
+            "ppo_unclipped_surrogate": 0.0,
+            "prefix_gate_active": true,
+            "token_id": 173884,
+            "token_string": "<s_c_5831>"
+          }
+        ],
+        "candidate_index": 7,
+        "completion_ids": [
+          159448,
+          162402,
+          173884
+        ],
+        "completion_tokens": [
+          "<s_a_7779>",
+          "<s_b_2541>",
+          "<s_c_5831>"
+        ],
+        "exact": true,
+        "format_valid": true,
+        "parsed_abc": "<s_a_7779><s_b_2541><s_c_5831>",
+        "source_rank": 3,
+        "wrong_history_copy": false
+      }
+    ],
+    "global_candidate_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "global_step_if_success": 2586,
+    "group_index": 2585,
+    "hpr_sites": [],
+    "hpr_trigger": "HPR_NONE",
+    "mode": "DEBUG_PRE_OPTIMIZER",
+    "optimizer_update": false,
+    "recommendation_group_id": "6005f443f291be018ce1ec7dbf3a1e512e21b477a7ff9acc10803752e2c4edcd",
+    "trigger_reason": "At least one exact Gold ABC was reached; rescue is inactive."
+  },
+  "gate_diagnostic": {
+    "EXACT_FAILED_SUBGATES": [
+      "ZERO_GRADIENT"
+    ],
+    "call_gate": {
+      "backward_calls": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "expected_calls": 1,
+      "forward_calls": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "hpr_extra_forward_calls": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pass": true,
+      "per_rank": [
+        {
+          "backward_calls": 1,
+          "forward_calls": 1,
+          "hpr_extra_forward_calls": 0,
+          "rank": 0
+        },
+        {
+          "backward_calls": 1,
+          "forward_calls": 1,
+          "hpr_extra_forward_calls": 0,
+          "rank": 1
+        },
+        {
+          "backward_calls": 1,
+          "forward_calls": 1,
+          "hpr_extra_forward_calls": 0,
+          "rank": 2
+        },
+        {
+          "backward_calls": 1,
+          "forward_calls": 1,
+          "hpr_extra_forward_calls": 0,
+          "rank": 3
+        }
+      ],
+      "selected_mb": 2
+    },
+    "gradient_gate": {
+      "base_params_with_grad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "inf_grad_count": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "lora_grad_norm": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "lora_params_with_grad": [
+        504,
+        504,
+        504,
+        504
+      ],
+      "lora_params_with_nonzero_grad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "nan_grad_count": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "pass": false,
+      "per_rank": [
+        {
+          "base_params_with_grad": 0,
+          "inf_grad_count": 0,
+          "lora_grad_norm": 0.0,
+          "lora_params_with_grad": 504,
+          "lora_params_with_nonzero_grad": 0,
+          "nan_grad_count": 0,
+          "rank": 0
+        },
+        {
+          "base_params_with_grad": 0,
+          "inf_grad_count": 0,
+          "lora_grad_norm": 0.0,
+          "lora_params_with_grad": 504,
+          "lora_params_with_nonzero_grad": 0,
+          "nan_grad_count": 0,
+          "rank": 1
+        },
+        {
+          "base_params_with_grad": 0,
+          "inf_grad_count": 0,
+          "lora_grad_norm": 0.0,
+          "lora_params_with_grad": 504,
+          "lora_params_with_nonzero_grad": 0,
+          "nan_grad_count": 0,
+          "rank": 2
+        },
+        {
+          "base_params_with_grad": 0,
+          "inf_grad_count": 0,
+          "lora_grad_norm": 0.0,
+          "lora_params_with_grad": 504,
+          "lora_params_with_nonzero_grad": 0,
+          "nan_grad_count": 0,
+          "rank": 3
+        }
+      ]
+    },
+    "loss_gate": {
+      "finite": {
+        "frontier": true,
+        "hpr_raw": true,
+        "hpr_weighted": true,
+        "total": true
+      },
+      "frontier": 0.0,
+      "hpr_raw": 0.0,
+      "hpr_weighted": 0.0,
+      "pass": true,
+      "total": 0.0
+    },
+    "pass": false,
+    "ratio_gate": {
+      "abs_max": 0.0,
+      "abs_mean": 0.0,
+      "pass": true,
+      "ratio_max": 1.0,
+      "ratio_min": 1.0
+    },
+    "runtime_plan_gate": {
+      "all_equal": true,
+      "each_rank_runtime_plan_hash": [
+        "86958d65b237c9343cda0327a2f1ecae7ad3e7daba0cc452c5b3a4d557285ede",
+        "86958d65b237c9343cda0327a2f1ecae7ad3e7daba0cc452c5b3a4d557285ede",
+        "86958d65b237c9343cda0327a2f1ecae7ad3e7daba0cc452c5b3a4d557285ede",
+        "86958d65b237c9343cda0327a2f1ecae7ad3e7daba0cc452c5b3a4d557285ede"
+      ],
+      "pass": true
+    }
+  },
+  "group_metadata": {
+    "FAILED_GROUP_ID": "6005f443f291be018ce1ec7dbf3a1e512e21b477a7ff9acc10803752e2c4edcd",
+    "K_A": 1,
+    "K_AB": 2,
+    "K_ABC": 2,
+    "context_tokens": 780,
+    "domain": "prod",
+    "hierarchy_class": "B_RICH",
+    "selected_mb": 2
+  },
+  "zero_gradient_assessment": {
+    "classification": "ZERO_GRADIENT_EXPECTED",
+    "format_credits_all_zero": true,
+    "frontier_credits_all_zero": true,
+    "hpr_none": true,
+    "hpr_site_count": 0,
+    "loss_strict_zero": true,
+    "theoretical_gradient_signal_present": false,
+    "unique_failed_subgate_is_zero_gradient": true
+  }
+}

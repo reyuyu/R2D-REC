@@ -1,0 +1,11 @@
+{
+  "first_difference": {
+    "absolute_difference": 497.0,
+    "actual": 158128,
+    "expected": 157631,
+    "kind": "value",
+    "path": "$.candidates[5].completion_ids[0]"
+  },
+  "group_index": 2583,
+  "recommendation_group_id": "2ce5a2e5426f7198aac4d9bdc28667169d017073f9342a14fbe5997917f00072"
+}

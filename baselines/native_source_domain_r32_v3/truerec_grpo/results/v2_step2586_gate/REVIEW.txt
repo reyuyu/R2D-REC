@@ -1,0 +1,24 @@
+TrueRec V2 step2586 gate diagnostic: NON_EXACT_REPLAY_GATE_FAILURE
+FAILED_GROUP_ID=6005f443f291be018ce1ec7dbf3a1e512e21b477a7ff9acc10803752e2c4edcd
+EXACT_FAILED_SUBGATES=['ZERO_GRADIENT']
+REPLAY_TRAJECTORY_EXACT=13/25
+ZERO_GRADIENT_CLASSIFICATION=ZERO_GRADIENT_EXPECTED
+
+The checkpoint restored the model SHA, AdamW step=2560, cursor, epoch2 order, and all four
+ranks' Python/NumPy/CPU/CUDA RNG states. Group 2560 matched the original monitoring payload
+bit-for-bit. After the first replayed optimizer update, group 2561 retained identical sampled
+completion IDs but old_logp drifted. Group 2562 then had a different sampled first token. Across
+the requested 25 replay groups, only 13 discrete trajectories matched the original run and only
+one full monitoring payload was bitwise exact. Thus checkpoint-step-2560 cannot reproduce the
+original post-checkpoint CUDA optimizer trajectory exactly under the current nondeterministic path.
+
+The explicitly labelled non-exact replay nevertheless reached the requested target group and the
+only failed subgate was ZERO_GRADIENT. All eight candidates emitted the same valid exact-Gold ABC;
+all Frontier credits and format credits were zero; HPR was NONE with zero sites; Frontier, raw HPR,
+weighted HPR, and total loss were strictly zero. All 504 LoRA tensors had grad fields on each rank,
+but zero tensors had nonzero gradients and each rank's LoRA grad norm was 0. There was no theoretical
+token/site training signal, so this observed zero gradient is expected rather than a loss/backward bug.
+
+Because the replay was not exact, this is strong corroborating evidence, not a strict reconstruction
+of the original failed process. The target group stopped before optimizer.step. Formal training was
+not resumed, and no reward, PPO, HPR, Frontier, LR, or gate threshold was changed.
