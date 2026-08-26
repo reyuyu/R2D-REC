@@ -23,6 +23,7 @@ class TrainerStreamingBackwardEquivalenceTest(unittest.TestCase):
         self.assertTrue(self.audit["hpr_value_equivalent"])
         self.assertTrue(self.audit["total_value_equivalent"])
         self.assertTrue(self.audit["gradient_equivalent"])
+        self.assertTrue(all(case["reported_loss_composition_closed"] for case in self.audit["cases"].values()))
 
     def test_physical_execution_counts(self):
         self.assertEqual(self.audit["physical_forward_calls_per_group"], 4)

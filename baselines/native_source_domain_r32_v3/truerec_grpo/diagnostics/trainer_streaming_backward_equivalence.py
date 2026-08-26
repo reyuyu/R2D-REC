@@ -80,6 +80,8 @@ def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
             "hpr": streamed.hpr_value_raw,
             "total": streamed.total_value,
         }
+        if streamed.total_value != streamed.frontier_value + streamed.hpr_value_weighted:
+            raise AssertionError("streaming detached monitoring composition is not closed")
         for key in reference_values:
             torch.testing.assert_close(
                 torch.tensor(streamed_values[key], dtype=torch.float64),
@@ -116,6 +118,7 @@ def run_audit(output_dir: Path | None = None) -> dict[str, Any]:
             "physical_backward_calls": trainer.streaming_backward_calls,
             "full_g8_plan_builds": trainer.streaming_full_g8_plan_builds,
             "graph_bearing_state_retained_across_chunks": False,
+            "reported_loss_composition_closed": True,
         }
 
     method_source = inspect.getsource(TrueRecGRPOTrainerV1.backward_group_streaming)

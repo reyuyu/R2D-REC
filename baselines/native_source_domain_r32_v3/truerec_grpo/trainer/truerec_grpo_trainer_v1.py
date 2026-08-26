@@ -126,7 +126,7 @@ class TrueRecGRPOTrainerV1:
         site_count = len(runtime.hpr.sites)
         frontier_value = 0.0
         hpr_value_raw = 0.0
-        total_value = 0.0
+        backpropagated_chunk_total_value = 0.0
         self.logical_policy_scoring_passes += 1
         for start in range(0, G, TRAINER_MICROBATCH_SIZE):
             stop = min(start + TRAINER_MICROBATCH_SIZE, G)
@@ -165,11 +165,13 @@ class TrueRecGRPOTrainerV1:
             chunk_total = frontier_contribution + HPR_LAMBDA * hpr_contribution
             frontier_value += float(frontier_contribution.detach())
             hpr_value_raw += float(hpr_contribution.detach())
-            total_value += float(chunk_total.detach())
+            backpropagated_chunk_total_value += float(chunk_total.detach())
             chunk_total.backward()
             self.streaming_backward_calls += 1
             del chunk_total, hpr_contribution, frontier_contribution
             del format_loss, hierarchy, old_logps, current, logits, output, attention_mask, input_ids
+        hpr_value_weighted = HPR_LAMBDA * hpr_value_raw
+        total_value = frontier_value + hpr_value_weighted
         monitoring = dict(runtime.monitoring)
         monitoring.update({
             "business_group_count": 1,
@@ -179,11 +181,13 @@ class TrueRecGRPOTrainerV1:
             "physical_policy_backward_calls": PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP,
             "frontier_loss": frontier_value,
             "hpr_loss_raw": hpr_value_raw,
-            "hpr_loss_weighted": HPR_LAMBDA * hpr_value_raw,
+            "hpr_loss_weighted": hpr_value_weighted,
             "total_loss": total_value,
+            "backpropagated_chunk_total_loss": backpropagated_chunk_total_value,
+            "monitoring_composition_roundoff_abs": abs(backpropagated_chunk_total_value - total_value),
         })
         return StreamingGroupBackward(
-            frontier_value, hpr_value_raw, HPR_LAMBDA * hpr_value_raw, total_value, monitoring,
+            frontier_value, hpr_value_raw, hpr_value_weighted, total_value, monitoring,
         )
 
     def compute_group(self, group: BusinessGroupRollout) -> IntegratedGroupLoss:

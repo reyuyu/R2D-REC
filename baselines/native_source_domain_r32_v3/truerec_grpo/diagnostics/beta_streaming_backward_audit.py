@@ -201,6 +201,8 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
         "hpr_value_raw": streamed.hpr_value_raw,
         "hpr_value_weighted": streamed.hpr_value_weighted,
         "total_value": streamed.total_value,
+        "backpropagated_chunk_total_value": streamed.monitoring["backpropagated_chunk_total_loss"],
+        "monitoring_composition_roundoff_abs": streamed.monitoring["monitoring_composition_roundoff_abs"],
     }
     composition = all(math.isfinite(value) for value in losses.values()) and verify_total_composition(
         losses["frontier_value"], losses["hpr_value_raw"], losses["hpr_value_weighted"], losses["total_value"],
