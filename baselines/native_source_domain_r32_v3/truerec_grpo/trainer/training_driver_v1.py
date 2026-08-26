@@ -29,6 +29,9 @@ DEFAULT_GROUPS_PER_OPTIMIZER_STEP = 1
 ADAPTIVE_STREAMING_MICROBATCH = True
 LONG_CONTEXT_THRESHOLD_TOKENS = 2200
 MATCH_OLD_CURRENT_SCORING_MICROBATCH = True
+PRODUCTION_WORLD_SIZE = 4
+LOCAL_G_PER_RANK = 2
+DDP_WORLD_SIZE_LOSS_SCALING = True
 
 
 class DriverContractError(RuntimeError):
@@ -235,6 +238,9 @@ def frozen_contract() -> dict[str, Any]:
         "long_context_threshold_tokens": LONG_CONTEXT_THRESHOLD_TOKENS,
         "long_context_microbatch_size": LONG_CONTEXT_STREAMING_MICROBATCH_SIZE,
         "old_rescore_matches_streaming_microbatch": MATCH_OLD_CURRENT_SCORING_MICROBATCH,
+        "production_world_size": PRODUCTION_WORLD_SIZE,
+        "local_g_per_rank": LOCAL_G_PER_RANK,
+        "ddp_world_size_loss_scaling": DDP_WORLD_SIZE_LOSS_SCALING,
         "hpr_lambda": HPR_LAMBDA,
         "kl_beta": KL_BETA,
         "optimizer_family": OPTIMIZER_FAMILY,

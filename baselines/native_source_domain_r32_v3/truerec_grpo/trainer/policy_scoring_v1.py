@@ -54,8 +54,8 @@ def score_full_sequences(
     """Score sampled tokens from complete context+completion rows in fixed chunks."""
     if model.training:
         raise ValueError("policy scoring requires model.eval()")
-    if len(completion_ids) != 8:
-        raise ValueError("policy scoring requires one ordered G8 group")
+    if len(completion_ids) not in (2, 8):
+        raise ValueError("policy scoring requires ordered local G2 or global G8 completions")
     normalized = tuple(tuple(int(token) for token in row) for row in completion_ids)
     if any(not 0 < len(row) <= 3 for row in normalized):
         raise ValueError("each sampled completion must contain 1..3 tokens")
@@ -72,7 +72,7 @@ def score_full_sequences(
     requires_grad: list[bool] = []
     graph_connected: list[bool] = []
     parameters = tuple(trainable_parameters)
-    for start in range(0, 8, microbatch_size):
+    for start in range(0, len(normalized), microbatch_size):
         rows = normalized[start:start + microbatch_size]
         lengths = [len(row) for row in rows]
         completion_width = max(lengths)
