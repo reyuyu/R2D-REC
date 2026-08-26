@@ -15,11 +15,13 @@ sys.path.insert(0, str(ROOT / "diagnostics"))
 from beta_deterministic_policy_mode_validation import (
     EXPECTED_LORA_DROPOUT,
     POLICY_SCORING_MODE,
+    SCORING_MICROBATCH_SIZE,
     TRAINER_SHA256,
     audit_dropout_modules,
     dropout_config_values,
     graph_connected_to_parameters,
     parameter_trainability,
+    score_full_sequences,
 )
 
 
@@ -40,6 +42,7 @@ class DeterministicPolicyModeValidationTest(unittest.TestCase):
     def test_01_frozen_contract(self):
         self.assertEqual(POLICY_SCORING_MODE, "eval")
         self.assertEqual(EXPECTED_LORA_DROPOUT, 0.05)
+        self.assertEqual(SCORING_MICROBATCH_SIZE, 2)
 
     def test_02_nested_dropout_config(self):
         values = dropout_config_values({"attention_dropout": 0.0, "adapter": {"lora_dropout": 0.05}, "unrelated": 4})
@@ -86,6 +89,28 @@ class DeterministicPolicyModeValidationTest(unittest.TestCase):
         self.assertNotIn(".generate(", source)
         self.assertNotIn(".backward(", source)
         self.assertNotIn("optimizer.step(", source)
+
+    def test_10_old_current_chunking_matches_and_preserves_graph_contract(self):
+        from types import SimpleNamespace
+
+        input_ids = torch.arange(40).reshape(8, 5) % 3
+        batch = SimpleNamespace(
+            input_ids=input_ids,
+            attention_mask=torch.ones_like(input_ids, dtype=torch.bool),
+            causal_logit_indices=torch.tensor([[1, 2, 3]] * 8),
+            completion_ids=torch.tensor([[0, 1, 2]] * 8),
+        )
+        class TokenPolicy(TinyPolicy):
+            def forward(self, input_ids, attention_mask):
+                values = torch.nn.functional.one_hot(input_ids, 3).float()
+                return SimpleNamespace(logits=super().forward(values))
+        policy = TokenPolicy().eval()
+        lora = [parameter for name, parameter in policy.named_parameters() if "lora_" in name]
+        old, old_grad, old_graph = score_full_sequences(policy, batch, "cpu", lora, False)
+        current, current_grad, current_graph = score_full_sequences(policy, batch, "cpu", lora, True)
+        self.assertTrue(torch.equal(old, current))
+        self.assertFalse(any(old_grad) or any(old_graph))
+        self.assertTrue(all(current_grad) and all(current_graph))
 
 
 if __name__ == "__main__":

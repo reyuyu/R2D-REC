@@ -18,11 +18,11 @@ from beta_gamma_renderer import BetaGammaRenderer  # noqa: E402
 from beta_old_logp_rescore_validation import REPEAT_ABS_MAX_THRESHOLD, TRAINER_SHA256, comparison_stats  # noqa: E402
 from beta_single_group_loss_audit import GROUP_ID, PAD_TOKEN_ID, load_phase12b_artifact, load_pilot_record, reconstruct_business_group  # noqa: E402
 from batch_collator_v1 import collate_business_group  # noqa: E402
-from truerec_grpo_trainer_v1 import gather_padded_action_logps  # noqa: E402
 
 
 POLICY_SCORING_MODE = "eval"
 EXPECTED_LORA_DROPOUT = 0.05
+SCORING_MICROBATCH_SIZE = 2
 
 
 class Phase12C1aError(RuntimeError):
@@ -86,6 +86,35 @@ def graph_connected_to_parameters(tensor, parameters: Iterable) -> bool:
     return False
 
 
+def score_full_sequences(model, batch, device, trainable_lora: Iterable, grad_enabled: bool):
+    """Score complete context+ABC rows in bounded, identical old/current chunks."""
+    import torch
+
+    values = []
+    requires_grad = []
+    graph_connected = []
+    parameters = tuple(trainable_lora)
+    for start in range(0, 8, SCORING_MICROBATCH_SIZE):
+        stop = min(start + SCORING_MICROBATCH_SIZE, 8)
+        input_ids = batch.input_ids[start:stop].to(device)
+        attention_mask = batch.attention_mask[start:stop].to(device)
+        with torch.set_grad_enabled(grad_enabled):
+            output = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = output.logits
+            rows = torch.arange(stop - start, device=device).unsqueeze(1).expand(stop - start, 3)
+            causal = batch.causal_logit_indices[start:stop].to(device)
+            selected = logits[rows, causal]
+            log_probs = torch.log_softmax(selected, dim=-1)
+            token_ids = batch.completion_ids[start:stop].to(device)
+            chunk = log_probs.gather(-1, token_ids.unsqueeze(-1)).squeeze(-1)
+        requires_grad.append(bool(chunk.requires_grad))
+        graph_connected.append(graph_connected_to_parameters(chunk, parameters) if grad_enabled else False)
+        values.append(chunk.detach().float().cpu())
+        del chunk, log_probs, selected, logits, output, input_ids, attention_mask
+        torch.cuda.empty_cache()
+    return torch.cat(values), requires_grad, graph_connected
+
+
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
@@ -140,23 +169,20 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
     if trainability["trainable_lora_param_count"] <= 0 or trainability["base_trainable_param_count"] != 0:
         raise Phase12C1aError(f"trainability gate failed: {trainability}")
 
-    input_ids = batch.input_ids.to(device)
-    attention_mask = batch.attention_mask.to(device)
-    with torch.no_grad():
-        old_output = model(input_ids=input_ids, attention_mask=attention_mask)
-        rescored_old = gather_padded_action_logps(old_output.logits, batch)
-    old_cpu = rescored_old.detach().float().cpu()
-    del rescored_old, old_output
-    torch.cuda.empty_cache()
+    trainable_lora = [parameter for name, parameter in model.named_parameters() if "lora_" in name and parameter.requires_grad]
+    old_cpu, old_requires_grad, old_graph_connected = score_full_sequences(
+        model, batch, device, trainable_lora, grad_enabled=False,
+    )
+    if any(old_requires_grad) or any(old_graph_connected):
+        raise Phase12C1aError("no-grad old rescore unexpectedly retained an autograd graph")
 
     if model.training or audit_dropout_modules(model)["rl_dropout_active"]:
         raise Phase12C1aError("policy mode changed before current forward")
-    current_output = model(input_ids=input_ids, attention_mask=attention_mask)
-    current_logps = gather_padded_action_logps(current_output.logits, batch)
-    trainable_lora = [parameter for name, parameter in model.named_parameters() if "lora_" in name and parameter.requires_grad]
-    current_requires_grad = bool(current_logps.requires_grad)
-    graph_connected = graph_connected_to_parameters(current_logps, trainable_lora)
-    current_cpu = current_logps.detach().float().cpu()
+    current_cpu, current_grad_flags, current_graph_flags = score_full_sequences(
+        model, batch, device, trainable_lora, grad_enabled=True,
+    )
+    current_requires_grad = all(current_grad_flags)
+    graph_connected = all(current_graph_flags)
     sampled_ids_changed = not torch.equal(sampled_ids_before, batch.completion_ids)
     comparison = comparison_stats(old_cpu, current_cpu, batch.completion_mask)
     passed = (
@@ -180,6 +206,8 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
         "old_current": comparison,
         "current_logps_requires_grad": current_requires_grad,
         "current_graph_connected_to_trainable_lora": graph_connected,
+        "scoring_microbatch_size": SCORING_MICROBATCH_SIZE,
+        "full_sequence_rows_scored": 8,
         "sampled_completion_ids_changed": sampled_ids_changed,
         "ppo_old_logp_contract_changed": False,
         "trainer_sha256": TRAINER_SHA256,
@@ -196,7 +224,6 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
         encoding="utf-8",
     )
     print(json.dumps({"PHASE1_2C1A": audit["status"], "old_current": comparison, "trainability": trainability, "dropout_active": dropout_modules["rl_dropout_active"], "graph_connected": graph_connected, "peak_reserved_gb": peak_reserved}), flush=True)
-    del current_logps, current_output
     if not passed:
         raise Phase12C1aError(f"C1a gate failed: {audit}")
 
