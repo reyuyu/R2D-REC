@@ -215,6 +215,43 @@ class TrueRecDashboardTests(unittest.TestCase):
             params={"run_id": run.name, "file": "state.pt"},
         ).status_code, 404)
 
+    def test_beam32_job_and_results_api(self):
+        root = self.tmp_path / "runs"
+        run = build_run(root)
+        checkpoint = run / "checkpoints" / "checkpoint-step-256"
+        torch.save({"model_state_dict": {"layer.lora_A.weight": torch.ones(1)}}, checkpoint / "state.pt")
+        worker = self.tmp_path / "worker.py"
+        worker.write_text("# test worker\n", encoding="utf-8")
+        app = FastAPI()
+        install_truerec_routes(app, root, Path(__file__).parent / "static", beam32_worker=worker)
+        client = TestClient(app)
+        self.assertEqual(client.get("/api/truerec/beam32/status", params={"run_id": run.name}).json()["state"], "NOT_STARTED")
+        with patch("truerec_dashboard.subprocess.Popen") as popen:
+            popen.return_value.pid = 321
+            queued = client.post("/api/truerec/beam32/run-all", params={"run_id": run.name})
+        self.assertEqual(queued.status_code, 200)
+        self.assertEqual(queued.json()["state"], "QUEUED")
+        self.assertEqual(queued.json()["pid"], 321)
+        popen.assert_called_once()
+
+        result = run / "beam32_probe" / "checkpoint-step-256"
+        dump(result / "summary.json", {"step": 256, "group_any_exact_rate": .5})
+        jsonl(result / "groups.jsonl", [{"recommendation_group_id": "group-1", "ANY_EXACT": True}])
+        jsonl(result / "explain.jsonl", [{
+            "recommendation_group_id": "group-1", "target_domain": "video", "K": 1,
+            "all_gold_abc": ["<s_a_1><s_b_2><s_c_3>"],
+            "all_gold_sids": ["<|video_begin|><s_a_1><s_b_2><s_c_3>"], "candidates": [],
+        }])
+        groups = client.get(
+            "/api/truerec/beam32/checkpoint/checkpoint-step-256/groups", params={"run_id": run.name},
+        ).json()
+        self.assertIs(groups[0]["ANY_EXACT"], True)
+        explain = client.get(
+            "/api/truerec/beam32/checkpoint/checkpoint-step-256/explain",
+            params={"run_id": run.name, "group_id": "group-1"},
+        ).json()
+        self.assertEqual(explain["gold_reference"]["K"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

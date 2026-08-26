@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import subprocess
+import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -27,6 +31,11 @@ CURRICULUM_STAGE_FOCUS = {
     "stage3": "B-rich + C-rich：增加细粒度 credit 暴露",
     "stage4": "C-rich + Singleton：困难样本与富前缀复习",
 }
+BEAM32_RESULT_DIR = "beam32_probe"
+BEAM32_WORKER = Path(os.environ.get(
+    "TRUEREC_BEAM32_WORKER",
+    "/data/GRPO/truerec_grpo/eval/run_probe20_beam32_checkpoints.py",
+))
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -238,10 +247,12 @@ def find_record(rows: Iterable[dict[str, Any]], *, step: int | None = None, grou
 def install_truerec_routes(
     app: Any, root: str | Path | Iterable[str | Path] | None, static_dir: Path,
     adapter_source_dir: str | Path = BETA_ADAPTER_SOURCE,
+    beam32_worker: str | Path = BEAM32_WORKER,
 ) -> None:
     """Install an isolated read-only surface into the existing monitor service."""
     runs_roots = normalize_run_roots(root)
     adapter_source = Path(adapter_source_dir).expanduser().resolve()
+    beam_worker = Path(beam32_worker).expanduser().resolve()
     router = APIRouter(prefix="/api/truerec")
     gold_cache: dict[str, dict[str, Any]] | None = None
     curriculum_cache: dict[str, Any] | None = None
@@ -433,6 +444,87 @@ def install_truerec_routes(
     def probes(run_id: str) -> list[dict[str, Any]]:
         run = selected_run(runs_roots, run_id)
         return [{"step": step, "summary": read_json(run / "probe" / f"step{step}" / "summary.json", read_json(run / "probe" / str(step) / "summary.json", {}))} for step in probe_steps(run)]
+
+    def beam32_root(run: Path) -> Path:
+        return run / BEAM32_RESULT_DIR
+
+    @router.get("/beam32/status")
+    def beam32_status(run_id: str) -> dict[str, Any]:
+        run = selected_run(runs_roots, run_id)
+        root = beam32_root(run)
+        status = read_json(root / "status.json", {"state": "NOT_STARTED"})
+        curve = read_json(root / "curve.json", [])
+        return {**status, "curve": curve, "available_checkpoints": len(checkpoint_rows(run, probe_steps(run), adapter_source))}
+
+    @router.post("/beam32/run-all")
+    def beam32_run_all(run_id: str) -> dict[str, Any]:
+        run = selected_run(runs_roots, run_id)
+        checkpoints = checkpoint_rows(run, probe_steps(run), adapter_source)
+        if not checkpoints:
+            raise HTTPException(status_code=409, detail="当前实验尚无可评测 checkpoint")
+        if not beam_worker.is_file():
+            raise HTTPException(status_code=503, detail="Beam32 worker 尚未同步到 runtime")
+        root = beam32_root(run)
+        root.mkdir(parents=True, exist_ok=True)
+        status_path = root / "status.json"
+        current = read_json(status_path, {})
+        if current.get("state") in {"QUEUED", "WAITING_FOR_GPU", "RUNNING"}:
+            return current
+        completed = len(read_json(root / "curve.json", []))
+        queued = {
+            "state": "QUEUED", "run_id": run.name, "total": len(checkpoints),
+            "completed": completed, "pending": max(0, len(checkpoints) - completed),
+            "min_free_gib": 70.0, "updated_at": time.time(),
+        }
+        temporary = root / f".status.json.tmp-{os.getpid()}"
+        temporary.write_text(json.dumps(queued, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        os.replace(temporary, status_path)
+        log_handle = (root / "worker.log").open("ab")
+        try:
+            process = subprocess.Popen(
+                [sys.executable, str(beam_worker), "--run-dir", str(run), "--min-free-gib", "70"],
+                stdin=subprocess.DEVNULL, stdout=log_handle, stderr=subprocess.STDOUT,
+                start_new_session=True, close_fds=True,
+            )
+        except OSError as exc:
+            failed = {**queued, "state": "FAILED", "error": str(exc), "updated_at": time.time()}
+            status_path.write_text(json.dumps(failed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            raise HTTPException(status_code=500, detail=f"Beam32 worker 启动失败: {exc}") from exc
+        finally:
+            log_handle.close()
+        latest = read_json(status_path, queued)
+        if latest.get("state") == "QUEUED":
+            latest["pid"] = process.pid
+            temporary = root / f".status.json.tmp-{os.getpid()}"
+            temporary.write_text(json.dumps(latest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            os.replace(temporary, status_path)
+        return latest
+
+    @router.get("/beam32/checkpoint/{checkpoint}/groups")
+    def beam32_groups(checkpoint: str, run_id: str) -> list[dict[str, Any]]:
+        run = selected_run(runs_roots, run_id)
+        result_dir = beam32_root(run) / checkpoint
+        if not CHECKPOINT_NAME_RE.fullmatch(checkpoint) or not result_dir.is_dir():
+            raise HTTPException(status_code=404, detail="Beam32 checkpoint result not found")
+        return read_jsonl(result_dir / "groups.jsonl")
+
+    @router.get("/beam32/checkpoint/{checkpoint}/explain")
+    def beam32_explain(checkpoint: str, group_id: str, run_id: str) -> dict[str, Any]:
+        run = selected_run(runs_roots, run_id)
+        result_dir = beam32_root(run) / checkpoint
+        if not CHECKPOINT_NAME_RE.fullmatch(checkpoint) or not result_dir.is_dir():
+            raise HTTPException(status_code=404, detail="Beam32 checkpoint result not found")
+        row = find_record(read_jsonl(result_dir / "explain.jsonl"), group_id=group_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="该 checkpoint 尚无 Beam32 group 明细")
+        result = dict(row)
+        result["gold_reference"] = {
+            "all_gold_abc": row.get("all_gold_abc", []),
+            "all_gold_sids": row.get("all_gold_sids", []),
+            "target_domain": row.get("target_domain"),
+            "K": row.get("K"),
+        }
+        return result
 
     def probe_dir(run: Path, step: int) -> Path:
         candidates = (run / "probe" / f"step{step}", run / "probe" / str(step))
