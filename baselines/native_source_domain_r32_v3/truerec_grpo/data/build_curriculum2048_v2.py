@@ -60,6 +60,15 @@ BRIDGES = (
 )
 K_BUCKETS = ("1", "2", "3", "4", "5+")
 K_QUALITY_WEIGHT = {"1": 0.75, "2": 1.10, "3": 1.25, "4": 1.40, "5+": 1.55}
+REJECTION_REASONS = (
+    "duplicate_group_id", "duplicate_group_metadata_conflict", "missing_group_id",
+    "not_in_frozen_train_pool", "split_not_train_pool", "invalid_target_domain",
+    "invalid_fixed_domain_token", "invalid_system", "invalid_nothink_prompt",
+    "bridge_contamination", "empty_all_gold_abc", "gold_sid_abc_cardinality_mismatch",
+    "malformed_gold_sid_or_abc", "gold_domain_mismatch", "gold_sid_abc_mismatch",
+    "empty_gold_after_dedup", "nothink_renderer_error", "empty_rendered_context",
+    "context_requires_truncation",
+)
 
 
 class CurriculumError(RuntimeError):
@@ -387,7 +396,7 @@ def load_and_filter(renderer: Any) -> tuple[list[dict[str, Any]], dict[str, int]
             raise CurriculumError(f"FROZEN_SPLIT_SHA256_FAIL={name}")
         split_ids[name] = load_json_ids(path)
     train_ids = split_ids["train_pool_group_ids.json"]
-    rejection = Counter()
+    rejection = Counter({reason: 0 for reason in REJECTION_REASONS})
     eligible = []
     seen: dict[str, dict[str, Any]] = {}
     with TRAIN_RECORDS.open(encoding="utf-8") as handle:
@@ -477,6 +486,24 @@ def run(output_dir: Path = OUTPUT_DIR) -> dict[str, Any]:
         },
         "stage_prefix_rich": {
             stage: {domain: sum(row["stage"] == stage and row["target_domain"] == domain and row["prefix_rich"] for row in selected) for domain in DOMAINS}
+            for stage in STAGES
+        },
+        "stage_domain_hierarchy": {
+            stage: {
+                field: {
+                    domain: {
+                        name: sum(
+                            row["stage"] == stage
+                            and row["target_domain"] == domain
+                            and bucket(int(row[field])) == name
+                            for row in selected
+                        )
+                        for name in K_BUCKETS
+                    }
+                    for domain in DOMAINS
+                }
+                for field in ("K_A", "K_AB", "K_ABC")
+            }
             for stage in STAGES
         },
     }

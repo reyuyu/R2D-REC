@@ -44,6 +44,7 @@ class Curriculum2048Tests(unittest.TestCase):
             "final_group_ids.json": "e6be46befa8ed320fb0762e6df23f553c6646297bdf5649003e332c04b2e61d0",
             "probe20_group_ids.json": "7193f540ee229ef53b7ca09e541f065396fe212a8cfd43893cceff499d83abdf",
         })
+        self.assertIn("context_requires_truncation", MODULE.REJECTION_REASONS)
 
     def test_gold_hierarchy_and_domain_validation(self):
         row = record("g", "video", [(1, 2, 3), (1, 2, 4), (5, 6, 7)])
