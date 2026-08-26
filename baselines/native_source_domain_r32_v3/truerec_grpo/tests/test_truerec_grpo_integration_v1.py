@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "trainer"))
 from batch_collator_v1 import collate_business_group
 from evaluation_runtime_v1 import evaluate_dev512, evaluate_probe20, final_checkpoint_selection_interface
 from frontier_credit_v1 import FORMAT_INVALID_TOTAL
-from rollout_runtime_v1 import GENERATION_SCORE_LOGPS_ROLE, GENERATION_SCORES_USED_FOR_PPO, G, OLD_LOGPS_FROM_FULL_FORWARD_RESCORE, OLD_LOGPS_FROM_ROLLOUT_POLICY, PPO_OLD_LOGP_SOURCE, build_rollout_group, capture_sampled_logps, generation_contract, rollout_business_group
+from rollout_runtime_v1 import FORMAL_EOS_TOKEN_IDS, FORMAL_PAD_TOKEN_ID, GENERATION_SCORE_LOGPS_ROLE, GENERATION_SCORES_USED_FOR_PPO, G, OLD_LOGPS_FROM_FULL_FORWARD_RESCORE, OLD_LOGPS_FROM_ROLLOUT_POLICY, PPO_OLD_LOGP_SOURCE, build_rollout_group, capture_sampled_logps, generation_contract, normalize_eos_token_ids, rollout_business_group, trim_generated_completion
 from policy_scoring_v1 import POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE
 from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, ROUTE_MULTIPLIER, TrueRecGRPOTrainerV1, format_credit_tensors, gather_padded_action_logps
 from truerec_loss_v1 import HPR_LAMBDA
@@ -204,13 +204,15 @@ class Phase11IntegrationTest(unittest.TestCase):
 
     def test_35_real_generate_adapter(self):
         model = MockGenerateModel(); value = record(); value.update({"system": "s", "user_content_nothink": "u"})
-        group = rollout_business_group(model, value, MockRenderer(), id_to_token, 0, 31)
+        group = rollout_business_group(model, value, MockRenderer(), id_to_token, FORMAL_PAD_TOKEN_ID, FORMAL_EOS_TOKEN_IDS)
         self.assertEqual((len(group.candidates), group.context_ids), (8, (10, 11, 12, 13)))
         self.assertEqual({key: model.kwargs[key] for key in generation_contract()}, generation_contract())
+        self.assertEqual(model.kwargs["eos_token_id"], [151645, 151643])
+        self.assertEqual(model.kwargs["pad_token_id"], 151643)
 
     def test_36_generate_adapter_captures_score_logps(self):
         model = MockGenerateModel(); value = record(); value.update({"system": "s", "user_content_nothink": "u"})
-        group = rollout_business_group(model, value, MockRenderer(), id_to_token, 0, 31)
+        group = rollout_business_group(model, value, MockRenderer(), id_to_token, FORMAL_PAD_TOKEN_ID, FORMAL_EOS_TOKEN_IDS)
         generation = torch.log_softmax(torch.stack(model.scores, dim=1), -1)[0, torch.arange(3), torch.tensor([1, 2, 3])]
         sequence = torch.tensor([[10, 11, 12, 13, 1, 2, 3]] * 2)
         logits = model(sequence, torch.ones_like(sequence)).logits
@@ -228,12 +230,29 @@ class Phase11IntegrationTest(unittest.TestCase):
 
     def test_38_rescore_preserves_ids_metadata_and_order(self):
         model = MockGenerateModel(); value = record("preserved"); value.update({"system": "s", "user_content_nothink": "u"})
-        group = rollout_business_group(model, value, MockRenderer(), id_to_token, 0, 31)
+        group = rollout_business_group(model, value, MockRenderer(), id_to_token, FORMAL_PAD_TOKEN_ID, FORMAL_EOS_TOKEN_IDS)
         self.assertEqual(group.recommendation_group_id, "preserved")
         self.assertEqual(group.context_ids, (10, 11, 12, 13))
         self.assertEqual([candidate.sample_index for candidate in group.candidates], list(range(8)))
         self.assertEqual([candidate.completion_ids for candidate in group.candidates], [(1, 2, 3)] * 8)
         self.assertEqual(group.all_gold_abc, GOLD)
+
+    def test_39_eos_normalization(self):
+        self.assertEqual(normalize_eos_token_ids((151645, 151643)), [151645, 151643])
+        self.assertEqual(normalize_eos_token_ids([151645, 151643]), [151645, 151643])
+
+    def test_40_trim_real_eos_151645(self):
+        self.assertEqual(trim_generated_completion([1, 2, 151645, 9], FORMAL_EOS_TOKEN_IDS, FORMAL_PAD_TOKEN_ID), [1, 2, 151645])
+
+    def test_41_trim_eos_pad_151643_keeps_first_eos(self):
+        self.assertEqual(trim_generated_completion([1, 2, 151643, 151643], FORMAL_EOS_TOKEN_IDS, FORMAL_PAD_TOKEN_ID), [1, 2, 151643])
+
+    def test_42_trim_no_eos_trailing_pad(self):
+        self.assertEqual(trim_generated_completion([1, 2, 151643, 151643], [151645], FORMAL_PAD_TOKEN_ID), [1, 2])
+
+    def test_43_formal_eos_pad_rejected_if_changed(self):
+        model = MockGenerateModel(); value = record(); value.update({"system": "s", "user_content_nothink": "u"})
+        with self.assertRaises(ValueError): rollout_business_group(model, value, MockRenderer(), id_to_token, FORMAL_PAD_TOKEN_ID, [151645])
 
     def _assert_head_shas(self, folder, expected):
         repo = ROOT.parents[2]

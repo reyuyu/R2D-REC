@@ -16,6 +16,8 @@ from policy_scoring_v1 import POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE, para
 
 
 G = 8
+FORMAL_EOS_TOKEN_IDS = (151645, 151643)
+FORMAL_PAD_TOKEN_ID = 151643
 GENERATION_KWARGS = {
     "do_sample": True, "temperature": 1.0, "top_p": 1.0, "top_k": 0,
     "repetition_penalty": 1.0, "max_new_tokens": 3, "num_return_sequences": G,
@@ -67,6 +69,12 @@ def generation_contract() -> dict[str, Any]:
     return dict(GENERATION_KWARGS)
 
 
+def normalize_eos_token_ids(eos_token_id: int | Sequence[int] | None) -> list[int]:
+    if isinstance(eos_token_id, int):
+        return [int(eos_token_id)]
+    return [int(value) for value in (eos_token_id or ())]
+
+
 def render_rollout_context(record: dict[str, Any], renderer) -> list[int]:
     return renderer.rl_context_ids(record["system"], record["user_content_nothink"], record["fixed_domain_token"])
 
@@ -113,6 +121,9 @@ def rollout_business_group(
     device: torch.device | str | None = None,
 ) -> BusinessGroupRollout:
     """Generate IDs, then attach unchanged-policy full-forward PPO old logps."""
+    normalized_eos = normalize_eos_token_ids(eos_token_id)
+    if normalized_eos != list(FORMAL_EOS_TOKEN_IDS) or int(pad_token_id) != FORMAL_PAD_TOKEN_ID:
+        raise ValueError("formal TrueRec rollout requires frozen EOS/PAD token ids")
     model.eval()
     context_ids = render_rollout_context(record, renderer)
     input_ids = torch.tensor([context_ids], dtype=torch.long, device=device)
@@ -120,6 +131,7 @@ def rollout_business_group(
     output = model.generate(
         input_ids=input_ids,
         attention_mask=attention_mask,
+        eos_token_id=normalized_eos,
         pad_token_id=int(pad_token_id),
         return_dict_in_generate=True,
         output_scores=True,
