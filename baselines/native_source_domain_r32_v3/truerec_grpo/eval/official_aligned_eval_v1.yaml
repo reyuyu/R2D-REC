@@ -1,0 +1,23 @@
+protocol_name: official_aligned_fixed_domain_beam32_abc3
+contract_source: user_provided_official_protocol
+official_source_code_available: false
+bridge: false
+fixed_domain: true
+domain_generated: false
+action_levels:
+  - A
+  - B
+  - C
+action_tokens: 3
+beam_size: 32
+split: configurable
+checkpoint: configurable
+generation_unknown_fields:
+  - abc_vocabulary_constraint
+  - length_penalty
+  - early_stopping
+  - eos_semantics
+  - num_return_sequences
+  - beam_score_normalization
+  - position_constrained_decoding
+  - special_logits_processors
