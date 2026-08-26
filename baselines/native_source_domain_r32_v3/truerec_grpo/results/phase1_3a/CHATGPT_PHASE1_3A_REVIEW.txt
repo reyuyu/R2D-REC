@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.3A CPU Training Driver Lifecycle Contract
+Lifecycle order, counters, fail-fast tests, and frozen Pilot4096 admission passed. This phase used fake components only: no model, GPU, checkpoint, DDP, or training.
