@@ -64,3 +64,25 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> tuple[str, int]:
             raw = (json.dumps(row, ensure_ascii=False, separators=(",", ":"), allow_nan=False) + "\n").encode()
             handle.write(raw); digest.update(raw); count += 1
     return digest.hexdigest(), count
+
+
+def publish_if_pass(
+    passed: bool, output_dir: Path, rows: list[dict[str, Any]], manifest: dict[str, Any]
+) -> tuple[bool, str | None]:
+    """Publish only a fully gated paired dataset and bind its SHA in manifest."""
+    if not passed:
+        return False, None
+    records_path = output_dir / "paired_curriculum2048.jsonl"
+    records_sha, count = write_jsonl(records_path, rows)
+    if count != 2048 or len({row["recommendation_group_id"] for row in rows}) != 2048:
+        records_path.unlink(missing_ok=True)
+        raise ValueError("published paired identity count failed")
+    payload = dict(manifest)
+    payload["paired_records"] = {
+        "path": str(records_path), "sha256": records_sha, "count": count,
+    }
+    (output_dir / "manifest.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        encoding="utf-8",
+    )
+    return True, records_sha

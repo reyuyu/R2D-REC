@@ -7,6 +7,9 @@ from typing import Any, Iterable, Protocol
 
 NOTHINK_MARKER = "/no_think"
 THINK_MARKER = "/think"
+# Frozen from 5,070 real Beta-Gamma recommendation_cot direct-domain
+# responses: every observed </think> -> domain boundary used exactly one LF.
+CANONICAL_SEPARATOR = "\n"
 
 
 class Renderer(Protocol):

@@ -1,12 +1,93 @@
 {
-  "source_main_commit": "ebf7b25f4eee66cb13d3c4093b0e17e7a58349e0",
+  "source_main_commit": "9e0921582149dcc8dc6d8473c7350ba7332962f6",
   "curriculum2048_groups": 2048,
   "paired_groups_built_in_memory": 2048,
   "paired_unique_groups": 2048,
-  "paired_data_published": false,
+  "paired_data_published": true,
   "teacher_cot_ready": 2048,
-  "cot_prefix_byte_parity_pass": 1665,
-  "cot_prefix_byte_parity_fail": 383,
+  "teacher_cot_authoritative_source": "PHASE0_LINEAGE",
+  "beta_gamma_reference_role": "EXTERNAL_SERIALIZATION_VALIDATION",
+  "external_reference": {
+    "reference_groups": 1665,
+    "reference_missing": 383,
+    "coverage_rate": 0.81298828125,
+    "observed_prefix_pass": 1665,
+    "observed_prefix_fail": 0,
+    "observed_token_pass": 1665,
+    "observed_token_fail": 0,
+    "covered_distribution": {
+      "domain": {
+        "ad": 415,
+        "living": 376,
+        "prod": 436,
+        "video": 438
+      },
+      "stage": {
+        "stage1": 486,
+        "stage2": 445,
+        "stage3": 377,
+        "stage4": 357
+      },
+      "hierarchy_class": {
+        "A_RICH": 849,
+        "B_RICH": 171,
+        "C_RICH": 24,
+        "SINGLETON": 621
+      }
+    },
+    "missing_distribution": {
+      "domain": {
+        "ad": 97,
+        "living": 136,
+        "prod": 76,
+        "video": 74
+      },
+      "stage": {
+        "stage1": 26,
+        "stage2": 67,
+        "stage3": 135,
+        "stage4": 155
+      },
+      "hierarchy_class": {
+        "A_RICH": 54,
+        "B_RICH": 26,
+        "C_RICH": 6,
+        "SINGLETON": 297
+      }
+    },
+    "domain_observed_parity": {
+      "video": {
+        "reference_groups": 438,
+        "prefix_pass": 438,
+        "prefix_fail": 0,
+        "token_pass": 438,
+        "token_fail": 0
+      },
+      "prod": {
+        "reference_groups": 436,
+        "prefix_pass": 436,
+        "prefix_fail": 0,
+        "token_pass": 436,
+        "token_fail": 0
+      },
+      "ad": {
+        "reference_groups": 415,
+        "prefix_pass": 415,
+        "prefix_fail": 0,
+        "token_pass": 415,
+        "token_fail": 0
+      },
+      "living": {
+        "reference_groups": 376,
+        "prefix_pass": 376,
+        "prefix_fail": 0,
+        "token_pass": 376,
+        "token_fail": 0
+      }
+    }
+  },
+  "observed_cot_prefix_parity_pass": 1665,
+  "observed_cot_prefix_parity_fail": 0,
   "beta_gamma_reference_cot_groups": 1665,
   "beta_gamma_reference_missing_groups": 383,
   "beta_gamma_reference_missing_group_ids": [
@@ -397,14 +478,20 @@
   "canonical_separator": "\n",
   "canonical_separator_repr": "'\\n'",
   "canonical_separator_variants": 1,
+  "separator_source": "5,070 real Beta-Gamma recommendation_cot direct-domain response audit",
   "think_route_marker_parity_pass": 2048,
   "think_route_marker_parity_fail": 0,
-  "think_context_sft_token_parity_pass": 1665,
-  "think_context_sft_token_parity_fail": 383,
+  "observed_sft_token_parity_pass": 1665,
+  "observed_sft_token_parity_fail": 0,
+  "constructed_think_context_valid_pass": 2048,
+  "constructed_think_context_valid_fail": 0,
+  "constructed_sft_prefix_self_consistency_pass": 2048,
+  "constructed_sft_prefix_self_consistency_fail": 0,
   "fixed_domain_last_token_parity_pass": 2048,
   "abc_three_token_contract": "PASS",
   "candidate_paired_records_sha256": "0b5c561a97810783d43dd7e41450d48295a7e1ae7e6466c6d59c81b3a2ecd357",
-  "paired_publish_blocker": "BETA_GAMMA_REAL_COT_REFERENCE_COVERAGE_1665_OF_2048",
+  "paired_records_sha256": "0b5c561a97810783d43dd7e41450d48295a7e1ae7e6466c6d59c81b3a2ecd357",
+  "paired_publish_blocker": null,
   "sources": {
     "teacher_cot": {
       "path": "/data/lf_data/onereason_recommendation_cot.jsonl",
@@ -486,5 +573,5 @@
   "forward_started": false,
   "backward_started": false,
   "optimizer_steps": 0,
-  "phase2_renderer_contract": "FAIL"
+  "phase2_renderer_contract": "PASS"
 }

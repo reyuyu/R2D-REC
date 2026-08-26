@@ -20,13 +20,13 @@ for path in (HERE, DATA_DIR):
 
 from beta_gamma_renderer import BetaGammaRenderer  # noqa: E402
 from build_paired_curriculum_v1 import (  # noqa: E402
-    assert_no_context_overflow, audit_identity, build_paired_record,
+    assert_no_context_overflow, audit_identity, build_paired_record, publish_if_pass,
 )
 from phase0_teacher_cot_audit import (  # noqa: E402
     extract_teacher_cot, file_sha256, iter_lineage_teacher_rows, load_ids, load_jsonl,
 )
 from teacher_cot_renderer_v1 import (  # noqa: E402
-    assert_action_boundary, audit_sft_prefix_parity, discover_canonical_separator,
+    CANONICAL_SEPARATOR, assert_action_boundary, audit_sft_prefix_parity, discover_canonical_separator,
     think_rl_context_ids, transform_terminal_route, validate_teacher_cot,
 )
 
@@ -41,6 +41,7 @@ ORDER = DATA_ROOT / "curriculum2048_v2/epoch1_order.json"
 SPLITS = DATA_ROOT / "splits"
 MODEL_CONFIG = Path("/data/models/onereason-8b-pretrain-competition/config.json")
 DEFAULT_OUTPUT = HERE / "results/phase2_teacher_cot_renderer"
+PAIRED_OUTPUT = DATA_ROOT / "mixed_fix_v1"
 
 
 def percentile(values: list[int], q: float) -> float:
@@ -96,6 +97,65 @@ def candidate_jsonl_sha(rows: list[dict[str, Any]]) -> str:
     return digest.hexdigest()
 
 
+def external_reference_summary(
+    records: list[dict[str, Any]], reference_ids: set[str], prefix_pass: set[str],
+    prefix_fail: set[str], token_pass: set[str], token_fail: set[str],
+) -> dict[str, Any]:
+    all_ids = {str(row["recommendation_group_id"]) for row in records}
+    if not reference_ids <= all_ids:
+        raise ValueError("external reference contains unknown group")
+    if prefix_pass | prefix_fail != reference_ids or token_pass | token_fail != reference_ids:
+        raise ValueError("observed parity denominator must equal covered reference groups")
+    if prefix_pass & prefix_fail or token_pass & token_fail:
+        raise ValueError("observed parity statuses overlap")
+    by_id = {str(row["recommendation_group_id"]): row for row in records}
+    missing = all_ids - reference_ids
+
+    def counts(ids: set[str]) -> dict[str, dict[str, int]]:
+        return {
+            key: dict(sorted(Counter(str(by_id[group_id][field]) for group_id in ids).items()))
+            for key, field in (("domain", "target_domain"), ("stage", "stage"), ("hierarchy_class", "hierarchy_class"))
+        }
+
+    domain_parity = {}
+    for domain in ("video", "prod", "ad", "living"):
+        covered = {group_id for group_id in reference_ids if by_id[group_id]["target_domain"] == domain}
+        domain_parity[domain] = {
+            "reference_groups": len(covered),
+            "prefix_pass": len(covered & prefix_pass), "prefix_fail": len(covered & prefix_fail),
+            "token_pass": len(covered & token_pass), "token_fail": len(covered & token_fail),
+        }
+    return {
+        "reference_groups": len(reference_ids), "reference_missing": len(missing),
+        "coverage_rate": len(reference_ids) / len(all_ids),
+        "observed_prefix_pass": len(prefix_pass), "observed_prefix_fail": len(prefix_fail),
+        "observed_token_pass": len(token_pass), "observed_token_fail": len(token_fail),
+        "covered_distribution": counts(reference_ids), "missing_distribution": counts(missing),
+        "domain_observed_parity": domain_parity,
+    }
+
+
+def phase2b_hard_gate(
+    external: dict[str, Any], canonical_separator: str, *,
+    constructed_context_pass: int, constructed_context_fail: int,
+    self_consistency_pass: int, self_consistency_fail: int,
+    fixed_domain_pass: int, route_pass: int, action_contract: bool,
+    overflow_count: int, split_failure_count: int,
+) -> bool:
+    return (
+        external["reference_groups"] > 0
+        and external["observed_prefix_fail"] == 0
+        and external["observed_token_fail"] == 0
+        and external["observed_prefix_pass"] == external["reference_groups"]
+        and external["observed_token_pass"] == external["reference_groups"]
+        and canonical_separator == CANONICAL_SEPARATOR
+        and constructed_context_pass == 2048 and constructed_context_fail == 0
+        and self_consistency_pass == 2048 and self_consistency_fail == 0
+        and fixed_domain_pass == 2048 and route_pass == 2048 and action_contract
+        and overflow_count == 0 and split_failure_count == 0
+    )
+
+
 def run(source_commit: str, output_dir: Path) -> dict[str, Any]:
     records = load_jsonl(CURRICULUM)
     order = list(map(str, json.loads(ORDER.read_text(encoding="utf-8"))))
@@ -125,6 +185,10 @@ def run(source_commit: str, output_dir: Path) -> dict[str, Any]:
     fixed_domain_pass = 0
     route_pass = 0
     action_contract = True
+    constructed_context_pass = 0
+    constructed_context_fail = 0
+    self_consistency_pass = 0
+    self_consistency_fail = 0
     parity_details: dict[str, dict[str, Any]] = {}
     for record in records:
         group_id = str(record["recommendation_group_id"]); teacher = teachers[group_id]
@@ -143,15 +207,28 @@ def run(source_commit: str, output_dir: Path) -> dict[str, Any]:
                 assert_action_boundary(renderer, think_ids, record["fixed_domain_token"], gold)
             except ValueError:
                 action_contract = False
+        if think_ids[-1:] == renderer.encode(record["fixed_domain_token"]):
+            constructed_context_pass += 1
+        else:
+            constructed_context_fail += 1
         paired.append(build_paired_record(record, think_user, teacher, len(no_ids), len(think_ids)))
         row_results = [
             audit_sft_prefix_parity(renderer, record["system"], think_user, str(row["output"]), think_ids)
             for row in references.get(group_id, [])
         ]
-        if row_results and all(item.passed for item in row_results):
-            group_token_pass.add(group_id)
+        if row_results:
+            if all(item.passed for item in row_results):
+                group_token_pass.add(group_id)
+            else:
+                token_failed.add(group_id)
+        synthetic_response = teacher + canonical_separator + record["fixed_domain_token"] + record["all_gold_abc"][0]
+        self_result = audit_sft_prefix_parity(
+            renderer, record["system"], think_user, synthetic_response, think_ids
+        )
+        if self_result.passed:
+            self_consistency_pass += 1
         else:
-            token_failed.add(group_id)
+            self_consistency_fail += 1
         parity_details[group_id] = {
             "no_think_context_length": len(no_ids), "think_context_length": len(think_ids),
             "delta": len(think_ids) - len(no_ids), "domain_token_id": domain_id,
@@ -197,35 +274,77 @@ def run(source_commit: str, output_dir: Path) -> dict[str, Any]:
                 "teacher_cot_character_count": len(teachers[group_id]),
                 "canonical_separator_repr": repr(canonical_separator),
             })
-    hard_pass = (
-        len(prefix_pass) == 2048 and not prefix_fail and not missing_reference
-        and len(group_token_pass) == 2048 and fixed_domain_pass == 2048
-        and route_pass == 2048 and action_contract and not overflow
-        and not any(split_audit.values())
+    external = external_reference_summary(
+        records, set(references), prefix_pass, prefix_fail, group_token_pass, token_failed
     )
+    renderer_provenance = renderer.audit()
+    hard_pass = phase2b_hard_gate(
+        external, canonical_separator,
+        constructed_context_pass=constructed_context_pass,
+        constructed_context_fail=constructed_context_fail,
+        self_consistency_pass=self_consistency_pass,
+        self_consistency_fail=self_consistency_fail,
+        fixed_domain_pass=fixed_domain_pass, route_pass=route_pass,
+        action_contract=action_contract, overflow_count=len(overflow),
+        split_failure_count=sum(split_audit.values()),
+    )
+    candidate_sha = candidate_jsonl_sha(paired)
+    publish_manifest = {
+        "contract": "TRUEREC-MIXED-FIX-V1-CURRICULUM-PHASE2B",
+        "source_main_commit": source_commit,
+        "source_curriculum": {"path": str(CURRICULUM), "sha256": file_sha256(CURRICULUM)},
+        "epoch1_order": {"path": str(ORDER), "sha256": file_sha256(ORDER)},
+        "teacher_cot_source": {"path": str(SOURCE), "sha256": file_sha256(SOURCE)},
+        "lineage_source": {"path": str(LINEAGE), "sha256": file_sha256(LINEAGE)},
+        "beta_gamma_source": {"path": str(BETA_GAMMA), "sha256": file_sha256(BETA_GAMMA)},
+        "teacher_cot_authoritative_source": "PHASE0_LINEAGE",
+        "beta_gamma_reference_role": "EXTERNAL_SERIALIZATION_VALIDATION",
+        "canonical_separator": canonical_separator,
+        "separator_source": "5,070 real Beta-Gamma recommendation_cot direct-domain response audit",
+        "external_reference": external,
+        "constructed_validation": {
+            "context_valid_pass": constructed_context_pass,
+            "context_valid_fail": constructed_context_fail,
+            "sft_prefix_self_consistency_pass": self_consistency_pass,
+            "sft_prefix_self_consistency_fail": self_consistency_fail,
+        },
+        "renderer_provenance": renderer_provenance,
+    }
+    published, published_sha = publish_if_pass(hard_pass, PAIRED_OUTPUT, paired, publish_manifest)
+    if published and published_sha != candidate_sha:
+        raise ValueError(f"published paired SHA drift: candidate={candidate_sha} published={published_sha}")
     contract = {
         "source_main_commit": source_commit,
         "curriculum2048_groups": 2048,
         "paired_groups_built_in_memory": len(paired),
         "paired_unique_groups": len({row["recommendation_group_id"] for row in paired}),
-        "paired_data_published": False,
+        "paired_data_published": published,
         "teacher_cot_ready": len(teachers),
-        "cot_prefix_byte_parity_pass": len(prefix_pass),
-        "cot_prefix_byte_parity_fail": len(prefix_fail | missing_reference),
+        "teacher_cot_authoritative_source": "PHASE0_LINEAGE",
+        "beta_gamma_reference_role": "EXTERNAL_SERIALIZATION_VALIDATION",
+        "external_reference": external,
+        "observed_cot_prefix_parity_pass": len(prefix_pass),
+        "observed_cot_prefix_parity_fail": len(prefix_fail),
         "beta_gamma_reference_cot_groups": len(references),
         "beta_gamma_reference_missing_groups": len(missing_reference),
         "beta_gamma_reference_missing_group_ids": sorted(missing_reference),
         "canonical_separator": canonical_separator,
         "canonical_separator_repr": repr(canonical_separator),
         "canonical_separator_variants": 1,
+        "separator_source": "5,070 real Beta-Gamma recommendation_cot direct-domain response audit",
         "think_route_marker_parity_pass": route_pass,
         "think_route_marker_parity_fail": 2048 - route_pass,
-        "think_context_sft_token_parity_pass": len(group_token_pass),
-        "think_context_sft_token_parity_fail": len(token_failed),
+        "observed_sft_token_parity_pass": len(group_token_pass),
+        "observed_sft_token_parity_fail": len(token_failed),
+        "constructed_think_context_valid_pass": constructed_context_pass,
+        "constructed_think_context_valid_fail": constructed_context_fail,
+        "constructed_sft_prefix_self_consistency_pass": self_consistency_pass,
+        "constructed_sft_prefix_self_consistency_fail": self_consistency_fail,
         "fixed_domain_last_token_parity_pass": fixed_domain_pass,
         "abc_three_token_contract": "PASS" if action_contract else "FAIL",
-        "candidate_paired_records_sha256": candidate_jsonl_sha(paired),
-        "paired_publish_blocker": "BETA_GAMMA_REAL_COT_REFERENCE_COVERAGE_1665_OF_2048",
+        "candidate_paired_records_sha256": candidate_sha,
+        "paired_records_sha256": published_sha,
+        "paired_publish_blocker": None if published else "PHASE2B_HARD_GATE_FAILED",
         "sources": {
             "teacher_cot": {"path": str(SOURCE), "sha256": file_sha256(SOURCE)},
             "lineage": {"path": str(LINEAGE), "sha256": file_sha256(LINEAGE)},
@@ -233,7 +352,7 @@ def run(source_commit: str, output_dir: Path) -> dict[str, Any]:
             "curriculum": {"path": str(CURRICULUM), "sha256": file_sha256(CURRICULUM)},
             "epoch1_order": {"path": str(ORDER), "sha256": file_sha256(ORDER)},
         },
-        "renderer_provenance": renderer.audit(),
+        "renderer_provenance": renderer_provenance,
         "split_audit": split_audit,
         "length_audit": length_audit,
         "model_loaded": False, "gpu_started": False, "generation_started": False,
@@ -252,15 +371,24 @@ def render_review(c: dict[str, Any]) -> str:
     fields = {
         "SOURCE_MAIN_COMMIT": c["source_main_commit"], "CURRICULUM2048_GROUPS": 2048,
         "PAIRED_GROUPS": c["paired_groups_built_in_memory"], "PAIRED_UNIQUE_GROUPS": c["paired_unique_groups"],
+        "TEACHER_COT_AUTHORITATIVE_SOURCE": c["teacher_cot_authoritative_source"],
         "TEACHER_COT_READY": c["teacher_cot_ready"],
-        "COT_PREFIX_BYTE_PARITY_PASS": c["cot_prefix_byte_parity_pass"],
-        "COT_PREFIX_BYTE_PARITY_FAIL": c["cot_prefix_byte_parity_fail"],
+        "BETA_GAMMA_REFERENCE_ROLE": c["beta_gamma_reference_role"],
+        "BETA_GAMMA_REFERENCE_GROUPS": c["external_reference"]["reference_groups"],
+        "BETA_GAMMA_REFERENCE_MISSING": c["external_reference"]["reference_missing"],
+        "BETA_GAMMA_REFERENCE_COVERAGE_RATE": c["external_reference"]["coverage_rate"],
+        "OBSERVED_COT_PREFIX_PARITY_PASS": c["observed_cot_prefix_parity_pass"],
+        "OBSERVED_COT_PREFIX_PARITY_FAIL": c["observed_cot_prefix_parity_fail"],
+        "OBSERVED_SFT_TOKEN_PARITY_PASS": c["observed_sft_token_parity_pass"],
+        "OBSERVED_SFT_TOKEN_PARITY_FAIL": c["observed_sft_token_parity_fail"],
         "CANONICAL_SEPARATOR_REPR": c["canonical_separator_repr"],
         "CANONICAL_SEPARATOR_VARIANTS": c["canonical_separator_variants"],
+        "CONSTRUCTED_THINK_CONTEXT_VALID_PASS": c["constructed_think_context_valid_pass"],
+        "CONSTRUCTED_THINK_CONTEXT_VALID_FAIL": c["constructed_think_context_valid_fail"],
+        "CONSTRUCTED_SFT_PREFIX_SELF_CONSISTENCY_PASS": c["constructed_sft_prefix_self_consistency_pass"],
+        "CONSTRUCTED_SFT_PREFIX_SELF_CONSISTENCY_FAIL": c["constructed_sft_prefix_self_consistency_fail"],
         "THINK_ROUTE_MARKER_PARITY_PASS": c["think_route_marker_parity_pass"],
         "THINK_ROUTE_MARKER_PARITY_FAIL": c["think_route_marker_parity_fail"],
-        "THINK_CONTEXT_SFT_TOKEN_PARITY_PASS": c["think_context_sft_token_parity_pass"],
-        "THINK_CONTEXT_SFT_TOKEN_PARITY_FAIL": c["think_context_sft_token_parity_fail"],
         "FIXED_DOMAIN_LAST_TOKEN_PARITY_PASS": c["fixed_domain_last_token_parity_pass"],
         "ABC_THREE_TOKEN_CONTRACT": c["abc_three_token_contract"],
         "NOTHINK_CONTEXT_P50": length["no_think"]["p50"], "NOTHINK_CONTEXT_P99": length["no_think"]["p99"],
@@ -272,6 +400,8 @@ def render_review(c: dict[str, Any]) -> str:
         "THINK_CONTEXT_REQUIRES_TRUNCATION": length["requires_truncation"],
         "TRAIN_DEV_OVERLAP": split["train_dev_overlap"], "TRAIN_FINAL_OVERLAP": split["train_final_overlap"],
         "TRAIN_PROBE_OVERLAP": split["train_probe_overlap"],
+        "PAIRED_DATA_PUBLISHED": "YES" if c["paired_data_published"] else "NO",
+        "PAIRED_RECORDS_SHA256": c["paired_records_sha256"] or "",
         "MODEL_LOADED": "NO", "GPU_STARTED": "NO", "GENERATION_STARTED": "NO", "FORWARD_STARTED": "NO",
         "BACKWARD_STARTED": "NO", "OPTIMIZER_STEPS": 0,
         "PHASE2_RENDERER_CONTRACT": c["phase2_renderer_contract"],
