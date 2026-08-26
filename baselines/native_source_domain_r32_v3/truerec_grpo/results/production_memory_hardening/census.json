@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "pilot_record_count": 4096,
+  "default_streaming_microbatch_size": 2,
+  "long_context_threshold_tokens": 2200,
+  "long_context_streaming_microbatch_size": 1,
+  "microbatch1_group_count": 56,
+  "microbatch2_group_count": 4040,
+  "context_length_census": {
+    "count": 4096,
+    "min": 70,
+    "mean": 1066.17919921875,
+    "p50": 1036.0,
+    "p90": 1745.5,
+    "p95": 1919.25,
+    "p99": 2262.1500000000005,
+    "max": 3489,
+    "max_context_group_id": "67fe812d1e74a632a4b3d4cd8db79aa46b9d7a8494adb7022280d594fae3a21e",
+    "max_context_domain": "video",
+    "legal_context_window": 131072,
+    "truncation_applied": false,
+    "long_context_threshold_tokens": 2200,
+    "microbatch1_group_count": 56,
+    "microbatch2_group_count": 4040
+  },
+  "group_order_modified": false
+}

@@ -1,0 +1,7 @@
+TrueRec-GRPO Production Memory Hardening: STOPPED_PRE_STEP_GATE_FAIL
+
+CPU implementation gates passed (332/332), including exact MB1 and retained MB2 tiny-policy value/gradient equivalence across HPR_A, HPR_B, HPR_C, HPR_NONE, and FORMAT_INVALID. Pilot4096 census passed: 56 groups select MB1 and 4040 select MB2; the counts close to 4096 without changing order.
+
+The one permitted real GPU worst-context attempt loaded fresh Beta and reached the pre-step aggregate gate without OOM, then fail-fast stopped before optimizer.step. The diagnostic did not persist component values before raising, so this result intentionally does not invent current/old, loss, gradient, call-count, or memory metrics. Static inspection shows old full-forward rescore remains microbatch=2 while current streaming used microbatch=1, which is a plausible BF16 batch-shape parity risk but is not recorded as a confirmed root cause.
+
+No second GPU validation, model checkpoint, formal Pilot4096, DDP, or evaluation was started. Production admission remains blocked pending an explicitly authorized diagnostic that persists individual gates.
