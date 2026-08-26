@@ -69,6 +69,17 @@ def select_streaming_microbatch_size(context_token_count: int) -> int:
     return TRAINER_MICROBATCH_SIZE
 
 
+def apply_group_scoring_microbatch(trainer: TrueRecGRPOTrainerV1, context_token_count: int) -> int:
+    selected = select_streaming_microbatch_size(context_token_count)
+    trainer.set_streaming_microbatch_size(selected)
+    return selected
+
+
+def require_matched_scoring_microbatch(selected: int, trainer: TrueRecGRPOTrainerV1) -> None:
+    if int(selected) != trainer.streaming_microbatch_size:
+        raise ProductionTrainingError("formal old/current scoring microbatch mismatch")
+
+
 def run_index_loop(
     order: Sequence[str], *, start_index: int, stop_exclusive: int,
     execute_group: Callable[[int, str], Any], checkpoint_every: int,
@@ -239,8 +250,7 @@ def run(args) -> None:
     def rollout(record):
         started = time.perf_counter(); model.eval()
         context_ids = renderer.rl_context_ids(record["system"], record["user_content_nothink"], record["fixed_domain_token"])
-        streaming_microbatch_size = select_streaming_microbatch_size(len(context_ids))
-        trainer.set_streaming_microbatch_size(streaming_microbatch_size)
+        streaming_microbatch_size = apply_group_scoring_microbatch(trainer, len(context_ids))
         versions = parameter_versions(model)
         input_ids = torch.tensor([context_ids], dtype=torch.long, device=device)
         attention_mask = torch.ones_like(input_ids)
@@ -262,14 +272,18 @@ def run(args) -> None:
 
     def old_rescore(record, rollout_value):
         started = time.perf_counter(); artifacts = rollout_value["artifacts"]
+        selected = rollout_value["streaming_microbatch_size"]
+        require_matched_scoring_microbatch(selected, trainer)
         group = rescore_business_group_from_completions(
             model, record, rollout_value["context_ids"], artifacts.completion_ids,
             artifacts.generation_score_logps, renderer.tokenizer.convert_ids_to_tokens,
             FORMAL_PAD_TOKEN_ID, device, expected_parameter_versions=rollout_value["versions"],
+            scoring_microbatch_size=selected,
         )
         torch.cuda.synchronize(device)
         trace["timing"]["old_rescore_seconds"] = time.perf_counter() - started
         trace["group"] = group
+        trace["old_rescore_microbatch_size"] = selected
         return group
 
     def gradient_gate():
@@ -306,6 +320,7 @@ def run(args) -> None:
         nonlocal lora_versions, allocated_baseline, over_limit_streak
         record = records_by_id[group_id]
         trace["timing"] = {}; trace["gradient"] = None; trace["group"] = None; trace["rollout"] = None
+        trace["old_rescore_microbatch_size"] = None
         torch.cuda.reset_peak_memory_stats(device)
         group_started = time.perf_counter()
         forward_before, backward_before = trainer.physical_policy_forward_calls, trainer.streaming_backward_calls
@@ -321,9 +336,12 @@ def run(args) -> None:
             raise ProductionTrainingError("base parameter mutation detected")
         monitoring = result.backward_result.monitoring
         streaming_microbatch_size = trace["rollout"]["streaming_microbatch_size"]
+        old_rescore_microbatch_size = trace["old_rescore_microbatch_size"]
         expected_physical_calls = G // streaming_microbatch_size
         if (
-            trainer.physical_policy_forward_calls - forward_before != expected_physical_calls
+            old_rescore_microbatch_size != streaming_microbatch_size
+            or monitoring["streaming_microbatch_size"] != streaming_microbatch_size
+            or trainer.physical_policy_forward_calls - forward_before != expected_physical_calls
             or trainer.streaming_backward_calls - backward_before != expected_physical_calls
             or trainer.hpr_extra_forward_calls != 0
         ):
@@ -346,6 +364,8 @@ def run(args) -> None:
             "recommendation_group_id": group_id, "target_domain": record["target_domain"],
             "context_token_count": len(group.context_ids), "Gold_K": len(record["all_gold_abc"]),
             "streaming_microbatch_size": streaming_microbatch_size,
+            "old_rescore_microbatch_size": old_rescore_microbatch_size,
+            "scoring_microbatch_matched": True,
             "physical_forward_calls": expected_physical_calls,
             "physical_backward_calls": expected_physical_calls,
             "format_valid_rate": sum(item["format_valid"] for item in candidate_metrics) / G,

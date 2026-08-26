@@ -183,6 +183,7 @@ def rescore_business_group_from_completions(
     generation_score_logps: Sequence[Sequence[float]], id_to_token: Callable[[int], str],
     pad_token_id: int, device: torch.device | str | None = None,
     expected_parameter_versions: tuple[int, ...] | None = None,
+    scoring_microbatch_size: int | None = None,
 ) -> BusinessGroupRollout:
     """Formal PPO old-logp path: eval + no-grad full-forward rescore."""
     model.eval()
@@ -191,7 +192,7 @@ def rescore_business_group_from_completions(
         raise RuntimeError("policy parameters changed between generation and old-logp rescore")
     score = score_full_sequences(
         model, context_ids, completion_ids, pad_token_id, device,
-        grad_enabled=False, trainable_parameters=(),
+        grad_enabled=False, trainable_parameters=(), scoring_microbatch_size=scoring_microbatch_size,
     )
     if any(score.requires_grad_by_microbatch) or any(score.graph_connected_by_microbatch):
         raise RuntimeError("PPO old-logp rescore retained an autograd graph")
