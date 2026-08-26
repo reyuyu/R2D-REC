@@ -1,0 +1,2 @@
+TrueRec-GRPO Production Memory Hardening D2: PASS
+The production threshold selected one shared microbatch value for formal full-forward PPO old-logp rescore and current streaming scoring. The unique worst-context group passed exact initial parity, eight immediate backwards, finite loss/gradient gates, and exactly one LoRA-only AdamW step. No checkpoint or formal Pilot was started.
