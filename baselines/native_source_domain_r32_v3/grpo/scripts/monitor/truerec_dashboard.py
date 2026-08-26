@@ -19,6 +19,14 @@ BETA_ADAPTER_SOURCE = Path(
     "BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106"
 )
 ADAPTER_FILES = ("adapter_config.json", "adapter_model.safetensors")
+CURRICULUM_V2_DIR = Path("/data/GRPO/truerec_grpo/data/curriculum2048_v2")
+CURRICULUM_V2_RECORDS_SHA256 = "8f1a4567aa0d6a953127e74f5667ab2907b9fbbe4aa3c0b92e27d5ecf1587542"
+CURRICULUM_STAGE_FOCUS = {
+    "stage1": "A-rich 起步：扩大一级兴趣命中面",
+    "stage2": "A-rich + B-rich：推进 AB 层级学习",
+    "stage3": "B-rich + C-rich：增加细粒度 credit 暴露",
+    "stage4": "C-rich + Singleton：困难样本与富前缀复习",
+}
 
 
 def read_json(path: Path, default: Any) -> Any:
@@ -236,6 +244,7 @@ def install_truerec_routes(
     adapter_source = Path(adapter_source_dir).expanduser().resolve()
     router = APIRouter(prefix="/api/truerec")
     gold_cache: dict[str, dict[str, Any]] | None = None
+    curriculum_cache: dict[str, Any] | None = None
 
     def gold_index() -> dict[str, dict[str, Any]]:
         nonlocal gold_cache
@@ -266,6 +275,40 @@ def install_truerec_routes(
         result = dict(row)
         result["gold_reference"] = gold_index().get(str(row.get("recommendation_group_id", "")), {})
         return result
+
+    def curriculum_inventory() -> dict[str, Any]:
+        nonlocal curriculum_cache
+        if curriculum_cache is not None:
+            return curriculum_cache
+        manifest = read_json(CURRICULUM_V2_DIR / "manifest.json", {})
+        records = read_jsonl(CURRICULUM_V2_DIR / "records.jsonl")
+        by_id = {str(row.get("recommendation_group_id")): row for row in records}
+        valid = (
+            manifest.get("records", {}).get("sha256") == CURRICULUM_V2_RECORDS_SHA256
+            and len(records) == len(by_id) == 2048
+        )
+        hierarchy_totals: dict[str, int] = {}
+        domain_features: dict[str, dict[str, float | int]] = {}
+        for row in records:
+            hierarchy = str(row.get("hierarchy_class", "OTHER"))
+            hierarchy_totals[hierarchy] = hierarchy_totals.get(hierarchy, 0) + 1
+            domain = str(row.get("target_domain", "unknown"))
+            values = domain_features.setdefault(domain, {"N": 0, "K_A": 0, "K_AB": 0, "K_ABC": 0})
+            values["N"] += 1
+            for key in ("K_A", "K_AB", "K_ABC"):
+                values[key] += int(row.get(key, 0) or 0)
+        for values in domain_features.values():
+            count = max(1, int(values["N"]))
+            for key in ("K_A", "K_AB", "K_ABC"):
+                values[f"{key}_mean"] = values[key] / count
+        curriculum_cache = {
+            "valid": valid,
+            "manifest": manifest,
+            "records": by_id,
+            "hierarchy_totals": hierarchy_totals,
+            "domain_features": domain_features,
+        }
+        return curriculum_cache
 
     @app.get("/truerec")
     def truerec_dashboard() -> FileResponse:
@@ -299,6 +342,69 @@ def install_truerec_routes(
             "next_probe": min((step for step in range(0, int(live.get("total_steps", 4096)) + 1, interval) if step > current), default=None),
             "next_checkpoint": min((step for step in range(interval, int(live.get("total_steps", 4096)) + 1, interval) if step > current), default=None),
             "checkpoints": checkpoints, "probe_steps": steps,
+        }
+
+    @router.get("/curriculum")
+    def curriculum(run_id: str) -> dict[str, Any]:
+        run = selected_run(runs_roots, run_id)
+        run_manifest = read_json(run / "run_manifest.json", {})
+        inventory = curriculum_inventory()
+        if (
+            run_manifest.get("records_sha256") != CURRICULUM_V2_RECORDS_SHA256
+            or not inventory["valid"]
+        ):
+            return {"available": False}
+        live = read_json(run / "live_state.json", {})
+        step = max(0, min(4096, int(live.get("current_step", 0) or 0)))
+        epoch = 1 if step <= 2048 else 2
+        epoch_step = step if epoch == 1 else step - 2048
+        current_group_id = str(live.get("current_group_id", ""))
+        current = inventory["records"].get(current_group_id, {})
+        stage_key = str(current.get("stage", "stage1"))
+        try:
+            stage_number = int(stage_key.replace("stage", ""))
+        except ValueError:
+            stage_number = 1
+        if epoch == 1:
+            stage_start = (stage_number - 1) * 512
+            stage_progress = max(0.0, min(1.0, (epoch_step - stage_start) / 512))
+            phase = {
+                "kind": "HIERARCHY_CURRICULUM",
+                "label": f"Epoch 1 · Stage {stage_number}",
+                "focus": CURRICULUM_STAGE_FOCUS.get(stage_key, "层级课程学习"),
+                "stage": stage_number,
+                "stage_progress": stage_progress,
+            }
+        else:
+            phase = {
+                "kind": "PROGRESS_AWARE_REPLAY",
+                "label": "Epoch 2 · Progress-aware Replay",
+                "focus": "按 HPR_C → HPR_B → NONE → HPR_A 优先回放，每 64 组保持四域均衡",
+                "stage": None,
+                "stage_progress": epoch_step / 2048,
+            }
+        return {
+            "available": True,
+            "epoch": epoch,
+            "epoch_step": epoch_step,
+            "epoch_total": 2048,
+            "epoch_progress": epoch_step / 2048,
+            "phase": phase,
+            "current_sample": {
+                key: current.get(key)
+                for key in (
+                    "recommendation_group_id", "target_domain", "stage", "hierarchy_class",
+                    "K_A", "K_AB", "K_ABC", "K", "prefix_rich", "context_token_count",
+                    "context_length_percentile", "selection_tier",
+                )
+            },
+            "stage_focus": CURRICULUM_STAGE_FOCUS,
+            "stage_domain_hierarchy": inventory["manifest"].get("stage_domain_hierarchy_census", {}),
+            "hierarchy_totals": inventory["hierarchy_totals"],
+            "domain_features": inventory["domain_features"],
+            "records_sha256": CURRICULUM_V2_RECORDS_SHA256,
+            "epoch1_order_sha256": run_manifest.get("epoch1_order_sha256"),
+            "epoch2_order_manifest": read_json(run / "epoch2_order_manifest.json", None),
         }
 
     @router.get("/curves")

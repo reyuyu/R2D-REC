@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TrueRec GRPO 训练监控</title><link rel="stylesheet" href="/static/truerec.css?v=20260827-checkpoint-download-v1"></head>
+<title>TrueRec GRPO 训练监控</title><link rel="stylesheet" href="/static/truerec.css?v=20260827-curriculum-v2"></head>
 <body><header class="topbar"><div><a class="back" href="/">‹ GRPO 监控台</a><h1>TrueRec GRPO</h1><span class="subtitle">Formal4096 · Global G8 训练监控</span></div><div class="live-tools"><span id="liveDot" class="live-dot"></span><span id="liveText">正在连接</span><button id="refreshToggle">暂停刷新</button><button id="refreshNow">立即刷新</button></div></header>
 <section class="runbar"><label for="runSelect">实验</label><select id="runSelect"></select><span id="runMeta">读取实验目录</span><span class="readonly">只读</span></section>
 <nav class="tabs" aria-label="TrueRec 页面"><button class="tab active" data-view="overview">训练总览</button><button class="tab" data-view="curves">训练曲线</button><button class="tab" data-view="inspector">Global G8 检视</button><button class="tab" data-view="probes">Probe20</button><button class="tab" data-view="checkpoints">检查点</button></nav>
@@ -8,6 +8,17 @@
   <section class="headline"><div><span>训练进度</span><strong id="step">- / 4096</strong></div><div><span>已用 / ETA</span><strong id="time">-</strong></div><div><span>秒 / group</span><strong id="speed">-</strong></div><div><span>Rolling50 吞吐</span><strong id="throughput">-</strong></div></section>
   <div class="progress"><div id="progressFill"></div></div>
   <section class="band"><div class="band-title"><h2>当前业务组</h2><span id="currentGroup">等待训练数据</span></div><div class="facts" id="groupFacts"></div></section>
+  <section id="curriculumPanel" class="band curriculum-panel" hidden>
+    <div class="band-title"><h2>V2 课程学习</h2><span id="curriculumIdentity">冻结数据与顺序</span></div>
+    <div class="curriculum-head"><div><span id="curriculumPhaseKind" class="curriculum-tag">Hierarchy Curriculum</span><strong id="curriculumPhase">等待课程数据</strong><p id="curriculumFocus"></p></div><div class="curriculum-epoch"><span>Epoch 进度</span><strong id="curriculumEpochProgress">0 / 2048</strong></div></div>
+    <div class="curriculum-track"><div id="curriculumEpochFill"></div></div>
+    <div id="curriculumTimeline" class="curriculum-timeline"></div>
+    <div class="curriculum-layout">
+      <div><h3>当前样本特征</h3><div id="curriculumSample" class="curriculum-sample"></div></div>
+      <div><h3>层级样本构成</h3><div id="curriculumHierarchy" class="hierarchy-bars"></div></div>
+      <div><h3>四域 K 均值</h3><div id="curriculumDomains" class="domain-feature-grid"></div></div>
+    </div>
+  </section>
   <section class="metric-grid" id="lossMetrics"></section><section class="metric-grid" id="hitMetrics"></section>
   <section class="split"><div class="band"><div class="band-title"><h2>4 GPU 状态</h2><span>训练进程只读遥测</span></div><div id="gpuRows" class="gpu-grid"></div></div><div class="band"><div class="band-title"><h2>里程碑</h2><span>每 256 step</span></div><dl id="milestones" class="milestones"></dl></div></section>
 </div></main>
@@ -29,4 +40,4 @@
 </div></main>
 <dialog id="chartDialog"><div class="dialog-head"><strong id="chartTitle">曲线</strong><div class="zoom-ranges" id="zoomRanges"><button data-range="100">最近 100</button><button data-range="500">最近 500</button><button data-range="1000">最近 1000</button><button class="active" data-range="all">全部</button></div><button id="chartClose" aria-label="关闭">×</button></div><div class="dialog-chart"><canvas id="chartLarge"></canvas></div></dialog>
 <div class="chart-tooltip" id="chartTooltip" role="status" aria-live="polite"></div>
-<script src="/static/truerec.js?v=20260827-checkpoint-download-v1"></script></body></html>
+<script src="/static/truerec.js?v=20260827-curriculum-v2"></script></body></html>

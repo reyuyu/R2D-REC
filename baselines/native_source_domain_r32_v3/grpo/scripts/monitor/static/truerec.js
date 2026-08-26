@@ -1,6 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id);
-  const state = {run:'', runs:[], overview:{}, curves:[], steps:[], probes:[], checkpoints:[], auto:true, smooth:1, timer:null, charts:[], activeChart:null, zoomRange:'all', downloadRootHandle:null, checkpointBusy:false};
+  const state = {run:'', runs:[], overview:{}, curriculum:{available:false}, curves:[], steps:[], probes:[], checkpoints:[], auto:true, smooth:1, timer:null, charts:[], activeChart:null, zoomRange:'all', downloadRootHandle:null, checkpointBusy:false};
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = (value, digits=4) => value == null || !Number.isFinite(Number(value)) ? 'N/A' : Number(value).toFixed(digits);
   const pct = value => value == null ? 'N/A' : `${(Number(value)*100).toFixed(1)}%`;
@@ -13,9 +13,39 @@
   function activeView(){return document.querySelector('.view.active')?.id||'overview';}
   function rolling(rows,key,windowSize){return rows.map((row,i)=>{const start=Math.max(0,i-windowSize+1),values=rows.slice(start,i+1).map(x=>Number(x[key])).filter(Number.isFinite);return values.length?values.reduce((a,b)=>a+b,0)/values.length:null;});}
   async function loadRuns(){state.runs=await fetch('/api/truerec/runs',{cache:'no-store'}).then(r=>r.json());const requested=new URLSearchParams(location.search).get('run');if(!state.run)state.run=state.runs.some(x=>x.run_id===requested)?requested:(state.runs[0]?.run_id||'');$('runSelect').innerHTML=state.runs.length?state.runs.map(x=>`<option value="${esc(x.run_id)}">${esc(x.run_id)} · ${x.latest_step}/${x.total_steps}</option>`).join(''):'<option>等待 TrueRec 实验</option>';$('runSelect').value=state.run;if(!$('checkpointExperimentName').value)$('checkpointExperimentName').value=state.run;}
-  async function refresh(force=false){if(!state.auto&&!force)return;try{if(!state.run)await loadRuns();if(!state.run){setLive(false,'等待实验目录');return}const view=activeView();const jobs=[api('/overview'),api('/curves')];if(!state.steps.length||view==='inspector')jobs.push(api('/train/steps'));else jobs.push(Promise.resolve(state.steps));jobs.push(api('/probes'));jobs.push(api('/checkpoints'));const [overview,curves,steps,probes,checkpoints]=await Promise.all(jobs);Object.assign(state,{overview,curves:curves.rows,steps,probes,checkpoints});$('error').hidden=true;renderOverview();renderRunMeta();if(view==='curves')renderCurves();if(view==='inspector')await renderInspectorOptions();if(view==='probes')await renderProbeOptions();if(view==='checkpoints')renderCheckpoints();setLive(true,`实时 · step ${overview.live?.current_step??'-'} · ${new Date().toLocaleTimeString()}`)}catch(error){showError(error)}}
+  async function refresh(force=false){if(!state.auto&&!force)return;try{if(!state.run)await loadRuns();if(!state.run){setLive(false,'等待实验目录');return}const view=activeView();const jobs=[api('/overview'),api('/curriculum'),api('/curves')];if(!state.steps.length||view==='inspector')jobs.push(api('/train/steps'));else jobs.push(Promise.resolve(state.steps));jobs.push(api('/probes'));jobs.push(api('/checkpoints'));const [overview,curriculum,curves,steps,probes,checkpoints]=await Promise.all(jobs);Object.assign(state,{overview,curriculum,curves:curves.rows,steps,probes,checkpoints});$('error').hidden=true;renderOverview();renderCurriculum();renderRunMeta();if(view==='curves')renderCurves();if(view==='inspector')await renderInspectorOptions();if(view==='probes')await renderProbeOptions();if(view==='checkpoints')renderCheckpoints();setLive(true,`实时 · step ${overview.live?.current_step??'-'} · ${new Date().toLocaleTimeString()}`)}catch(error){showError(error)}}
   function renderRunMeta(){const live=state.overview.live||{};$('runMeta').textContent=`${live.current_step||0} / ${live.total_steps||4096} · ${live.domain||'等待数据'}`;}
   function renderOverview(){const o=state.overview,l=o.live||{},total=l.total_steps||4096,step=l.current_step||0,rollingSpeed=l.rolling_50_seconds_per_group;$('step').textContent=`${step} / ${total}`;$('time').textContent=`${duration(step*(rollingSpeed||0))} / ${duration(l.ETA_seconds)}`;$('speed').textContent=l.seconds_per_group==null?'N/A':`${num(l.seconds_per_group,2)} 秒`;$('throughput').textContent=rollingSpeed?`${num(3600/rollingSpeed,1)} group/时`:'N/A';$('progressFill').style.width=`${Math.min(100,Number(l.progress_percent||0))}%`;$('currentGroup').textContent=l.current_group_id||'等待训练数据';$('groupFacts').innerHTML=[['Domain',l.domain],['Context tokens',l.context_token_count],['Selected MB',l.selected_microbatch_size],['Progress',`${num(l.progress_percent,2)}%`]].map(([a,b])=>`<div class="fact"><span>${a}</span><strong>${esc(b??'N/A')}</strong></div>`).join('');$('lossMetrics').innerHTML=metric('Total Loss',num(l.total_loss),'blue','Frontier + 0.02 × HPR')+metric('Frontier Loss',num(l.frontier_loss),'green','PPO frontier objective')+metric('HPR Weighted',num(l.hpr_weighted),'amber','层级正例补救')+metric('Wrong History Copy',pct(l.rolling_50_metrics?.wrong_history_copy_rate),'red','Rolling50');$('hitMetrics').innerHTML=metric('A Hit',pct(l.A_hit_rate),'green','当前 G8')+metric('AB Hit',pct(l.AB_hit_rate),'green','当前 G8')+metric('Exact',pct(l.exact_rate),'green','当前 G8')+metric('Format Valid',pct(l.rolling_50_metrics?.format_valid_rate),'blue','Rolling50');$('gpuRows').innerHTML=(l.rank_health||[]).map(g=>`<div class="gpu ${g.healthy?'':'bad'}"><strong>GPU ${g.rank} · ${g.healthy?'健康':'异常'}</strong><span>Allocated ${num(g.allocated_gb,2)} GB</span><span>Reserved ${num(g.reserved_gb,2)} GB</span><span>Peak ${num(g.peak_allocated_gb,2)} / ${num(g.peak_reserved_gb,2)} GB</span></div>`).join('')||'<div class="waiting">等待 rank health</div>';$('milestones').innerHTML=`<dt>最近 checkpoint</dt><dd>${l.last_checkpoint_step??'尚未保存'}</dd><dt>下一个 checkpoint</dt><dd>${o.next_checkpoint??'已完成'}</dd><dt>最近 Probe</dt><dd>${o.last_probe??'暂无'}</dd><dt>下一个 Probe</dt><dd>${o.next_probe??'已完成'}</dd>`;}
+  function renderCurriculum(){
+    const c=state.curriculum||{},panel=$('curriculumPanel');
+    panel.hidden=!c.available;
+    if(!c.available)return;
+    const phase=c.phase||{},sample=c.current_sample||{},epochProgress=Math.max(0,Math.min(1,Number(c.epoch_progress||0)));
+    $('curriculumPhaseKind').textContent=phase.kind==='PROGRESS_AWARE_REPLAY'?'Progress-aware Replay':'Hierarchy Curriculum';
+    $('curriculumPhaseKind').className=`curriculum-tag ${phase.kind==='PROGRESS_AWARE_REPLAY'?'replay':''}`;
+    $('curriculumPhase').textContent=phase.label||`Epoch ${c.epoch}`;
+    $('curriculumFocus').textContent=phase.focus||'';
+    $('curriculumEpochProgress').textContent=`${c.epoch_step??0} / ${c.epoch_total??2048}`;
+    $('curriculumEpochFill').style.width=`${epochProgress*100}%`;
+    $('curriculumIdentity').textContent=`Epoch ${c.epoch} · 数据 2048 组 · 每 64 组四域各 16`;
+    const currentStage=Number(phase.stage||0);
+    const stages=Object.entries(c.stage_focus||{}).map(([key,focus],index)=>({key,index:index+1,focus}));
+    $('curriculumTimeline').innerHTML=stages.map(stage=>{
+      const done=c.epoch===2||stage.index<currentStage,active=c.epoch===1&&stage.index===currentStage;
+      const progress=active?Number(phase.stage_progress||0):(done?1:0);
+      return `<div class="curriculum-stage ${done?'done':''} ${active?'active':''}"><div class="stage-number">${stage.index}</div><div><strong>Stage ${stage.index}</strong><span>${esc(stage.focus)}</span><div class="stage-meter"><i style="width:${Math.max(0,Math.min(1,progress))*100}%"></i></div></div></div>`;
+    }).join('')+(c.epoch===2?`<div class="curriculum-stage replay active"><div class="stage-number">R</div><div><strong>Epoch 2 Replay</strong><span>HPR_C → HPR_B → NONE → HPR_A</span><div class="stage-meter"><i style="width:${epochProgress*100}%"></i></div></div></div>`:'');
+    const classLabel={A_RICH:'A-rich',B_RICH:'B-rich',C_RICH:'C-rich',SINGLETON:'Singleton',OTHER:'Other'};
+    $('curriculumSample').innerHTML=[
+      ['Hierarchy',classLabel[sample.hierarchy_class]||sample.hierarchy_class],
+      ['Domain',sample.target_domain],['K_A',sample.K_A],['K_AB',sample.K_AB],['K_ABC',sample.K_ABC],
+      ['Prefix-rich',sample.prefix_rich?'YES':'NO'],['Context',sample.context_token_count],['Selection',sample.selection_tier],
+    ].map(([label,value])=>`<div><span>${esc(label)}</span><strong>${esc(value??'N/A')}</strong></div>`).join('');
+    const hierarchy=c.hierarchy_totals||{},hierarchyMax=Math.max(1,...Object.values(hierarchy).map(Number));
+    $('curriculumHierarchy').innerHTML=Object.entries(hierarchy).sort((a,b)=>Number(b[1])-Number(a[1])).map(([name,count])=>`<div class="hierarchy-row"><span>${esc(classLabel[name]||name)}</span><div><i style="width:${Number(count)/hierarchyMax*100}%"></i></div><strong>${count}</strong></div>`).join('');
+    const domains=c.domain_features||{};
+    $('curriculumDomains').innerHTML=['video','prod','ad','living'].map(domain=>{const row=domains[domain]||{};return `<div><strong>${domain}</strong><span>K_A ${num(row.K_A_mean,2)}</span><span>K_AB ${num(row.K_AB_mean,2)}</span><span>K_ABC ${num(row.K_ABC_mean,2)}</span></div>`}).join('');
+  }
   const chartDefs=[
     {title:'Loss 组成',series:[['total_value','#2764b8','Total'],['frontier_value','#087a58','Frontier'],['hpr_value_weighted','#a46608','HPR weighted']],guide:'Total 保持有限且无持续爆炸；HPR 随难组波动正常，不要求单调下降。'},
     {title:'层级命中率',series:[['A_hit_rate','#2764b8','A Hit'],['AB_hit_rate','#a46608','AB Hit'],['exact_rate','#087a58','Exact'],['wrong_history_copy_rate','#b93c48','Wrong History Copy']],guide:'A / AB / Exact 的滚动均值逐步改善，同时 Wrong History Copy 不持续上升。'},

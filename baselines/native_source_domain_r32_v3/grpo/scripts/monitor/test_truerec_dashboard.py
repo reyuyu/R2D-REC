@@ -2,6 +2,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import torch
@@ -128,6 +129,35 @@ class TrueRecDashboardTests(unittest.TestCase):
         install_truerec_routes(app, [first_root, second_root], Path(__file__).parent / "static")
         response = TestClient(app).get("/api/truerec/overview", params={"run_id": "DUPLICATE"})
         self.assertEqual(response.status_code, 409)
+
+    def test_v2_curriculum_contract_is_exposed(self):
+        root = self.tmp_path / "runs"
+        run = build_run(root, "TRUEREC-V2")
+        dump(run / "run_manifest.json", {
+            "records_sha256": "8f1a4567aa0d6a953127e74f5667ab2907b9fbbe4aa3c0b92e27d5ecf1587542",
+            "epoch1_order_sha256": "epoch1",
+        })
+        curriculum = self.tmp_path / "curriculum2048_v2"
+        dump(curriculum / "manifest.json", {
+            "records": {"sha256": "8f1a4567aa0d6a953127e74f5667ab2907b9fbbe4aa3c0b92e27d5ecf1587542"},
+            "stage_domain_hierarchy_census": {"stage1": {"video": {"N": 128}}},
+        })
+        rows = [{
+            "recommendation_group_id": "group-1" if index == 0 else f"group-{index + 1}",
+            "target_domain": "video", "stage": "stage1", "hierarchy_class": "A_RICH",
+            "K_A": 3, "K_AB": 4, "K_ABC": 5,
+        } for index in range(2048)]
+        jsonl(curriculum / "records.jsonl", rows)
+        app = FastAPI()
+        with patch("truerec_dashboard.CURRICULUM_V2_DIR", curriculum):
+            install_truerec_routes(app, root, Path(__file__).parent / "static")
+            response = TestClient(app).get("/api/truerec/curriculum", params={"run_id": run.name})
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIs(payload["available"], True)
+        self.assertEqual(payload["phase"]["label"], "Epoch 1 · Stage 1")
+        self.assertEqual(payload["current_sample"]["hierarchy_class"], "A_RICH")
+        self.assertEqual(payload["current_sample"]["K_ABC"], 5)
 
     def test_checkpoint_download_exports_lora_only_adapter(self):
         root = self.tmp_path / "runs"
