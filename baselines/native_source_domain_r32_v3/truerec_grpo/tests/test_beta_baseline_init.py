@@ -46,8 +46,8 @@ class BetaBaselineInitTest(unittest.TestCase):
     def test_18_frozen_core_shas(self):
         repo = ROOT.parents[2]
         for relative, digest in FROZEN_CORE_SHA.items():
-            if relative == "trainer/rollout_runtime_v1.py":
-                # Phase 1.2B explicitly extends this adapter to accept EOS ID lists.
+            if relative in {"trainer/rollout_runtime_v1.py", "trainer/truerec_grpo_trainer_v1.py"}:
+                # Phase 1.2B/1.2C explicitly evolve these runtime adapters.
                 continue
             blob = subprocess.check_output(["git", "-C", str(repo), "show", f"HEAD:baselines/native_source_domain_r32_v3/truerec_grpo/{relative}"])
             self.assertEqual(hashlib.sha256(blob).hexdigest(), digest)

@@ -76,12 +76,13 @@ def hpr_loss_padded(logits: torch.Tensor, batch: PaddedBusinessGroup, runtime_hp
 
 
 class TrueRecGRPOTrainerV1:
-    def __init__(self, policy, token_to_id, pad_token_id: int, epsilon: float = 0.2, padding_side: str = "right"):
+    def __init__(self, policy, token_to_id, pad_token_id: int, epsilon: float = 0.2, padding_side: str = "right", device=None):
         self.policy = policy
         self.token_to_id = token_to_id
         self.pad_token_id = int(pad_token_id)
         self.epsilon = epsilon
         self.padding_side = padding_side
+        self.device = device
         self.train_policy_forward_calls = 0
         self.hpr_extra_forward_calls = 0
 
@@ -89,7 +90,9 @@ class TrueRecGRPOTrainerV1:
         batch = collate_business_group(group, self.pad_token_id, self.padding_side)
         candidate_metrics = [candidate.metrics for candidate in group.candidates]
         runtime = build_group_runtime_plan(candidate_metrics, group.all_gold_abc, self.token_to_id)
-        output = self.policy(input_ids=batch.input_ids, attention_mask=batch.attention_mask)
+        input_ids = batch.input_ids.to(self.device) if self.device is not None else batch.input_ids
+        attention_mask = batch.attention_mask.to(self.device) if self.device is not None else batch.attention_mask
+        output = self.policy(input_ids=input_ids, attention_mask=attention_mask)
         self.train_policy_forward_calls += 1
         logits = output.logits if hasattr(output, "logits") else output
         current = gather_padded_action_logps(logits, batch)
