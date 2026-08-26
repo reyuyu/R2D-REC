@@ -1,0 +1,12 @@
+{
+  "discrete_trajectory_match": true,
+  "first_difference": {
+    "absolute_difference": 0.375,
+    "actual": -3.0625,
+    "expected": -2.6875,
+    "kind": "value",
+    "path": "$.candidates[0].action_tokens[0].old_logp"
+  },
+  "group_index": 2561,
+  "recommendation_group_id": "53d75024295d32f5246759bb46642c5085c8165dd1194f055edf934c13684621"
+}
