@@ -9,7 +9,7 @@ from pathlib import Path
 import random
 import sys
 import time
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import torch
@@ -89,6 +89,86 @@ def global_ratio_stats(local_current, local_candidates, device: torch.device) ->
     }
 
 
+def build_pre_optimizer_gate_diagnostic(
+    *, ratio: dict[str, float | int], selected_mb: int, expected_calls: int,
+    losses: dict[str, float], rank_states: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Describe the existing pre-optimizer gate using detached scalar state."""
+    loss_finite = {name: math.isfinite(float(value)) for name, value in losses.items()}
+    runtime_hashes = [str(state["runtime_plan_hash"]) for state in rank_states]
+    runtime_equal = len(set(runtime_hashes)) == 1
+    failed: set[str] = set()
+    if float(ratio["abs_max"]) > 1e-6:
+        failed.add("RATIO_ABS_MAX")
+    for state in rank_states:
+        calls = state["calls"]
+        if int(calls["forward_calls"]) != expected_calls:
+            failed.add("FORWARD_CALL_COUNT")
+        if int(calls["backward_calls"]) != expected_calls:
+            failed.add("BACKWARD_CALL_COUNT")
+        if int(calls["hpr_extra_forward_calls"]) != 0:
+            failed.add("HPR_EXTRA_FORWARD_CALLS")
+        gradient = state["gradient"]
+        norm = float(gradient["lora_grad_norm"])
+        if not math.isfinite(norm):
+            failed.add("LORA_GRAD_NORM_NONFINITE")
+        elif int(gradient["lora_params_with_nonzero_grad"]) == 0 or norm <= 0:
+            failed.add("ZERO_GRADIENT")
+        if int(gradient["base_params_with_grad"]) != 0:
+            failed.add("BASE_GRADIENT")
+        if int(gradient["nan_grad_count"]) != 0:
+            failed.add("NAN_GRADIENT")
+        if int(gradient["inf_grad_count"]) != 0:
+            failed.add("INF_GRADIENT")
+    if not all(loss_finite.values()):
+        failed.add("LOSS_NONFINITE")
+    if not runtime_equal:
+        failed.add("RUNTIME_PLAN_HASH_MISMATCH")
+    call_rows = [dict(state["calls"], rank=int(state["rank"])) for state in rank_states]
+    gradient_rows = [dict(state["gradient"], rank=int(state["rank"])) for state in rank_states]
+    return {
+        "ratio_gate": {
+            "abs_mean": float(ratio["abs_mean"]), "abs_max": float(ratio["abs_max"]),
+            "ratio_min": float(ratio["ratio_min"]), "ratio_max": float(ratio["ratio_max"]),
+            "pass": float(ratio["abs_max"]) <= 1e-6,
+        },
+        "call_gate": {
+            "selected_mb": int(selected_mb), "expected_calls": int(expected_calls),
+            "forward_calls": [row["forward_calls"] for row in call_rows],
+            "backward_calls": [row["backward_calls"] for row in call_rows],
+            "hpr_extra_forward_calls": [row["hpr_extra_forward_calls"] for row in call_rows],
+            "per_rank": call_rows,
+            "pass": not failed.intersection({
+                "FORWARD_CALL_COUNT", "BACKWARD_CALL_COUNT", "HPR_EXTRA_FORWARD_CALLS",
+            }),
+        },
+        "loss_gate": {
+            **{name: float(value) for name, value in losses.items()},
+            "finite": loss_finite, "pass": all(loss_finite.values()),
+        },
+        "gradient_gate": {
+            **{
+                name: [row[name] for row in gradient_rows]
+                for name in (
+                    "lora_params_with_grad", "lora_params_with_nonzero_grad", "lora_grad_norm",
+                    "base_params_with_grad", "nan_grad_count", "inf_grad_count",
+                )
+            },
+            "per_rank": gradient_rows,
+            "pass": not failed.intersection({
+                "LORA_GRAD_NORM_NONFINITE", "ZERO_GRADIENT", "BASE_GRADIENT",
+                "NAN_GRADIENT", "INF_GRADIENT",
+            }),
+        },
+        "runtime_plan_gate": {
+            "each_rank_runtime_plan_hash": runtime_hashes,
+            "all_equal": runtime_equal, "pass": runtime_equal,
+        },
+        "EXACT_FAILED_SUBGATES": sorted(failed),
+        "pass": not failed,
+    }
+
+
 def optimizer_driver_state() -> dict[str, int | bool]:
     return {
         "business_groups_seen": 1, "optimizer_steps": 1, "global_step": 1,
@@ -131,6 +211,8 @@ def run_loaded_group(
     expected_mb: int | None = None, provenance: dict[str, Any] | None = None,
     dropout: dict[str, Any] | None = None, trainability: dict[str, Any] | None = None,
     optimizer_audit: dict[str, Any] | None = None, strict_parameter_audit: bool = False,
+    pre_optimizer_diagnostic_callback: Callable[[dict[str, Any], Any, Any, list[dict[str, Any]]], None] | None = None,
+    stop_before_optimizer: bool = False,
 ) -> tuple[dict[str, Any], Any, Any, list[dict[str, Any]] | None]:
     """Execute the already-gated global-G8 update against a long-lived DDP policy."""
     rank = dist.get_rank()
@@ -195,21 +277,44 @@ def run_loaded_group(
     ratio = global_ratio_stats(backward.local_current_logps, local_candidates, device)
     gradients = gradient_audit(model)
     expected_calls = LOCAL_G // selected_mb
-    loss_finite = all(math.isfinite(value) for value in (
-        backward.global_frontier_value, backward.global_hpr_value_raw,
-        backward.global_hpr_value_weighted, backward.global_total_value,
-    ))
+    losses = {
+        "frontier": backward.global_frontier_value,
+        "hpr_raw": backward.global_hpr_value_raw,
+        "hpr_weighted": backward.global_hpr_value_weighted,
+        "total": backward.global_total_value,
+    }
+    loss_finite = all(math.isfinite(value) for value in losses.values())
     gradient_finite = (
         gradients["lora_params_with_nonzero_grad"] > 0 and math.isfinite(gradients["lora_grad_norm"])
         and gradients["lora_grad_norm"] > 0 and gradients["base_params_with_grad"] == 0
         and gradients["nan_grad_count"] == gradients["inf_grad_count"] == 0
     )
-    local_failure = not (
-        ratio["abs_max"] <= 1e-6 and backward.physical_forward_calls == expected_calls
-        and backward.physical_backward_calls == expected_calls and backward.hpr_extra_forward_calls == 0
-        and loss_finite and gradient_finite and all_rank_values_equal(backward.runtime_plan_hash)
+    rank_states = gather_rank_objects({
+        "rank": rank,
+        "calls": {
+            "forward_calls": backward.physical_forward_calls,
+            "backward_calls": backward.physical_backward_calls,
+            "hpr_extra_forward_calls": backward.hpr_extra_forward_calls,
+        },
+        "gradient": gradients,
+        "runtime_plan_hash": backward.runtime_plan_hash,
+    })
+    gate_diagnostic = build_pre_optimizer_gate_diagnostic(
+        ratio=ratio, selected_mb=selected_mb, expected_calls=expected_calls,
+        losses=losses, rank_states=rank_states,
     )
+    local_failure = not gate_diagnostic["pass"]
+    callback_failure = False
+    if pre_optimizer_diagnostic_callback is not None and rank == 0:
+        try:
+            pre_optimizer_diagnostic_callback(gate_diagnostic, group, backward, rank_monitoring)
+        except Exception:
+            callback_failure = True
+    if pre_optimizer_diagnostic_callback is not None:
+        distributed_fail_if(callback_failure, "pre-optimizer diagnostic callback failed", device)
     distributed_fail_if(local_failure, "pre-optimizer distributed gate failed", device)
+    if stop_before_optimizer:
+        raise DDPProductionError("requested diagnostic stop before optimizer")
     optimizer.step()
     torch.cuda.synchronize(device)
     if strict_parameter_audit:
