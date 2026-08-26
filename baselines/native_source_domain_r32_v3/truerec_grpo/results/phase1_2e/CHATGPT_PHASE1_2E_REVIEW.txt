@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.2E exactly-one-step audit: PASS
+A fresh Beta model used formal old-logp rescore, one G8 streaming backward, and exactly one LoRA-only AdamW step. Post-step scoring reused the frozen completion IDs and old logps. No generation, scheduler, checkpoint, optimizer-state persistence, second step, or formal training ran.
