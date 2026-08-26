@@ -1,0 +1,2 @@
+TrueRec-GRPO Memory Hardening D1: CONFIRMED_BF16_BATCH_SHAPE_SCORING_PARITY
+Pre-step components and 24-token evidence were atomically persisted before classification. Formal PPO old logps remained the unchanged MB2 full-forward rescore; any MB1 rescore was diagnostic-only. No optimizer step, checkpoint, or formal Pilot was started.
