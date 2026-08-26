@@ -22,7 +22,7 @@ from truerec_grpo_trainer_v1 import gather_padded_action_logps  # noqa: E402
 
 
 REPEAT_ABS_MAX_THRESHOLD = 1e-6
-TRAINER_SHA256 = "d33b02eb9ca562b00b3555019f5502cc925ea2718bb19e445e92033b3d4ffcb1"
+TRAINER_SHA256 = "4f2fc4e4a48ff04b2c22376d12b0168e22fc6c0d3e350a7ef55dc33528c0132e"
 
 
 class Phase12C0Error(RuntimeError):

@@ -28,6 +28,9 @@ from truerec_runtime_v1 import build_group_runtime_plan
 ROUTE_MULTIPLIER = None
 FORMAT_PENALTY_CONTEXT_TERMS = 0
 FORMAT_PENALTY_DOMAIN_TERMS = 0
+TRAINER_MICROBATCH_SIZE = 2
+LOGICAL_POLICY_SCORING_PASSES_PER_GROUP = 1
+PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP = G // TRAINER_MICROBATCH_SIZE
 
 
 @dataclass(frozen=True)
@@ -40,12 +43,26 @@ class IntegratedGroupLoss:
 
 
 def gather_padded_action_logps(logits: torch.Tensor, batch: PaddedBusinessGroup) -> torch.Tensor:
-    if logits.ndim != 3 or logits.shape[:2] != batch.input_ids.shape:
+    return gather_padded_action_logps_rows(logits, batch, 0, G)
+
+
+def gather_padded_action_logps_rows(
+    logits: torch.Tensor,
+    batch: PaddedBusinessGroup,
+    start: int,
+    stop: int,
+) -> torch.Tensor:
+    if not 0 <= start < stop <= G:
+        raise ValueError("invalid candidate row slice")
+    if logits.ndim != 3 or logits.shape[:2] != (stop - start, batch.input_ids.shape[1]):
         raise ValueError("policy logits must align with padded input batch")
-    rows = torch.arange(G, device=logits.device).unsqueeze(1).expand(G, 3)
-    selected = logits[rows, batch.causal_logit_indices.to(logits.device)]
+    row_count = stop - start
+    rows = torch.arange(row_count, device=logits.device).unsqueeze(1).expand(row_count, 3)
+    causal_indices = batch.causal_logit_indices[start:stop].to(logits.device)
+    selected = logits[rows, causal_indices]
     log_probs = torch.log_softmax(selected, dim=-1)
-    return log_probs.gather(-1, batch.completion_ids.to(logits.device).unsqueeze(-1)).squeeze(-1)
+    completion_ids = batch.completion_ids[start:stop].to(logits.device)
+    return log_probs.gather(-1, completion_ids.unsqueeze(-1)).squeeze(-1)
 
 
 def format_credit_tensors(group: BusinessGroupRollout, device=None) -> tuple[torch.Tensor, torch.Tensor]:
@@ -83,6 +100,8 @@ class TrueRecGRPOTrainerV1:
         self.epsilon = epsilon
         self.padding_side = padding_side
         self.device = device
+        self.logical_policy_scoring_passes = 0
+        self.physical_policy_forward_calls = 0
         self.train_policy_forward_calls = 0
         self.hpr_extra_forward_calls = 0
 
@@ -90,17 +109,54 @@ class TrueRecGRPOTrainerV1:
         batch = collate_business_group(group, self.pad_token_id, self.padding_side)
         candidate_metrics = [candidate.metrics for candidate in group.candidates]
         runtime = build_group_runtime_plan(candidate_metrics, group.all_gold_abc, self.token_to_id)
-        input_ids = batch.input_ids.to(self.device) if self.device is not None else batch.input_ids
-        attention_mask = batch.attention_mask.to(self.device) if self.device is not None else batch.attention_mask
-        output = self.policy(input_ids=input_ids, attention_mask=attention_mask)
-        self.train_policy_forward_calls += 1
-        logits = output.logits if hasattr(output, "logits") else output
-        current = gather_padded_action_logps(logits, batch)
-        hierarchy = frontier_ppo_loss(current.unsqueeze(0), batch.old_logps.to(current.device).unsqueeze(0), runtime.token_credits.to(current.device).unsqueeze(0), runtime.token_credit_mask.to(current.device).unsqueeze(0), self.epsilon)
-        format_credits, format_mask = format_credit_tensors(group, current.device)
-        format_loss = frontier_ppo_loss(current.unsqueeze(0), batch.old_logps.to(current.device).unsqueeze(0), format_credits.unsqueeze(0), format_mask.unsqueeze(0), self.epsilon)
-        frontier = hierarchy.loss + format_loss.loss
-        hpr_raw = hpr_loss_padded(logits, batch, runtime.hpr)
+        format_credits, format_mask = format_credit_tensors(group)
+        frontier_parts = []
+        hpr_position_losses = [[] for _ in runtime.hpr.sites]
+        zero_graph = None
+        self.logical_policy_scoring_passes += 1
+        for start in range(0, G, TRAINER_MICROBATCH_SIZE):
+            stop = min(start + TRAINER_MICROBATCH_SIZE, G)
+            input_ids = batch.input_ids[start:stop]
+            attention_mask = batch.attention_mask[start:stop]
+            if self.device is not None:
+                input_ids = input_ids.to(self.device)
+                attention_mask = attention_mask.to(self.device)
+            output = self.policy(input_ids=input_ids, attention_mask=attention_mask)
+            self.physical_policy_forward_calls += 1
+            self.train_policy_forward_calls += 1
+            logits = output.logits if hasattr(output, "logits") else output
+            current = gather_padded_action_logps_rows(logits, batch, start, stop)
+            old_logps = batch.old_logps[start:stop].to(current.device)
+            hierarchy = frontier_ppo_loss(
+                current.unsqueeze(0), old_logps.unsqueeze(0),
+                runtime.token_credits[start:stop].to(current.device).unsqueeze(0),
+                runtime.token_credit_mask[start:stop].to(current.device).unsqueeze(0), self.epsilon,
+            )
+            format_loss = frontier_ppo_loss(
+                current.unsqueeze(0), old_logps.unsqueeze(0),
+                format_credits[start:stop].to(current.device).unsqueeze(0),
+                format_mask[start:stop].to(current.device).unsqueeze(0), self.epsilon,
+            )
+            candidate_weight = (stop - start) / G
+            frontier_parts.append((hierarchy.loss + format_loss.loss) * candidate_weight)
+            chunk_zero = logits.sum() * 0.0
+            zero_graph = chunk_zero if zero_graph is None else zero_graph + chunk_zero
+            for site_index, site in enumerate(runtime.hpr.sites):
+                for sample_index, action_position in site.onpolicy_positions:
+                    if start <= sample_index < stop:
+                        causal_index = int(batch.causal_logit_indices[sample_index, action_position])
+                        hpr_position_losses[site_index].append(
+                            multi_positive_log_mass_loss(
+                                logits[sample_index - start, causal_index], site.target_token_ids,
+                            )
+                        )
+        frontier = torch.stack(frontier_parts).sum()
+        if runtime.hpr.sites:
+            if any(not losses for losses in hpr_position_losses):
+                raise ValueError("HPR site lacks on-policy positions")
+            hpr_raw = torch.stack([torch.stack(losses).mean() for losses in hpr_position_losses]).mean()
+        else:
+            hpr_raw = zero_graph
         total = compose_total_loss(frontier, hpr_raw)
         valid = [item for item in candidate_metrics if item["format_valid"]]
         abc_values = [item["parsed_abc"] for item in valid]
@@ -155,10 +211,11 @@ class _AuditOutput:
 
 
 class _AuditPolicy:
-    def __init__(self, logits): self.logits = logits; self.calls = 0; self.attention_mask = None
+    def __init__(self, logits): self.logits = logits; self.calls = 0; self.attention_masks = []
     def __call__(self, input_ids, attention_mask):
-        self.calls += 1; self.attention_mask = attention_mask.clone()
-        return _AuditOutput(self.logits)
+        start = self.calls * input_ids.shape[0]
+        self.calls += 1; self.attention_masks.append(attention_mask.clone())
+        return _AuditOutput(self.logits[start:start + input_ids.shape[0]])
 
 
 def run_cpu_audit(output_dir: Path, source_truerec_root: Path, runtime_truerec_root: Path) -> dict[str, Any]:
@@ -230,7 +287,8 @@ def run_cpu_audit(output_dir: Path, source_truerec_root: Path, runtime_truerec_r
     trainer = TrueRecGRPOTrainerV1(policy, token_ids.__getitem__, 0)
     loss = trainer.compute_group(group)
     shared_audit = {
-        "train_policy_forward_calls_per_group": trainer.train_policy_forward_calls,
+        "logical_policy_scoring_passes_per_group": trainer.logical_policy_scoring_passes,
+        "physical_policy_forward_calls_per_group": trainer.physical_policy_forward_calls,
         "hpr_extra_forward_calls": trainer.hpr_extra_forward_calls,
         "frontier_loss": float(loss.frontier_loss.detach()),
         "hpr_loss_raw": float(loss.hpr_loss_raw.detach()),
@@ -294,7 +352,7 @@ def main() -> None:
     parser.add_argument("--runtime-truerec-root", type=Path, required=True)
     args = parser.parse_args()
     audit = run_cpu_audit(args.output_dir, args.source_truerec_root, args.runtime_truerec_root)
-    required = (audit["rollout"]["business_group_unit"], audit["rollout"]["github_runtime_parity"], audit["old"]["reconstruction_exact"], audit["old"]["old_unchanged_after_current_perturbation"], audit["old"]["current_changed_after_perturbation"], audit["padding"]["right_padding_alignment"], audit["padding"]["attention_mask_gate"], audit["shared"]["train_policy_forward_calls_per_group"] == 1, audit["shared"]["hpr_extra_forward_calls"] == 0, not audit["evaluation"]["final2048_checkpoint_selection_allowed"])
+    required = (audit["rollout"]["business_group_unit"], audit["rollout"]["github_runtime_parity"], audit["old"]["reconstruction_exact"], audit["old"]["old_unchanged_after_current_perturbation"], audit["old"]["current_changed_after_perturbation"], audit["padding"]["right_padding_alignment"], audit["padding"]["attention_mask_gate"], audit["shared"]["logical_policy_scoring_passes_per_group"] == 1, audit["shared"]["physical_policy_forward_calls_per_group"] == 4, audit["shared"]["hpr_extra_forward_calls"] == 0, not audit["evaluation"]["final2048_checkpoint_selection_allowed"])
     if not all(required):
         raise SystemExit("PHASE1_1_AUDIT=FAIL")
     print("PHASE1_1_AUDIT=PASS")

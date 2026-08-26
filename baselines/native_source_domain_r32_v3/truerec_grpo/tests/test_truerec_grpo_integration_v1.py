@@ -18,7 +18,7 @@ from evaluation_runtime_v1 import evaluate_dev512, evaluate_probe20, final_check
 from frontier_credit_v1 import FORMAT_INVALID_TOTAL
 from rollout_runtime_v1 import FORMAL_EOS_TOKEN_IDS, FORMAL_PAD_TOKEN_ID, GENERATION_SCORE_LOGPS_ROLE, GENERATION_SCORES_USED_FOR_PPO, G, OLD_LOGPS_FROM_FULL_FORWARD_RESCORE, OLD_LOGPS_FROM_ROLLOUT_POLICY, PPO_OLD_LOGP_SOURCE, build_rollout_group, capture_sampled_logps, generation_contract, normalize_eos_token_ids, rollout_business_group, trim_generated_completion
 from policy_scoring_v1 import POLICY_SCORING_MODE, SCORING_MICROBATCH_SIZE
-from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, ROUTE_MULTIPLIER, TrueRecGRPOTrainerV1, format_credit_tensors, gather_padded_action_logps
+from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, LOGICAL_POLICY_SCORING_PASSES_PER_GROUP, PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP, ROUTE_MULTIPLIER, TRAINER_MICROBATCH_SIZE, TrueRecGRPOTrainerV1, format_credit_tensors, gather_padded_action_logps
 from truerec_loss_v1 import HPR_LAMBDA
 from truerec_runtime_v1 import build_group_runtime_plan
 
@@ -59,12 +59,12 @@ class MockOutput:
 
 
 class MockPolicy:
-    def __init__(self, vocab=VOCAB): self.calls = 0; self.vocab = vocab; self.last_attention_mask = None
+    def __init__(self, vocab=VOCAB): self.calls = 0; self.vocab = vocab; self.attention_masks = []
     def __call__(self, input_ids, attention_mask):
         self.calls += 1
-        self.last_attention_mask = attention_mask.clone()
-        values = torch.arange(input_ids.shape[0] * input_ids.shape[1] * self.vocab, dtype=torch.float32)
-        return MockOutput(values.reshape(input_ids.shape[0], input_ids.shape[1], self.vocab) / 1000.0)
+        self.attention_masks.append(attention_mask.clone())
+        vocab_offsets = torch.arange(self.vocab, dtype=torch.float32).view(1, 1, -1)
+        return MockOutput(input_ids.float().unsqueeze(-1) / 1000.0 + vocab_offsets / 1000.0)
 
 
 class MockRenderer:
@@ -166,7 +166,8 @@ class Phase11IntegrationTest(unittest.TestCase):
 
     def test_23_shared_training_forward(self):
         group, _ = rollout(completions=[[4, 5, 6]] * 8); policy = MockPolicy(); trainer = TrueRecGRPOTrainerV1(policy, TOKEN_IDS.__getitem__, 0); trainer.compute_group(group)
-        self.assertEqual((policy.calls, trainer.train_policy_forward_calls), (1, 1))
+        self.assertEqual((TRAINER_MICROBATCH_SIZE, LOGICAL_POLICY_SCORING_PASSES_PER_GROUP, PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP), (2, 1, 4))
+        self.assertEqual((policy.calls, trainer.logical_policy_scoring_passes, trainer.physical_policy_forward_calls, trainer.train_policy_forward_calls), (4, 1, 4, 4))
 
     def test_24_no_hpr_extra_forward(self):
         group, _ = rollout(completions=[[1, 5, 6]] * 8); trainer = TrueRecGRPOTrainerV1(MockPolicy(), TOKEN_IDS.__getitem__, 0); trainer.compute_group(group)
@@ -174,7 +175,7 @@ class Phase11IntegrationTest(unittest.TestCase):
 
     def test_25_attention_mask_passed_to_policy(self):
         group, _ = rollout(completions=[[1, 2, 3]] * 7 + [[20, 21]]); policy = MockPolicy(); trainer = TrueRecGRPOTrainerV1(policy, TOKEN_IDS.__getitem__, 0); trainer.compute_group(group)
-        self.assertTrue(torch.equal(policy.last_attention_mask, collate_business_group(group, 0).attention_mask))
+        self.assertTrue(torch.equal(torch.cat(policy.attention_masks), collate_business_group(group, 0).attention_mask))
 
     def test_26_batch_group_reduction(self):
         first, _ = rollout("a"); second, _ = rollout("b", completions=[[4, 5, 6]] * 8); policy = MockPolicy(); trainer = TrueRecGRPOTrainerV1(policy, TOKEN_IDS.__getitem__, 0)

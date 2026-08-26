@@ -24,7 +24,7 @@ from beta_single_group_loss_audit import GROUP_ID, PAD_TOKEN_ID, compare_current
 from batch_collator_v1 import collate_business_group  # noqa: E402
 from policy_scoring_v1 import POLICY_SCORING_MODE, parameter_versions  # noqa: E402
 from rollout_runtime_v1 import GENERATION_SCORES_USED_FOR_PPO, PPO_OLD_LOGP_SOURCE, rescore_business_group_from_completions  # noqa: E402
-from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, TrueRecGRPOTrainerV1, gather_padded_action_logps  # noqa: E402
+from truerec_grpo_trainer_v1 import FORMAT_PENALTY_CONTEXT_TERMS, FORMAT_PENALTY_DOMAIN_TERMS, PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP, TrueRecGRPOTrainerV1, gather_padded_action_logps_rows  # noqa: E402
 from truerec_loss_v1 import HPR_LAMBDA  # noqa: E402
 from truerec_runtime_v1 import build_group_runtime_plan  # noqa: E402
 
@@ -42,14 +42,22 @@ class CurrentLogpCapturePolicy(torch.nn.Module):
         super().__init__()
         self.policy = policy
         self.batch = batch
-        self.current_logps = None
+        self._current_logp_chunks = []
         self.forward_calls = 0
 
+    @property
+    def current_logps(self):
+        return torch.cat(self._current_logp_chunks) if self._current_logp_chunks else None
+
     def forward(self, input_ids, attention_mask):
+        start = sum(chunk.shape[0] for chunk in self._current_logp_chunks)
+        stop = start + input_ids.shape[0]
         output = self.policy(input_ids=input_ids, attention_mask=attention_mask)
         self.forward_calls += 1
         logits = output.logits if hasattr(output, "logits") else output
-        self.current_logps = gather_padded_action_logps(logits, self.batch).detach().float().cpu()
+        self._current_logp_chunks.append(
+            gather_padded_action_logps_rows(logits, self.batch, start, stop).detach().float().cpu()
+        )
         return output
 
 
@@ -182,8 +190,9 @@ def run(output_dir: Path, physical_gpu_id: int) -> None:
     composition = finite and verify_total_composition(losses["frontier_loss"], losses["hpr_loss_raw"], losses["hpr_loss_weighted"], losses["total_loss"])
     mutation = parameter_versions(model) != versions_before
     passed = (
-        composition and not mutation and trainer.train_policy_forward_calls == 1
-        and capture.forward_calls == 1 and trainer.hpr_extra_forward_calls == 0
+        composition and not mutation and trainer.logical_policy_scoring_passes == 1
+        and trainer.physical_policy_forward_calls == PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP
+        and capture.forward_calls == PHYSICAL_POLICY_FORWARD_CALLS_PER_GROUP and trainer.hpr_extra_forward_calls == 0
         and not dropout["rl_dropout_active"]
     )
     audit.update({

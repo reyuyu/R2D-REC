@@ -47,6 +47,15 @@ class SingleGroupFormalLossAuditTest(unittest.TestCase):
     def test_02_free_memory_gate_is_fixed(self):
         self.assertEqual(MIN_FREE_GIB, 70.0)
 
+    def test_02b_capture_wrapper_supports_trainer_microbatches(self):
+        torch.manual_seed(1202)
+        value = batch()
+        wrapper = CurrentLogpCapturePolicy(Policy(torch.randn(2, 5, 20, requires_grad=True)), value)
+        for start in range(0, 8, 2):
+            wrapper(value.input_ids[start:start + 2], value.attention_mask[start:start + 2])
+        self.assertEqual(wrapper.current_logps.shape, (8, 3))
+        self.assertEqual(wrapper.forward_calls, 4)
+
     def test_03_trainer_core_sha_unchanged(self):
         blob = subprocess.check_output(["git", "-C", str(ROOT.parents[2]), "show", "HEAD:baselines/native_source_domain_r32_v3/truerec_grpo/trainer/truerec_grpo_trainer_v1.py"])
         self.assertEqual(hashlib.sha256(blob).hexdigest(), TRAINER_SHA256)

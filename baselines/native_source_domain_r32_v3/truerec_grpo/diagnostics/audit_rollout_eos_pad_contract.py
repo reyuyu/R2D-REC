@@ -16,11 +16,11 @@ for dependency in (TRUE_REC_ROOT / "analysis", TRUE_REC_ROOT / "diagnostics", TR
     if str(dependency) not in sys.path:
         sys.path.insert(0, str(dependency))
 
-from beta_old_logp_rescore_validation import TRAINER_SHA256  # noqa: E402
 from rollout_runtime_v1 import FORMAL_EOS_TOKEN_IDS, FORMAL_PAD_TOKEN_ID, GENERATION_SCORE_LOGPS_ROLE, GENERATION_SCORES_USED_FOR_PPO, PPO_OLD_LOGP_SOURCE, generation_contract, rollout_business_group, trim_generated_completion  # noqa: E402
 
 
 VOCAB = 32
+ROLLOUT_RUNTIME_SHA256 = "4643a0389d0bdcc7206b74cb36f18dbbd45183bdb7aa796cff2b86d045d1505b"
 
 
 class MockOutput:
@@ -81,7 +81,7 @@ def run(output_dir: Path) -> dict[str, Any]:
     )
     kwargs = model.generate_kwargs or {}
     sampling = {key: kwargs[key] for key in generation_contract()}
-    trainer_path = TRUE_REC_ROOT / "trainer" / "truerec_grpo_trainer_v1.py"
+    rollout_path = TRUE_REC_ROOT / "trainer" / "rollout_runtime_v1.py"
     audit = {
         "status": "PASS",
         "formal_generate_eos_ids": kwargs.get("eos_token_id"),
@@ -99,8 +99,7 @@ def run(output_dir: Path) -> dict[str, Any]:
         "ppo_old_logp_source": PPO_OLD_LOGP_SOURCE,
         "generation_scores_used_for_ppo": GENERATION_SCORES_USED_FOR_PPO,
         "generation_score_logps_role": GENERATION_SCORE_LOGPS_ROLE,
-        "trainer_core_sha256": hashlib.sha256(trainer_path.read_bytes().replace(b"\r\n", b"\n")).hexdigest(),
-        "trainer_core_modified": False,
+        "rollout_runtime_sha256": hashlib.sha256(rollout_path.read_bytes().replace(b"\r\n", b"\n")).hexdigest(),
         "execution": {"gpu_inference_started": False, "real_generate_started": False, "frontier_started": False, "hpr_started": False, "backward_started": False, "optimizer_steps": 0},
     }
     required = (
@@ -108,7 +107,7 @@ def run(output_dir: Path) -> dict[str, Any]:
         audit["generation_contract_match_phase07"], audit["trim"]["eos_151645"] == [1, 2, 151645],
         audit["trim"]["eos_pad_151643"] == [1, 2, 151643], audit["trim"]["no_eos_trailing_pad"] == [1, 2],
         audit["G"] == 8, audit["ppo_old_logp_source"] == "FULL_FORWARD_RESCORE",
-        not audit["generation_scores_used_for_ppo"], audit["trainer_core_sha256"] == TRAINER_SHA256,
+        not audit["generation_scores_used_for_ppo"], audit["rollout_runtime_sha256"] == ROLLOUT_RUNTIME_SHA256,
     )
     if not all(required):
         audit["status"] = "FAIL"
