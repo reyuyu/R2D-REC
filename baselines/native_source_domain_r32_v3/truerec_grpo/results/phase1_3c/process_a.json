@@ -1,0 +1,1741 @@
+{
+  "status": "PASS",
+  "process": "A",
+  "model_family": "BETA_BASELINE",
+  "provenance": {
+    "checkpoint_exists": true,
+    "pretrained_base_exists": true,
+    "required_files": {
+      "adapter_config.json": {
+        "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_config.json",
+        "size": 1077,
+        "sha256": "e1ea043db6929753b708f6261a4de5d8e6d3ed59bb6cd7f37802ae7678170fb3"
+      },
+      "adapter_model.safetensors": {
+        "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/adapter_model.safetensors",
+        "size": 349243752,
+        "sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3"
+      }
+    },
+    "adapter_base_model_name_or_path": "/data/models/onereason-8b-pretrain-competition",
+    "adapter_peft_type": "LORA",
+    "adapter_task_type": "CAUSAL_LM",
+    "pass": true
+  },
+  "dropout": {
+    "module_count": 252,
+    "modules": [
+      {
+        "name": "base_model.model.model.layers.0.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.0.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.1.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.2.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.3.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.4.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.5.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.6.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.7.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.8.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.9.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.10.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.11.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.12.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.13.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.14.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.15.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.16.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.17.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.18.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.19.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.20.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.21.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.22.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.23.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.24.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.25.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.26.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.27.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.28.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.29.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.30.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.31.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.32.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.33.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.34.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.self_attn.q_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.self_attn.k_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.self_attn.v_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.self_attn.o_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.mlp.gate_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.mlp.up_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      },
+      {
+        "name": "base_model.model.model.layers.35.mlp.down_proj.lora_dropout.default",
+        "type": "Dropout",
+        "training": false,
+        "p": 0.05
+      }
+    ],
+    "active_modules": [],
+    "rl_dropout_active": false
+  },
+  "trainability": {
+    "trainable_lora_param_count": 87293952,
+    "trainable_lora_tensor_count": 504,
+    "base_trainable_param_count": 0,
+    "base_trainable_tensor_count": 0
+  },
+  "optimizer": {
+    "optimizer_lora_only": true,
+    "optimizer_param_count": 87293952,
+    "optimizer_tensor_count": 504,
+    "duplicate_optimizer_tensor_count": 0
+  },
+  "order": {
+    "seed": "truerec-v1-pilot4096-epoch-order-20260826",
+    "sha256": "b4bf02f9b0591e1e684fa1e42e4528682848c615994e926aa33236d78337b4f6",
+    "count": 4096
+  },
+  "group_trace": [
+    {
+      "group_id": "2652ca78a590e57a5af87ab38557d9c03e15c4cfc3f04e907f9effd4ddaa6643",
+      "completion_ids": [
+        [
+          158493,
+          164502,
+          168603
+        ],
+        [
+          156648,
+          162780,
+          173246
+        ],
+        [
+          158493,
+          166688,
+          173197
+        ],
+        [
+          153070,
+          159952,
+          169454
+        ],
+        [
+          153495,
+          159952,
+          172085
+        ],
+        [
+          151979,
+          159952,
+          175068
+        ],
+        [
+          153495,
+          159952,
+          172085
+        ],
+        [
+          153436,
+          159952,
+          175563
+        ]
+      ]
+    },
+    {
+      "group_id": "947fd1ba2ccefa852c025c8c148ce11c3917ecdd096fe7c54ceccdc67eac4bfa",
+      "completion_ids": [
+        [
+          153265,
+          160890,
+          173167
+        ],
+        [
+          157601,
+          164201,
+          171837
+        ],
+        [
+          157657,
+          166156,
+          174363
+        ],
+        [
+          156784,
+          167516,
+          172265
+        ],
+        [
+          151886,
+          164402,
+          172341
+        ],
+        [
+          153253,
+          162726,
+          170368
+        ],
+        [
+          151757,
+          161166,
+          169348
+        ],
+        [
+          157037,
+          166762,
+          169476
+        ]
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "group_index": 0,
+      "group_id": "2652ca78a590e57a5af87ab38557d9c03e15c4cfc3f04e907f9effd4ddaa6643",
+      "G": 8,
+      "physical_forwards": 4,
+      "physical_backwards": 4,
+      "hpr_extra_forwards": 0,
+      "losses": {
+        "frontier": 0.12109375,
+        "hpr_raw": 4.78125,
+        "hpr_weighted": 0.095625,
+        "total": 0.21671875000000002,
+        "finite": true
+      },
+      "gradient": {
+        "lora_params_with_grad": 504,
+        "lora_params_with_nonzero_grad": 504,
+        "lora_grad_norm": 4.023587594900607,
+        "base_params_with_grad": 0,
+        "nan_grad_count": 0,
+        "inf_grad_count": 0
+      },
+      "lora_sha_before": "5f784ce4bb11f59761a3ea4718948958b2a9a985544710891b7327f422f3b071",
+      "lora_sha_after": "a0e9d8c9e4d94be41075f8f042704b8ed146da08ba288d6bb169276449cfe2b6",
+      "lora_changed": true,
+      "allocated_after_group_gb": 17.01155185699463,
+      "reserved_after_group_gb": 57.595703125,
+      "peak_allocated_gb": 54.40643930435181,
+      "peak_reserved_gb": 57.595703125
+    },
+    {
+      "group_index": 1,
+      "group_id": "947fd1ba2ccefa852c025c8c148ce11c3917ecdd096fe7c54ceccdc67eac4bfa",
+      "G": 8,
+      "physical_forwards": 4,
+      "physical_backwards": 4,
+      "hpr_extra_forwards": 0,
+      "losses": {
+        "frontier": 0.0712890625,
+        "hpr_raw": 6.4375,
+        "hpr_weighted": 0.12875,
+        "total": 0.2000390625,
+        "finite": true
+      },
+      "gradient": {
+        "lora_params_with_grad": 504,
+        "lora_params_with_nonzero_grad": 504,
+        "lora_grad_norm": 0.9815396999947966,
+        "base_params_with_grad": 0,
+        "nan_grad_count": 0,
+        "inf_grad_count": 0
+      },
+      "lora_sha_before": "a0e9d8c9e4d94be41075f8f042704b8ed146da08ba288d6bb169276449cfe2b6",
+      "lora_sha_after": "6ac7c8f42920346d202ca8060ca8906aee95c7a3a36f3232e9061c371fd78d20",
+      "lora_changed": true,
+      "allocated_after_group_gb": 17.000126838684082,
+      "reserved_after_group_gb": 60.638671875,
+      "peak_allocated_gb": 59.367918968200684,
+      "peak_reserved_gb": 60.638671875
+    }
+  ],
+  "driver_state_at_save": {
+    "business_groups_seen": 2,
+    "optimizer_steps": 2,
+    "global_step": 2,
+    "rollouts_completed": 2,
+    "old_rescores_completed": 2,
+    "streaming_backwards_completed": 2,
+    "groups_in_accumulation_window": 0,
+    "failed": false
+  },
+  "next_group_index_at_save": 2,
+  "lora_sha_at_save": "6ac7c8f42920346d202ca8060ca8906aee95c7a3a36f3232e9061c371fd78d20",
+  "optimizer_step_state_at_save": 2,
+  "expected_rng_after_checkpoint": {
+    "python": 0.36596240314346973,
+    "numpy": 0.934323378217054,
+    "torch_cpu": 0.1867855191230774,
+    "torch_cuda": 0.5124749541282654
+  },
+  "resource": {
+    "physical_gpu_id": 0,
+    "gpu_name": "NVIDIA A800-SXM4-80GB",
+    "free_memory_at_start_gb": 78.91192626953125,
+    "total_memory_gb": 79.32501220703125
+  },
+  "checkpoint_dir": "/data/GRPO/truerec_grpo/checkpoints/phase1_3c_step2"
+}

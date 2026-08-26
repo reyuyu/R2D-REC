@@ -1,0 +1,2 @@
+TrueRec-GRPO Phase 1.3C real single-GPU 3-group resume smoke: PASS
+Process A ran exactly order indices 0-1 and atomically saved cursor 2 with CUDA RNG. Fresh Process B restored LoRA/AdamW/driver/all RNG states and ran only index 2. No fourth group, DDP, scheduler, evaluation, or formal Pilot training ran.
