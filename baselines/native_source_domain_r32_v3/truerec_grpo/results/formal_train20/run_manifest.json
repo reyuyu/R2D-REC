@@ -1,0 +1,88 @@
+{
+  "G": 8,
+  "GRPO_INIT_FAMILY": "BETA_BASELINE",
+  "HPR_LAMBDA": 0.02,
+  "KL_BETA": 0.0,
+  "RUN_ID": "TRUEREC-V1-BETA-TRAIN20",
+  "beta_adapter_config_sha256": "e1ea043db6929753b708f6261a4de5d8e6d3ed59bb6cd7f37802ae7678170fb3",
+  "beta_adapter_sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3",
+  "beta_checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+  "checkpoint_every": 10,
+  "context_length_census": {
+    "count": 4096,
+    "legal_context_window": 131072,
+    "max": 3489,
+    "max_context_domain": "video",
+    "max_context_group_id": "67fe812d1e74a632a4b3d4cd8db79aa46b9d7a8494adb7022280d594fae3a21e",
+    "mean": 1066.17919921875,
+    "min": 70,
+    "p50": 1036.0,
+    "p90": 1745.5,
+    "p95": 1919.25,
+    "p99": 2262.1500000000005,
+    "truncation_applied": false
+  },
+  "cuda": {
+    "free_memory_at_start_gb": 78.91192626953125,
+    "gpu_name": "NVIDIA A800-SXM4-80GB",
+    "physical_gpu_id": 0,
+    "total_memory_gb": 79.32501220703125
+  },
+  "ddp": false,
+  "frozen_contract": {
+    "G": 8,
+    "business_unit": "RECOMMENDATION_GROUP_ID",
+    "fixed_target_domain": true,
+    "grpo_init_family": "BETA_BASELINE",
+    "hpr_lambda": 0.02,
+    "kl_beta": 0.0,
+    "learning_rate": 1e-06,
+    "optimizer_family": "AdamW",
+    "phase12_closed": true,
+    "policy_mode": "EVAL",
+    "ppo_old_logp_source": "FULL_FORWARD_RESCORE",
+    "train_action": [
+      "A",
+      "B",
+      "C"
+    ],
+    "train_bridge": false,
+    "trainer_microbatch_size": 2,
+    "weight_decay": 0.0
+  },
+  "generation": {
+    "do_sample": true,
+    "eos_token_id": [
+      151645,
+      151643
+    ],
+    "max_new_tokens": 3,
+    "num_return_sequences": 8,
+    "pad_token_id": 151643,
+    "repetition_penalty": 1.0,
+    "temperature": 1.0,
+    "top_k": 0,
+    "top_p": 1.0
+  },
+  "generation_score_logps_role": "DIAGNOSTIC_ONLY",
+  "git_commit": "070b54139761eb0b6b2d9bb3f1fc93feaab69249",
+  "max_groups": 20,
+  "optimizer": {
+    "family": "AdamW",
+    "learning_rate": 1e-06,
+    "weight_decay": 0.0
+  },
+  "order_count": 4096,
+  "order_seed": "truerec-v1-pilot4096-epoch-order-20260826",
+  "order_sha256": "b4bf02f9b0591e1e684fa1e42e4528682848c615994e926aa33236d78337b4f6",
+  "phase13c_checkpoint_used": false,
+  "pilot_records_sha256": "ed144262df3c852ba7fd63eba61c6cf03eb4dbed23be7d3d6c79b36a1a2ec879",
+  "ppo_old_logp_source": "FULL_FORWARD_RESCORE",
+  "start_timestamp_utc": "2026-08-26T12:35:59.012227+00:00",
+  "trainer_microbatch_size": 2,
+  "versions": {
+    "peft": "0.18.1",
+    "torch": "2.5.1+cu124",
+    "transformers": "5.3.0"
+  }
+}

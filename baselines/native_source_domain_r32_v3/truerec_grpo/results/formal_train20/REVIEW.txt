@@ -1,0 +1,2 @@
+TrueRec-GRPO Formal Train20 Production Probe: PASS
+Fresh Beta-Baseline trained exactly frozen Pilot4096 order indices [0,20), with 20 live G8 rollouts, full-forward old-logp rescoring, streaming backward, and 20 AdamW steps. Checkpoints were saved at optimizer boundaries 10 and 20. No evaluation, DDP, group 20 (the 21st group), or full Pilot4096 run started.
