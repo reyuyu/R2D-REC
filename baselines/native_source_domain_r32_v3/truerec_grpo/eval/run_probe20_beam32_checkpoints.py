@@ -296,7 +296,10 @@ def run_distributed(run_dir: Path) -> None:
     import torch
     import torch.distributed as dist
 
-    dist.init_process_group("nccl")
+    # Ranks only exchange detached Python monitoring objects. Keep this control
+    # plane on loopback so Beam inference never depends on NCCL networking.
+    os.environ.setdefault("GLOO_SOCKET_IFNAME", "lo")
+    dist.init_process_group("gloo")
     rank = dist.get_rank()
     world_size = dist.get_world_size()
     local_rank = int(os.environ["LOCAL_RANK"])
@@ -326,6 +329,7 @@ def run_distributed(run_dir: Path) -> None:
                     "completed": position - 1, "pending": len(inventory) - position + 1,
                     "current_checkpoint": item["checkpoint"], "current_step": item["step"],
                     "world_size": world_size, "gpus": existing_status.get("gpus", []),
+                    "communication_backend": "gloo", "communication_interface": "lo",
                     "contract": CONTRACT, "pid": os.getpid(), "updated_at": time.time(),
                 })
             model_sha = load_checkpoint_weights(model, checkpoint)
@@ -347,6 +351,7 @@ def run_distributed(run_dir: Path) -> None:
                     "step": item["step"], "checkpoint": item["checkpoint"],
                     "checkpoint_path": str(checkpoint), "model_state_sha256": model_sha,
                     "world_size": world_size, "gpu_ids": [row.get("index") for row in existing_status.get("gpus", [])],
+                    "communication_backend": "gloo", "communication_interface": "lo",
                     **summarize_groups(groups, wall),
                 }
                 write_jsonl(output_dir / "groups.jsonl", [
@@ -361,6 +366,7 @@ def run_distributed(run_dir: Path) -> None:
             atomic_json(status_path, {
                 "state": "COMPLETED", "run_id": run_dir.name, "total": len(inventory),
                 "completed": len(curve), "pending": 0, "world_size": world_size,
+                "communication_backend": "gloo", "communication_interface": "lo",
                 "gpus": existing_status.get("gpus", []), "contract": CONTRACT,
                 "pid": os.getpid(), "updated_at": time.time(),
             })

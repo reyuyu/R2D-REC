@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import inspect
 
 
 ROOT = Path(__file__).parents[1]
@@ -29,6 +30,10 @@ class Probe20Beam32CheckpointTests(unittest.TestCase):
         command = distributed_launch_command(Path("worker.py"), Path("/run"))
         self.assertIn("--nproc_per_node=4", command)
         self.assertIn("--distributed-worker", command)
+        source = inspect.getsource(__import__("run_probe20_beam32_checkpoints").run_distributed)
+        self.assertIn('init_process_group("gloo")', source)
+        self.assertIn('GLOO_SOCKET_IFNAME", "lo"', source)
+        self.assertNotIn('init_process_group("nccl")', source)
 
     def test_frozen_nothink_fixed_domain_abc3_contract(self):
         kwargs = generation_kwargs()
