@@ -1,0 +1,18 @@
+TrueRec-GRPO Step0->2000 Training Dynamics Audit
+
+Scope
+- Read-only CPU audit of group_index 0..1999 from the running Formal4096 monitor files.
+- No training process, checkpoint, model, GPU, or optimizer was touched.
+- Token signs use the recorded effective_signed_credit; nonzero means abs(credit) > 1e-12.
+
+Mechanical results
+- HPR_A_TREND=DECREASING: 0.712891 in groups 0-511 vs 0.672414 in groups 1536-1999 (delta -0.040477).
+- FINE_GRAINED_SIGNAL_TREND=FLAT: pooled B/C nonzero-credit rate changed from 0.048218 to 0.049704 (delta +0.001486).
+- B/C non-zero training credit clearly increased: NO.
+- B delta=+0.006171; C delta=-0.003199.
+- PROBE_PROGRESS=FLAT: compared Probe step0 with latest available step1792.
+- Probe A/AB/Exact deltas: +0.000000, +0.000000, +0.000000.
+- Probe GROUP_ANY A/AB/Exact deltas: +0, +0, +0 groups.
+
+Interpretation boundary
+These labels describe only the recorded first 2000 training groups and fixed Probe20 checkpoints. They do not change or prescribe the training strategy.

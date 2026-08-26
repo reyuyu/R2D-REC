@@ -1,0 +1,149 @@
+{
+  "steps": [
+    {
+      "probe_step": 0,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    },
+    {
+      "probe_step": 256,
+      "groups": 20,
+      "A_hit_rate": 0.1,
+      "AB_hit_rate": 0.05625,
+      "exact_rate": 0.00625,
+      "GROUP_ANY_A": 7,
+      "GROUP_ANY_AB": 3,
+      "GROUP_ANY_EXACT": 1,
+      "HPR_A_count": 13,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 1
+    },
+    {
+      "probe_step": 512,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    },
+    {
+      "probe_step": 768,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    },
+    {
+      "probe_step": 1024,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    },
+    {
+      "probe_step": 1280,
+      "groups": 20,
+      "A_hit_rate": 0.1,
+      "AB_hit_rate": 0.05625,
+      "exact_rate": 0.00625,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 3,
+      "GROUP_ANY_EXACT": 1,
+      "HPR_A_count": 12,
+      "HPR_B_count": 5,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 1
+    },
+    {
+      "probe_step": 1536,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    },
+    {
+      "probe_step": 1792,
+      "groups": 20,
+      "A_hit_rate": 0.10625,
+      "AB_hit_rate": 0.0625,
+      "exact_rate": 0.0125,
+      "GROUP_ANY_A": 8,
+      "GROUP_ANY_AB": 4,
+      "GROUP_ANY_EXACT": 2,
+      "HPR_A_count": 12,
+      "HPR_B_count": 4,
+      "HPR_C_count": 2,
+      "HPR_NONE_count": 2
+    }
+  ],
+  "latest_step_le_2000": 1792,
+  "step0_vs_latest": {
+    "A_hit_rate": {
+      "step0": 0.10625,
+      "latest": 0.10625,
+      "delta": 0.0
+    },
+    "AB_hit_rate": {
+      "step0": 0.0625,
+      "latest": 0.0625,
+      "delta": 0.0
+    },
+    "exact_rate": {
+      "step0": 0.0125,
+      "latest": 0.0125,
+      "delta": 0.0
+    },
+    "GROUP_ANY_A": {
+      "step0": 8,
+      "latest": 8,
+      "delta": 0.0
+    },
+    "GROUP_ANY_AB": {
+      "step0": 4,
+      "latest": 4,
+      "delta": 0.0
+    },
+    "GROUP_ANY_EXACT": {
+      "step0": 2,
+      "latest": 2,
+      "delta": 0.0
+    }
+  }
+}

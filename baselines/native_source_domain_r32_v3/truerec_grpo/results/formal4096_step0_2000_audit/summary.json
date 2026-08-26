@@ -1,0 +1,69 @@
+{
+  "provenance": {
+    "run_id": "TRUEREC-V1-BETA-FORMAL4096-4GPU-E1",
+    "run_dir": "/data/GRPO/truerec_grpo/runs/TRUEREC-V1-BETA-FORMAL4096-4GPU-E1",
+    "group_index_start": 0,
+    "group_index_end": 1999,
+    "groups": 2000,
+    "train_groups_selected_sha256": "df5785733dc643022f3993c54c8dc27312ede72b6224cdb117aefe0f4c5d6d58",
+    "train_explain_selected_sha256": "e027348db8040ea582f62c9d2aca2bb7e287647c321a1077da0e30096fb5bc18",
+    "source_files_modified": false,
+    "gpu_inference_started": false,
+    "training_started": false,
+    "optimizer_steps": 0
+  },
+  "overall": {
+    "groups": 2000,
+    "HPR_A_rate": 0.6835,
+    "HPR_B_rate": 0.2365,
+    "HPR_C_rate": 0.046,
+    "HPR_NONE_rate": 0.034,
+    "GROUP_ANY_A_rate": 0.3165,
+    "GROUP_ANY_AB_rate": 0.08,
+    "GROUP_ANY_EXACT_rate": 0.034,
+    "format_valid_rate": 0.9998125,
+    "wrong_history_copy_rate": 0.123875,
+    "A_positive_tokens_per_group": 0.6605,
+    "A_negative_tokens_per_group": 7.3315,
+    "A_nonzero_credit_token_rate": 0.999,
+    "B_positive_tokens_per_group": 0.1275,
+    "B_negative_tokens_per_group": 0.5425,
+    "B_nonzero_credit_token_rate": 0.08375,
+    "C_positive_tokens_per_group": 0.0495,
+    "C_negative_tokens_per_group": 0.0795,
+    "C_nonzero_credit_token_rate": 0.016125
+  },
+  "mechanical_judgment": {
+    "HPR_A_TREND": "DECREASING",
+    "FINE_GRAINED_SIGNAL_TREND": "FLAT",
+    "PROBE_PROGRESS": "FLAT",
+    "B_C_NONZERO_TRAINING_CREDIT_CLEARLY_INCREASED": "NO",
+    "evidence": {
+      "early_window": "0-511",
+      "late_window": "1536-1999",
+      "HPR_A_early": 0.71289062,
+      "HPR_A_late": 0.6724138,
+      "HPR_A_delta": -0.04047683,
+      "HPR_A_threshold": 0.02,
+      "B_C_nonzero_credit": {
+        "B": {
+          "early": 0.07788086,
+          "late": 0.08405173,
+          "delta": 0.00617087
+        },
+        "C": {
+          "early": 0.01855469,
+          "late": 0.0153556,
+          "delta": -0.00319908
+        }
+      },
+      "fine_signal_early": 0.04821777,
+      "fine_signal_late": 0.04970367,
+      "fine_signal_delta": 0.00148589,
+      "fine_signal_threshold": 0.005,
+      "probe_composite_delta": 0.0,
+      "probe_progress_threshold": 0.005
+    }
+  },
+  "latest_probe_step_le_2000": 1792
+}
