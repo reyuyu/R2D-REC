@@ -24,7 +24,7 @@ from .run_gr_rec_think_composite_interest_v1 import (
     AUTO_SAVE_STEPS, CHECKPOINT_STEPS, PROBE_DOMAIN_ORDER, PROBE_IDS, PROBE_ROUNDS,
     PROBE_STEPS, SAVE_TOTAL_LIMIT, SEED,
     checkpoint_save_config, frozen_contract, launch_training, parser,
-    should_save_checkpoint, validate_args,
+    should_save_checkpoint, validate_args, validate_resume_runtime,
 )
 from ..gr_rec_think_exact_clamp_v1.think_diagnostics import extract_interest_units
 
@@ -333,6 +333,17 @@ class TrainingChainTests(unittest.TestCase):
             (checkpoint / "optimizer.pt").unlink()
             with self.assertRaisesRegex(ValueError, "incomplete"):
                 validate_args(args)
+
+    def test_resume_runtime_requires_safe_torch(self):
+        from unittest.mock import patch
+
+        checkpoint = Path("checkpoint-200")
+        with patch("importlib.metadata.version", return_value="2.5.1+cu124"):
+            with self.assertRaisesRegex(RuntimeError, "RESUME_TORCH_VERSION_UNSAFE"):
+                validate_resume_runtime(checkpoint)
+        with patch("importlib.metadata.version", return_value="2.6.0+cu124"):
+            self.assertEqual(validate_resume_runtime(checkpoint), "2.6.0+cu124")
+        self.assertIsNone(validate_resume_runtime(None))
 
     def test_formal_path_does_not_call_dry_run_report(self):
         self.assertNotIn("dry_run_report", inspect.getsource(launch_training))

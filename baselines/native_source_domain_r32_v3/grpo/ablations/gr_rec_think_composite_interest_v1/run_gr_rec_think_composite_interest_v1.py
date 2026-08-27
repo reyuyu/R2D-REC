@@ -195,6 +195,24 @@ def validate_resume_checkpoint(path, *, source_run_id, max_steps):
     return checkpoint
 
 
+def validate_resume_runtime(resume_from_checkpoint):
+    if resume_from_checkpoint is None:
+        return None
+    from importlib.metadata import version
+
+    torch_version = version("torch")
+    match = re.match(r"^(\d+)\.(\d+)", torch_version)
+    if match is None:
+        raise RuntimeError(f"RESUME_TORCH_VERSION_INVALID: actual={torch_version}")
+    numeric = tuple(int(part) for part in match.groups())
+    if numeric < (2, 6):
+        raise RuntimeError(
+            "RESUME_TORCH_VERSION_UNSAFE: checkpoint optimizer/RNG loading requires "
+            f"torch>=2.6; actual={torch_version}"
+        )
+    return torch_version
+
+
 def file_sha256(path):
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
@@ -352,6 +370,7 @@ def dry_run_report(args, plan):
 
 def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, smoke_mode=False):
     """Future GPU entry point. It is unreachable from --dry-run."""
+    resume_torch_version = validate_resume_runtime(args.resume_from_checkpoint)
     contract = launch_contract(
         enable_probes=enable_probes,
         enable_checkpoints=enable_checkpoints,
@@ -413,6 +432,7 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
                 if args.resume_from_checkpoint else None
             ),
             "resume_source_run_id": args.resume_source_run_id,
+            "resume_torch_version": resume_torch_version,
             "probe_steps": list(PROBE_STEPS),
             "probe_rounds": plan["probe_rounds"],
             "smoke_mode": contract["smoke_mode"],

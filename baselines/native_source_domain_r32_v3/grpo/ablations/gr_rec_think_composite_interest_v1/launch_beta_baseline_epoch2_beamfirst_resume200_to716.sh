@@ -6,10 +6,17 @@ GRPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${GRPO_ROOT}"
 
 SOURCE_RUN_ID=GR-REC-THINK-COMPOSITE-INTEREST-V1-BETA-BASELINE-E2-BEAMFIRST-FORMAL716-20260827
-RUN_ID=GR-REC-THINK-COMPOSITE-INTEREST-V1-BETA-BASELINE-E2-BEAMFIRST-RESUME200-TO716-20260827
+RUN_ID=GR-REC-THINK-COMPOSITE-INTEREST-V1-BETA-BASELINE-E2-BEAMFIRST-RESUME200-TO716-RETRY1-20260828
 OUTPUT_ROOT=/root/GRPO-checkpoints
+PYTHON_BIN="${GRPO_PYTHON_BIN:-/root/venvs/grpo-torch26/bin/python}"
+NVIDIA_SITE=/usr/local/lib/python3.11/site-packages/nvidia
+NVIDIA_LIB_PATH="$(find "${NVIDIA_SITE}" -type d -name lib -print | sort | paste -sd:)"
 
-exec torchrun \
+test -x "${PYTHON_BIN}"
+test -n "${NVIDIA_LIB_PATH}"
+export LD_LIBRARY_PATH="${NVIDIA_LIB_PATH}:${LD_LIBRARY_PATH:-}"
+
+exec "${PYTHON_BIN}" -m torch.distributed.run \
   --nproc_per_node=4 \
   --master_addr=127.0.0.1 \
   --master_port="${MASTER_PORT:-29185}" \
