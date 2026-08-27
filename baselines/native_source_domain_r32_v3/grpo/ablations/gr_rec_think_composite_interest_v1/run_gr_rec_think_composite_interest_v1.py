@@ -57,6 +57,17 @@ RESULT_PATH = GRPO_ROOT / "results/gr_rec_think_composite_interest_v1_runner_dry
 SMOKE_RESULT_PATH = GRPO_ROOT / "results/gr_rec_think_composite_interest_v1_smoke12_20260822.json"
 AUTO_SAVE_STEPS = 10000
 SAVE_TOTAL_LIMIT = len(CHECKPOINT_STEPS)
+RESUME_REQUIRED_FILES = (
+    "adapter_config.json",
+    "adapter_model.safetensors",
+    "optimizer.pt",
+    "scheduler.pt",
+    "trainer_state.json",
+    "rng_state_0.pth",
+    "rng_state_1.pth",
+    "rng_state_2.pth",
+    "rng_state_3.pth",
+)
 
 
 def frozen_contract():
@@ -112,6 +123,8 @@ def parser():
     ap.add_argument("--parent-adapter", type=Path)
     ap.add_argument("--parent-adapter-sha256")
     ap.add_argument("--parent-label", default="fresh-original-bata")
+    ap.add_argument("--resume-from-checkpoint", type=Path)
+    ap.add_argument("--resume-source-run-id")
     ap.add_argument("--checkpoint-steps", type=int, nargs="+", default=CHECKPOINT_STEPS)
     ap.add_argument("--grpo-data", type=Path, default=DEFAULT_GRPO)
     ap.add_argument("--gold-data", type=Path, default=DEFAULT_SOURCE)
@@ -131,6 +144,55 @@ def validate_args(args):
     ):
         raise ValueError("--checkpoint-steps must be unique, sorted, and within 1..max_steps")
     args.checkpoint_steps = list(checkpoint_steps)
+    resume_path = getattr(args, "resume_from_checkpoint", None)
+    resume_source_run_id = getattr(args, "resume_source_run_id", None)
+    if bool(resume_path) != bool(resume_source_run_id):
+        raise ValueError(
+            "--resume-from-checkpoint and --resume-source-run-id must be provided together"
+        )
+    if resume_source_run_id and not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._-]{0,159}", resume_source_run_id
+    ):
+        raise ValueError("invalid --resume-source-run-id")
+    args.resume_from_checkpoint = validate_resume_checkpoint(
+        resume_path,
+        source_run_id=resume_source_run_id,
+        max_steps=args.max_steps,
+    )
+
+
+def validate_resume_checkpoint(path, *, source_run_id, max_steps):
+    if path is None:
+        return None
+    checkpoint = Path(path).resolve()
+    if checkpoint.parent.name != source_run_id:
+        raise ValueError(
+            "resume checkpoint source run mismatch: "
+            f"expected={source_run_id} actual={checkpoint.parent.name}"
+        )
+    match = re.fullmatch(r"checkpoint-(\d+)", checkpoint.name)
+    if not match:
+        raise ValueError("resume checkpoint directory must be named checkpoint-<step>")
+    checkpoint_step = int(match.group(1))
+    if not 1 <= checkpoint_step < int(max_steps):
+        raise ValueError("resume checkpoint step must be within 1..max_steps-1")
+    missing = [
+        name for name in RESUME_REQUIRED_FILES
+        if not (checkpoint / name).is_file() or (checkpoint / name).stat().st_size <= 0
+    ]
+    if missing:
+        raise ValueError(f"resume checkpoint is incomplete: missing={missing}")
+    try:
+        trainer_state = json.loads(
+            (checkpoint / "trainer_state.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("resume checkpoint trainer_state.json is invalid") from error
+    if int(trainer_state.get("global_step", -1)) != checkpoint_step:
+        raise ValueError("resume checkpoint global_step does not match directory step")
+    if int(trainer_state.get("max_steps", -1)) != int(max_steps):
+        raise ValueError("resume checkpoint max_steps does not match requested max_steps")
+    return checkpoint
 
 
 def file_sha256(path):
@@ -267,6 +329,14 @@ def dry_run_report(args, plan):
         "sampler_dropped_group_ids": plan["dropped_group_ids"],
         "effective_max_steps": args.max_steps,
         "checkpoint_steps": list(args.checkpoint_steps),
+        "resume_from_checkpoint": (
+            str(args.resume_from_checkpoint) if args.resume_from_checkpoint else None
+        ),
+        "resume_step": (
+            int(args.resume_from_checkpoint.name.removeprefix("checkpoint-"))
+            if args.resume_from_checkpoint else None
+        ),
+        "resume_source_run_id": args.resume_source_run_id,
         "probe_steps": list(PROBE_STEPS),
         "single_node_nccl_socket_ifname": "lo",
         "frozen_contract": frozen_contract(),
@@ -335,6 +405,14 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
             "sampler_audit": plan["topology"], "fixed_probe_ids": plan["probe_ids"],
             "effective_max_steps": args.max_steps,
             "checkpoint_steps": list(args.checkpoint_steps),
+            "resume_from_checkpoint": (
+                str(args.resume_from_checkpoint) if args.resume_from_checkpoint else None
+            ),
+            "resume_step": (
+                int(args.resume_from_checkpoint.name.removeprefix("checkpoint-"))
+                if args.resume_from_checkpoint else None
+            ),
+            "resume_source_run_id": args.resume_source_run_id,
             "probe_steps": list(PROBE_STEPS),
             "probe_rounds": plan["probe_rounds"],
             "smoke_mode": contract["smoke_mode"],
@@ -399,7 +477,11 @@ def launch_training(args, plan, *, enable_probes=True, enable_checkpoints=True, 
         )
         trainer.add_callback(parameter_audit)
     try:
-        trainer.train()
+        trainer.train(
+            resume_from_checkpoint=(
+                str(args.resume_from_checkpoint) if args.resume_from_checkpoint else None
+            )
+        )
     except Exception:
         if parameter_audit is not None and not parameter_audit.completed:
             parameter_audit.write_runtime_error(trainer.state.global_step)

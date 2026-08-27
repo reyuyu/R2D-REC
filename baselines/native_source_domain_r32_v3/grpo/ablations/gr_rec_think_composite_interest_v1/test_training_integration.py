@@ -304,6 +304,36 @@ class TrainingChainTests(unittest.TestCase):
         self.assertEqual(checkpoint_save_config(args.checkpoint_steps)["save_total_limit"], 5)
         self.assertNotIn(300, CHECKPOINT_STEPS)
 
+    def test_resume_checkpoint_restores_full_trainer_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "source-run" / "checkpoint-200"
+            checkpoint.mkdir(parents=True)
+            required = (
+                "adapter_config.json", "adapter_model.safetensors", "optimizer.pt",
+                "scheduler.pt", "rng_state_0.pth", "rng_state_1.pth",
+                "rng_state_2.pth", "rng_state_3.pth",
+            )
+            for name in required:
+                (checkpoint / name).write_bytes(b"complete")
+            (checkpoint / "trainer_state.json").write_text(
+                json.dumps({"global_step": 200, "max_steps": 716}),
+                encoding="utf-8",
+            )
+            args = parser().parse_args([
+                "--run-id", "resume-run", "--output-dir", directory,
+                "--resume-from-checkpoint", str(checkpoint),
+                "--resume-source-run-id", "source-run",
+            ])
+            validate_args(args)
+            self.assertEqual(args.resume_from_checkpoint, checkpoint.resolve())
+            self.assertIn(
+                "resume_from_checkpoint=",
+                inspect.getsource(launch_training),
+            )
+            (checkpoint / "optimizer.pt").unlink()
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                validate_args(args)
+
     def test_formal_path_does_not_call_dry_run_report(self):
         self.assertNotIn("dry_run_report", inspect.getsource(launch_training))
         self.assertEqual(
