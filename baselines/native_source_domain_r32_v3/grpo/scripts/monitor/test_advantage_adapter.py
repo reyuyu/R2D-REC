@@ -12,6 +12,7 @@ try:
         formal_available,
         reconstruct_frontier_group,
         reconstruct_nothink_group,
+        reconstruct_think_suffix_sid_group,
         reconstruct_think_group,
     )
     from .server import create_app
@@ -21,6 +22,7 @@ except ImportError:
         formal_available,
         reconstruct_frontier_group,
         reconstruct_nothink_group,
+        reconstruct_think_suffix_sid_group,
         reconstruct_think_group,
     )
     from server import create_app
@@ -98,6 +100,33 @@ def test_think_exact_clamp_display_contract() -> None:
     assert result["clamped_count"] == 3
     assert result["candidates"][0]["provenance"]["reward"]["source"] == "captured"
     assert result["candidates"][0]["provenance"]["final_advantage"]["source"] == "reconstructed"
+
+
+def test_think_suffix_sid_g8_population_advantage_contract() -> None:
+    rewards = [0.0] * 7 + [8.0]
+    trace = {
+        "step": 2,
+        "route": "think",
+        "candidates": [
+            {
+                "candidate_id": index,
+                "completion": f"reasoning</think> sid {index}",
+                "completion_length": 20,
+                "suffix_token_count": 4,
+                "cot_token_count": 16,
+                "loss_scope": "tokens_after_think_close_only",
+                "reward": reward,
+            }
+            for index, reward in enumerate(rewards)
+        ],
+    }
+    result = reconstruct_think_suffix_sid_group(trace)
+    assert result["valid"] is True
+    assert result["kind"] == "suffix_sequence_advantage"
+    assert len(result["final_advantages"]) == 8
+    assert_close(sum(result["final_advantages"]), 0.0)
+    assert result["candidates"][0]["loss_scope"] == "tokens_after_think_close_only"
+    assert result["candidates"][0]["suffix_token_count"] == 4
 
 
 def test_nothink_singleton_credit_patterns() -> None:
@@ -218,6 +247,7 @@ def test_read_only_api_and_legacy_run() -> None:
 if __name__ == "__main__":
     test_formal_source_root_discovery()
     test_think_exact_clamp_display_contract()
+    test_think_suffix_sid_g8_population_advantage_contract()
     test_nothink_singleton_credit_patterns()
     test_zero_bridge_and_gated_are_distinct()
     test_frontier_credit_and_format_penalty_display()

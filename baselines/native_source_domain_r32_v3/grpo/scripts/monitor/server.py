@@ -128,6 +128,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     runner = str(manifest.get("runner") or "")
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
+    if experiment == "GR_REC_ThinkSuffixSID_Resample_v1":
+        return "think_suffix_sid_v1"
     if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
         return "frontier_v1"
     if (

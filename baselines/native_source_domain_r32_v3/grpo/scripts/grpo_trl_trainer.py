@@ -347,8 +347,19 @@ class RecGRPOTrainer(GRPOTrainer):
         # ---- token-id based </think> stopping for the Think route ----
         # (stop_strings unreliable here; token-id StoppingCriteria is exact)
         stopping_criteria = None
-        is_think = getattr(self, "num_generations", 0) == 4
+        active_route = getattr(self, "_active_route", None)
+        is_think = active_route == "think" or (
+            active_route is None and getattr(self, "num_generations", 0) == 4
+        )
+        stop_think_at_closure = is_think and getattr(
+            self, "_stop_think_at_closure", True
+        )
+        think_tok_id = None
         if is_think:
+            think_tok_id = self.processing_class.encode(
+                "</think>", add_special_tokens=False
+            )[0]
+        if stop_think_at_closure:
             from transformers import StoppingCriteria, StoppingCriteriaList
 
             class _ThinkStop(StoppingCriteria):
@@ -360,7 +371,6 @@ class RecGRPOTrainer(GRPOTrainer):
                     # (scalar .any() would stop the whole batch at the first closure)
                     return input_ids[:, -1] == self.tid
 
-            think_tok_id = self.processing_class.encode("</think>", add_special_tokens=False)[0]
             stopping_criteria = StoppingCriteriaList([_ThinkStop(think_tok_id)])
         generation_context = torch.inference_mode() if is_think else torch.no_grad()
         if self._generation_profile:
@@ -393,12 +403,11 @@ class RecGRPOTrainer(GRPOTrainer):
 
         # ---- Think-route truncation at </think> token ----
         completion_ids_list_raw = [completion_ids[i].tolist() for i in range(completion_ids.size(0))]
-        if is_think:
-            think_tok = self.processing_class.encode("</think>", add_special_tokens=False)[0]
+        if stop_think_at_closure:
             trimmed = []
             for c in completion_ids_list_raw:
                 try:
-                    pos = c.index(think_tok)
+                    pos = c.index(think_tok_id)
                     trimmed.append(c[: pos + 1])
                 except ValueError:
                     trimmed.append(c)  # no closure; keep as-is (truncation recorded later)
@@ -455,6 +464,7 @@ class RecGRPOTrainer(GRPOTrainer):
 
     def _set_route_config(self, route):
         """Apply the frozen route generation contract to every TRL consumer."""
+        self._active_route = route
         self.num_generations = ROUTE_G[route]
         self.args.temperature = ROUTE_TEMP[route]
         self.args.top_p = ROUTE_TOP_P[route]
@@ -511,18 +521,25 @@ class RecGRPOTrainer(GRPOTrainer):
         images = None
         # ---- runtime assert: dynamic temperature/top_p actually in effect ----
         _route = inputs[0]["route"]
-        assert abs(self.args.temperature - ROUTE_TEMP[_route]) < 1e-6, (
-            f"args.temperature {self.args.temperature} != {ROUTE_TEMP[_route]} ({_route})")
-        assert abs(self.temperature - ROUTE_TEMP[_route]) < 1e-6, (
-            f"self.temperature {self.temperature} != {ROUTE_TEMP[_route]} ({_route})")
-        assert abs(self.generation_config.temperature - ROUTE_TEMP[_route]) < 1e-6, (
-            f"generation_config.temperature {self.generation_config.temperature} != {ROUTE_TEMP[_route]}")
-        assert abs(self.args.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
-            f"args.top_p {self.args.top_p} != {ROUTE_TOP_P[_route]} ({_route})")
-        assert abs(self.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
-            f"self.top_p {self.top_p} != {ROUTE_TOP_P[_route]} ({_route})")
-        assert abs(self.generation_config.top_p - ROUTE_TOP_P[_route]) < 1e-6, (
-            f"generation_config.top_p {self.generation_config.top_p} != {ROUTE_TOP_P[_route]}")
+        expected_temperature = ROUTE_TEMP[_route]
+        expected_top_p = ROUTE_TOP_P[_route]
+        route_generation_contract = getattr(self, "_route_generation_contract", None)
+        if route_generation_contract is not None:
+            expected = route_generation_contract(_route)
+            expected_temperature = expected["temperature"]
+            expected_top_p = expected["top_p"]
+        assert abs(self.args.temperature - expected_temperature) < 1e-6, (
+            f"args.temperature {self.args.temperature} != {expected_temperature} ({_route})")
+        assert abs(self.temperature - expected_temperature) < 1e-6, (
+            f"self.temperature {self.temperature} != {expected_temperature} ({_route})")
+        assert abs(self.generation_config.temperature - expected_temperature) < 1e-6, (
+            f"generation_config.temperature {self.generation_config.temperature} != {expected_temperature}")
+        assert abs(self.args.top_p - expected_top_p) < 1e-6, (
+            f"args.top_p {self.args.top_p} != {expected_top_p} ({_route})")
+        assert abs(self.top_p - expected_top_p) < 1e-6, (
+            f"self.top_p {self.top_p} != {expected_top_p} ({_route})")
+        assert abs(self.generation_config.top_p - expected_top_p) < 1e-6, (
+            f"generation_config.top_p {self.generation_config.top_p} != {expected_top_p}")
         _tgen = _t.time()
         (
             prompt_ids_list, completion_ids_list, num_items_in_batch,
@@ -600,8 +617,10 @@ class RecGRPOTrainer(GRPOTrainer):
         # G samples of ONE prompt (same recommendation_group_id). TRL gather
         # keeps rank order, same as gather_object below. ----
         if self._monitor_enabled():
-            capture_nothink_trace = (
-                inputs[0]["route"] == "no_think"
+            capture_global_fields = getattr(self, "_capture_global_completion_ids", None)
+            capture_global_trace = (
+                (inputs[0]["route"] == "no_think"
+                 or (capture_global_fields is not None and capture_global_fields()))
                 and self._smoke_rollout_id > 0
                 and self._smoke_rollout_id % self._monitor.trace_every == 0
             )
@@ -609,7 +628,7 @@ class RecGRPOTrainer(GRPOTrainer):
                 (
                     x["recommendation_group_id"],
                     len(completion_ids_list[index]),
-                    completion_ids_list[index] if capture_nothink_trace else None,
+                    completion_ids_list[index] if capture_global_trace else None,
                 )
                 for index, x in enumerate(inputs)
             ])
@@ -696,6 +715,9 @@ class RecGRPOTrainer(GRPOTrainer):
             rollout_sec=round(_t.time() - _t0, 2),
             gen_wall_sec=round(gen_wall_sec, 2),
         )
+        rollout_fields = getattr(self, "_rollout_monitor_fields", None)
+        if rollout_fields is not None:
+            entry.update(rollout_fields())
         beam_call = None
         if self._monitor_enabled():
             lengths_for_monitor = monitor_completion_lengths
@@ -817,6 +839,14 @@ class RecGRPOTrainer(GRPOTrainer):
                 beam_call.get("beam_search_space") if beam_call else None
             ),
             "rollout_wall_sec": entry["rollout_sec"],
+            "resample_round": entry.get("resample_round"),
+            "resample_rounds_used": entry.get("resample_rounds_used"),
+            "generated_candidate_total": entry.get("generated_candidate_total"),
+            "rejected_reward_vectors": entry.get("rejected_reward_vectors"),
+            "accepted_reward_vector": entry.get("accepted_reward_vector"),
+            "zero_std_rescued": entry.get("zero_std_rescued"),
+            "zero_std_rescue_exhausted": entry.get("zero_std_rescue_exhausted"),
+            "resample_wall_sec": entry.get("resample_wall_sec"),
         }
         self._monitor.write_rollout(rollout_event)
         profile = None
@@ -840,12 +870,11 @@ class RecGRPOTrainer(GRPOTrainer):
         if not self._monitor.trace_due(entry["rollout_id"]):
             return
         group_id = group_ids_all[0]
-        global_nothink = (
-            entry["route"] == "no_think"
-            and completion_ids_all is not None
+        global_candidates = (
+            completion_ids_all is not None
             and all(ids is not None for ids in completion_ids_all[:self.num_generations])
         )
-        if global_nothink:
+        if global_candidates:
             indices = [index for index, candidate_group in enumerate(group_ids_all)
                        if candidate_group == group_id]
         else:
@@ -864,20 +893,23 @@ class RecGRPOTrainer(GRPOTrainer):
         from grpo_sid import final_sid
         for candidate_id, index in enumerate(indices):
             result = local_beam.get(index, {})
-            candidate_ids = completion_ids_all[index] if global_nothink else completion_ids_list[index]
-            raw_text = "" if global_nothink else completions_text[index]
+            candidate_ids = completion_ids_all[index] if global_candidates else completion_ids_list[index]
+            raw_text = (
+                self.processing_class.decode(candidate_ids, skip_special_tokens=False)
+                if global_candidates else completions_text[index]
+            )
             parsed_sid = None
             if entry["route"] == "no_think":
                 raw_text = self.processing_class.decode(candidate_ids, skip_special_tokens=False)
                 parsed_sid = final_sid(raw_text)
-            candidates.append({
+            candidate = {
                 "candidate_id": candidate_id,
                 "completion": raw_text,
                 "completion_length": len(candidate_ids),
                 "closed": (think_token in candidate_ids) if think_token is not None else None,
                 "parsed_sid": parsed_sid,
-                "reward": global_rewards[index] if global_nothink else local_rewards[index],
-                "reward_level": (global_rewards[index] if global_nothink else local_rewards[index])
+                "reward": global_rewards[index] if global_candidates else local_rewards[index],
+                "reward_level": (global_rewards[index] if global_candidates else local_rewards[index])
                                 if entry["route"] == "no_think" else None,
                 "exact": result.get("exact"),
                 "ab": result.get("ab"),
@@ -889,7 +921,13 @@ class RecGRPOTrainer(GRPOTrainer):
                 "target_domain": result.get("target_domain"),
                 "domain_prefix": result.get("domain_prefix"),
                 "beam_search_space": result.get("beam_search_space"),
-            })
+            }
+            candidate_fields = getattr(self, "_monitor_candidate_fields", None)
+            if candidate_fields is not None:
+                candidate.update(candidate_fields(
+                    entry["route"], candidate_ids, raw_text, candidate["reward"]
+                ))
+            candidates.append(candidate)
         self._monitor.write_trace({
             "rollout_id": entry["rollout_id"],
             "step": self.state.global_step,

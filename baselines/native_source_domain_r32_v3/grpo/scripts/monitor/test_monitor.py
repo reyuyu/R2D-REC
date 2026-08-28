@@ -315,6 +315,14 @@ with tempfile.TemporaryDirectory() as temporary:
     ))
     static_html = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
     assert "routeBlock=(route,data)=>{if(!data||typeof data!==\"object\")return '';" in static_html
+    assert "suffix_sid_dashboard.js" in static_html
+    suffix_js = (Path(__file__).parent / "static" / "suffix_sid_dashboard.js").read_text(encoding="utf-8")
+    assert all(label in suffix_js for label in (
+        "GR_REC_ThinkSuffixSID_Resample_v1", "多个 SID", "multi_sid_output",
+        "reward仍按最后一个完整SID计算", "zero_std_rescued",
+        "zero_std_rescue_exhausted", "Suffix / CoT tokens", "仅 &lt;/think&gt; 后",
+        "suffix_sequence_advantage", "Suffix token advantage",
+    ))
     assert 'id="dsrTab" data-view="dsr" hidden' in html
     print("[PASS] 100-step synthetic run, four rank streams, traces, and dashboard shell")
 

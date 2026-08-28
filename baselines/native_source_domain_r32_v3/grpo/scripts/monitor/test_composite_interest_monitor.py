@@ -167,6 +167,7 @@ def test_probe_api_has_twelve_groups_and_milestones():
 
 def test_legacy_formula_selection_remains_reconstructed():
     assert monitor_advantage_formula({'experiment': 'GR_REC_NoThinkOnly_Frontier_v1'}) == 'frontier_v1'
+    assert monitor_advantage_formula({'experiment': 'GR_REC_ThinkSuffixSID_Resample_v1'}) == 'think_suffix_sid_v1'
     assert monitor_advantage_formula({'runner': 'x/gr_rec_think_exact_clamp_v1/run_think_exact_clamp_train.py'}) == 'clamp_bridge_v1'
     assert monitor_advantage_formula({'experiment': 'GR_REC_DSR_Ablation_v1'}) is None
     assert is_composite_manifest({'experiment': 'almost-composite'}) is False

@@ -11,7 +11,10 @@ from pathlib import Path
 
 import torch
 
-sys.path.insert(0, "/data/GRPO/scripts")
+CURRENT_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(CURRENT_SCRIPTS_DIR) in sys.path:
+    sys.path.remove(str(CURRENT_SCRIPTS_DIR))
+sys.path.insert(0, str(CURRENT_SCRIPTS_DIR))
 import trl_import_fix  # noqa: F401
 from grpo_model import ADAPTER, BASE, load_model
 from grpo_probe import (

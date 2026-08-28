@@ -156,6 +156,65 @@ def reconstruct_think_group(trace: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def reconstruct_think_suffix_sid_group(trace: dict[str, Any]) -> dict[str, Any]:
+    """Reconstruct the exact captured G8 population-normalized sequence values.
+
+    The sequence value is applied only to the captured suffix mask by training;
+    this adapter does not infer token boundaries or recompute SID rewards.
+    """
+    candidates = trace.get("candidates") or []
+    rewards = [_finite(candidate.get("reward")) for candidate in candidates]
+    if len(rewards) != 8 or any(value is None for value in rewards):
+        return _invalid_group(trace, "Think suffix SID requires exactly 8 captured rewards")
+    values = [float(value) for value in rewards]
+    mean = sum(values) / len(values)
+    std = (sum((value - mean) ** 2 for value in values) / len(values)) ** 0.5
+    final = [0.0 if std == 0.0 else (value - mean) / (std + 1e-4) for value in values]
+    rows = []
+    for index, candidate in enumerate(candidates):
+        rows.append({
+            "candidate_id": candidate.get("candidate_id", index),
+            "completion": candidate.get("completion", ""),
+            "completion_length": candidate.get("completion_length"),
+            "reward": values[index],
+            "group_mean": mean,
+            "group_population_std": std,
+            "raw_advantage": final[index],
+            "final_advantage": final[index],
+            "clamped": False,
+            "loss_scope": candidate.get("loss_scope", "tokens_after_think_close_only"),
+            "suffix_token_count": candidate.get("suffix_token_count"),
+            "cot_token_count": candidate.get("cot_token_count"),
+            "parser_status": candidate.get("parser_status"),
+            "multi_sid_output": candidate.get("multi_sid_output", False),
+            "sid_count": candidate.get("sid_count", 0),
+            "parsed_sid": candidate.get("parsed_sid"),
+            "all_parsed_sids": candidate.get("all_parsed_sids") or [],
+            "provenance": {
+                "completion": CAPTURED,
+                "reward": CAPTURED,
+                "group_mean": RECONSTRUCTED,
+                "final_advantage": RECONSTRUCTED,
+                "loss_scope": CAPTURED,
+            },
+        })
+    return {
+        **_identity(trace),
+        "valid": True,
+        "route": "think",
+        "kind": "suffix_sequence_advantage",
+        "rewards": values,
+        "mean_reward": mean,
+        "population_std": std,
+        "raw_advantages": final,
+        "final_advantages": final,
+        "zero_std": std == 0.0,
+        "loss_scope": "tokens_after_think_close_only",
+        "candidates": rows,
+        "provenance": RECONSTRUCTED,
+    }
+
+
 def _default_alignment(candidate: dict[str, Any], tokenizer: Any) -> dict[str, Any]:
     completion = str(candidate.get("completion") or "")
     final_sid = candidate.get("parsed_sid")
@@ -478,7 +537,9 @@ def reconstruct_groups(
     for trace in rows:
         try:
             route = trace.get("route")
-            if route == "think" and formula == "clamp_bridge_v1":
+            if route == "think" and formula == "think_suffix_sid_v1":
+                result.append(reconstruct_think_suffix_sid_group(trace))
+            elif route == "think" and formula == "clamp_bridge_v1":
                 result.append(reconstruct_think_group(trace))
             elif route == "no_think":
                 if formula == "frontier_v1":
