@@ -7,6 +7,11 @@ cd "${GRPO_ROOT}"
 
 RUN_ID="${RUN_ID:-GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-/root/GRPO-checkpoints}"
+RESUME_FROM_CHECKPOINT="${RESUME_FROM_CHECKPOINT:-}"
+RESUME_ARGS=()
+if [[ -n "${RESUME_FROM_CHECKPOINT}" ]]; then
+  RESUME_ARGS+=(--resume-from-checkpoint "${RESUME_FROM_CHECKPOINT}")
+fi
 export GRPO_PARENT_ADAPTER=/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500
 export GRPO_MONITOR=1
 export GRPO_DETAILED_MONITOR=1
@@ -26,7 +31,8 @@ exec torchrun \
   --seed 20260816 \
   --n-groups all \
   --probe-groups 4 \
-  --probe-every-steps 200 \
-  --save-steps 250 \
-  --save-total-limit 8 \
+  --probe-every-steps 50 \
+  --save-steps 50 \
+  --save-total-limit 64 \
+  "${RESUME_ARGS[@]}" \
   "$@"

@@ -19,6 +19,10 @@ PARENT_RECORDED_SCORE = 1.3510
 EXPECTED_RAW_GROUPS = 1549
 EXPECTED_TRAIN_GROUPS = 1545
 EXPECTED_FORMAL_STEPS = 3090
+FORMAL_OUTPUT_ROOT = "/root/GRPO-checkpoints"
+FORMAL_SAVE_STEPS = 50
+FORMAL_PROBE_EVERY_STEPS = 50
+FORMAL_SAVE_TOTAL_LIMIT = 64
 FIXED_PROBE4_IDS = (
     "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
     "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
@@ -50,6 +54,7 @@ from ablations.gr_rec_think_suffix_sid_v1.runtime_import_provenance import (
 
 _BASE_PREPARE_RUN_PLAN = baseline_runner.prepare_run_plan
 _BASE_LOAD_MODEL = baseline_runner.load_model
+_BASE_BUILD_ARG_PARSER = baseline_runner.build_arg_parser
 _RUNTIME_MODEL = None
 _RUNTIME_TOKENIZER = None
 _RUNTIME_PROVENANCE = None
@@ -162,6 +167,17 @@ def sample8_config_kwargs(**overrides):
     return values
 
 
+def build_sample8_arg_parser():
+    parser = _BASE_BUILD_ARG_PARSER()
+    parser.set_defaults(
+        output_dir=FORMAL_OUTPUT_ROOT,
+        save_steps=FORMAL_SAVE_STEPS,
+        save_total_limit=FORMAL_SAVE_TOTAL_LIMIT,
+        probe_every_steps=FORMAL_PROBE_EVERY_STEPS,
+    )
+    return parser
+
+
 def make_sample8_grpo_config(
     output_dir, max_steps, lr, seed, *, save_strategy="no",
     save_steps=500, save_total_limit=None, use_cpu=False,
@@ -255,6 +271,7 @@ def sample8_monitor_from_env(run_id, rank):
 
 
 def install_bindings():
+    baseline_runner.build_arg_parser = build_sample8_arg_parser
     baseline_runner.prepare_run_plan = prepare_sample8_run_plan
     baseline_runner.load_model = load_model_and_capture_runtime
     baseline_runner.RecGRPOTrainer = ThinkSample8FullSIDTrainer

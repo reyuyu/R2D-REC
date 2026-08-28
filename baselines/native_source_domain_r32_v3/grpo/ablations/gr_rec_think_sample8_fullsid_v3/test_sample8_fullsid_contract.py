@@ -15,12 +15,21 @@ from .sample8_fullsid_trainer import (
 
 @pytest.fixture(scope="module")
 def plan():
-    args = runner.baseline_runner.build_arg_parser().parse_args([
+    args = runner.build_sample8_arg_parser().parse_args([
         "--run-id", "SAMPLE8-FULLSID-CPU-CONTRACT", "--n-groups", "all",
-        "--probe-groups", "4", "--probe-every-steps", "200",
-        "--save-steps", "250", "--save-total-limit", "8",
+        "--probe-groups", "4",
     ])
     return runner.prepare_sample8_run_plan(args)
+
+
+def test_formal_checkpoint_probe_defaults_are_aligned_on_root():
+    args = runner.build_sample8_arg_parser().parse_args([
+        "--run-id", "SAMPLE8-FULLSID-CHECKPOINT-CONTRACT",
+    ])
+    assert args.output_dir == "/root/GRPO-checkpoints"
+    assert args.save_steps == 50
+    assert args.probe_every_steps == args.save_steps
+    assert args.save_total_limit == 64
 
 
 def test_probe4_exact_ids(plan):
@@ -152,6 +161,16 @@ def test_training_sample8_probe_beam32_separation():
 def test_launcher_uses_four_gpus():
     source = Path(__file__).with_name("launch_sample8_fullsid_train.sh").read_text()
     assert "--nproc_per_node=4" in source
+
+
+def test_launcher_supports_safe_checkpoint_resume():
+    source = Path(__file__).with_name("launch_sample8_fullsid_train.sh").read_text()
+    assert 'OUTPUT_ROOT="${OUTPUT_ROOT:-/root/GRPO-checkpoints}"' in source
+    assert '--save-steps 50' in source
+    assert '--probe-every-steps 50' in source
+    assert '--save-total-limit 64' in source
+    assert 'RESUME_FROM_CHECKPOINT="${RESUME_FROM_CHECKPOINT:-}"' in source
+    assert '--resume-from-checkpoint "${RESUME_FROM_CHECKPOINT}"' in source
 
 
 def test_launcher_uses_nccl_loopback():
