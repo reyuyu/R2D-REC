@@ -47,7 +47,7 @@ SFT 系列已把总分稳定推到约 1.33，但 Mini 实验表明，单纯扩�
 | --- | --- | --- | --- | --- |
 | **混合懂推荐 GRPO** | `GR_REC_v1`、`GR_REC_DSR_Ablation_v1`、`GR_REC_ThinkExactClamp_Ablation_v1` | Think + NoThink | Beam outcome；SID outcome 或分层 token credit | 两条推荐路径联合训练能否提高外部懂推荐分数 |
 | **NoThink-only GRPO** | `GR_REC_NoThinkOnly_Hier_v1`、`GR_REC_NoThinkOnly_Frontier_v1` | 仅 NoThink；Think 只做 probe | Domain/A/B/C credit、dead-zero bridge、首错 frontier | 直接 SID 路径能否独立提升 |
-| **Think-only GRPO** | `GR_REC_Think_CompositeInterest_v1` | 仅 Think | Beam 命中 + CoT 兴趣结构/覆盖 | 如何避免只追 Beam、忽略推理结构 |
+| **Think-only GRPO** | `GR_REC_Think_CompositeInterest_v1`、`GRPO-TK` | 仅 Think | Beam/兴趣结构，或 CoT 后独立 Sample8 FullSID outcome | 如何把最终 SID 质量反向归因给 CoT，同时保持两级动作边界 |
 | **懂用户 GRPO** | `GR_USER_v1`、`MC_USER_v1`、`MC_USER Hybrid K4` | Action + Chain | Set-F1、Action/Logic alignment、局部 token credit | 懂用户提升及共享 LoRA 的跨任务干扰 |
 
 不同路线会改变 loss 尺度，不能横向比较训练 loss 的绝对值。最终判断统一依赖固定 probe、结构监控与外部 11 项评测。
@@ -134,6 +134,34 @@ R_total = 0.60 * U_beam + 0.40 * U_cot
 
 Composite 已完成 CPU 校准、4-GPU zero-update preflight 与 Smoke12 合同验证，但尚无可替代 `1.3510` 的完整外部评测。若 parent 使用 plus-gamma epoch1/epoch2，现有 12 个固定 probe 中有 `8/12` 的 group ID 与训练数据重合，不能作为干净泛化集，正式比较需重建 group-disjoint probe。
 
+### Think-only GRPO：GRPO-TK（Sample8 FullSID）
+
+`GRPO-TK` 的工程名为 `GR_REC_ThinkSample8_FullSID_v3`。它不再用 fixed-domain Beam8 评价 CoT，而让每条 CoT 后的模型自行生成完整 SID：
+
+```text
+1 business group
+  -> stochastic G4 CoT
+  -> each CoT independently samples 8 continuations
+  -> scan the first complete domain+A+B+C SID
+  -> 4 independent SID G8 advantages
+  -> CoT reward = sum(its 8 SID rewards)
+  -> global CoT G4 advantage
+  -> L_total = L_cot + L_sid
+```
+
+核心 trick：
+
+- SID 上下文只有 `prompt + sampled CoT through </think>`，不固定 target domain，也不插入自然语言 bridge。
+- continuation 内允许先出现自然语言；解析器扫描第一个完整 raw-ID SID。多 SID 只用第一个打分并标记，未找到完整 SID记 `-1`。
+- SID 六档 reward 为 `-1/-0.25/0/0.5/2/8`。每条 CoT 的 G8 单独 population-normalize，四组不能 flatten 成 G32。
+- CoT reward 是对应 8 个 SID raw reward 的算术和，四条 CoT 再做全局 G4 population advantage。
+- CoT loss 只更新 CoT action tokens；SID loss 只更新第一个完整 SID 的 4 个 tokens。Base 冻结，只训练 LoRA。
+- `num_iterations=2` 的第二次 policy pass 完整复用第一次 rollout 和 detached full-forward old logp；当前正式版本不做 zero-std reroll。
+
+当前 parent 三次外部评测均值为 `1.3481`，GRPO-TK checkpoint-250 单次为 **`1.3579`**：相对 parent 均值 `+0.0098`，相对 parent 三次最好值 `1.3510` 为 `+0.0069`。这是当前仓库最高的已记录单次总分，但尚未完成同 checkpoint 多次复测，因此记录为早期正向信号，而不是统计复现后的最终结论。
+
+完整公式、11 项分数和分项分析见 [GRPO-TK 实验记录](./docs/experiment_GRPO_TK.md)；从私有数据契约到 4-GPU 启动、恢复与监控的步骤见 [GRPO-TK 复现指南](./docs/reproduce_GRPO_TK.md)。
+
 ### 懂用户系列 GRPO
 
 懂用户项目与懂推荐代码隔离，包含 Action 与 Chain 两条 NoCoT 路由：
@@ -153,9 +181,20 @@ Composite 已完成 CPU 校准、4-GPU zero-update preflight 与 Smoke12 合同�
 3. **Checkpoint 选择**：不按“越晚越好”选择，也不只看训练 reward。先比较 Step 1000/1500/2000/final 的外部 11 项，再结合 CoT 长度、多样性、zero-std、Beam invalid 和固定四域 Probe。当前 Step 1500 是优先复测候选。
 4. **后续实验隔离原则**：CoT 后期单一兴趣收缩与 NoThink/Think 零方差是两类不同问题。后续若分别测试多样性约束或稀疏 reward 改进，必须单变量立项，不在同一实验中同时改 G、reward、sampler 或数据顺序。
 
-### 当前高光：GR_REC_v1 Step 1500 = 1.3510
+### 当前最高单次记录：GRPO-TK Step 250 = 1.3579
 
-> **当前仓库最高的已记录外部总分是 `1.3510`。** 它来自最基础的混合方案 `GR_REC_v1 checkpoint-1500`，相对保守 BETA 基线 `1.3313` 提升 `+0.0197`，其中懂推荐合计从 `0.6594` 提升到 `0.6800`。这是优先复测和模型选择候选，不是已完成统计复现的最终结论。
+GRPO-TK 使用 `GR_REC_v1 checkpoint-1500` parent。该 parent 三次同口径外部评测分别为 `1.3436 / 1.3497 / 1.3510`，均值 `1.3481`；GRPO-TK step 250 得到 `1.3579`。
+
+| 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对 parent 三次均值 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Parent 三次均值 | `1.3481` | `0.1814` | `0.2563` | `0.6773` | `0.2331` | - |
+| **GRPO-TK Step 250** | **`1.3579`** | `0.1822` | `0.2575` | **`0.6840`** | `0.2342` | **`+0.0098`** |
+
+净增量主要来自懂推荐合计 `+0.0067`；懂物料、懂用户和懂世界分别约为 `+0.0008/+0.0012/+0.0011`。由于 GRPO-TK 目前只有一次外部评测，该结果需要补齐重复测量并结合后续 checkpoint 才能判断稳定性。
+
+### 此前基础混合高光：GR_REC_v1 Step 1500 = 1.3510
+
+> **`1.3510` 是基础混合路线 `GR_REC_v1 checkpoint-1500` 的高光结果，也是 GRPO-TK 的 parent 三次评测最好值。** 它相对保守 BETA 基线 `1.3313` 提升 `+0.0197`，其中懂推荐合计从 `0.6594` 提升到 `0.6800`。这是优先复测和模型选择候选，不是已完成统计复现的最终结论。
 
 | 模型 / Step | 总分 | 懂物料合计 | 懂用户合计 | 懂推荐合计 | 懂世界 | 相对 `1.3313` | 结论 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -200,6 +239,7 @@ Hybrid 训练健康完成，但外部任务呈现随 step 增强的 User/Recomme
 | NoThink-only Hier | [`run_nothink_only_hier_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_hier_v1/run_nothink_only_hier_train.py) | 复用 ExactClamp 目录中的 hierarchy/bridge | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_NoThinkOnly_Hier_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_hier_v1/README.md) |
 | NoThink-only Frontier | [`run_nothink_only_frontier_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/run_nothink_only_frontier_train.py) | [`frontier_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_trainer.py) / [`frontier_credit.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_credit.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_NoThinkOnly_Frontier_v1.md) / [Formal forensic](./baselines/native_source_domain_r32_v3/grpo/results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.md) |
 | Think-only Composite | [`run_gr_rec_think_composite_interest_v1.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/run_gr_rec_think_composite_interest_v1.py) | [`composite_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/composite_trainer.py) / [`interest_metric.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/interest_metric.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_Think_CompositeInterest_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/README.md) |
+| **GRPO-TK / Sample8 FullSID** | [`run_sample8_fullsid_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/run_sample8_fullsid_train.py) | [`sample8_fullsid_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/sample8_fullsid_trainer.py) | [实验记录](./docs/experiment_GRPO_TK.md) / [复现指南](./docs/reproduce_GRPO_TK.md) / [Preflight 证据](./baselines/native_source_domain_r32_v3/grpo/results/gr_rec_think_sample8_fullsid_v3_gpu_preflight_scan_20260828.json) |
 | GR_USER_v1 | [`run_user_full_epoch.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_user_full_epoch.py) | [`user_grpo_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_grpo_trainer.py) | [项目入口](./baselines/native_source_domain_r32_v3/grpo/user/README.md) / [Reward 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/reward_contract_v1.md) / [Trainer 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/trainer_objective_contract_v1.md) / [Full epoch](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md) |
 | MC_USER Hybrid K4 | [`run_mc_user_formal_hybrid_k4_ddp_v1.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_mc_user_formal_hybrid_k4_ddp_v1.py) | [`user_mc_hybrid_objective.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_mc_hybrid_objective.py) | [外部评测与跨任务权衡](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md) |
 
