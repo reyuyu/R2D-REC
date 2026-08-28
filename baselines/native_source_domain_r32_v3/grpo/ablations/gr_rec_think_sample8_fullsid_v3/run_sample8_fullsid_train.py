@@ -110,8 +110,23 @@ def enable_trusted_torch_load_for_resume(checkpoint_path):
     audit = validate_trusted_resume_checkpoint(checkpoint_path)
     # Transformers 5.6 blocks torch<2.6 before weights_only=True loads. This
     # checkpoint was just written by this root-owned run and passed the guards above.
+    import numpy as np
+    import torch
     import transformers.trainer as transformers_trainer
+
+    np_core = getattr(np, "_core", np.core)
+    numpy_allowlist = [
+        np_core.multiarray._reconstruct,
+        np.ndarray,
+        np.dtype,
+        type(np.dtype(np.uint32)),
+    ]
+
+    def trusted_numpy_safe_globals():
+        return torch.serialization.safe_globals(numpy_allowlist)
+
     transformers_trainer.check_torch_load_is_safe = lambda: None
+    transformers_trainer.safe_globals = trusted_numpy_safe_globals
     return audit
 
 

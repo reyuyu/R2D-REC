@@ -60,6 +60,20 @@ def test_trusted_resume_rejects_path_outside_root(tmp_path):
         runner.validate_trusted_resume_checkpoint(outside, output_root=root)
 
 
+def test_trusted_resume_keeps_weights_only_numpy_allowlist(monkeypatch):
+    import transformers.trainer as transformers_trainer
+
+    monkeypatch.setattr(
+        runner,
+        "validate_trusted_resume_checkpoint",
+        lambda path: {"path": str(path), "step": 250, "trusted_local_checkpoint": True},
+    )
+    runner.enable_trusted_torch_load_for_resume("checkpoint-250")
+    assert transformers_trainer.check_torch_load_is_safe() is None
+    with transformers_trainer.safe_globals():
+        pass
+
+
 def test_probe4_exact_ids(plan):
     assert tuple(plan["probe_group_ids"]) == runner.FIXED_PROBE4_IDS
 
