@@ -272,6 +272,7 @@ class ThinkSample8FullSIDTrainer(RecGRPOTrainer):
         self._sample_policy_epoch = 0
         self._sample_rollout_fingerprint = None
         super().__init__(*args, **kwargs)
+        self.add_callback(ResumeCadenceCallback())
         self.add_callback(FinalStepSaveCallback())
 
     def _get_train_sampler(self, dataset=None):
@@ -466,6 +467,14 @@ class ThinkSample8FullSIDTrainer(RecGRPOTrainer):
                                            if torch.cuda.is_available() else 0),
             })
         return result
+
+
+class ResumeCadenceCallback(TrainerCallback):
+    """Recompute interval state from current args after TrainerState restore."""
+
+    def on_train_begin(self, args, state, control, **kwargs):
+        state.compute_steps(args, int(state.max_steps))
+        return control
 
 
 class FinalStepSaveCallback(TrainerCallback):

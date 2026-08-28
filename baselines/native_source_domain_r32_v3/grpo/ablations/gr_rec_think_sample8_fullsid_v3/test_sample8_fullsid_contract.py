@@ -6,7 +6,8 @@ import torch
 
 from . import run_sample8_fullsid_train as runner
 from .sample8_fullsid_trainer import (
-    COT_G, SID_G, SAMPLE_MAX_NEW_TOKENS, FinalStepSaveCallback, ThinkG4SingleGroupSampler,
+    COT_G, SID_G, SAMPLE_MAX_NEW_TOKENS, FinalStepSaveCallback, ResumeCadenceCallback,
+    ThinkG4SingleGroupSampler,
     assert_one_global_group, audit_sample8_sampler, independent_sid_advantages,
     cot_reward_from_sid_rewards, parse_full_sid_ids, scan_full_sid_ids, population_advantages,
     rollout_fingerprint,
@@ -241,6 +242,28 @@ def test_final_step_explicit_save():
     callback.on_step_end(SimpleNamespace(max_steps=3090),
                          SimpleNamespace(global_step=3090), control)
     assert control.should_save
+
+
+def test_resume_cadence_overrides_checkpoint_state():
+    class State:
+        global_step = 500
+        max_steps = 3090
+        logging_steps = 1
+        eval_steps = None
+        save_steps = 250
+
+        def compute_steps(self, args, max_steps):
+            del max_steps
+            self.logging_steps = args.logging_steps
+            self.eval_steps = args.eval_steps
+            self.save_steps = args.save_steps
+
+    state = State()
+    args = SimpleNamespace(logging_steps=1, eval_steps=None, save_steps=50)
+    control = SimpleNamespace()
+    ResumeCadenceCallback().on_train_begin(args, state, control)
+    assert state.global_step == 500
+    assert state.save_steps == 50
 
 
 def test_nonfinal_step_not_forced_to_save():
