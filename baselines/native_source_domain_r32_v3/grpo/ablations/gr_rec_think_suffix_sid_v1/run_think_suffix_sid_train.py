@@ -196,6 +196,11 @@ class ManifestWriter:
             "zero_std_max_candidate_budget": GROUP_SIZE * (MAX_RESAMPLE_ROUNDS + 1),
             "multi_sid_policy": "monitor_only; reward final complete suffix SID",
             "training_beam32": False,
+            "nccl_socket_ifname": os.environ.get("NCCL_SOCKET_IFNAME"),
+            "single_node_rank_device_mapping": [
+                {"local_rank": rank, "device": f"cuda:{rank}"}
+                for rank in range(4)
+            ],
             "fixed_probe": {"enabled": False, "reason": "legacy probe uses Beam32"},
             "frozen_contract": frozen,
         })

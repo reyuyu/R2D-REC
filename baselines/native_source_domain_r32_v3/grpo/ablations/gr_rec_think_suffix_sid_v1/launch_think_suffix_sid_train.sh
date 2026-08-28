@@ -13,6 +13,7 @@ export GRPO_DETAILED_MONITOR=1
 export GRPO_GENERATION_PROFILE=0
 export GRPO_TRACE_EVERY="${GRPO_TRACE_EVERY:-10}"
 export GRPO_GIT_COMMIT="$(git rev-parse HEAD)"
+export NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-lo}"
 
 exec torchrun \
   --nproc_per_node=4 \

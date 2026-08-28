@@ -127,6 +127,12 @@ class TrainerContractTests(unittest.TestCase):
         finally:
             suffix_runner._RUNTIME_TOKENIZER = previous
 
+    def test_launcher_pins_single_node_nccl_to_loopback(self):
+        launcher = Path(suffix_runner.__file__).with_name(
+            "launch_think_suffix_sid_train.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn('NCCL_SOCKET_IFNAME="${NCCL_SOCKET_IFNAME:-lo}"', launcher)
+
     def test_parent_is_immutable_step1500(self):
         self.assertTrue(str(PARENT_ADAPTER).endswith("checkpoint-1500"))
         self.assertEqual(len(PARENT_ADAPTER_SHA256), 64)
