@@ -192,6 +192,11 @@ def test_action_boundaries_are_explicit():
     assert "torch.ones((SID_G, 3)" in source
 
 
+def test_preflight_module_cold_import():
+    from . import gpu_preflight
+    assert gpu_preflight.COT_G == 4 and gpu_preflight.SID_G == 8
+
+
 def test_domain_prefix_is_context_not_sid_action():
     source = Path(__file__).with_name("dual_beam8_trainer.py").read_text()
     assert 'list(record["beam_context_ids"]) + list(candidate)' in source

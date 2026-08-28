@@ -13,17 +13,18 @@ from pathlib import Path
 import torch
 import torch.distributed as dist
 
-from grpo_probe import FixedProbeEvaluator
-from monitor.writer import MonitorWriter
-
-from .dual_beam8_trainer import (
-    COT_G, SID_G, DualBeam8Runtime, ThinkDualBeam8Trainer,
-    independent_sid_advantages, make_dual_beam8_reward_func, population_advantages,
-)
+# Import the runner first: it installs the current worktree scripts directory
+# before any top-level grpo_* module is resolved.
 from .run_dual_beam8_train import (
     FIXED_PROBE4_IDS, PARENT_ADAPTER, PARENT_ADAPTER_SHA256, DualManifestWriter,
     assert_runtime_import_provenance, baseline_runner, make_dual_grpo_config,
     prepare_dual_run_plan, validate_parent_adapter,
+)
+from grpo_probe import FixedProbeEvaluator
+from monitor.writer import MonitorWriter
+from .dual_beam8_trainer import (
+    COT_G, SID_G, DualBeam8Runtime, ThinkDualBeam8Trainer,
+    independent_sid_advantages, make_dual_beam8_reward_func, population_advantages,
 )
 from ablations.gr_rec_think_composite_interest_v1.single_node_nccl import (
     configure_single_node_nccl,
