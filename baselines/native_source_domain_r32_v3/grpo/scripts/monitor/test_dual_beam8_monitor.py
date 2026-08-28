@@ -60,6 +60,25 @@ def captured_event(step: int = 2) -> dict:
     }
 
 
+def captured_sample8_event() -> dict:
+    event = captured_event()
+    event["type"] = "sample8_fullsid"
+    for cot in event["cots"]:
+        cot["sample_candidate_ids"] = [
+            [10, 11, 12, 13, 14, 15, 16, 17] for _ in range(8)
+        ]
+        cot["sample_candidate_texts"] = ["prefix <SID> suffix"] * 8
+        cot["sample_sids"] = cot.pop("beam_sids")
+        cot.pop("beam_candidate_ids")
+        cot["all_parsed_sids"] = [[sid] for sid in cot["sample_sids"]]
+        cot["sid_action_spans"] = [[2, 6]] * 8
+        cot["sid_counts"] = [1] * 7 + [2]
+        cot["multi_sid_outputs"] = [False] * 7 + [True]
+        cot["parser_statuses"] = ["ok"] * 7 + ["multiple_sids"]
+        cot["sample8_wall_sec"] = 3.2
+    return event
+
+
 def test_adapter_preserves_two_level_captured_credit_and_input():
     groups = adapt_events(
         [captured_event()],
@@ -110,6 +129,32 @@ def test_api_capability_and_advantages_are_captured():
         }) == "dual_beam8_v2"
 
 
+def test_sample8_api_uses_its_stream_and_preserves_first_sid_metadata():
+    with tempfile.TemporaryDirectory() as temporary:
+        run = Path(temporary)
+        (run / "manifest.json").write_text(json.dumps({
+            "run_id": run.name,
+            "experiment": "GR_REC_ThinkSample8_FullSID_v3",
+            "dataset_path": "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl",
+        }), encoding="utf-8")
+        (run / "sample8_fullsid.jsonl").write_text(
+            json.dumps(captured_sample8_event()) + "\n", encoding="utf-8"
+        )
+        client = TestClient(create_app(run_dir=run))
+        capability = client.get("/api/capabilities").json()
+        assert capability["dual_beam8"] is True
+        assert capability["advantage_formula"] == "sample8_fullsid_v3"
+        payload = client.get("/api/advantages").json()
+        assert payload["formula"] == "sample8_fullsid_v3"
+        group = payload["groups"][0]
+        assert group["sample8_fullsid"] is True
+        sid = group["candidates"][0]["sid_candidates"][7]
+        assert sid["sid_action_span"] == [2, 6]
+        assert sid["sid_count"] == 2
+        assert sid["multi_sid_output"] is True
+        assert sid["parser_status"] == "multiple_sids"
+
+
 def test_nonzero_export_is_incremental_deduplicated_and_keeps_prompt():
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
@@ -140,12 +185,38 @@ def test_nonzero_export_is_incremental_deduplicated_and_keeps_prompt():
         assert row["provenance"] == "training_capture_no_recalculation"
 
 
+def test_sample8_export_keeps_continuation_and_multiple_sid_flag():
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        run = root / "run"
+        run.mkdir()
+        dataset = root / "train.jsonl"
+        dataset.write_text(json.dumps({
+            "recommendation_group_id": "group-1", "prompt": "prompt",
+            "all_gold_sids": ["gold"],
+        }) + "\n", encoding="utf-8")
+        (run / "manifest.json").write_text(json.dumps({
+            "experiment": "GR_REC_ThinkSample8_FullSID_v3",
+            "dataset_path": str(dataset),
+        }), encoding="utf-8")
+        (run / "sample8_fullsid.jsonl").write_text(
+            json.dumps(captured_sample8_event()) + "\n", encoding="utf-8"
+        )
+        result = export_available(run, run / "training_sample_exports")
+        assert result["added_positive"] == 1
+        row = json.loads((run / "training_sample_exports" / "positive_samples.jsonl").read_text())
+        assert row["experiment"] == "GR_REC_ThinkSample8_FullSID_v3"
+        assert row["sample_candidate_texts"][0] == "prefix <SID> suffix"
+        assert row["multi_sid_outputs"][-1] is True
+
+
 def test_frontend_contract_shows_cot_and_sid_credit_without_recalculation():
     static = Path(__file__).with_name("static")
     source = (static / "dual_beam8_dashboard.js").read_text(encoding="utf-8")
     index = (static / "index.html").read_text(encoding="utf-8")
     for text in ("CoT 分数", "CoT 优势", "答案分数", "答案优势", "模型输入",
-                 "Reward-only Reference · NOT MODEL INPUT", "实采"):
+                 "Reward-only Reference · NOT MODEL INPUT", "实采", "多 SID · 训练取第一个",
+                 "查看完整 sampled continuation"):
         assert text in source
     assert "8 个 SID 独立做 G8 归一化" in source
     assert "前端未重算" in source

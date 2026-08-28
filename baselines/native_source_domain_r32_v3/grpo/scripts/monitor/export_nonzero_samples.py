@@ -1,4 +1,4 @@
-"""Incrementally archive Dual Beam8 samples with non-zero training signal."""
+"""Incrementally archive captured two-level samples with non-zero signal."""
 from __future__ import annotations
 
 import argparse
@@ -51,9 +51,11 @@ def candidate_record(
     cot_index: int,
     source: dict[str, Any],
 ) -> dict[str, Any]:
+    sample8 = event.get("type") == "sample8_fullsid"
     return {
         "sample_key": f"{event.get('rollout_fingerprint')}:{cot_index}",
-        "experiment": "GR_REC_ThinkDualBeam8_v2",
+        "experiment": ("GR_REC_ThinkSample8_FullSID_v3" if sample8
+                       else "GR_REC_ThinkDualBeam8_v2"),
         "step": event.get("step"),
         "rollout_id": event.get("rollout_id"),
         "rollout_fingerprint": event.get("rollout_fingerprint"),
@@ -67,8 +69,15 @@ def candidate_record(
         "cot_closed": cot.get("closed"),
         "cot_reward": cot.get("cot_reward"),
         "cot_advantage": (event.get("cot_advantages") or [None] * 4)[cot_index],
-        "beam_candidate_ids": cot.get("beam_candidate_ids", []),
-        "beam_sids": cot.get("beam_sids", []),
+        "sample_candidate_ids": cot.get(
+            "sample_candidate_ids" if sample8 else "beam_candidate_ids", []),
+        "sample_candidate_texts": cot.get("sample_candidate_texts", []),
+        "sample_sids": cot.get("sample_sids" if sample8 else "beam_sids", []),
+        "all_parsed_sids": cot.get("all_parsed_sids", []),
+        "sid_action_spans": cot.get("sid_action_spans", []),
+        "sid_counts": cot.get("sid_counts", []),
+        "multi_sid_outputs": cot.get("multi_sid_outputs", []),
+        "parser_statuses": cot.get("parser_statuses", []),
         "sid_rewards": cot.get("sid_rewards", []),
         "sid_advantages": cot.get("sid_advantages", []),
         "sid_reward_levels": cot.get("sid_reward_levels", []),
@@ -86,7 +95,11 @@ def candidate_record(
 def export_available(run_dir: Path, output_dir: Path) -> dict[str, int]:
     manifest = read_json(run_dir / "manifest.json", {})
     dataset = Path(manifest["dataset_path"]).expanduser().resolve()
-    source_path = run_dir / "dual_beam8.jsonl"
+    source_path = run_dir / (
+        "sample8_fullsid.jsonl"
+        if manifest.get("experiment") == "GR_REC_ThinkSample8_FullSID_v3"
+        else "dual_beam8.jsonl"
+    )
     state_path = output_dir / ".export_state.json"
     nonzero_path = output_dir / "nonzero_signal_samples.jsonl"
     positive_path = output_dir / "positive_samples.jsonl"
@@ -116,7 +129,7 @@ def export_available(run_dir: Path, output_dir: Path) -> dict[str, int]:
                 source.seek(line_offset)
                 break
             offset = source.tell()
-            if event.get("type") != "dual_beam8" or not isinstance(event.get("cots"), list):
+            if event.get("type") not in {"dual_beam8", "sample8_fullsid"} or not isinstance(event.get("cots"), list):
                 continue
             group_id = str(event.get("recommendation_group_id") or "")
             source_row = sources.get(group_id, {})

@@ -1,5 +1,6 @@
 (()=>{
-  const enabled=()=>state?.manifest?.experiment==='GR_REC_ThinkDualBeam8_v2';
+  const sample8Enabled=()=>state?.manifest?.experiment==='GR_REC_ThinkSample8_FullSID_v3';
+  const enabled=()=>['GR_REC_ThinkDualBeam8_v2','GR_REC_ThinkSample8_FullSID_v3'].includes(state?.manifest?.experiment);
   const number=(value,digits=4)=>{
     if(value==null||!Number.isFinite(Number(value)))return '—';
     return Number(value).toFixed(digits);
@@ -11,20 +12,23 @@
   };
   const tone=value=>Number(value)>0?'positive':Number(value)<0?'negative':'zero';
   const relationLabel=level=>({
-    exact:'Exact',ab:'AB',a:'A',domain:'Domain',invalid:'Invalid',
+    exact:'Exact',ab:'AB',a:'A',domain:'Domain',wrong_domain:'Wrong Domain',invalid:'Invalid',
   }[String(level||'').toLowerCase()]||level||'—');
   const captureBadge=()=>'<span class="provenance-badge" title="训练时由 Python 直接捕获，前端未重算">实采</span>';
 
   function renderSidRows(candidate){
     return (candidate.sid_candidates||[]).map(sid=>{
       const adv=tone(sid.advantage);
+      const multi=sid.multi_sid_output?'<span class="summary-chip alert">多 SID · 训练取第一个</span>':'';
+      const status=sid.parser_status?`<span class="summary-chip ${sid.parser_status==='ok'?'good':'alert'}">${escapeHtml(sid.parser_status)}</span>`:'';
+      const continuation=sid.continuation_text==null?'':`<details class="dual-continuation"><summary>查看完整 sampled continuation</summary><pre>${escapeHtml(sid.continuation_text)}</pre></details>`;
       return `<tr>
         <td>#${String(sid.candidate_id).padStart(2,'0')}</td>
-        <td><code>${escapeHtml(sid.parsed_sid_text||'解析失败')}</code></td>
+        <td><code>${escapeHtml(sid.parsed_sid_text||'解析失败')}</code><div class="dual-parser-badges">${status}${multi}</div>${continuation}</td>
         <td><span class="dual-level level-${escapeHtml(String(sid.reward_level||'').toLowerCase())}">${escapeHtml(relationLabel(sid.reward_level))}</span></td>
         <td><b>${number(sid.reward)}</b></td>
         <td class="adv-${adv}"><b>${signedNumber(sid.advantage)}</b></td>
-        <td><code>${escapeHtml((sid.generated_token_ids||[]).join(', '))}</code></td>
+        <td><code>${escapeHtml((sid.sid_action_span||[]).join(' → ')||'—')}</code><details><summary>token IDs (${(sid.generated_token_ids||[]).length})</summary><code class="dual-token-ids">${escapeHtml((sid.generated_token_ids||[]).join(', '))}</code></details></td>
       </tr>`;
     }).join('');
   }
@@ -43,18 +47,19 @@
       <div class="dual-meta">
         <span>长度 ${candidate.cot_length??'—'}</span>
         <span>${candidate.closed?'已闭合 </think>':'未闭合'}</span>
-        <span>Beam8 ${number(candidate.beam8_wall_sec,2)}s</span>
+        <span>${escapeHtml(candidate.generation_mode||'Beam8')} ${number(candidate.beam8_wall_sec,2)}s</span>
         <span>SID std ${number(candidate.sid_population_std,5)}</span>
         <span>${candidate.sid_zero_std?'SID 零方差':'SID 有组内信号'}</span>
       </div>
       <details class="dual-cot-text"><summary>查看采样 CoT</summary><pre>${escapeHtml(candidate.cot_text||'')}</pre></details>
       <div class="dual-beam-summary">
         <span>Exact ${candidate.exact??0}</span><span>AB ${candidate.ab??0}</span>
-        <span>A ${candidate.a??0}</span><span>Invalid ${candidate.invalid??0}</span>
-        <span>固定前缀 <code>${escapeHtml(candidate.domain_prefix||'—')}</code></span>
+        <span>A ${candidate.a??0}</span><span>Domain ${candidate.domain??0}</span>
+        <span>Wrong Domain ${candidate.wrong_domain??0}</span><span>Invalid ${candidate.invalid??0}</span>
+        ${sample8Enabled()?'<span>无固定 Domain 前缀 · 全文扫描首个完整 SID</span>':`<span>固定前缀 <code>${escapeHtml(candidate.domain_prefix||'—')}</code></span>`}
       </div>
       <div class="table-scroll"><table class="dual-sid-table">
-        <thead><tr><th>答案</th><th>Beam8 SID</th><th>层级</th><th>答案分数 ${captureBadge()}</th><th>答案优势 ${captureBadge()}</th><th>3 token IDs</th></tr></thead>
+        <thead><tr><th>答案</th><th>${sample8Enabled()?'首个完整 SID / continuation':'Beam8 SID'}</th><th>层级</th><th>答案分数 ${captureBadge()}</th><th>答案优势 ${captureBadge()}</th><th>${sample8Enabled()?'SID span / continuation IDs':'3 token IDs'}</th></tr></thead>
         <tbody>${renderSidRows(candidate)}</tbody>
       </table></div>
     </article>`;
@@ -67,7 +72,7 @@
     return `<section class="adv-group dual-beam8-group">
       <header class="adv-group-head">
         <div>
-          <div class="adv-title">Step ${group.step??'—'} · Rollout ${group.rollout_id??'—'} · Dual Beam8 两级优势 ${captureBadge()}</div>
+          <div class="adv-title">Step ${group.step??'—'} · Rollout ${group.rollout_id??'—'} · ${group.sample8_fullsid?'Sample8 FullSID':'Dual Beam8'} 两级优势 ${captureBadge()}</div>
           <div class="adv-sub">G4 只归一化四条 CoT；每条 CoT 下的 8 个 SID 独立做 G8 归一化，绝不按 G32 混合。</div>
         </div>
         <div class="summary-chips">
@@ -85,7 +90,7 @@
   const oldRenderAdvantages=renderAdvantages;
   renderAdvantages=function(){
     const tab=document.querySelector('.tab[data-view="advantages"]');
-    if(tab)tab.textContent=enabled()?'CoT / 答案优势':'优势可解释性';
+    if(tab)tab.textContent=enabled()?'CoT / SID 优势':'优势可解释性';
     oldRenderAdvantages();
   };
 
@@ -107,6 +112,10 @@
     .dual-sid-table th,.dual-sid-table td{padding:8px 10px;border-bottom:1px solid #edf0f3;text-align:left;vertical-align:top}
     .dual-sid-table th{background:#f7f8fa;color:#4a5563;white-space:nowrap}
     .dual-sid-table code{font-size:11px;white-space:nowrap}
+    .dual-parser-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+    .dual-continuation{margin-top:7px}.dual-continuation summary{cursor:pointer;color:#315a7d}
+    .dual-continuation pre{max-width:640px;max-height:190px;overflow:auto;white-space:pre-wrap;background:#f7f9fb;border:1px solid #dde3e9;padding:8px;font:11px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
+    .dual-token-ids{display:block;max-width:420px;max-height:100px;overflow:auto;white-space:normal!important;margin-top:5px}
     .dual-level{display:inline-block;padding:2px 6px;border:1px solid #ccd3dc;background:#f7f8fa}
     .level-exact{color:#086947;border-color:#81bba4;background:#eaf7f1}.level-invalid{color:#a32738;border-color:#d89da6;background:#fff1f2}
     @media(max-width:900px){.dual-cot-head{align-items:flex-start;flex-direction:column}}

@@ -1,14 +1,15 @@
-"""Read-only monitor adapter for GR_REC_ThinkDualBeam8_v2."""
+"""Read-only monitor adapter for captured two-level Think/SID experiments."""
 from __future__ import annotations
 
 from typing import Any, Iterable
 
 
 EXPERIMENT = "GR_REC_ThinkDualBeam8_v2"
+SAMPLE8_EXPERIMENT = "GR_REC_ThinkSample8_FullSID_v3"
 
 
 def is_dual_beam8_manifest(manifest: dict[str, Any]) -> bool:
-    return manifest.get("experiment") == EXPERIMENT
+    return manifest.get("experiment") in {EXPERIMENT, SAMPLE8_EXPERIMENT}
 
 
 def _sid_text(value: Any) -> str | None:
@@ -32,7 +33,7 @@ def adapt_events(
     source_index = source_index or {}
     selected = []
     for event in events:
-        if event.get("type") != "dual_beam8" or not isinstance(event.get("cots"), list):
+        if event.get("type") not in {"dual_beam8", "sample8_fullsid"} or not isinstance(event.get("cots"), list):
             continue
         step = int(event.get("step", 0))
         rid = int(event.get("rollout_id", 0))
@@ -49,6 +50,7 @@ def adapt_events(
 
     groups = []
     for event in selected[-limit:]:
+        sample8 = event.get("type") == "sample8_fullsid"
         gid = str(event.get("recommendation_group_id") or "")
         cot_advantages = event.get("cot_advantages") or []
         candidates = []
@@ -56,8 +58,14 @@ def adapt_events(
             sid_rewards = cot.get("sid_rewards") or []
             sid_advantages = cot.get("sid_advantages") or []
             sid_levels = cot.get("sid_reward_levels") or []
-            sid_ids = cot.get("beam_candidate_ids") or []
-            sid_values = cot.get("beam_sids") or []
+            sid_ids = cot.get("sample_candidate_ids" if sample8 else "beam_candidate_ids") or []
+            sid_values = cot.get("sample_sids" if sample8 else "beam_sids") or []
+            sid_texts = cot.get("sample_candidate_texts") or []
+            all_sids = cot.get("all_parsed_sids") or []
+            sid_spans = cot.get("sid_action_spans") or []
+            sid_counts = cot.get("sid_counts") or []
+            multi_flags = cot.get("multi_sid_outputs") or []
+            parser_statuses = cot.get("parser_statuses") or []
             sid_candidates = []
             for sid_index in range(max(
                 len(sid_rewards), len(sid_advantages), len(sid_ids), len(sid_values)
@@ -71,6 +79,12 @@ def adapt_events(
                     "reward": sid_rewards[sid_index] if sid_index < len(sid_rewards) else None,
                     "advantage": sid_advantages[sid_index] if sid_index < len(sid_advantages) else None,
                     "reward_level": sid_levels[sid_index] if sid_index < len(sid_levels) else None,
+                    "continuation_text": sid_texts[sid_index] if sid_index < len(sid_texts) else None,
+                    "all_parsed_sids": all_sids[sid_index] if sid_index < len(all_sids) else [],
+                    "sid_action_span": sid_spans[sid_index] if sid_index < len(sid_spans) else None,
+                    "sid_count": sid_counts[sid_index] if sid_index < len(sid_counts) else None,
+                    "multi_sid_output": multi_flags[sid_index] if sid_index < len(multi_flags) else False,
+                    "parser_status": parser_statuses[sid_index] if sid_index < len(parser_statuses) else None,
                 })
             candidates.append({
                 "candidate_id": cot_index,
@@ -81,12 +95,15 @@ def adapt_events(
                 "final_advantage": (
                     cot_advantages[cot_index] if cot_index < len(cot_advantages) else None
                 ),
-                "beam8_wall_sec": cot.get("beam8_wall_sec"),
+                "beam8_wall_sec": cot.get("sample8_wall_sec" if sample8 else "beam8_wall_sec"),
+                "generation_mode": "Sample8 continuation" if sample8 else "Beam8 ABC3",
                 "domain_prefix": cot.get("domain_prefix"),
                 "exact": cot.get("exact"),
                 "ab": cot.get("ab"),
                 "a": cot.get("a"),
                 "invalid": cot.get("invalid"),
+                "domain": cot.get("domain"),
+                "wrong_domain": cot.get("wrong_domain"),
                 "sid_population_std": cot.get("sid_population_std"),
                 "sid_zero_std": cot.get("sid_zero_std"),
                 "sid_candidates": sid_candidates,
@@ -95,6 +112,8 @@ def adapt_events(
         groups.append({
             "valid": True,
             "kind": "dual_beam8_advantage",
+            "experiment": SAMPLE8_EXPERIMENT if sample8 else EXPERIMENT,
+            "sample8_fullsid": sample8,
             "route": "think",
             "step": event.get("step"),
             "rollout_id": event.get("rollout_id"),
@@ -116,10 +135,11 @@ def adapt_events(
 
 
 def captured_payload(groups: list[dict[str, Any]]) -> dict[str, Any]:
+    sample8 = bool(groups and groups[0].get("sample8_fullsid"))
     return {
         "read_only": True,
         "supported": True,
-        "formula": "dual_beam8_v2",
+        "formula": "sample8_fullsid_v3" if sample8 else "dual_beam8_v2",
         "provenance": {
             "mode": "captured",
             "label": "实采",

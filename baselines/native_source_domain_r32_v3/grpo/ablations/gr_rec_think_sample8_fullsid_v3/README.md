@@ -34,3 +34,33 @@ Entrypoints:
 - `launch_sample8_fullsid_train.sh`
 - `gpu_preflight.py`
 - `test_sample8_fullsid_contract.py`
+
+## GPU validation and formal launch (2026-08-28)
+
+The corrected continuation-scanning implementation is commit
+`bcff386ec81104251e93a483785d96ece042f0b2`.
+
+Four-GPU zero-update preflight passed all gates. The immutable real rollout
+produced CoT rewards `[-1.25, -1.25, -2.0, 0.0]`; every sampled continuation
+contained one complete SID after an 8-11 token natural-language prefix. The
+four independent SID G8 reward vectors had real between-candidate signal, the
+CoT and SID action gradients were non-zero, Base parameters stayed frozen,
+and the trainable checksum was identical before and after the audit.
+
+Evidence:
+
+- `results/gr_rec_think_sample8_fullsid_v3_gpu_preflight_scan_20260828.json`
+- `PREFLIGHT_PASS=true`
+- optimizer/scheduler steps: 0/0
+- parameter update: false
+- Probe4 Beam32: completed with RNG and parameters unchanged
+
+Formal run:
+
+- run id: `GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828`
+- launch commit: `bcff386ec81104251e93a483785d96ece042f0b2`
+- topology: 1545 fresh rollouts, 3090 optimizer steps
+- checkpoints: every 250 steps plus final step 3090
+- monitor stream: `sample8_fullsid.jsonl`
+- non-zero and positive training samples are incrementally archived under
+  `training_sample_exports/` in the run directory.

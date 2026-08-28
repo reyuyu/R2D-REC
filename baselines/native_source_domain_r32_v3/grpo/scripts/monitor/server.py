@@ -139,7 +139,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
     if is_dual_beam8_manifest(manifest):
-        return "dual_beam8_v2"
+        return ("sample8_fullsid_v3" if experiment == "GR_REC_ThinkSample8_FullSID_v3"
+                else "dual_beam8_v2")
     if experiment == "GR_REC_ThinkSuffixSID_Resample_v1":
         return "think_suffix_sid_v1"
     if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
@@ -447,6 +448,12 @@ def create_app(
         }
         source_cache[cache_key] = indexed
         return indexed
+
+    def two_level_event_path(selected: Path, manifest_data: dict[str, Any]) -> Path:
+        filename = ("sample8_fullsid.jsonl"
+                    if manifest_data.get("experiment") == "GR_REC_ThinkSample8_FullSID_v3"
+                    else "dual_beam8.jsonl")
+        return selected / filename
 
     def enrich_source_fields(
         rows: list[dict[str, Any]],
@@ -933,6 +940,7 @@ def create_app(
         dual_beam8 = (
             is_dual_beam8_manifest(manifest_data)
             or (selected / "dual_beam8.jsonl").is_file()
+            or (selected / "sample8_fullsid.jsonl").is_file()
         )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
@@ -1086,7 +1094,7 @@ def create_app(
         manifest_data = read_json(selected / "manifest.json", {})
         if is_dual_beam8_manifest(manifest_data):
             groups = adapt_dual_beam8_events(
-                read_jsonl(selected / "dual_beam8.jsonl"),
+                read_jsonl(two_level_event_path(selected, manifest_data)),
                 source_index=dual_beam8_source_rows(selected),
                 from_step=from_step,
                 to_step=to_step,
@@ -1160,7 +1168,7 @@ def create_app(
                 "groups": [],
             }
         groups = adapt_dual_beam8_events(
-            read_jsonl(selected / "dual_beam8.jsonl"),
+            read_jsonl(two_level_event_path(selected, manifest_data)),
             source_index=dual_beam8_source_rows(selected),
             from_step=from_step,
             to_step=to_step,

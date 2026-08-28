@@ -1,0 +1,2400 @@
+{
+  "experiment": "GR_REC_ThinkSample8_FullSID_v3",
+  "preflight_pass": true,
+  "failure_reasons": [],
+  "gpu_validation_launch_commit": "bcff386ec81104251e93a483785d96ece042f0b2",
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+  "parent_validation": {
+    "path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+    "adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+    "recorded_external_score": 1.351
+  },
+  "probe4_ids": [
+    "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+    "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8"
+  ],
+  "train_probe_overlap": [],
+  "preflight_group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+  "real_signal_observed": true,
+  "gradient_boundary_mode": "immutable real sampled actions with production advantages",
+  "cot_rewards": [
+    -1.25,
+    -1.25,
+    -2.0,
+    0.0
+  ],
+  "cot_advantages": [
+    -0.17405341565608978,
+    -0.17405341565608978,
+    -1.2183738946914673,
+    1.5664807558059692
+  ],
+  "sid_rewards_4x8": [
+    [
+      -0.25,
+      -0.25,
+      0.0,
+      0.0,
+      -0.25,
+      0.0,
+      -0.25,
+      -0.25
+    ],
+    [
+      -0.25,
+      -0.25,
+      0.0,
+      -0.25,
+      -0.25,
+      0.0,
+      -0.25,
+      0.0
+    ],
+    [
+      -0.25,
+      -0.25,
+      -0.25,
+      -0.25,
+      -0.25,
+      -0.25,
+      -0.25,
+      -0.25
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "sid_advantages_4x8": [
+    [
+      -0.7739571928977966,
+      -0.7739571928977966,
+      1.2899285554885864,
+      1.2899285554885864,
+      -0.7739571928977966,
+      1.2899285554885864,
+      -0.7739571928977966,
+      -0.7739571928977966
+    ],
+    [
+      -0.7739571928977966,
+      -0.7739571928977966,
+      1.2899285554885864,
+      -0.7739571928977966,
+      -0.7739571928977966,
+      1.2899285554885864,
+      -0.7739571928977966,
+      1.2899285554885864
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "old_logp": {
+    "cot": "unchanged rollout policy no-grad full-forward rescore",
+    "sid": "unchanged rollout policy no-grad full-forward continuation rescore; first complete SID4 masked",
+    "generate_scores_used": false
+  },
+  "checks": {
+    "world_size_4": true,
+    "same_business_group": true,
+    "one_cot_per_rank": true,
+    "sample8_once_per_rank": true,
+    "exact_4x8_continuations_first_full_sid_parser": true,
+    "no_fixed_domain_prefix": true,
+    "no_natural_language_bridge": true,
+    "four_independent_g8_not_g32": true,
+    "cot_reward_equals_sid_reward_sum": true,
+    "iteration2_exact_cache_reuse": true,
+    "cot_old_logp_full_forward_detached": true,
+    "sid_old_logp_full_forward_detached": true,
+    "cot_action_gradient_nonzero": true,
+    "sid_active_action_gradient_nonzero": true,
+    "sid_zero_std_production_advantage_zero": true,
+    "sid_action_only_first_complete_sid4": true,
+    "real_sample8_reward_variance": true,
+    "combined_lora_gradient_finite": true,
+    "base_no_gradient": true,
+    "base_frozen": true,
+    "parameter_checksum_unchanged": true,
+    "base_version_unchanged": true,
+    "exact_probe4": true,
+    "probe_train_zero_overlap": true,
+    "probe_step0_beam32_completed": true,
+    "probe_rng_restored": true,
+    "probe_parameter_unchanged": true,
+    "runtime_import_provenance": true
+  },
+  "rank_rows": [
+    {
+      "rank": 0,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": -1.25,
+      "cot_advantage": -0.17405341565608978,
+      "sid_rewards": [
+        -0.25,
+        -0.25,
+        0.0,
+        0.0,
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25
+      ],
+      "sid_advantages": [
+        -0.7739571928977966,
+        -0.7739571928977966,
+        1.2899285554885864,
+        1.2899285554885864,
+        -0.7739571928977966,
+        1.2899285554885864,
+        -0.7739571928977966,
+        -0.7739571928977966
+      ],
+      "sample_candidate_ids": [
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          158273,
+          160481,
+          174017
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          154562,
+          166021,
+          174100
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          152150,
+          167910,
+          171361
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          152636,
+          163911,
+          176004
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          157809,
+          167107,
+          171089
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          155036,
+          167203,
+          168318
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          151948,
+          164942,
+          170423
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          153245,
+          163494,
+          171823
+        ]
+      ],
+      "sample_candidate_tokens": [
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_6604>",
+          "<s_b_620>",
+          "<s_c_5964>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_2893>",
+          "<s_b_6160>",
+          "<s_c_6047>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_481>",
+          "<s_b_8049>",
+          "<s_c_3308>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_967>",
+          "<s_b_4050>",
+          "<s_c_7951>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_6140>",
+          "<s_b_7246>",
+          "<s_c_3036>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_3367>",
+          "<s_b_7342>",
+          "<s_c_265>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_279>",
+          "<s_b_5081>",
+          "<s_c_2370>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_1576>",
+          "<s_b_3633>",
+          "<s_c_3770>"
+        ]
+      ],
+      "sample_candidate_texts": [
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_6604><s_b_620><s_c_5964>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_2893><s_b_6160><s_c_6047>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_481><s_b_8049><s_c_3308>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_967><s_b_4050><s_c_7951>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_6140><s_b_7246><s_c_3036>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_3367><s_b_7342><s_c_265>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_279><s_b_5081><s_c_2370>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_1576><s_b_3633><s_c_3770>"
+      ],
+      "sample_sids": [
+        [
+          "video",
+          6604,
+          620,
+          5964
+        ],
+        [
+          "video",
+          2893,
+          6160,
+          6047
+        ],
+        [
+          "living",
+          481,
+          8049,
+          3308
+        ],
+        [
+          "living",
+          967,
+          4050,
+          7951
+        ],
+        [
+          "video",
+          6140,
+          7246,
+          3036
+        ],
+        [
+          "living",
+          3367,
+          7342,
+          265
+        ],
+        [
+          "video",
+          279,
+          5081,
+          2370
+        ],
+        [
+          "video",
+          1576,
+          3633,
+          3770
+        ]
+      ],
+      "all_parsed_sids": [
+        [
+          [
+            "video",
+            6604,
+            620,
+            5964
+          ]
+        ],
+        [
+          [
+            "video",
+            2893,
+            6160,
+            6047
+          ]
+        ],
+        [
+          [
+            "living",
+            481,
+            8049,
+            3308
+          ]
+        ],
+        [
+          [
+            "living",
+            967,
+            4050,
+            7951
+          ]
+        ],
+        [
+          [
+            "video",
+            6140,
+            7246,
+            3036
+          ]
+        ],
+        [
+          [
+            "living",
+            3367,
+            7342,
+            265
+          ]
+        ],
+        [
+          [
+            "video",
+            279,
+            5081,
+            2370
+          ]
+        ],
+        [
+          [
+            "video",
+            1576,
+            3633,
+            3770
+          ]
+        ]
+      ],
+      "sid_action_spans": [
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ]
+      ],
+      "sid_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sid_action_token_counts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "multi_sid_outputs": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parser_statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "sample_candidate_count": 8,
+      "parsed_sid_spans_are_full_sid4": true,
+      "fixed_domain_prefix": false,
+      "natural_language_bridge": false,
+      "sample_calls": 1,
+      "cot_gradient": {
+        "loss": 0.1740534007549286,
+        "action_logp_shape": [
+          1,
+          589
+        ],
+        "expected_action_logp_shape": [
+          1,
+          589
+        ],
+        "action_logp_grad_abs_sum": 0.1741313934326172,
+        "cot_loss": 0.1740534007549286,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 589,
+        "cot_action_logp_grad_norm": 4.22415828704834,
+        "lora_grad_norm": 0.3532356059579742,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 4.470348358154297e-08,
+        "action_logp_shape": [
+          8,
+          15
+        ],
+        "expected_action_logp_shape": [
+          8,
+          15
+        ],
+        "action_logp_grad_abs_sum": 0.966796875,
+        "sid_loss": 4.470348358154297e-08,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 32,
+        "sid_action_logp_grad_norm": 5.652184009552002,
+        "lora_grad_norm": 6.369016599691408,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 6.379818212986479,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true,
+      "real_signal_observed": true
+    },
+    {
+      "rank": 1,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": -1.25,
+      "cot_advantage": -0.17405341565608978,
+      "sid_rewards": [
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        -0.25,
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "sid_advantages": [
+        -0.7739571928977966,
+        -0.7739571928977966,
+        1.2899285554885864,
+        -0.7739571928977966,
+        -0.7739571928977966,
+        1.2899285554885864,
+        -0.7739571928977966,
+        1.2899285554885864
+      ],
+      "sample_candidate_ids": [
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          151785,
+          166380,
+          168660
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          155944,
+          166172,
+          174179
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          112429,
+          101981,
+          18830,
+          5122,
+          176249,
+          153886,
+          160067,
+          169397
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          154145,
+          162994,
+          170372
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          155701,
+          165099,
+          169201
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          112429,
+          101981,
+          18830,
+          5122,
+          176249,
+          159383,
+          167820,
+          174331
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          152201,
+          166380,
+          172688
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          112429,
+          101981,
+          18830,
+          5122,
+          176249,
+          155036,
+          167203,
+          173505
+        ]
+      ],
+      "sample_candidate_tokens": [
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_116>",
+          "<s_b_6519>",
+          "<s_c_607>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_4275>",
+          "<s_b_6311>",
+          "<s_c_6126>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "æĦŁåħ´è¶£çļĦ",
+          "çĽ´æĴŃ",
+          "æľī",
+          "ï¼ļ",
+          "<|living_begin|>",
+          "<s_a_2217>",
+          "<s_b_206>",
+          "<s_c_1344>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_2476>",
+          "<s_b_3133>",
+          "<s_c_2319>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_4032>",
+          "<s_b_5238>",
+          "<s_c_1148>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "æĦŁåħ´è¶£çļĦ",
+          "çĽ´æĴŃ",
+          "æľī",
+          "ï¼ļ",
+          "<|living_begin|>",
+          "<s_a_7714>",
+          "<s_b_7959>",
+          "<s_c_6278>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_532>",
+          "<s_b_6519>",
+          "<s_c_4635>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "æĦŁåħ´è¶£çļĦ",
+          "çĽ´æĴŃ",
+          "æľī",
+          "ï¼ļ",
+          "<|living_begin|>",
+          "<s_a_3367>",
+          "<s_b_7342>",
+          "<s_c_5452>"
+        ]
+      ],
+      "sample_candidate_texts": [
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_116><s_b_6519><s_c_607>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_4275><s_b_6311><s_c_6126>",
+        "\n该用户最近感兴趣的直播有：<|living_begin|><s_a_2217><s_b_206><s_c_1344>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_2476><s_b_3133><s_c_2319>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_4032><s_b_5238><s_c_1148>",
+        "\n该用户最近感兴趣的直播有：<|living_begin|><s_a_7714><s_b_7959><s_c_6278>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_532><s_b_6519><s_c_4635>",
+        "\n该用户最近感兴趣的直播有：<|living_begin|><s_a_3367><s_b_7342><s_c_5452>"
+      ],
+      "sample_sids": [
+        [
+          "video",
+          116,
+          6519,
+          607
+        ],
+        [
+          "video",
+          4275,
+          6311,
+          6126
+        ],
+        [
+          "living",
+          2217,
+          206,
+          1344
+        ],
+        [
+          "video",
+          2476,
+          3133,
+          2319
+        ],
+        [
+          "video",
+          4032,
+          5238,
+          1148
+        ],
+        [
+          "living",
+          7714,
+          7959,
+          6278
+        ],
+        [
+          "video",
+          532,
+          6519,
+          4635
+        ],
+        [
+          "living",
+          3367,
+          7342,
+          5452
+        ]
+      ],
+      "all_parsed_sids": [
+        [
+          [
+            "video",
+            116,
+            6519,
+            607
+          ]
+        ],
+        [
+          [
+            "video",
+            4275,
+            6311,
+            6126
+          ]
+        ],
+        [
+          [
+            "living",
+            2217,
+            206,
+            1344
+          ]
+        ],
+        [
+          [
+            "video",
+            2476,
+            3133,
+            2319
+          ]
+        ],
+        [
+          [
+            "video",
+            4032,
+            5238,
+            1148
+          ]
+        ],
+        [
+          [
+            "living",
+            7714,
+            7959,
+            6278
+          ]
+        ],
+        [
+          [
+            "video",
+            532,
+            6519,
+            4635
+          ]
+        ],
+        [
+          [
+            "living",
+            3367,
+            7342,
+            5452
+          ]
+        ]
+      ],
+      "sid_action_spans": [
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          8,
+          12
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          8,
+          12
+        ]
+      ],
+      "sid_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sid_action_token_counts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "multi_sid_outputs": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parser_statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "sample_candidate_count": 8,
+      "parsed_sid_spans_are_full_sid4": true,
+      "fixed_domain_prefix": false,
+      "natural_language_bridge": false,
+      "sample_calls": 1,
+      "cot_gradient": {
+        "loss": 0.1740534007549286,
+        "action_logp_shape": [
+          1,
+          605
+        ],
+        "expected_action_logp_shape": [
+          1,
+          605
+        ],
+        "action_logp_grad_abs_sum": 0.17424583435058594,
+        "cot_loss": 0.1740534007549286,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 605,
+        "cot_action_logp_grad_norm": 4.2811479568481445,
+        "lora_grad_norm": 0.3594982672011967,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 4.470348358154297e-08,
+        "action_logp_shape": [
+          8,
+          14
+        ],
+        "expected_action_logp_shape": [
+          8,
+          14
+        ],
+        "action_logp_grad_abs_sum": 0.966796875,
+        "sid_loss": 4.470348358154297e-08,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 32,
+        "sid_action_logp_grad_norm": 5.652184009552002,
+        "lora_grad_norm": 8.108401431094814,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 8.118884970760483,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true,
+      "real_signal_observed": true
+    },
+    {
+      "rank": 2,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": -2.0,
+      "cot_advantage": -1.2183738946914673,
+      "sid_rewards": [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sample_candidate_ids": [
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          152231,
+          166095,
+          174438
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          158802,
+          161599,
+          174443
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          153827,
+          162826,
+          173616
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          157809,
+          166671,
+          174009
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          155418,
+          163333,
+          168112
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          159420,
+          163308,
+          173458
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          152231,
+          166095,
+          172040
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          99729,
+          9370,
+          87140,
+          18830,
+          25,
+          220,
+          176245,
+          156964,
+          166338,
+          168196
+        ]
+      ],
+      "sample_candidate_tokens": [
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_562>",
+          "<s_b_6234>",
+          "<s_c_6385>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_7133>",
+          "<s_b_1738>",
+          "<s_c_6390>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_2158>",
+          "<s_b_2965>",
+          "<s_c_5563>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_6140>",
+          "<s_b_6810>",
+          "<s_c_5956>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_3749>",
+          "<s_b_3472>",
+          "<s_c_59>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_7751>",
+          "<s_b_3447>",
+          "<s_c_5405>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_562>",
+          "<s_b_6234>",
+          "<s_c_3987>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "åĸľæ¬¢",
+          "çļĦ",
+          "è§Ĩé¢ĳ",
+          "æľī",
+          ":",
+          "Ġ",
+          "<|video_begin|>",
+          "<s_a_5295>",
+          "<s_b_6477>",
+          "<s_c_143>"
+        ]
+      ],
+      "sample_candidate_texts": [
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_562><s_b_6234><s_c_6385>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_7133><s_b_1738><s_c_6390>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_2158><s_b_2965><s_c_5563>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_6140><s_b_6810><s_c_5956>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_3749><s_b_3472><s_c_59>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_7751><s_b_3447><s_c_5405>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_562><s_b_6234><s_c_3987>",
+        "\n该用户最近喜欢的视频有: <|video_begin|><s_a_5295><s_b_6477><s_c_143>"
+      ],
+      "sample_sids": [
+        [
+          "video",
+          562,
+          6234,
+          6385
+        ],
+        [
+          "video",
+          7133,
+          1738,
+          6390
+        ],
+        [
+          "video",
+          2158,
+          2965,
+          5563
+        ],
+        [
+          "video",
+          6140,
+          6810,
+          5956
+        ],
+        [
+          "video",
+          3749,
+          3472,
+          59
+        ],
+        [
+          "video",
+          7751,
+          3447,
+          5405
+        ],
+        [
+          "video",
+          562,
+          6234,
+          3987
+        ],
+        [
+          "video",
+          5295,
+          6477,
+          143
+        ]
+      ],
+      "all_parsed_sids": [
+        [
+          [
+            "video",
+            562,
+            6234,
+            6385
+          ]
+        ],
+        [
+          [
+            "video",
+            7133,
+            1738,
+            6390
+          ]
+        ],
+        [
+          [
+            "video",
+            2158,
+            2965,
+            5563
+          ]
+        ],
+        [
+          [
+            "video",
+            6140,
+            6810,
+            5956
+          ]
+        ],
+        [
+          [
+            "video",
+            3749,
+            3472,
+            59
+          ]
+        ],
+        [
+          [
+            "video",
+            7751,
+            3447,
+            5405
+          ]
+        ],
+        [
+          [
+            "video",
+            562,
+            6234,
+            3987
+          ]
+        ],
+        [
+          [
+            "video",
+            5295,
+            6477,
+            143
+          ]
+        ]
+      ],
+      "sid_action_spans": [
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          10,
+          14
+        ]
+      ],
+      "sid_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sid_action_token_counts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "multi_sid_outputs": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parser_statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "sample_candidate_count": 8,
+      "parsed_sid_spans_are_full_sid4": true,
+      "fixed_domain_prefix": false,
+      "natural_language_bridge": false,
+      "sample_calls": 1,
+      "cot_gradient": {
+        "loss": 1.2183738946914673,
+        "action_logp_shape": [
+          1,
+          768
+        ],
+        "expected_action_logp_shape": [
+          1,
+          768
+        ],
+        "action_logp_grad_abs_sum": 1.21875,
+        "cot_loss": 1.2183738946914673,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 768,
+        "cot_action_logp_grad_norm": 33.76456832885742,
+        "lora_grad_norm": 2.186366169166336,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          14
+        ],
+        "expected_action_logp_shape": [
+          8,
+          14
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 32,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 2.186503462328761,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true,
+      "real_signal_observed": true
+    },
+    {
+      "rank": 3,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": 0.0,
+      "cot_advantage": 1.5664807558059692,
+      "sid_rewards": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sample_candidate_ids": [
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          156041,
+          166095,
+          174729
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          153327,
+          167910,
+          170456
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          155036,
+          160312,
+          172963
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          153327,
+          160312,
+          174855
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          153719,
+          164962,
+          171079
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          153327,
+          167203,
+          171558
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          5122,
+          176249,
+          152133,
+          162867,
+          172565
+        ],
+        [
+          198,
+          75882,
+          20002,
+          104044,
+          104181,
+          75437,
+          100541,
+          34187,
+          107206,
+          25,
+          220,
+          176249,
+          153327,
+          165748,
+          168928
+        ]
+      ],
+      "sample_candidate_tokens": [
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_4372>",
+          "<s_b_6234>",
+          "<s_c_6676>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_1658>",
+          "<s_b_8049>",
+          "<s_c_2403>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_3367>",
+          "<s_b_451>",
+          "<s_c_4910>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_1658>",
+          "<s_b_451>",
+          "<s_c_6802>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_2050>",
+          "<s_b_5101>",
+          "<s_c_3026>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_1658>",
+          "<s_b_7342>",
+          "<s_c_3505>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          "ï¼ļ",
+          "<|living_begin|>",
+          "<s_a_464>",
+          "<s_b_3006>",
+          "<s_c_4512>"
+        ],
+        [
+          "Ċ",
+          "è¯¥",
+          "çĶ¨æĪ·",
+          "æľĢè¿ĳ",
+          "é¦ĸæ¬¡",
+          "æīĵ",
+          "èµı",
+          "äºĨ",
+          "ä¸»æĴŃ",
+          ":",
+          "Ġ",
+          "<|living_begin|>",
+          "<s_a_1658>",
+          "<s_b_5887>",
+          "<s_c_875>"
+        ]
+      ],
+      "sample_candidate_texts": [
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_4372><s_b_6234><s_c_6676>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_1658><s_b_8049><s_c_2403>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_3367><s_b_451><s_c_4910>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_1658><s_b_451><s_c_6802>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_2050><s_b_5101><s_c_3026>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_1658><s_b_7342><s_c_3505>",
+        "\n该用户最近首次打赏了主播：<|living_begin|><s_a_464><s_b_3006><s_c_4512>",
+        "\n该用户最近首次打赏了主播: <|living_begin|><s_a_1658><s_b_5887><s_c_875>"
+      ],
+      "sample_sids": [
+        [
+          "living",
+          4372,
+          6234,
+          6676
+        ],
+        [
+          "living",
+          1658,
+          8049,
+          2403
+        ],
+        [
+          "living",
+          3367,
+          451,
+          4910
+        ],
+        [
+          "living",
+          1658,
+          451,
+          6802
+        ],
+        [
+          "living",
+          2050,
+          5101,
+          3026
+        ],
+        [
+          "living",
+          1658,
+          7342,
+          3505
+        ],
+        [
+          "living",
+          464,
+          3006,
+          4512
+        ],
+        [
+          "living",
+          1658,
+          5887,
+          875
+        ]
+      ],
+      "all_parsed_sids": [
+        [
+          [
+            "living",
+            4372,
+            6234,
+            6676
+          ]
+        ],
+        [
+          [
+            "living",
+            1658,
+            8049,
+            2403
+          ]
+        ],
+        [
+          [
+            "living",
+            3367,
+            451,
+            4910
+          ]
+        ],
+        [
+          [
+            "living",
+            1658,
+            451,
+            6802
+          ]
+        ],
+        [
+          [
+            "living",
+            2050,
+            5101,
+            3026
+          ]
+        ],
+        [
+          [
+            "living",
+            1658,
+            7342,
+            3505
+          ]
+        ],
+        [
+          [
+            "living",
+            464,
+            3006,
+            4512
+          ]
+        ],
+        [
+          [
+            "living",
+            1658,
+            5887,
+            875
+          ]
+        ]
+      ],
+      "sid_action_spans": [
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          11,
+          15
+        ],
+        [
+          10,
+          14
+        ],
+        [
+          11,
+          15
+        ]
+      ],
+      "sid_counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sid_action_token_counts": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "multi_sid_outputs": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parser_statuses": [
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok",
+        "ok"
+      ],
+      "sample_candidate_count": 8,
+      "parsed_sid_spans_are_full_sid4": true,
+      "fixed_domain_prefix": false,
+      "natural_language_bridge": false,
+      "sample_calls": 1,
+      "cot_gradient": {
+        "loss": -1.5664807558059692,
+        "action_logp_shape": [
+          1,
+          176
+        ],
+        "expected_action_logp_shape": [
+          1,
+          176
+        ],
+        "action_logp_grad_abs_sum": 1.568359375,
+        "cot_loss": -1.5664807558059692,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 176,
+        "cot_action_logp_grad_norm": 20.781715393066406,
+        "lora_grad_norm": 7.225774639645718,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          15
+        ],
+        "expected_action_logp_shape": [
+          8,
+          15
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 32,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 7.22491606153751,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true,
+      "real_signal_observed": true
+    }
+  ],
+  "world_size": 4,
+  "nccl": {
+    "nccl_socket_ifname": "lo",
+    "world_size": 4,
+    "local_rank": 0,
+    "device": "cuda:0",
+    "initialized_here": true,
+    "local_rank_device_mapping": [
+      {
+        "local_rank": 0,
+        "device": "cuda:0"
+      },
+      {
+        "local_rank": 1,
+        "device": "cuda:1"
+      },
+      {
+        "local_rank": 2,
+        "device": "cuda:2"
+      },
+      {
+        "local_rank": 3,
+        "device": "cuda:3"
+      }
+    ]
+  },
+  "baseline_runner_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "grpo_model_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "grpo_trl_trainer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "monitor_writer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "expected_baseline_runner_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "expected_grpo_model_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "expected_grpo_trl_trainer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "expected_monitor_writer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "baseline_trainer_identity": true,
+  "runtime_import_provenance": "PASS",
+  "optimizer_steps": 0,
+  "scheduler_steps": 0,
+  "parameter_update": false,
+  "checkpoint_saved": false,
+  "training_started": false,
+  "formal_training_started": false
+}
