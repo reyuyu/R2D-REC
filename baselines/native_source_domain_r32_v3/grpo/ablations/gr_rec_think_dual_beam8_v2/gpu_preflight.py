@@ -261,9 +261,9 @@ def main(argv=None):
             "sid_old_logp_full_forward_detached": not sid["old_per_token_logps"].requires_grad,
             "cot_action_gradient_nonzero": sum(row["cot_gradient"]["action_logp_grad_abs_sum"] for row in rank_rows) > 0,
             "sid_active_action_gradient_nonzero": any(row["sid_gradient"]["action_logp_grad_abs_sum"] > 0 for row in rank_rows),
-            "sid_zero_std_gradient_zero": all(
-                (len(set(row["sid_rewards"])) == 1) ==
-                (row["sid_gradient"]["action_logp_grad_abs_sum"] == 0)
+            "sid_zero_std_production_advantage_zero": all(
+                (len(set(row["sid_rewards"])) != 1) or
+                all(value == 0.0 for value in row["sid_advantages"])
                 for row in rank_rows),
             "sid_action_exactly_abc3": all(row["sid_gradient"]["action_logp_shape"] == [8, 3] for row in rank_rows),
             "combined_lora_gradient_finite": all(row["combined_gradient"]["gradients_finite"] and

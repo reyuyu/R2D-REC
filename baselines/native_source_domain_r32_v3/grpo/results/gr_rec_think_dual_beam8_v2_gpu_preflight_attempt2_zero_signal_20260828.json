@@ -1,0 +1,538 @@
+{
+  "experiment": "GR_REC_ThinkDualBeam8_v2",
+  "preflight_pass": false,
+  "failure_reasons": [
+    "cot_action_gradient_nonzero",
+    "sid_active_action_gradient_nonzero",
+    "combined_lora_gradient_finite"
+  ],
+  "gpu_validation_launch_commit": "f810680105f5bee55e10d63bef53c754fcb2224c",
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+  "parent_validation": {
+    "path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+    "adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+    "recorded_external_score": 1.351
+  },
+  "probe4_ids": [
+    "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+    "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8"
+  ],
+  "train_probe_overlap": [],
+  "preflight_group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+  "cot_rewards": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "cot_advantages": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "sid_rewards_4x8": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "sid_advantages_4x8": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "old_logp": {
+    "cot": "unchanged rollout policy no-grad full-forward rescore",
+    "sid": "unchanged rollout policy no-grad full-forward ABC3 rescore",
+    "generate_scores_used": false
+  },
+  "checks": {
+    "world_size_4": true,
+    "same_business_group": true,
+    "one_cot_per_rank": true,
+    "beam8_once_per_rank": true,
+    "exact_4x8_abc3": true,
+    "four_independent_g8_not_g32": true,
+    "iteration2_exact_cache_reuse": true,
+    "cot_old_logp_full_forward_detached": true,
+    "sid_old_logp_full_forward_detached": true,
+    "cot_action_gradient_nonzero": false,
+    "sid_active_action_gradient_nonzero": false,
+    "sid_zero_std_gradient_zero": true,
+    "sid_action_exactly_abc3": true,
+    "combined_lora_gradient_finite": false,
+    "base_no_gradient": true,
+    "base_frozen": true,
+    "parameter_checksum_unchanged": true,
+    "base_version_unchanged": true,
+    "exact_probe4": true,
+    "probe_train_zero_overlap": true,
+    "probe_step0_beam32_completed": true,
+    "probe_rng_restored": true,
+    "probe_parameter_unchanged": true,
+    "runtime_import_provenance": true
+  },
+  "rank_rows": [
+    {
+      "rank": 0,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": 0.0,
+      "cot_advantage": 0.0,
+      "sid_rewards": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "beam_candidate_count": 8,
+      "abc3": true,
+      "beam_calls": 1,
+      "cot_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          1,
+          589
+        ],
+        "expected_action_logp_shape": [
+          1,
+          589
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "cot_loss": 0.0,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 589,
+        "cot_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          3
+        ],
+        "expected_action_logp_shape": [
+          8,
+          3
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 24,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true
+    },
+    {
+      "rank": 1,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": 0.0,
+      "cot_advantage": 0.0,
+      "sid_rewards": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "beam_candidate_count": 8,
+      "abc3": true,
+      "beam_calls": 1,
+      "cot_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          1,
+          605
+        ],
+        "expected_action_logp_shape": [
+          1,
+          605
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "cot_loss": 0.0,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 605,
+        "cot_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          3
+        ],
+        "expected_action_logp_shape": [
+          8,
+          3
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 24,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true
+    },
+    {
+      "rank": 2,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": 0.0,
+      "cot_advantage": 0.0,
+      "sid_rewards": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "beam_candidate_count": 8,
+      "abc3": true,
+      "beam_calls": 1,
+      "cot_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          1,
+          768
+        ],
+        "expected_action_logp_shape": [
+          1,
+          768
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "cot_loss": 0.0,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 768,
+        "cot_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          3
+        ],
+        "expected_action_logp_shape": [
+          8,
+          3
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 24,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true
+    },
+    {
+      "rank": 3,
+      "group_id": "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84",
+      "cot_reward": 0.0,
+      "cot_advantage": 0.0,
+      "sid_rewards": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sid_advantages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "beam_candidate_count": 8,
+      "abc3": true,
+      "beam_calls": 1,
+      "cot_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          1,
+          176
+        ],
+        "expected_action_logp_shape": [
+          1,
+          176
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "cot_loss": 0.0,
+        "cot_ratio_mean": 1.0,
+        "cot_clip_fraction": 0.0,
+        "cot_approx_kl": 0.0,
+        "cot_action_tokens": 176,
+        "cot_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "sid_gradient": {
+        "loss": 0.0,
+        "action_logp_shape": [
+          8,
+          3
+        ],
+        "expected_action_logp_shape": [
+          8,
+          3
+        ],
+        "action_logp_grad_abs_sum": 0.0,
+        "sid_loss": 0.0,
+        "sid_ratio_mean": 1.0,
+        "sid_clip_fraction": 0.0,
+        "sid_approx_kl": 0.0,
+        "sid_action_tokens": 24,
+        "sid_action_logp_grad_norm": 0.0,
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "combined_gradient": {
+        "lora_grad_norm": 0.0,
+        "lora_grad_tensor_count": 504,
+        "base_grad_tensor_count": 0,
+        "gradients_finite": true
+      },
+      "checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "probe_rng_restored": true,
+      "probe_parameter_unchanged": true
+    }
+  ],
+  "world_size": 4,
+  "nccl": {
+    "nccl_socket_ifname": "lo",
+    "world_size": 4,
+    "local_rank": 0,
+    "device": "cuda:0",
+    "initialized_here": true,
+    "local_rank_device_mapping": [
+      {
+        "local_rank": 0,
+        "device": "cuda:0"
+      },
+      {
+        "local_rank": 1,
+        "device": "cuda:1"
+      },
+      {
+        "local_rank": 2,
+        "device": "cuda:2"
+      },
+      {
+        "local_rank": 3,
+        "device": "cuda:3"
+      }
+    ]
+  },
+  "baseline_runner_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "grpo_model_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "grpo_trl_trainer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "monitor_writer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "expected_baseline_runner_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "expected_grpo_model_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "expected_grpo_trl_trainer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "expected_monitor_writer_module_path": "/data/GRPO-think-dual-beam8-v2/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "baseline_trainer_identity": true,
+  "runtime_import_provenance": "PASS",
+  "optimizer_steps": 0,
+  "scheduler_steps": 0,
+  "parameter_update": false,
+  "checkpoint_saved": false,
+  "training_started": false,
+  "formal_training_started": false
+}

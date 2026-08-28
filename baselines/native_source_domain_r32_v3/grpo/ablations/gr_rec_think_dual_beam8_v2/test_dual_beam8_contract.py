@@ -208,6 +208,7 @@ def test_diagnostic_advantage_never_enters_production_trainer():
     preflight_source = Path(__file__).with_name("gpu_preflight.py").read_text()
     assert "diagnostic_advantages" not in trainer_source
     assert "production_reward_or_advantage_changed" in preflight_source
+    assert "sid_zero_std_production_advantage_zero" in preflight_source
 
 
 def test_domain_prefix_is_context_not_sid_action():
