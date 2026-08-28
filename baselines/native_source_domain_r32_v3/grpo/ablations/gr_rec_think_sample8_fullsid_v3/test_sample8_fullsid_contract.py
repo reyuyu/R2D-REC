@@ -6,9 +6,9 @@ import torch
 
 from . import run_sample8_fullsid_train as runner
 from .sample8_fullsid_trainer import (
-    COT_G, SID_G, FinalStepSaveCallback, ThinkG4SingleGroupSampler,
+    COT_G, SID_G, SAMPLE_MAX_NEW_TOKENS, FinalStepSaveCallback, ThinkG4SingleGroupSampler,
     assert_one_global_group, audit_sample8_sampler, independent_sid_advantages,
-    cot_reward_from_sid_rewards, parse_full_sid_ids, population_advantages,
+    cot_reward_from_sid_rewards, parse_full_sid_ids, scan_full_sid_ids, population_advantages,
     rollout_fingerprint,
 )
 
@@ -145,7 +145,7 @@ def test_runtime_import_provenance_stale_path_fails():
 def test_training_sample8_probe_beam32_separation():
     source = Path(__file__).with_name("run_sample8_fullsid_train.py").read_text()
     assert '"do_sample": True' in source
-    assert '"max_new_tokens": 4' in source
+    assert '"max_new_tokens": SAMPLE_MAX_NEW_TOKENS' in source
     assert "production-shaped Probe4/Beam32" in source
 
 
@@ -191,7 +191,8 @@ def test_sid_old_logp_is_full_forward_not_generate_scores():
 def test_action_boundaries_are_explicit():
     source = Path(__file__).with_name("sample8_fullsid_trainer.py").read_text()
     assert 'inputs["completion_mask"]' in source
-    assert "(SID_G, FULL_SID_TOKENS)" in source
+    assert '"action_mask": action_mask' in source
+    assert 'sid["action_mask"]' in source
 
 
 def test_preflight_module_cold_import():
@@ -228,7 +229,7 @@ def test_sample8_contract_is_exact():
     for contract in (
         "do_sample=True", "temperature=1.0", "top_p=1.0", "top_k=0",
         "repetition_penalty=1.0", "num_return_sequences=SID_G",
-        "min_new_tokens=FULL_SID_TOKENS", "max_new_tokens=FULL_SID_TOKENS",
+        "min_new_tokens=FULL_SID_TOKENS", "max_new_tokens=SAMPLE_MAX_NEW_TOKENS",
     ):
         assert contract in source
 
@@ -240,11 +241,12 @@ def test_cot_reward_is_plain_sum_of_its_eight_sid_rewards():
         cot_reward_from_sid_rewards(rewards[:-1])
 
 
-def test_strict_full_sid_raw_id_parser():
+def test_first_complete_sid_is_found_after_natural_language_prefix():
     class Tokenizer:
         TOKENS = {
             1: "<|video_begin|>", 2: "<s_a_12>", 3: "<s_b_34>",
-            4: "<s_c_56>", 5: "not-a-domain",
+            4: "<s_c_56>", 5: "not-a-domain", 6: "<|prod_begin|>",
+            7: "<s_a_7>", 8: "<s_b_8>", 9: "<s_c_9>",
         }
 
         def convert_ids_to_tokens(self, ids, skip_special_tokens=False):
@@ -253,8 +255,35 @@ def test_strict_full_sid_raw_id_parser():
 
     tokenizer = Tokenizer()
     assert parse_full_sid_ids(tokenizer, [1, 2, 3, 4]) == ("video", 12, 34, 56)
-    assert parse_full_sid_ids(tokenizer, [5, 2, 3, 4]) is None
+    assert parse_full_sid_ids(tokenizer, [5, 5, 1, 2, 3, 4]) == ("video", 12, 34, 56)
     assert parse_full_sid_ids(tokenizer, [1, 2, 3]) is None
+
+
+def test_multiple_sids_select_first_and_are_flagged():
+    class Tokenizer:
+        TOKENS = {
+            0: "prefix", 1: "<|video_begin|>", 2: "<s_a_12>",
+            3: "<s_b_34>", 4: "<s_c_56>", 5: "middle",
+            6: "<|prod_begin|>", 7: "<s_a_7>", 8: "<s_b_8>", 9: "<s_c_9>",
+        }
+
+        def convert_ids_to_tokens(self, ids, skip_special_tokens=False):
+            del skip_special_tokens
+            return [self.TOKENS[value] for value in ids]
+
+    parsed = scan_full_sid_ids(Tokenizer(), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    assert parsed["parsed_sid"] == ("video", 12, 34, 56)
+    assert parsed["all_parsed_sids"] == [
+        ("video", 12, 34, 56), ("prod", 7, 8, 9),
+    ]
+    assert parsed["first_sid_span"] == (1, 5)
+    assert parsed["sid_count"] == 2
+    assert parsed["multi_sid_output"] is True
+    assert parsed["parser_status"] == "multiple_sids"
+
+
+def test_long_continuation_budget_allows_sid_after_prefix():
+    assert SAMPLE_MAX_NEW_TOKENS == 128
 
 
 def test_q_reward_six_levels_remain_available():

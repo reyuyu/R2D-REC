@@ -23,7 +23,7 @@ from .run_sample8_fullsid_train import (
 from grpo_probe import FixedProbeEvaluator
 from monitor.writer import MonitorWriter
 from .sample8_fullsid_trainer import (
-    COT_G, SID_G, Sample8FullSIDRuntime, ThinkSample8FullSIDTrainer,
+    COT_G, SID_G, FULL_SID_TOKENS, Sample8FullSIDRuntime, ThinkSample8FullSIDTrainer,
     independent_sid_advantages, make_sample8_fullsid_reward_func, population_advantages,
 )
 from ablations.gr_rec_think_composite_interest_v1.single_node_nccl import (
@@ -98,13 +98,13 @@ def branch_backward(trainer, model, prepared, branch, diagnostic_advantages=None
             expected_shape = tuple(prepared["completion_mask"].shape)
         else:
             sid = trainer._sid_rollout
-            action = torch.ones((SID_G, 4), dtype=torch.long, device=sid["input_ids"].device)
+            action = sid["action_mask"]
             loss, stats = trainer._branch_loss(
                 model, sid["input_ids"], sid["attention_mask"], action,
                 sid["old_per_token_logps"],
                 (sid["advantages"] if diagnostic_advantages is None else diagnostic_advantages),
                 "sid")
-            expected_shape = (SID_G, 4)
+            expected_shape = tuple(action.shape)
         trainer.accelerator.backward(loss)
         logp_grad = captured["logps"].grad.detach().float()
         result = {"loss": float(loss.detach()), "action_logp_shape": list(logp_grad.shape),
@@ -199,7 +199,7 @@ def main(argv=None):
     cot_loss, _ = trainer._branch_loss(model, ids, mask, prepared["completion_mask"],
                                        prepared["old_per_token_logps"], production_cot_local, "cot")
     sid = trainer._sid_rollout
-    sid_action = torch.ones((SID_G, 4), dtype=torch.long, device=sid["input_ids"].device)
+    sid_action = sid["action_mask"]
     sid_loss, _ = trainer._branch_loss(model, sid["input_ids"], sid["attention_mask"], sid_action,
                                        sid["old_per_token_logps"], production_sid, "sid")
     trainer.accelerator.backward(cot_loss + sid_loss)
@@ -241,8 +241,17 @@ def main(argv=None):
             for row in records[rank]["sample_candidate_ids"]
         ],
         "sample_sids": records[rank]["sample_sids"],
+        "all_parsed_sids": records[rank]["all_parsed_sids"],
+        "sid_action_spans": records[rank]["sid_action_spans"],
+        "sid_counts": records[rank]["sid_counts"],
+        "sid_action_token_counts": [int(value) for value in sid["action_mask"].sum(1).tolist()],
+        "multi_sid_outputs": records[rank]["multi_sid_outputs"],
+        "parser_statuses": records[rank]["parser_statuses"],
         "sample_candidate_count": len(records[rank]["sample_candidate_ids"]),
-        "full_sid4": all(len(row) == 4 for row in records[rank]["sample_candidate_ids"]),
+        "parsed_sid_spans_are_full_sid4": all(
+            span is None or span[1] - span[0] == FULL_SID_TOKENS
+            for span in records[rank]["sid_action_spans"]
+        ),
         "fixed_domain_prefix": records[rank]["fixed_domain_prefix"],
         "natural_language_bridge": records[rank]["natural_language_bridge"],
         "sample_calls": runtime.sample_calls, "cot_gradient": cot_grad,
@@ -261,8 +270,9 @@ def main(argv=None):
             "same_business_group": len({row["group_id"] for row in rank_rows}) == 1,
             "one_cot_per_rank": len(rank_rows) == COT_G,
             "sample8_once_per_rank": all(row["sample_calls"] == 1 for row in rank_rows),
-            "exact_4x8_full_sid4": all(
-                row["sample_candidate_count"] == 8 and row["full_sid4"]
+            "exact_4x8_continuations_first_full_sid_parser": all(
+                row["sample_candidate_count"] == 8 and
+                row["parsed_sid_spans_are_full_sid4"]
                 for row in rank_rows),
             "no_fixed_domain_prefix": all(not row["fixed_domain_prefix"] for row in rank_rows),
             "no_natural_language_bridge": all(
@@ -281,8 +291,10 @@ def main(argv=None):
                 (len(set(row["sid_rewards"])) != 1) or
                 all(value == 0.0 for value in row["sid_advantages"])
                 for row in rank_rows),
-            "sid_action_exactly_full_sid4": all(
-                row["sid_gradient"]["action_logp_shape"] == [8, 4]
+            "sid_action_only_first_complete_sid4": all(
+                all(count in (0, FULL_SID_TOKENS) for count in row["sid_action_token_counts"])
+                and row["sid_gradient"]["sid_action_tokens"] ==
+                    FULL_SID_TOKENS * sum(count > 0 for count in row["sid_counts"])
                 for row in rank_rows),
             "real_sample8_reward_variance": real_signal_observed,
             "combined_lora_gradient_finite": all(row["combined_gradient"]["gradients_finite"] and
@@ -311,7 +323,7 @@ def main(argv=None):
             "cot_rewards": cot_rewards, "cot_advantages": cot_advantages,
             "sid_rewards_4x8": sid_rewards, "sid_advantages_4x8": sid_advantages,
             "old_logp": {"cot": "unchanged rollout policy no-grad full-forward rescore",
-                         "sid": "unchanged rollout policy no-grad full-forward FullSID4 rescore",
+                         "sid": "unchanged rollout policy no-grad full-forward continuation rescore; first complete SID4 masked",
                          "generate_scores_used": False},
             "checks": checks, "rank_rows": rank_rows, "world_size": world,
             "nccl": nccl, **provenance,
