@@ -32,6 +32,34 @@ def test_formal_checkpoint_probe_defaults_are_aligned_on_root():
     assert args.save_total_limit == 64
 
 
+def test_trusted_resume_checkpoint_guard(tmp_path):
+    checkpoint = tmp_path / "run" / "checkpoint-250"
+    checkpoint.mkdir(parents=True)
+    required = [
+        "adapter_config.json", "adapter_model.safetensors", "optimizer.pt",
+        "scheduler.pt", "training_args.bin",
+        *(f"rng_state_{rank}.pth" for rank in range(4)),
+    ]
+    for name in required:
+        (checkpoint / name).write_bytes(b"trusted-test-fixture")
+    (checkpoint / "trainer_state.json").write_text('{"global_step": 250}')
+    audit = runner.validate_trusted_resume_checkpoint(checkpoint, output_root=tmp_path)
+    assert audit == {
+        "path": str(checkpoint.resolve()),
+        "step": 250,
+        "trusted_local_checkpoint": True,
+    }
+
+
+def test_trusted_resume_rejects_path_outside_root(tmp_path):
+    root = tmp_path / "root"
+    root.mkdir()
+    outside = tmp_path / "outside" / "checkpoint-250"
+    outside.mkdir(parents=True)
+    with pytest.raises(RuntimeError, match="UNTRUSTED_RESUME_PATH"):
+        runner.validate_trusted_resume_checkpoint(outside, output_root=root)
+
+
 def test_probe4_exact_ids(plan):
     assert tuple(plan["probe_group_ids"]) == runner.FIXED_PROBE4_IDS
 

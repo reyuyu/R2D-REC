@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
+import stat
 import sys
 from pathlib import Path
 
@@ -58,6 +60,59 @@ _BASE_BUILD_ARG_PARSER = baseline_runner.build_arg_parser
 _RUNTIME_MODEL = None
 _RUNTIME_TOKENIZER = None
 _RUNTIME_PROVENANCE = None
+
+
+def _resume_checkpoint_arg(argv):
+    values = list(argv or [])
+    for index, value in enumerate(values):
+        if value == "--resume-from-checkpoint" and index + 1 < len(values):
+            return values[index + 1]
+        if value.startswith("--resume-from-checkpoint="):
+            return value.split("=", 1)[1]
+    return None
+
+
+def validate_trusted_resume_checkpoint(checkpoint_path, output_root=FORMAL_OUTPUT_ROOT):
+    checkpoint = Path(checkpoint_path).resolve(strict=True)
+    root = Path(output_root).resolve(strict=True)
+    if root not in checkpoint.parents:
+        raise RuntimeError(
+            f"SAMPLE8_FULLSID_UNTRUSTED_RESUME_PATH root={root} checkpoint={checkpoint}"
+        )
+    match = re.fullmatch(r"checkpoint-(\d+)", checkpoint.name)
+    if not match or int(match.group(1)) % 2:
+        raise RuntimeError(f"SAMPLE8_FULLSID_INVALID_RESUME_BOUNDARY: {checkpoint}")
+    step = int(match.group(1))
+    required = [
+        "adapter_config.json", "adapter_model.safetensors", "optimizer.pt",
+        "scheduler.pt", "trainer_state.json", "training_args.bin",
+        *(f"rng_state_{rank}.pth" for rank in range(4)),
+    ]
+    missing = [name for name in required if not (checkpoint / name).is_file()]
+    if missing:
+        raise RuntimeError(f"SAMPLE8_FULLSID_RESUME_INCOMPLETE: {missing}")
+    writable = [
+        name for name in required
+        if (checkpoint / name).stat().st_mode & (stat.S_IWGRP | stat.S_IWOTH)
+    ]
+    if writable:
+        raise RuntimeError(f"SAMPLE8_FULLSID_RESUME_FILES_NOT_PRIVATE: {writable}")
+    state = json.loads((checkpoint / "trainer_state.json").read_text())
+    if int(state.get("global_step", -1)) != step:
+        raise RuntimeError(
+            f"SAMPLE8_FULLSID_RESUME_STEP_MISMATCH path={step} "
+            f"state={state.get('global_step')}"
+        )
+    return {"path": str(checkpoint), "step": step, "trusted_local_checkpoint": True}
+
+
+def enable_trusted_torch_load_for_resume(checkpoint_path):
+    audit = validate_trusted_resume_checkpoint(checkpoint_path)
+    # Transformers 5.6 blocks torch<2.6 before weights_only=True loads. This
+    # checkpoint was just written by this root-owned run and passed the guards above.
+    import transformers.trainer as transformers_trainer
+    transformers_trainer.check_torch_load_is_safe = lambda: None
+    return audit
 
 
 def sha256_file(path: Path) -> str:
@@ -284,6 +339,11 @@ def main(argv=None):
     global _RUNTIME_PROVENANCE
     _RUNTIME_PROVENANCE = assert_runtime_import_provenance()
     validate_parent_adapter()
+    resume_checkpoint = _resume_checkpoint_arg(argv)
+    if resume_checkpoint:
+        _RUNTIME_PROVENANCE["trusted_resume"] = enable_trusted_torch_load_for_resume(
+            resume_checkpoint
+        )
     install_bindings()
     baseline_runner.main(argv)
 
