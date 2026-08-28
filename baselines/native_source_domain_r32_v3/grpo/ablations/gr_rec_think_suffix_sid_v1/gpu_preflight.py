@@ -131,13 +131,13 @@ def main(argv=None):
 
     plan_args = baseline_runner.build_arg_parser().parse_args([
         "--run-id", args.run_id,
-        "--n-groups", "1",
+        "--n-groups", "all",
         "--probe-groups", "0",
         "--save-steps", "250",
         "--save-total-limit", "1",
     ])
     plan = prepare_think_suffix_run_plan(plan_args)
-    dataset = plan["dataset"]
+    dataset = plan["dataset"].select([0])
 
     from grpo_model import ADAPTER, BASE, load_model
 
