@@ -38,7 +38,23 @@ from .think_suffix_sid_trainer import (
 
 
 _BASE_PREPARE_RUN_PLAN = baseline_runner.prepare_run_plan
+_BASE_LOAD_MODEL = baseline_runner.load_model
 _RUNTIME_IMPORT_PROVENANCE = None
+_RUNTIME_TOKENIZER = None
+
+
+def load_model_and_capture_tokenizer(*args, **kwargs):
+    global _RUNTIME_TOKENIZER
+    result = _BASE_LOAD_MODEL(*args, **kwargs)
+    _RUNTIME_TOKENIZER = result[1]
+    return result
+
+
+def make_runtime_suffix_reward_func(beam32_fn=None):
+    del beam32_fn
+    if _RUNTIME_TOKENIZER is None:
+        raise RuntimeError("THINK_SUFFIX_TOKENIZER_NOT_CAPTURED")
+    return make_think_suffix_reward_func(_RUNTIME_TOKENIZER)
 
 
 def sha256_file(path: Path) -> str:
@@ -194,8 +210,9 @@ def suffix_monitor_from_env(run_id, rank):
 
 def install_experiment_bindings():
     baseline_runner.prepare_run_plan = prepare_think_suffix_run_plan
+    baseline_runner.load_model = load_model_and_capture_tokenizer
     baseline_runner.RecGRPOTrainer = ThinkSuffixSIDTrainer
-    baseline_runner.make_think_reward_func = make_think_suffix_reward_func
+    baseline_runner.make_think_reward_func = make_runtime_suffix_reward_func
     baseline_runner.make_grpo_config = make_suffix_grpo_config
     baseline_runner.monitor_from_env = suffix_monitor_from_env
 

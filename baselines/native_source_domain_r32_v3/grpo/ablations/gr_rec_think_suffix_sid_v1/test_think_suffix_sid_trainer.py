@@ -8,8 +8,11 @@ from .run_think_suffix_sid_train import (
     PARENT_ADAPTER_SHA256,
     RUN_ID_PREFIX,
     build_think_only_dataset,
+    install_experiment_bindings,
+    make_runtime_suffix_reward_func,
     suffix_config_kwargs,
 )
+from . import run_think_suffix_sid_train as suffix_runner
 from .think_suffix_sid_trainer import (
     ThinkG8SingleGroupSampler,
     ThinkSuffixSIDTrainer,
@@ -106,6 +109,23 @@ class TrainerContractTests(unittest.TestCase):
 
         source = Path(run_grpo_trl_train.__file__).read_text(encoding="utf-8")
         self.assertNotIn('sys.path.insert(0, "/data/GRPO/scripts")', source)
+
+    def test_formal_reward_factory_receives_captured_tokenizer(self):
+        class FakeTokenizer:
+            pass
+
+        previous = suffix_runner._RUNTIME_TOKENIZER
+        try:
+            suffix_runner._RUNTIME_TOKENIZER = FakeTokenizer()
+            reward = make_runtime_suffix_reward_func(beam32_fn=object())
+            self.assertEqual(reward.__name__, "think_suffix_sid_reward")
+            source = inspect.getsource(install_experiment_bindings)
+            self.assertIn(
+                "baseline_runner.make_think_reward_func = make_runtime_suffix_reward_func",
+                source,
+            )
+        finally:
+            suffix_runner._RUNTIME_TOKENIZER = previous
 
     def test_parent_is_immutable_step1500(self):
         self.assertTrue(str(PARENT_ADAPTER).endswith("checkpoint-1500"))
