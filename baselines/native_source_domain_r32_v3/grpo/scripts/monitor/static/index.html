@@ -738,7 +738,7 @@ refresh=async function(force=false){
       add('traces','/api/traces',{full:!state.traces.length});
       if(state.capabilities.dsr)add('dsrTraces','/api/dsr/traces',{full:!state.dsrTraces.length})
     }
-    if(view==='advantages'&&(heavyDue||!state.advantages.groups?.length))add('advantages','/api/advantages',{object:true});
+    if(view==='advantages'&&(state.capabilities.dual_beam8||heavyDue||!state.advantages.groups?.length))add('advantages','/api/advantages',{object:true});
     if(view==='probes'&&(heavyDue||!state.probes.length))add('probes','/api/probes',{full:!state.probes.length});
     if(view==='checkpointEval'){
       if(heavyDue||!state.evalCatalog)add('evalCatalog','/api/checkpoint-eval/catalog',{object:true});
@@ -808,5 +808,6 @@ document.querySelectorAll('.diagnostic-more').forEach(details=>details.addEventL
 <script src="/static/user_dashboard.js?v=20260827-truerec-entry-v2"></script>
 <script src="/static/composite_dashboard.js?v=20260825-composite-live-v5"></script>
 <script src="/static/suffix_sid_dashboard.js?v=20260828-suffix-sid-v1"></script>
+<script src="/static/dual_beam8_dashboard.js?v=20260828-dual-beam8-v2"></script>
 </body>
 </html>

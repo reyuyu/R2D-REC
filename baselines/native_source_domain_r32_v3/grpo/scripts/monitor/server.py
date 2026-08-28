@@ -27,6 +27,11 @@ try:
         is_composite_manifest,
         summary as composite_summary_rows,
     )
+    from .dual_beam8_adapter import (
+        adapt_events as adapt_dual_beam8_events,
+        captured_payload as dual_beam8_payload,
+        is_dual_beam8_manifest,
+    )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from .truerec_dashboard import install_truerec_routes
 except ImportError:  # Direct execution: python monitor/server.py
@@ -36,6 +41,11 @@ except ImportError:  # Direct execution: python monitor/server.py
         captured_payload as composite_payload,
         is_composite_manifest,
         summary as composite_summary_rows,
+    )
+    from dual_beam8_adapter import (
+        adapt_events as adapt_dual_beam8_events,
+        captured_payload as dual_beam8_payload,
+        is_dual_beam8_manifest,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from truerec_dashboard import install_truerec_routes
@@ -128,6 +138,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     runner = str(manifest.get("runner") or "")
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
+    if is_dual_beam8_manifest(manifest):
+        return "dual_beam8_v2"
     if experiment == "GR_REC_ThinkSuffixSID_Resample_v1":
         return "think_suffix_sid_v1"
     if experiment == "GR_REC_NoThinkOnly_Frontier_v1":
@@ -403,6 +415,35 @@ def create_app(
             str(row["sample_id"]): {key: row[key] for key in allowed if key in row}
             for row in read_jsonl(dataset)
             if row.get("sample_id")
+        }
+        source_cache[cache_key] = indexed
+        return indexed
+
+    def dual_beam8_source_rows(selected: Path) -> dict[str, dict[str, Any]]:
+        """Read the exact manifest dataset for the dedicated Dual Beam8 UI."""
+        try:
+            manifest_data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            if not is_dual_beam8_manifest(manifest_data):
+                return {}
+            dataset = Path(manifest_data["dataset_path"]).expanduser().resolve()
+            allowed_root = Path("/data/GRPO/data").resolve()
+            dataset.relative_to(allowed_root)
+            stat = dataset.stat()
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+            return {}
+        if dataset.suffix != ".jsonl":
+            return {}
+        cache_key = (str(dataset), stat.st_mtime_ns, stat.st_size, "dual_beam8")
+        cached = source_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        allowed = ("prompt", "all_gold_sids", "gold_count", "target_domain")
+        indexed = {
+            str(row["recommendation_group_id"]): {
+                key: row[key] for key in allowed if key in row
+            }
+            for row in read_jsonl(dataset)
+            if row.get("recommendation_group_id")
         }
         source_cache[cache_key] = indexed
         return indexed
@@ -889,6 +930,10 @@ def create_app(
         algorithm = normalized_algorithm(manifest_data)
         composite_formula = is_composite_manifest(manifest_data)
         composite = composite_formula or (selected / "composite_interest.jsonl").is_file()
+        dual_beam8 = (
+            is_dual_beam8_manifest(manifest_data)
+            or (selected / "dual_beam8.jsonl").is_file()
+        )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
@@ -906,9 +951,10 @@ def create_app(
             "checkpoints": checkpoint_available,
             "rollouts": (selected / "rollouts.jsonl").is_file(),
             "composite_interest": composite,
+            "dual_beam8": dual_beam8,
             "advantage_formula": advantage_formula,
             "advantage_source": (
-                "captured" if composite_formula
+                "captured" if composite_formula or dual_beam8
                 else "reconstructed" if advantage_formula is not None
                 else None
             ),
@@ -1038,6 +1084,17 @@ def create_app(
         """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
         manifest_data = read_json(selected / "manifest.json", {})
+        if is_dual_beam8_manifest(manifest_data):
+            groups = adapt_dual_beam8_events(
+                read_jsonl(selected / "dual_beam8.jsonl"),
+                source_index=dual_beam8_source_rows(selected),
+                from_step=from_step,
+                to_step=to_step,
+                rollout_id=rollout_id,
+                group_id=group_id,
+                limit=limit,
+            )
+            return dual_beam8_payload(groups)
         if is_composite_manifest(manifest_data):
             groups = adapt_composite_events(
                 read_jsonl(selected / "composite_interest.jsonl"),
@@ -1083,6 +1140,35 @@ def create_app(
                 formula=formula,
             ),
         }
+
+    @app.get("/api/dual-beam8")
+    def dual_beam8(
+        run_id: str | None = None,
+        from_step: int | None = None,
+        to_step: int | None = None,
+        rollout_id: int | None = None,
+        group_id: str | None = None,
+        limit: int = Query(default=40, ge=1, le=200),
+    ):
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if not is_dual_beam8_manifest(manifest_data):
+            return {
+                "read_only": True,
+                "supported": False,
+                "formula": None,
+                "groups": [],
+            }
+        groups = adapt_dual_beam8_events(
+            read_jsonl(selected / "dual_beam8.jsonl"),
+            source_index=dual_beam8_source_rows(selected),
+            from_step=from_step,
+            to_step=to_step,
+            rollout_id=rollout_id,
+            group_id=group_id,
+            limit=limit,
+        )
+        return dual_beam8_payload(groups)
 
     @app.get("/api/composite-interest")
     def composite_interest(
