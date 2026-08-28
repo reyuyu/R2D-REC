@@ -1,5 +1,15 @@
 # GR_REC_ThinkDualBeam8_v2 — Change Record
 
+## Formal-ready implementation (pending GPU validation)
+
+- Implemented isolated CoT G4 and four independent SID G8 PPO-style branches.
+- Added strict one-Beam8-per-CoT ABC3 validation, detached full-forward old-logp
+  guards, and exact two-iteration rollout reuse.
+- Pinned old Probe4 IDs and asserted 1549 raw / 1545 train / 3090-step topology.
+- Added dual rollout/optimization monitoring without changing shared GRPO math.
+- Added explicit final-step checkpoint, 29 CPU contracts and a 4-GPU zero-update
+  preflight harness. Formal training remains prohibited pending review.
+
 ## 2026-08-28
 
 ### Motivation

@@ -16,6 +16,15 @@ PARENT_ADAPTER = Path(
 )
 PARENT_ADAPTER_SHA256 = "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436"
 PARENT_RECORDED_SCORE = 1.3510
+EXPECTED_RAW_GROUPS = 1549
+EXPECTED_TRAIN_GROUPS = 1545
+EXPECTED_FORMAL_STEPS = 3090
+FIXED_PROBE4_IDS = (
+    "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+    "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8",
+)
 
 # Fail closed on the intended immutable parent before importing grpo_model.
 os.environ["GRPO_PARENT_ADAPTER"] = str(PARENT_ADAPTER)
@@ -34,7 +43,7 @@ from .dual_beam8_trainer import (
     audit_dual_sampler,
     make_dual_beam8_reward_func,
 )
-from ..gr_rec_think_suffix_sid_v1.runtime_import_provenance import (
+from ablations.gr_rec_think_suffix_sid_v1.runtime_import_provenance import (
     assert_runtime_import_provenance,
 )
 
@@ -90,8 +99,13 @@ def make_runtime_dual_reward(beam32_fn=None):
 def prepare_dual_run_plan(args):
     # Keep the original fixed Probe4 selection and exclusion logic intact.
     plan = _BASE_PREPARE_RUN_PLAN(args)
-    if len(plan["probe_group_ids"]) != 4:
-        raise RuntimeError("dual Beam8 formal training requires the fixed Probe4 holdout")
+    if plan["raw_groups"] != EXPECTED_RAW_GROUPS:
+        raise RuntimeError(f"DUAL_BEAM8_RAW_TOPOLOGY_DRIFT: {plan['raw_groups']}")
+    if tuple(plan["probe_group_ids"]) != FIXED_PROBE4_IDS:
+        raise RuntimeError(
+            f"DUAL_BEAM8_PROBE4_ID_DRIFT expected={FIXED_PROBE4_IDS} "
+            f"actual={tuple(plan['probe_group_ids'])}"
+        )
     think_indices = [
         index for index, row in enumerate(plan["dataset"])
         if row["route"] == "think"
@@ -99,6 +113,10 @@ def prepare_dual_run_plan(args):
     dataset = plan["dataset"].select(think_indices)
     sampler = ThinkG4SingleGroupSampler(dataset, repeat_count=2, shuffle=False)
     audit = audit_dual_sampler(dataset, sampler)
+    if audit["trained_groups"] != EXPECTED_TRAIN_GROUPS:
+        raise RuntimeError(f"DUAL_BEAM8_TRAIN_TOPOLOGY_DRIFT: {audit['trained_groups']}")
+    if set(plan["probe_group_ids"]) & set(dataset["recommendation_group_id"]):
+        raise RuntimeError("DUAL_BEAM8_PROBE_TRAIN_OVERLAP")
     max_steps = args.max_steps if args.max_steps is not None else audit["optimizer_steps"]
     if not 1 <= max_steps <= audit["optimizer_steps"]:
         raise ValueError(f"--max-steps must be in [1, {audit['optimizer_steps']}]")
@@ -107,6 +125,7 @@ def prepare_dual_run_plan(args):
     plan["dataset"] = dataset
     plan["audit"] = audit
     plan["max_steps"] = max_steps
+    plan["probe_train_overlap"] = []
     return plan
 
 
@@ -174,6 +193,8 @@ class DualManifestWriter:
             "parent_adapter_sha256": PARENT_ADAPTER_SHA256,
             "parent_recorded_external_score": PARENT_RECORDED_SCORE,
             "optimizer_initialization": "fresh",
+            "optimizer": {"name": "AdamW", "learning_rate": 1e-6,
+                          "weight_decay": 0.0, "scheduler": "constant"},
             "training_routes": ["think"],
             "probe4_retained": True,
             "probe4_excluded_from_training": True,
@@ -188,17 +209,32 @@ class DualManifestWriter:
             "sid_advantage": "independent G8 population-normalized inside each CoT",
             "sid_loss_scope": "three ABC tokens only; domain prefix is fixed context",
             "objective_weighting": "cot_loss + sid_loss (1:1)",
+            "sid_objective_semantics": "Beam-selected PPO-style / group-relative optimization; not strict on-policy GRPO",
+            "num_iterations": 2,
+            "iteration2_reuse": ["CoT", "Beam8", "reward", "advantage", "old_logp"],
+            "zero_std_reroll": False,
             "training_beam": {"num_beams": SID_G, "num_return_sequences": SID_G, "max_new_tokens": 3},
             "fixed_probe": {
                 "enabled": True,
                 "count": 4,
+                "group_ids": list(FIXED_PROBE4_IDS),
                 "evaluation_contract": "existing production-shaped Probe4/Beam32",
             },
+            "expected_raw_groups": EXPECTED_RAW_GROUPS,
+            "expected_training_groups": EXPECTED_TRAIN_GROUPS,
+            "expected_fresh_rollouts": EXPECTED_TRAIN_GROUPS,
+            "expected_optimizer_steps": EXPECTED_FORMAL_STEPS,
+            "explicit_final_checkpoint_step": EXPECTED_FORMAL_STEPS,
             "nccl_socket_ifname": os.environ.get("NCCL_SOCKET_IFNAME"),
         })
         if _RUNTIME_PROVENANCE:
             payload.update(_RUNTIME_PROVENANCE)
         self._writer.write_manifest(payload)
+
+    def write_dual_beam8(self, event):
+        if self._writer.rank != 0:
+            return False
+        return self._writer._append("dual_beam8.jsonl", {"type": "dual_beam8", **event})
 
 
 def dual_monitor_from_env(run_id, rank):
