@@ -73,7 +73,7 @@ def grad_summary(model):
             "base_grad_tensor_count": base_count, "gradients_finite": finite}
 
 
-def branch_backward(trainer, model, prepared, branch):
+def branch_backward(trainer, model, prepared, branch, diagnostic_advantages=None):
     captured = {}
     original = trainer._get_per_token_logps_and_entropies
 
@@ -92,14 +92,18 @@ def branch_backward(trainer, model, prepared, branch):
             mask = torch.cat([prepared["prompt_mask"], prepared["completion_mask"]], 1)
             loss, stats = trainer._branch_loss(
                 model, ids, mask, prepared["completion_mask"],
-                prepared["old_per_token_logps"], prepared["advantages"], "cot")
+                prepared["old_per_token_logps"],
+                (prepared["advantages"] if diagnostic_advantages is None else diagnostic_advantages),
+                "cot")
             expected_shape = tuple(prepared["completion_mask"].shape)
         else:
             sid = trainer._sid_rollout
             action = torch.ones((SID_G, 3), dtype=torch.long, device=sid["input_ids"].device)
             loss, stats = trainer._branch_loss(
                 model, sid["input_ids"], sid["attention_mask"], action,
-                sid["old_per_token_logps"], sid["advantages"], "sid")
+                sid["old_per_token_logps"],
+                (sid["advantages"] if diagnostic_advantages is None else diagnostic_advantages),
+                "sid")
             expected_shape = (SID_G, 3)
         trainer.accelerator.backward(loss)
         logp_grad = captured["logps"].grad.detach().float()
@@ -183,17 +187,25 @@ def main(argv=None):
         or all(len(set(group)) == 1 for group in sid_rewards)
     )
 
-    cot_grad = branch_backward(trainer, model, prepared, "cot")
-    sid_grad = branch_backward(trainer, model, prepared, "sid")
+    real_signal_observed = bool(any(value != 0 for value in cot_advantages) or
+                                any(value != 0 for row in sid_advantages for value in row))
+    # A real all-zero rollout correctly has no gradient. For the boundary-only
+    # audit, keep the immutable real actions and old logps but use an explicitly
+    # diagnostic zero-mean advantage. This never enters production trainer math.
+    diagnostic_cot_global = population_advantages([0.0, 0.5, 2.0, 8.0]).to(model.device)
+    diagnostic_cot_local = diagnostic_cot_global[rank:rank + 1]
+    diagnostic_sid = population_advantages([-1.0, -0.25, 0.0, 0.5, 2.0, 8.0, 2.0, 0.5]).to(model.device)
+    cot_grad = branch_backward(trainer, model, prepared, "cot", diagnostic_cot_local)
+    sid_grad = branch_backward(trainer, model, prepared, "sid", diagnostic_sid)
     model.zero_grad(set_to_none=True)
     ids = torch.cat([prepared["prompt_ids"], prepared["completion_ids"]], 1)
     mask = torch.cat([prepared["prompt_mask"], prepared["completion_mask"]], 1)
     cot_loss, _ = trainer._branch_loss(model, ids, mask, prepared["completion_mask"],
-                                       prepared["old_per_token_logps"], prepared["advantages"], "cot")
+                                       prepared["old_per_token_logps"], diagnostic_cot_local, "cot")
     sid = trainer._sid_rollout
     sid_action = torch.ones((SID_G, 3), dtype=torch.long, device=sid["input_ids"].device)
     sid_loss, _ = trainer._branch_loss(model, sid["input_ids"], sid["attention_mask"], sid_action,
-                                       sid["old_per_token_logps"], sid["advantages"], "sid")
+                                       sid["old_per_token_logps"], diagnostic_sid, "sid")
     trainer.accelerator.backward(cot_loss + sid_loss)
     combined_grad = grad_summary(model)
     model.zero_grad(set_to_none=True)
@@ -232,6 +244,7 @@ def main(argv=None):
         "base_version_changed_count": int(base_version_changed),
         "probe_rng_restored": probe_rng_restored,
         "probe_parameter_unchanged": probe_parameter_unchanged,
+        "real_signal_observed": real_signal_observed,
     }
     rank_rows = gather(local)
     if rank == 0:
@@ -274,6 +287,13 @@ def main(argv=None):
             "parent_adapter_sha256": PARENT_ADAPTER_SHA256, "parent_validation": parent,
             "probe4_ids": list(FIXED_PROBE4_IDS), "train_probe_overlap": [],
             "preflight_group_id": PREFLIGHT_GROUP_ID,
+            "real_signal_observed": real_signal_observed,
+            "gradient_boundary_mode": "immutable real actions/old-logps with diagnostic-only advantages",
+            "gradient_diagnostic_advantages": {
+                "cot_g4": diagnostic_cot_global.tolist(),
+                "sid_g8": diagnostic_sid.tolist(),
+                "production_reward_or_advantage_changed": False,
+            },
             "cot_rewards": cot_rewards, "cot_advantages": cot_advantages,
             "sid_rewards_4x8": sid_rewards, "sid_advantages_4x8": sid_advantages,
             "old_logp": {"cot": "unchanged rollout policy no-grad full-forward rescore",

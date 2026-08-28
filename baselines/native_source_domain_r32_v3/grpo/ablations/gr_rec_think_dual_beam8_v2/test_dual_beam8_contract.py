@@ -203,6 +203,13 @@ def test_preflight_group_is_train_not_probe(plan):
     assert PREFLIGHT_GROUP_ID not in runner.FIXED_PROBE4_IDS
 
 
+def test_diagnostic_advantage_never_enters_production_trainer():
+    trainer_source = Path(__file__).with_name("dual_beam8_trainer.py").read_text()
+    preflight_source = Path(__file__).with_name("gpu_preflight.py").read_text()
+    assert "diagnostic_advantages" not in trainer_source
+    assert "production_reward_or_advantage_changed" in preflight_source
+
+
 def test_domain_prefix_is_context_not_sid_action():
     source = Path(__file__).with_name("dual_beam8_trainer.py").read_text()
     assert 'list(record["beam_context_ids"]) + list(candidate)' in source
