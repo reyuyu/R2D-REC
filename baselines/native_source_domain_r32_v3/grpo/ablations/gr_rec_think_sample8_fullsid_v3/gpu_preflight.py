@@ -231,6 +231,16 @@ def main(argv=None):
         "rank": rank, "group_id": records[rank]["recommendation_group_id"],
         "cot_reward": cot_rewards[rank], "cot_advantage": cot_advantages[rank],
         "sid_rewards": sid_rewards[rank], "sid_advantages": sid_advantages[rank],
+        "sample_candidate_ids": records[rank]["sample_candidate_ids"],
+        "sample_candidate_tokens": [
+            tokenizer.convert_ids_to_tokens(row, skip_special_tokens=False)
+            for row in records[rank]["sample_candidate_ids"]
+        ],
+        "sample_candidate_texts": [
+            tokenizer.decode(row, skip_special_tokens=False)
+            for row in records[rank]["sample_candidate_ids"]
+        ],
+        "sample_sids": records[rank]["sample_sids"],
         "sample_candidate_count": len(records[rank]["sample_candidate_ids"]),
         "full_sid4": all(len(row) == 4 for row in records[rank]["sample_candidate_ids"]),
         "fixed_domain_prefix": records[rank]["fixed_domain_prefix"],
