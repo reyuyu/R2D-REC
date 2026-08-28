@@ -273,6 +273,7 @@ class Sample8ManifestWriter:
 
     def write_manifest(self, manifest):
         payload = dict(manifest)
+        base_fixed_probe = dict(payload.get("fixed_probe") or {})
         payload.update({
             "experiment": "GR_REC_ThinkSample8_FullSID_v3",
             "experiment_type": "Think G4 + per-CoT stochastic Sample8 FullSID GRPO",
@@ -314,9 +315,11 @@ class Sample8ManifestWriter:
                 "natural_language_bridge": False,
             },
             "fixed_probe": {
+                **base_fixed_probe,
                 "enabled": True,
                 "count": 4,
                 "group_ids": list(FIXED_PROBE4_IDS),
+                "every_steps": FORMAL_PROBE_EVERY_STEPS,
                 "evaluation_contract": "existing production-shaped Probe4/Beam32",
             },
             "expected_raw_groups": EXPECTED_RAW_GROUPS,

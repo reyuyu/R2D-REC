@@ -32,6 +32,21 @@ def test_formal_checkpoint_probe_defaults_are_aligned_on_root():
     assert args.save_total_limit == 64
 
 
+def test_manifest_preserves_probe_schedule():
+    class FakeWriter:
+        rank = 0
+
+        def write_manifest(self, payload):
+            self.payload = payload
+
+    writer = FakeWriter()
+    wrapped = runner.Sample8ManifestWriter(writer)
+    wrapped.write_manifest({"fixed_probe": {"seed": 20260818, "every_steps": 50}})
+    assert writer.payload["fixed_probe"]["every_steps"] == 50
+    assert writer.payload["fixed_probe"]["seed"] == 20260818
+    assert writer.payload["fixed_probe"]["group_ids"] == list(runner.FIXED_PROBE4_IDS)
+
+
 def test_trusted_resume_checkpoint_guard(tmp_path):
     checkpoint = tmp_path / "run" / "checkpoint-250"
     checkpoint.mkdir(parents=True)
