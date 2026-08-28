@@ -347,6 +347,7 @@ def main(argv=None):
             "accepted_rewards": actual_rewards,
         }), flush=True)
     dist.barrier()
+    dist.destroy_process_group()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,380 @@
+{
+  "experiment": "GR_REC_ThinkSuffixSID_Resample_v1",
+  "gpu_validation_launch_commit": "75ce0d2224c14cb29018e6de7bb4477bca623bdc",
+  "base": "/data/models/onereason-8b-pretrain-competition",
+  "adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+  "parent_adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+  "parent_validation": {
+    "path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+    "adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+    "recorded_external_score": 1.351
+  },
+  "world_size": 4,
+  "baseline_runner_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "grpo_model_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "grpo_trl_trainer_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "monitor_writer_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "expected_baseline_runner_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/run_grpo_trl_train.py",
+  "expected_grpo_model_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_model.py",
+  "expected_grpo_trl_trainer_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/grpo_trl_trainer.py",
+  "expected_monitor_writer_module_path": "/data/GRPO-think-suffix-sid-v1/baselines/native_source_domain_r32_v3/grpo/scripts/monitor/writer.py",
+  "baseline_trainer_identity": true,
+  "runtime_import_provenance": "PASS",
+  "nccl_bootstrap": {
+    "nccl_socket_ifname": "lo",
+    "world_size": 4,
+    "local_rank": 0,
+    "device": "cuda:0",
+    "initialized_here": true,
+    "local_rank_device_mapping": [
+      {
+        "local_rank": 0,
+        "device": "cuda:0"
+      },
+      {
+        "local_rank": 1,
+        "device": "cuda:1"
+      },
+      {
+        "local_rank": 2,
+        "device": "cuda:2"
+      },
+      {
+        "local_rank": 3,
+        "device": "cuda:3"
+      }
+    ]
+  },
+  "group_size": 8,
+  "group_id": "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+  "global_group_ids": [
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+    "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700"
+  ],
+  "synthetic_zero_std_global_rewards": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "synthetic_zero_std_decision": {
+    "attempt": 0,
+    "resample_round": 0,
+    "zero_std": true,
+    "retry": true,
+    "exhausted": false,
+    "accepted": false,
+    "generated_candidate_total": 8
+  },
+  "real_resample_runtime": {
+    "attempt": 0,
+    "resample_round": 0,
+    "zero_std": false,
+    "retry": false,
+    "exhausted": false,
+    "accepted": true,
+    "generated_candidate_total": 8,
+    "resample_rounds_used": 0,
+    "rejected_reward_vectors": [],
+    "accepted_reward_vector": [
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0
+    ],
+    "zero_std_rescued": false,
+    "zero_std_rescue_exhausted": false
+  },
+  "accepted_rewards": [
+    0.0,
+    0.0,
+    0.5,
+    0.0,
+    0.0,
+    0.5,
+    0.0,
+    0.0
+  ],
+  "expected_advantages": [
+    -0.577083725634154,
+    -0.577083725634154,
+    1.7312511769024619,
+    -0.577083725634154,
+    -0.577083725634154,
+    1.7312511769024619,
+    -0.577083725634154,
+    -0.577083725634154
+  ],
+  "actual_advantages": [
+    -0.5770837068557739,
+    -0.5770837068557739,
+    1.7312512397766113,
+    -0.5770837068557739,
+    -0.5770837068557739,
+    1.7312512397766113,
+    -0.5770837068557739,
+    -0.5770837068557739
+  ],
+  "optimizer_steps": 0,
+  "scheduler_steps": 0,
+  "parameter_update": false,
+  "checkpoint_saved": false,
+  "training_started": false,
+  "rank_rows": [
+    {
+      "rank": 0,
+      "local_group_ids": [
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700"
+      ],
+      "local_candidate_count": 2,
+      "resample_runtime": {
+        "attempt": 0,
+        "resample_round": 0,
+        "zero_std": false,
+        "retry": false,
+        "exhausted": false,
+        "accepted": true,
+        "generated_candidate_total": 8,
+        "resample_rounds_used": 0,
+        "rejected_reward_vectors": [],
+        "accepted_reward_vector": [
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ],
+        "zero_std_rescued": false,
+        "zero_std_rescue_exhausted": false
+      },
+      "pre_shuffle_advantages": [
+        -0.5770837068557739,
+        -0.5770837068557739
+      ],
+      "loss": 0.5770837068557739,
+      "cot_action_token_count": 439,
+      "suffix_action_token_count": 28,
+      "padding_token_count": 97,
+      "cot_action_grad_max_abs": 0.0,
+      "suffix_action_grad_abs_sum": 0.57763671875,
+      "padding_action_grad_max_abs": 0.0,
+      "full_completion_attention": true,
+      "suffix_mask_subset": true,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "lora_grad_norm": 3.328688224914543,
+      "gradients_finite": true,
+      "lora_checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "lora_checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "optimizer_object_present": false,
+      "scheduler_object_present": false
+    },
+    {
+      "rank": 1,
+      "local_group_ids": [
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700"
+      ],
+      "local_candidate_count": 2,
+      "resample_runtime": {
+        "attempt": 0,
+        "resample_round": 0,
+        "zero_std": false,
+        "retry": false,
+        "exhausted": false,
+        "accepted": true,
+        "generated_candidate_total": 8,
+        "resample_rounds_used": 0,
+        "rejected_reward_vectors": [],
+        "accepted_reward_vector": [
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ],
+        "zero_std_rescued": false,
+        "zero_std_rescue_exhausted": false
+      },
+      "pre_shuffle_advantages": [
+        1.7312512397766113,
+        -0.5770837068557739
+      ],
+      "loss": -0.5770838260650635,
+      "cot_action_token_count": 1294,
+      "suffix_action_token_count": 28,
+      "padding_token_count": 160,
+      "cot_action_grad_max_abs": 0.0,
+      "suffix_action_grad_abs_sum": 1.153564453125,
+      "padding_action_grad_max_abs": 0.0,
+      "full_completion_attention": true,
+      "suffix_mask_subset": true,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "lora_grad_norm": 8.217069430491547,
+      "gradients_finite": true,
+      "lora_checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "lora_checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "optimizer_object_present": false,
+      "scheduler_object_present": false
+    },
+    {
+      "rank": 2,
+      "local_group_ids": [
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700"
+      ],
+      "local_candidate_count": 2,
+      "resample_runtime": {
+        "attempt": 0,
+        "resample_round": 0,
+        "zero_std": false,
+        "retry": false,
+        "exhausted": false,
+        "accepted": true,
+        "generated_candidate_total": 8,
+        "resample_rounds_used": 0,
+        "rejected_reward_vectors": [],
+        "accepted_reward_vector": [
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ],
+        "zero_std_rescued": false,
+        "zero_std_rescue_exhausted": false
+      },
+      "pre_shuffle_advantages": [
+        -0.5770837068557739,
+        1.7312512397766113
+      ],
+      "loss": -0.5770838260650635,
+      "cot_action_token_count": 1360,
+      "suffix_action_token_count": 28,
+      "padding_token_count": 292,
+      "cot_action_grad_max_abs": 0.0,
+      "suffix_action_grad_abs_sum": 1.153564453125,
+      "padding_action_grad_max_abs": 0.0,
+      "full_completion_attention": true,
+      "suffix_mask_subset": true,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "lora_grad_norm": 6.405122764827649,
+      "gradients_finite": true,
+      "lora_checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "lora_checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "optimizer_object_present": false,
+      "scheduler_object_present": false
+    },
+    {
+      "rank": 3,
+      "local_group_ids": [
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+        "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700"
+      ],
+      "local_candidate_count": 2,
+      "resample_runtime": {
+        "attempt": 0,
+        "resample_round": 0,
+        "zero_std": false,
+        "retry": false,
+        "exhausted": false,
+        "accepted": true,
+        "generated_candidate_total": 8,
+        "resample_rounds_used": 0,
+        "rejected_reward_vectors": [],
+        "accepted_reward_vector": [
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ],
+        "zero_std_rescued": false,
+        "zero_std_rescue_exhausted": false
+      },
+      "pre_shuffle_advantages": [
+        -0.5770837068557739,
+        -0.5770837068557739
+      ],
+      "loss": 0.5770837068557739,
+      "cot_action_token_count": 221,
+      "suffix_action_token_count": 28,
+      "padding_token_count": 37,
+      "cot_action_grad_max_abs": 0.0,
+      "suffix_action_grad_abs_sum": 0.57763671875,
+      "padding_action_grad_max_abs": 0.0,
+      "full_completion_attention": true,
+      "suffix_mask_subset": true,
+      "lora_grad_tensor_count": 504,
+      "base_grad_tensor_count": 0,
+      "lora_grad_norm": 2.1065063749258974,
+      "gradients_finite": true,
+      "lora_checksum_before": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "lora_checksum_after": "56d72ad45c139c131678d7b0e415dd47169ffd0638a0676c304379f480835daf",
+      "base_requires_grad_count": 0,
+      "base_version_changed_count": 0,
+      "optimizer_object_present": false,
+      "scheduler_object_present": false
+    }
+  ],
+  "conditions": {
+    "world_size_4": true,
+    "runtime_import_provenance": true,
+    "ddp_g8_alignment": true,
+    "synthetic_zero_std_retry_sync": true,
+    "real_resample_sync": true,
+    "real_resample_contract": true,
+    "online_advantage_parity": true,
+    "full_completion_attention": true,
+    "suffix_mask_subset": true,
+    "cot_action_gradient_zero": true,
+    "padding_action_gradient_zero": true,
+    "suffix_action_gradient_nonzero": true,
+    "finite_loss_and_gradient": true,
+    "lora_has_gradient": true,
+    "base_has_no_gradient": true,
+    "base_requires_grad_zero": true,
+    "lora_checksum_unchanged": true,
+    "base_version_unchanged": true,
+    "optimizer_step_absent": true,
+    "scheduler_step_absent": true
+  },
+  "failure_reasons": [],
+  "preflight_pass": true
+}

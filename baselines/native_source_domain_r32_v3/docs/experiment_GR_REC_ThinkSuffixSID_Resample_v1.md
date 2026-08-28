@@ -82,3 +82,20 @@ GPU validation must first prove G8 cross-rank grouping, synchronized rerolls,
 suffix-only non-zero gradients, unchanged CoT-token gradients, frozen base
 parameters, and finite LoRA updates. Formal training is not authorized by this
 implementation commit alone.
+
+## Four-GPU zero-update preflight (2026-08-28)
+
+- Launch commit: `75ce0d2224c14cb29018e6de7bb4477bca623bdc`
+- Result: `PREFLIGHT_PASS=YES`; all four ranks used one shared G8 group.
+- Real accepted rewards: `[0, 0, 0.5, 0, 0, 0.5, 0, 0]`; the first real
+  round had non-zero population std and was accepted without a reroll.
+- Cross-rank zero-std retry synchronization was separately exercised in the
+  same NCCL process group with a gathered synthetic `[0]*8` control vector.
+- CoT action-logprob gradient max: `0` on all ranks. Suffix action gradient was
+  non-zero on all ranks, while the full completion attention mask stayed active.
+- LoRA gradient tensors: `504` per rank; base gradient tensors: `0` per rank.
+- LoRA SHA256 before/after backward was identical on all ranks; base parameter
+  version changes: `0`; optimizer steps: `0`; scheduler steps: `0`.
+- No parameter update, checkpoint save, or training loop occurred.
+- Result artifact:
+  `grpo/results/gr_rec_think_suffix_sid_v1_gpu_preflight_20260828.json`
