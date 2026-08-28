@@ -197,6 +197,12 @@ def test_preflight_module_cold_import():
     assert gpu_preflight.COT_G == 4 and gpu_preflight.SID_G == 8
 
 
+def test_preflight_group_is_train_not_probe(plan):
+    from .gpu_preflight import PREFLIGHT_GROUP_ID
+    assert PREFLIGHT_GROUP_ID in set(plan["dataset"]["recommendation_group_id"])
+    assert PREFLIGHT_GROUP_ID not in runner.FIXED_PROBE4_IDS
+
+
 def test_domain_prefix_is_context_not_sid_action():
     source = Path(__file__).with_name("dual_beam8_trainer.py").read_text()
     assert 'list(record["beam_context_ids"]) + list(candidate)' in source

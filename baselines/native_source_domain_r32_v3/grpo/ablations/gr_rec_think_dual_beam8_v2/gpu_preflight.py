@@ -31,6 +31,7 @@ from ablations.gr_rec_think_composite_interest_v1.single_node_nccl import (
 )
 
 SEED = 20260816
+PREFLIGHT_GROUP_ID = "0d3b5e5ef4df6c333ca9f556c22b3e9e9f43c4995baed7a833977eedfb537a84"
 
 
 def gather(value):
@@ -132,7 +133,10 @@ def main(argv=None):
         "--probe-every-steps", "200", "--save-steps", "250", "--save-total-limit", "8",
     ])
     plan = prepare_dual_run_plan(plan_args)
-    dataset = plan["dataset"].select([0])
+    group_ids = list(plan["dataset"]["recommendation_group_id"])
+    if PREFLIGHT_GROUP_ID not in group_ids:
+        raise RuntimeError("DUAL_BEAM8_PREFLIGHT_GROUP_MISSING")
+    dataset = plan["dataset"].select([group_ids.index(PREFLIGHT_GROUP_ID)])
 
     from grpo_model import ADAPTER, BASE, load_model
     model, tokenizer, _ = load_model(f"cuda:{rank}")
@@ -171,7 +175,13 @@ def main(argv=None):
     sid_rewards = [row["sid_rewards"] for row in records]
     sid_advantages = independent_sid_advantages(sid_rewards).tolist()
     wrong_g32 = population_advantages([x for group in sid_rewards for x in group]).reshape(4, 8)
-    no_g32 = not torch.allclose(torch.tensor(sid_advantages), wrong_g32)
+    per_g8_parity = all(torch.allclose(torch.tensor(sid_advantages[index]),
+                                       population_advantages(group), atol=1e-6)
+                        for index, group in enumerate(sid_rewards))
+    no_g32 = per_g8_parity and (
+        not torch.allclose(torch.tensor(sid_advantages), wrong_g32)
+        or all(len(set(group)) == 1 for group in sid_rewards)
+    )
 
     cot_grad = branch_backward(trainer, model, prepared, "cot")
     sid_grad = branch_backward(trainer, model, prepared, "sid")
@@ -237,7 +247,11 @@ def main(argv=None):
                                                      not prepared["old_per_token_logps"].requires_grad),
             "sid_old_logp_full_forward_detached": not sid["old_per_token_logps"].requires_grad,
             "cot_action_gradient_nonzero": sum(row["cot_gradient"]["action_logp_grad_abs_sum"] for row in rank_rows) > 0,
-            "sid_action_gradient_nonzero": all(row["sid_gradient"]["action_logp_grad_abs_sum"] > 0 for row in rank_rows),
+            "sid_active_action_gradient_nonzero": any(row["sid_gradient"]["action_logp_grad_abs_sum"] > 0 for row in rank_rows),
+            "sid_zero_std_gradient_zero": all(
+                (len(set(row["sid_rewards"])) == 1) ==
+                (row["sid_gradient"]["action_logp_grad_abs_sum"] == 0)
+                for row in rank_rows),
             "sid_action_exactly_abc3": all(row["sid_gradient"]["action_logp_shape"] == [8, 3] for row in rank_rows),
             "combined_lora_gradient_finite": all(row["combined_gradient"]["gradients_finite"] and
                                                   row["combined_gradient"]["lora_grad_norm"] > 0 for row in rank_rows),
@@ -259,6 +273,7 @@ def main(argv=None):
             "base": BASE, "adapter": ADAPTER, "parent_adapter": str(PARENT_ADAPTER),
             "parent_adapter_sha256": PARENT_ADAPTER_SHA256, "parent_validation": parent,
             "probe4_ids": list(FIXED_PROBE4_IDS), "train_probe_overlap": [],
+            "preflight_group_id": PREFLIGHT_GROUP_ID,
             "cot_rewards": cot_rewards, "cot_advantages": cot_advantages,
             "sid_rewards_4x8": sid_rewards, "sid_advantages_4x8": sid_advantages,
             "old_logp": {"cot": "unchanged rollout policy no-grad full-forward rescore",
