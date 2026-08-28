@@ -1,14 +1,18 @@
 """Think G4 + per-CoT Beam8 dual-objective GRPO.
 
 One global recommendation group produces four stochastic CoTs (one per rank on
-4 GPUs).  Each CoT is evaluated by a deterministic fixed-domain Beam8 ABC3
-continuation.  Two independent group-relative advantages are used:
+4 GPUs). Each CoT is evaluated by a deterministic fixed-domain Beam8 ABC3
+continuation. Two independent group-relative advantages are used:
 
 * CoT advantage: the four Beam8 aggregate rewards are normalized as one G4.
   Loss applies only to sampled CoT action tokens.
 * SID advantage: the eight hierarchical SID rewards under each CoT are
-  normalized inside that CoT's own G8.  Loss applies only to the three generated
+  normalized inside that CoT's own G8. Loss applies only to the three generated
   A/B/C tokens; prompt, CoT, and fixed domain prefix are context only.
+
+The SID branch is intentionally Beam-selected rather than strictly on-policy:
+old/current token log-probabilities are full-forward rescored on the eight
+selected ABC3 candidates and optimized with the same clipped PPO-style ratio.
 """
 from __future__ import annotations
 
@@ -129,7 +133,6 @@ def make_dual_beam8_reward_func(runtime: DualBeam8Runtime):
         domains = kwargs["target_domain"]
         group_ids = kwargs.get("recommendation_group_id") or [None] * len(prompts)
         rewards = []
-        # Production shape is one local CoT per rank. Keep the loop for CPU tests.
         local_records = []
         for prompt, cot_ids, candidate_golds, domain, gid in zip(
             prompts, completion_ids, golds, domains, group_ids
@@ -171,11 +174,9 @@ class ThinkDualBeam8Trainer(RecGRPOTrainer):
         )
 
     def _route_generation_contract(self, route):
-        if route != "think":
-            return super()._route_generation_contract(route) if hasattr(super(), "_route_generation_contract") else {
-                "group_size": 8, "temperature": 1.0, "top_p": 1.0,
-            }
-        return {"group_size": COT_G, "temperature": 0.9, "top_p": 0.95}
+        if route == "think":
+            return {"group_size": COT_G, "temperature": 0.9, "top_p": 0.95}
+        return {"group_size": 8, "temperature": 1.0, "top_p": 1.0}
 
     def _prepare_inputs(self, generation_batch):
         if isinstance(generation_batch, list) and generation_batch:
@@ -256,7 +257,6 @@ class ThinkDualBeam8Trainer(RecGRPOTrainer):
         if self.args.delta is not None:
             ratio = torch.clamp(ratio, max=self.args.delta)
         per_token_loss = -torch.min(ratio * advantages, clipped * advantages)
-        # All eight candidates are strict ABC3, so each sample has exactly 3 actions.
         return per_token_loss.mean() / self.current_gradient_accumulation_steps
 
     def _compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
@@ -281,11 +281,21 @@ def audit_dual_sampler(dataset, sampler):
     return {
         "selected_groups": len(rows),
         "trained_groups": len(rows),
+        "dropped_groups": 0,
         "think_unique_groups": len(rows),
+        "nothink_unique_groups": 0,
+        "think_rollouts": len(rows),
+        "nothink_rollouts": 0,
         "fresh_rollout_count": len(rows),
+        "unique_groups_per_global_rollout": 1,
         "cot_candidates_per_group": COT_G,
         "sid_candidates_per_cot": SID_G,
         "sid_candidates_per_business_group": COT_G * SID_G,
         "repeat_count": sampler.repeat_count,
+        "num_iterations": sampler.repeat_count,
         "optimizer_steps": optimizer_steps,
+        "think_optimizer_steps": optimizer_steps,
+        "nothink_optimizer_steps": 0,
+        "route_schedule_preview": ["think"] * min(24, len(rows)),
+        "rollout_group_ids_preview": gids[:8],
     }
