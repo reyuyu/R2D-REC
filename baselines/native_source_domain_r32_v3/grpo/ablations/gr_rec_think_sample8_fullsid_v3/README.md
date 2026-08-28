@@ -1,5 +1,7 @@
 # GR_REC_ThinkSample8_FullSID_v3
 
+Research record and external-score tracking: [`docs/experiment_GRPO_TK.md`](../../../../../docs/experiment_GRPO_TK.md). The experiment codename used in reports is **GRPO-TK**.
+
 Independent ablation derived from the validated
 `GR_REC_ThinkDualBeam8_v2` code point
 `32c22f3de8e90e226bf3671f64ca9fbfbed90e8d`.
