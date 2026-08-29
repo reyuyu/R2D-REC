@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -18,6 +21,7 @@ from .video_official_anticopy_trainer import (
     COT_G, SID_G, assert_iteration_reuse, audit_v5_sampler, combine_losses,
     cot_candidate_contribution, extract_history_sids, finalize_global_records,
     independent_official_advantages, official_action_mask, shape_sid_reward,
+    rollout_fingerprint, warmup_reward_contract,
 )
 
 
@@ -29,6 +33,13 @@ def _args():
     for gid in FIXED_PROBE4_IDS:
         values.extend(["--probe-group-id", gid])
     return build_v5_parser().parse_args(values)
+
+
+def test_warmup_launcher_has_independent_identity():
+    launcher = Path(__file__).with_name("launch_video_official_anticopy_train.sh")
+    source = launcher.read_text(encoding="utf-8")
+    assert "GR-REC-VIDEO-OFFICIAL-ANTICOPY-V5-WARMUP-FORMAL" in source
+    assert "-m ablations.gr_rec_video_official_anticopy_v5_warmup." in source
 
 
 @pytest.fixture(scope="module")
@@ -111,6 +122,38 @@ def test_copied_exact_gets_no_cot_credit():
     assert cot_candidate_contribution(2.0, False) == 2.0
 
 
+@pytest.mark.parametrize(
+    "index,stage,sid_bonus,cot_bonus",
+    [
+        (19, "sid_only", 0.25, 0.0),
+        (20, "sid_and_cot", 0.25, 0.25),
+        (39, "sid_and_cot", 0.25, 0.25),
+        (40, "off", 0.0, 0.0),
+    ],
+)
+def test_warmup_boundaries(index, stage, sid_bonus, cot_bonus):
+    assert warmup_reward_contract(index) == (stage, sid_bonus, cot_bonus)
+    sid = ("video", 99, 98, 97)
+    gold = {("video", 1, 2, 3)}
+    raw, copied, final = shape_sid_reward(sid, gold, set(), sid_bonus)
+    assert (raw, copied, final) == (0.0, False, sid_bonus)
+    assert cot_candidate_contribution(raw, copied, cot_bonus) == cot_bonus
+
+
+def test_warmup_never_rewards_copies_and_preserves_exact():
+    gold = {("video", 1, 2, 3)}
+    copied_zero = ("video", 99, 98, 97)
+    copied_exact = ("video", 1, 2, 3)
+    assert shape_sid_reward(copied_zero, gold, {copied_zero}, 0.25) == (
+        0.0, True, 0.0,
+    )
+    assert shape_sid_reward(copied_exact, gold, {copied_exact}, 0.25) == (
+        8.0, True, 8.0,
+    )
+    assert cot_candidate_contribution(0.0, True, 0.25) == 0.0
+    assert cot_candidate_contribution(8.0, True, 0.25) == 0.0
+
+
 def _record(index):
     candidates = [
         ("video", 1, 2, 3), ("video", 1, 2, 9),
@@ -131,7 +174,9 @@ def _record(index):
 
 
 def test_finalize_records_monitor_and_four_independent_g8():
-    records = finalize_global_records([_record(i) for i in range(COT_G)])
+    records = finalize_global_records(
+        [_record(i) for i in range(COT_G)], fresh_rollout_index=40
+    )
     groups = [row["sid_rewards"] for row in records]
     advantages = independent_official_advantages(groups)
     assert advantages.shape == (COT_G, SID_G)
@@ -143,6 +188,8 @@ def test_finalize_records_monitor_and_four_independent_g8():
         "copy_Exact", "noncopy_A", "noncopy_AB", "noncopy_Exact",
         "copy_positive_advantage_count", "copy_mean_advantage",
         "cot_reward", "cot_advantage", "noncopy_positive_reward_count",
+        "fresh_rollout_index", "warmup_stage", "noncopy_zero_bonus",
+        "noncopy_zero_count",
     }
     assert required.issubset(row)
     copied_exact = row["candidate_details"][0]
@@ -170,6 +217,21 @@ def test_iteration2_reuses_fingerprint_and_rollout():
         assert_iteration_reuse("same", "different", 2, 7, 7)
     with pytest.raises(RuntimeError):
         assert_iteration_reuse("same", "same", 2, 7, 8)
+
+
+def test_iteration2_keeps_frozen_warmup_reward():
+    records = finalize_global_records(
+        [_record(i) for i in range(COT_G)], fresh_rollout_index=19
+    )
+    fingerprint = rollout_fingerprint(records)
+    frozen = json.dumps(records, sort_keys=True)
+    assert assert_iteration_reuse(fingerprint, rollout_fingerprint(records), 1, 4, 4)
+    assert assert_iteration_reuse(fingerprint, rollout_fingerprint(records), 2, 4, 4)
+    assert json.dumps(records, sort_keys=True) == frozen
+    next_stage_records = finalize_global_records(
+        [_record(i) for i in range(COT_G)], fresh_rollout_index=20
+    )
+    assert rollout_fingerprint(next_stage_records) != fingerprint
 
 
 def test_sampler_audit_manifest_contract(plan):

@@ -1,4 +1,4 @@
-"""V5: Think G4 with four independent Official Sample8 anti-copy objectives."""
+"""V5 warmup edition: staged warmup over the original V5 objectives."""
 from __future__ import annotations
 
 import hashlib
@@ -29,6 +29,7 @@ LAMBDA_SID = 1.0
 VIDEO_SID_RE = re.compile(
     r"<\|video_begin\|><s_a_(\d+)><s_b_(\d+)><s_c_(\d+)>"
 )
+NONCOPY_ZERO_BONUS = 0.25
 
 
 def extract_history_region(prompt):
@@ -64,7 +65,17 @@ def reward_level(value):
     }.get(float(value), "unknown")
 
 
-def shape_sid_reward(sid, gold_sids, history_sids):
+def warmup_reward_contract(fresh_rollout_index):
+    if not isinstance(fresh_rollout_index, int) or fresh_rollout_index < 0:
+        raise ValueError("fresh_rollout_index must be a non-negative integer")
+    if fresh_rollout_index < 20:
+        return "sid_only", NONCOPY_ZERO_BONUS, 0.0
+    if fresh_rollout_index < 40:
+        return "sid_and_cot", NONCOPY_ZERO_BONUS, NONCOPY_ZERO_BONUS
+    return "off", 0.0, 0.0
+
+
+def shape_sid_reward(sid, gold_sids, history_sids, noncopy_zero_bonus=0.0):
     """Return raw q reward, full-history-copy flag, and final SID reward."""
     raw = float(q_reward(sid, gold_sids))
     copied = sid is not None and tuple(sid) in set(history_sids)
@@ -74,13 +85,19 @@ def shape_sid_reward(sid, gold_sids, history_sids):
         final = 8.0
     elif copied:
         final = 0.0
+    elif raw == 0.0:
+        final = float(noncopy_zero_bonus)
     else:
         final = raw
     return raw, copied, final
 
 
-def cot_candidate_contribution(raw_q_reward, is_history_copy):
-    return 0.0 if is_history_copy else float(raw_q_reward)
+def cot_candidate_contribution(raw_q_reward, is_history_copy, noncopy_zero_bonus=0.0):
+    if is_history_copy:
+        return 0.0
+    if float(raw_q_reward) == 0.0:
+        return float(noncopy_zero_bonus)
+    return float(raw_q_reward)
 
 
 def official_action_mask(candidate_ids):
@@ -110,22 +127,29 @@ def _count_levels(record, prefix, copied):
         )
 
 
-def finalize_global_records(records):
+def finalize_global_records(records, *, fresh_rollout_index):
     if len(records) != COT_G:
         raise ValueError("V5 formal topology requires one global G4")
     gids = {row["recommendation_group_id"] for row in records}
     if len(gids) != 1:
         raise RuntimeError(f"V5_G4_GROUP_MIX: {sorted(gids)}")
+    warmup_stage, sid_zero_bonus, cot_zero_bonus = warmup_reward_contract(
+        fresh_rollout_index
+    )
     for row in records:
         history = set(row["history_sids"])
         gold = set(row["gold_sids"])
         raw_rewards, copies, sid_rewards, cot_contributions = [], [], [], []
         for sid in row["candidate_sids"]:
-            raw, copied, final = shape_sid_reward(sid, gold, history)
+            raw, copied, final = shape_sid_reward(
+                sid, gold, history, sid_zero_bonus
+            )
             raw_rewards.append(raw)
             copies.append(copied)
             sid_rewards.append(final)
-            cot_contributions.append(cot_candidate_contribution(raw, copied))
+            cot_contributions.append(
+                cot_candidate_contribution(raw, copied, cot_zero_bonus)
+            )
         advantages = population_advantages(sid_rewards).tolist()
         details = []
         for sid, raw, copied, final, advantage, text in zip(
@@ -152,6 +176,13 @@ def finalize_global_records(records):
             "candidate_details": details,
             "cot_contributions": cot_contributions,
             "cot_reward": float(sum(cot_contributions)),
+            "fresh_rollout_index": fresh_rollout_index,
+            "warmup_stage": warmup_stage,
+            "noncopy_zero_bonus": sid_zero_bonus,
+            "noncopy_zero_count": sum(
+                not copied and raw == 0.0
+                for raw, copied in zip(raw_rewards, copies)
+            ),
             "history_sid_count": len(history),
             "gold_history_exact_overlap": len(gold & history),
             "copy_count": sum(copies),
@@ -182,7 +213,11 @@ def rollout_fingerprint(records):
         "official": row["candidate_ids"],
         "raw": row["raw_q_rewards"],
         "sid": row["sid_rewards"],
+        "cot_contributions": row["cot_contributions"],
         "cot_reward": row["cot_reward"],
+        "fresh_rollout_index": row["fresh_rollout_index"],
+        "warmup_stage": row["warmup_stage"],
+        "noncopy_zero_bonus": row["noncopy_zero_bonus"],
     } for row in records]
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
@@ -325,7 +360,10 @@ def make_video_official_anticopy_reward_func(runtime):
         ]
         if len(local) != 1:
             raise RuntimeError("V5 formal shape requires one local CoT per rank")
-        records = finalize_global_records(runtime._gather(local[0]))
+        records = finalize_global_records(
+            runtime._gather(local[0]),
+            fresh_rollout_index=runtime.fresh_rollouts,
+        )
         rank = dist.get_rank() if dist.is_initialized() else 0
         runtime.last_global_records = records
         runtime.last_local = records[rank]
@@ -433,11 +471,22 @@ class ThinkVideoOfficialAntiCopyTrainer(RecGRPOTrainer):
                 "rollout_id": int(self._smoke_rollout_id),
                 "rollout_fingerprint": self._v5_fingerprint,
                 "recommendation_group_id": records[0]["recommendation_group_id"],
+                "fresh_rollout_index": records[0]["fresh_rollout_index"],
+                "warmup_stage": records[0]["warmup_stage"],
+                "noncopy_zero_bonus": records[0]["noncopy_zero_bonus"],
+                "noncopy_zero_count": sum(
+                    int(row["noncopy_zero_count"]) for row in records
+                ),
                 "cots": records,
                 "normalization_topology": "G4 + 4 independent Official G8; never G32",
             })
 
     def _generate_and_score_completions(self, inputs):
+        completed_fresh_rollouts = (
+            int(self.state.global_step) // int(self.num_iterations)
+        )
+        if self.runtime.fresh_rollouts < completed_fresh_rollouts:
+            self.runtime.fresh_rollouts = completed_fresh_rollouts
         before = self.runtime.sample_calls
         for attempt in range(MAX_COT_CLOSURE_RETRIES + 1):
             self.runtime.closure_attempt = attempt
@@ -517,6 +566,12 @@ class ThinkVideoOfficialAntiCopyTrainer(RecGRPOTrainer):
             "policy_iteration": self._v5_policy_epoch,
             "rollout_fingerprint": self._v5_fingerprint,
             "official_sample_calls": self.runtime.sample_calls,
+            "fresh_rollout_index": sid["record"]["fresh_rollout_index"],
+            "warmup_stage": sid["record"]["warmup_stage"],
+            "noncopy_zero_bonus": sid["record"]["noncopy_zero_bonus"],
+            "noncopy_zero_count": sum(
+                int(row["noncopy_zero_count"]) for row in sid["global_records"]
+            ),
         }
         if self._smoke_log:
             self._smoke_log[-1].update(stats)
@@ -535,6 +590,10 @@ class ThinkVideoOfficialAntiCopyTrainer(RecGRPOTrainer):
                 "rollout_id": rollout.get("rollout_id"),
                 "policy_iteration": rollout.get("policy_iteration"),
                 "rollout_fingerprint": rollout.get("rollout_fingerprint"),
+                "fresh_rollout_index": rollout.get("fresh_rollout_index"),
+                "warmup_stage": rollout.get("warmup_stage"),
+                "noncopy_zero_bonus": rollout.get("noncopy_zero_bonus"),
+                "noncopy_zero_count": rollout.get("noncopy_zero_count"),
                 "cot_loss": rollout.get("cot_loss"),
                 "sid_loss": rollout.get("sid_loss"),
                 "total_loss": rollout.get("total_loss"),
