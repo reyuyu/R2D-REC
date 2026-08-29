@@ -450,7 +450,7 @@ function explorerTraceKey(trace){return `${state.activeRun}|${trace?.step??''}|$
 function mergeAdvantagePayload(payload){
   const merged=new Map((state.advantages.groups||[]).map(group=>[groupKey(group),group]));
   for(const group of payload?.groups||[])merged.set(groupKey(group),group);
-  const groups=[...merged.values()],bounded=payload?.formula==='exact_sharpen_v4'?groups.slice(-20):groups;
+  const groups=[...merged.values()],bounded=payload?.formula==='exact_sharpen_v4'?groups.slice(-20):payload?.formula==='video_official_anticopy_v5'?groups.slice(-40):groups;
   state.advantages={...(payload||{}),groups:bounded}
 }
 async function ensureExplorerAdvantages(trace){
@@ -815,5 +815,6 @@ document.querySelectorAll('.diagnostic-more').forEach(details=>details.addEventL
 <script src="/static/suffix_sid_dashboard.js?v=20260828-suffix-sid-v1"></script>
 <script src="/static/dual_beam8_dashboard.js?v=20260828-sample8-fullsid-v3"></script>
 <script src="/static/exact_sharpen_v4_dashboard.js?v=20260829-v4-details-v1"></script>
+<script src="/static/video_official_anticopy_v5_dashboard.js?v=20260830-v5-monitor-v2"></script>
 </body>
 </html>

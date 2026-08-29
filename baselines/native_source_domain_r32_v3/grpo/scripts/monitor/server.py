@@ -37,6 +37,11 @@ try:
         captured_payload as exact_sharpen_v4_payload,
         is_exact_sharpen_v4_manifest,
     )
+    from .video_official_anticopy_v5_adapter import (
+        adapt_events as adapt_video_official_anticopy_v5_events,
+        captured_payload as video_official_anticopy_v5_payload,
+        is_video_official_anticopy_v5_manifest,
+    )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from .truerec_dashboard import install_truerec_routes
 except ImportError:  # Direct execution: python monitor/server.py
@@ -56,6 +61,11 @@ except ImportError:  # Direct execution: python monitor/server.py
         adapt_events as adapt_exact_sharpen_v4_events,
         captured_payload as exact_sharpen_v4_payload,
         is_exact_sharpen_v4_manifest,
+    )
+    from video_official_anticopy_v5_adapter import (
+        adapt_events as adapt_video_official_anticopy_v5_events,
+        captured_payload as video_official_anticopy_v5_payload,
+        is_video_official_anticopy_v5_manifest,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from truerec_dashboard import install_truerec_routes
@@ -148,6 +158,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     runner = str(manifest.get("runner") or "")
     if is_exact_sharpen_v4_manifest(manifest):
         return "exact_sharpen_v4"
+    if is_video_official_anticopy_v5_manifest(manifest):
+        return "video_official_anticopy_v5"
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
     if is_dual_beam8_manifest(manifest):
@@ -487,6 +499,40 @@ def create_app(
         except OSError:
             return {}
         allowed = ("prompt", "all_gold_sids", "gold_sids", "target_domain")
+        indexed = {
+            str(row["recommendation_group_id"]): {
+                key: row[key] for key in allowed if key in row
+            }
+            for row in read_jsonl(dataset)
+            if row.get("recommendation_group_id")
+        }
+        source_cache[cache_key] = indexed
+        return indexed
+
+    def video_official_anticopy_v5_source_rows(selected: Path) -> dict[str, dict[str, Any]]:
+        """Read the SHA-guarded original V3 source fields used by V5."""
+        try:
+            manifest_data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            if not is_video_official_anticopy_v5_manifest(manifest_data):
+                return {}
+            dataset = Path(manifest_data["source_dataset_path"]).expanduser().resolve()
+            dataset.relative_to(Path("/data/GRPO/data").resolve())
+            expected_sha = str(manifest_data["source_dataset_sha256"])
+            stat = dataset.stat()
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+            return {}
+        if dataset.suffix != ".jsonl" or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+            return {}
+        cache_key = (str(dataset), stat.st_mtime_ns, stat.st_size, expected_sha, "v5")
+        cached = source_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        try:
+            if hashlib.sha256(dataset.read_bytes()).hexdigest() != expected_sha:
+                return {}
+        except OSError:
+            return {}
+        allowed = ("prompt", "all_gold_sids", "gold_sids", "gold_count", "target_domain")
         indexed = {
             str(row["recommendation_group_id"]): {
                 key: row[key] for key in allowed if key in row
@@ -1022,6 +1068,10 @@ def create_app(
             is_exact_sharpen_v4_manifest(manifest_data)
             or (selected / "exact_sharpen_v4.jsonl").is_file()
         )
+        video_official_anticopy_v5 = (
+            is_video_official_anticopy_v5_manifest(manifest_data)
+            or (selected / "video_official_anticopy_v5.jsonl").is_file()
+        )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
@@ -1041,9 +1091,10 @@ def create_app(
             "composite_interest": composite,
             "dual_beam8": dual_beam8,
             "exact_sharpen_v4": exact_sharpen_v4,
+            "video_official_anticopy_v5": video_official_anticopy_v5,
             "advantage_formula": advantage_formula,
             "advantage_source": (
-                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4
+                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4 or video_official_anticopy_v5
                 else "reconstructed" if advantage_formula is not None
                 else None
             ),
@@ -1173,6 +1224,17 @@ def create_app(
         """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
         manifest_data = read_json(selected / "manifest.json", {})
+        if is_video_official_anticopy_v5_manifest(manifest_data):
+            groups, optimization = adapt_video_official_anticopy_v5_events(
+                read_jsonl(selected / "video_official_anticopy_v5.jsonl"),
+                from_step=from_step,
+                to_step=to_step,
+                rollout_id=rollout_id,
+                group_id=group_id,
+                limit=limit,
+                source_index=video_official_anticopy_v5_source_rows(selected),
+            )
+            return video_official_anticopy_v5_payload(groups, optimization)
         if is_exact_sharpen_v4_manifest(manifest_data):
             groups = adapt_exact_sharpen_v4_events(
                 read_jsonl(selected / "exact_sharpen_v4.jsonl"),
