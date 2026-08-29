@@ -44,6 +44,7 @@ from .sample8_fullsid_trainer import (
     COT_G,
     SID_G,
     SAMPLE_MAX_NEW_TOKENS,
+    MAX_COT_CLOSURE_RETRIES,
     Sample8FullSIDRuntime,
     ThinkSample8FullSIDTrainer,
     ThinkG4SingleGroupSampler,
@@ -302,6 +303,12 @@ class Sample8ManifestWriter:
             "num_iterations": 2,
             "iteration2_reuse": ["CoT", "Sample8 FullSID", "reward", "advantage", "old_logp"],
             "zero_std_reroll": False,
+            "cot_closure_recovery": {
+                "all_rank_acceptance": True,
+                "max_extra_retries": MAX_COT_CLOSURE_RETRIES,
+                "discard_failed_attempt_before_sid_sampling": True,
+                "iteration2_reuses_only_accepted_rollout": True,
+            },
             "training_sid_sampling": {
                 "do_sample": True,
                 "temperature": 1.0,

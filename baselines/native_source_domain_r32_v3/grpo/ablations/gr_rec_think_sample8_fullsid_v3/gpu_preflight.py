@@ -162,6 +162,20 @@ def main(argv=None):
         reward_funcs=[make_sample8_fullsid_reward_func(runtime)], monitor_writer=monitor)
     trainer.current_gradient_accumulation_steps = 1
 
+    # Exercise the real retry path: rank 0 reports the first CoT as unclosed,
+    # forcing every rank to discard that G4 before any SID sampling.
+    closure_sync_calls = 0
+    original_all_cots_closed = runtime._all_cots_closed
+
+    def inject_one_global_closure_reject(local_closed):
+        nonlocal closure_sync_calls
+        closure_sync_calls += 1
+        if closure_sync_calls == 1 and rank == 0:
+            local_closed = False
+        return original_all_cots_closed(local_closed)
+
+    runtime._all_cots_closed = inject_one_global_closure_reject
+
     iterator = iter(trainer.get_train_dataloader())
     prepared = trainer._prepare_inputs(next(iterator))
     calls_after_first = runtime.sample_calls
@@ -255,6 +269,9 @@ def main(argv=None):
         "fixed_domain_prefix": records[rank]["fixed_domain_prefix"],
         "natural_language_bridge": records[rank]["natural_language_bridge"],
         "sample_calls": runtime.sample_calls, "cot_gradient": cot_grad,
+        "closure_sync_calls": closure_sync_calls,
+        "closure_retry_events": runtime.closure_retry_events,
+        "accepted_closure_attempt": runtime.closure_attempt,
         "sid_gradient": sid_grad, "combined_gradient": combined_grad,
         "checksum_before": checksum_before, "checksum_after": checksum_after,
         "base_requires_grad_count": int(base_requires_grad),
@@ -270,6 +287,11 @@ def main(argv=None):
             "same_business_group": len({row["group_id"] for row in rank_rows}) == 1,
             "one_cot_per_rank": len(rank_rows) == COT_G,
             "sample8_once_per_rank": all(row["sample_calls"] == 1 for row in rank_rows),
+            "forced_unclosed_cot_globally_retried_before_sid": all(
+                row["closure_retry_events"] >= 1 and
+                row["accepted_closure_attempt"] >= 1 and
+                row["closure_sync_calls"] >= 2
+                for row in rank_rows),
             "exact_4x8_continuations_first_full_sid_parser": all(
                 row["sample_candidate_count"] == 8 and
                 row["parsed_sid_spans_are_full_sid4"]

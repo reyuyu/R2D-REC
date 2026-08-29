@@ -27,6 +27,7 @@ LAMBDA_COT = 1.0
 LAMBDA_SID = 1.0
 FULL_SID_TOKENS = 4
 SAMPLE_MAX_NEW_TOKENS = 128
+MAX_COT_CLOSURE_RETRIES = 3
 _DOMAIN_PATTERN = re.compile(r"<\|(ad|video|prod|living)_begin\|>").fullmatch
 _ABC_PATTERNS = (
     re.compile(r"<s_a_(\d+)>").fullmatch,
@@ -141,6 +142,25 @@ class Sample8FullSIDRuntime:
         self.last_local = None
         self.sample_calls = 0
         self.fresh_rollouts = 0
+        self.closure_attempt = 0
+        self.last_global_cot_closed = None
+        self.closure_retry_events = 0
+
+    def _close_token_id(self):
+        close_ids = self.tokenizer.encode("</think>", add_special_tokens=False)
+        if len(close_ids) != 1:
+            raise RuntimeError("SAMPLE8_FULLSID_THINK_CLOSE_TOKEN_CONTRACT_FAILED")
+        return int(close_ids[0])
+
+    def cot_is_closed(self, cot_ids):
+        return self._close_token_id() in cot_ids
+
+    def _all_cots_closed(self, local_closed):
+        closed = torch.tensor(
+            [1 if local_closed else 0], dtype=torch.int32, device=self.model.device)
+        if dist.is_initialized():
+            dist.all_reduce(closed, op=dist.ReduceOp.MIN)
+        return bool(closed.item())
 
     def _sample_full_sids(self, context_ids):
         device = self.model.device
@@ -177,10 +197,10 @@ class Sample8FullSIDRuntime:
     def score_local_cot(self, prompt, cot_ids, gold_sids, target_domain, group_id=None):
         started = time.perf_counter()
         gold_set = {sid for raw in gold_sids for sid in [parse_sid(raw)] if sid is not None}
-        close_ids = self.tokenizer.encode("</think>", add_special_tokens=False)
-        if len(close_ids) != 1 or int(close_ids[0]) not in cot_ids:
+        close_id = self._close_token_id()
+        if close_id not in cot_ids:
             raise RuntimeError("SAMPLE8_FULLSID_COT_NOT_CLOSED")
-        close_at = list(cot_ids).index(int(close_ids[0]))
+        close_at = list(cot_ids).index(close_id)
         cot_trim_ids = [int(token) for token in cot_ids[: close_at + 1]]
         prompt_ids = encode_prompt(self.tokenizer, prompt)
         sample_context_ids = list(prompt_ids) + cot_trim_ids
@@ -229,6 +249,8 @@ class Sample8FullSIDRuntime:
             "wrong_domain": int(sum(value == -0.25 for value in sid_rewards)),
             "invalid": int(sum(value == -1.0 for value in sid_rewards)),
             "sample8_wall_sec": time.perf_counter() - started,
+            "cot_closure_retries_used": int(self.closure_attempt),
+            "cot_generation_attempts": int(self.closure_attempt) + 1,
             "sampling_contract": {
                 "do_sample": True, "temperature": 1.0, "top_p": 1.0,
                 "top_k": 0, "repetition_penalty": 1.0,
@@ -246,6 +268,25 @@ def make_sample8_fullsid_reward_func(runtime):
         routes = kwargs.get("route")
         if routes is None or any(route != "think" for route in routes):
             raise RuntimeError("Sample8 FullSID reward requires Think-only samples")
+        local_closed = all(runtime.cot_is_closed(ids) for ids in completion_ids)
+        runtime.last_global_cot_closed = runtime._all_cots_closed(local_closed)
+        if not runtime.last_global_cot_closed:
+            runtime.closure_retry_events += 1
+            runtime.last_local = [
+                {
+                    "recommendation_group_id": gid,
+                    "target_domain": domain,
+                    "cot_ids": [int(token) for token in ids],
+                    "closed": runtime.cot_is_closed(ids),
+                    "closure_attempt": int(runtime.closure_attempt),
+                }
+                for ids, domain, gid in zip(
+                    completion_ids, kwargs["target_domain"],
+                    kwargs["recommendation_group_id"])
+            ]
+            if len(runtime.last_local) == 1:
+                runtime.last_local = runtime.last_local[0]
+            return [0.0] * len(completion_ids)
         records = [runtime.score_local_cot(prompt, ids, golds, domain, gid)
                    for prompt, ids, golds, domain, gid in zip(
                        prompts, completion_ids, kwargs["all_gold_sids"],
@@ -377,12 +418,34 @@ class ThinkSample8FullSIDTrainer(RecGRPOTrainer):
             })
 
     def _generate_and_score_completions(self, inputs):
-        before_calls = self._sample8_fullsid_runtime.sample_calls
-        output = super()._generate_and_score_completions(inputs)
-        self._build_sid_rollout(output)
-        if self._sample8_fullsid_runtime.sample_calls - before_calls != len(inputs):
-            raise RuntimeError("SAMPLE8_FULLSID_EXPECTED_ONE_SAMPLE8_CALL_PER_LOCAL_COT")
-        return output
+        runtime = self._sample8_fullsid_runtime
+        before_calls = runtime.sample_calls
+        for attempt in range(MAX_COT_CLOSURE_RETRIES + 1):
+            runtime.closure_attempt = attempt
+            metric_lengths = {
+                key: len(values) for key, values in self._metrics["train"].items()
+            }
+            output = super()._generate_and_score_completions(inputs)
+            if runtime.last_global_cot_closed:
+                self._build_sid_rollout(output)
+                if runtime.sample_calls - before_calls != len(inputs):
+                    raise RuntimeError(
+                        "SAMPLE8_FULLSID_EXPECTED_ONE_SAMPLE8_CALL_PER_LOCAL_COT")
+                return output
+            for key in list(self._metrics["train"]):
+                del self._metrics["train"][key][metric_lengths.get(key, 0):]
+            if runtime.sample_calls != before_calls:
+                raise RuntimeError("SAMPLE8_FULLSID_SID_SAMPLED_BEFORE_COT_ACCEPTANCE")
+            if self.accelerator.is_main_process and self._monitor.enabled:
+                self._monitor.write_sample8_fullsid({
+                    "type": "cot_closure_retry",
+                    "step": int(self.state.global_step),
+                    "rollout_id": int(self._smoke_rollout_id),
+                    "failed_attempt": attempt + 1,
+                    "max_generation_attempts": MAX_COT_CLOSURE_RETRIES + 1,
+                    "discarded_before_sid_sampling": True,
+                })
+        raise RuntimeError("SAMPLE8_FULLSID_COT_NOT_CLOSED_AFTER_RETRIES")
 
     def _branch_loss(self, model, input_ids, attention_mask, action_mask,
                      old_logps, advantages, branch):

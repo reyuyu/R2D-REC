@@ -6,11 +6,12 @@ import torch
 
 from . import run_sample8_fullsid_train as runner
 from .sample8_fullsid_trainer import (
-    COT_G, SID_G, SAMPLE_MAX_NEW_TOKENS, FinalStepSaveCallback, ResumeCadenceCallback,
+    COT_G, SID_G, SAMPLE_MAX_NEW_TOKENS, MAX_COT_CLOSURE_RETRIES,
+    FinalStepSaveCallback, ResumeCadenceCallback, Sample8FullSIDRuntime,
     ThinkG4SingleGroupSampler,
     assert_one_global_group, audit_sample8_sampler, independent_sid_advantages,
-    cot_reward_from_sid_rewards, parse_full_sid_ids, scan_full_sid_ids, population_advantages,
-    rollout_fingerprint,
+    cot_reward_from_sid_rewards, make_sample8_fullsid_reward_func, parse_full_sid_ids,
+    scan_full_sid_ids, population_advantages, rollout_fingerprint,
 )
 
 
@@ -169,6 +170,70 @@ def test_sampler_audit_fresh_rollout_semantics():
 def test_no_reroll_in_source():
     source = Path(__file__).with_name("sample8_fullsid_trainer.py").read_text()
     assert "resample_decision" not in source and "zero_std_reroll" not in source
+
+
+class _ClosureTokenizer:
+    def encode(self, text, add_special_tokens=False):
+        assert text == "</think>" and not add_special_tokens
+        return [99]
+
+
+def _closure_runtime():
+    return Sample8FullSIDRuntime(SimpleNamespace(device=torch.device("cpu")),
+                                 _ClosureTokenizer())
+
+
+def test_unclosed_cot_is_rejected_before_sid_sampling(monkeypatch):
+    runtime = _closure_runtime()
+    score_calls = []
+    monkeypatch.setattr(runtime, "score_local_cot",
+                        lambda *args: score_calls.append(args))
+    reward = make_sample8_fullsid_reward_func(runtime)
+    values = reward(
+        ["prompt"], ["completion"], [[1, 2, 3]], route=["think"],
+        all_gold_sids=[["<|video_begin|><s_a_1><s_b_2><s_c_3>"]],
+        target_domain=["video"], recommendation_group_id=["group"],
+    )
+    assert values == [0.0]
+    assert runtime.last_global_cot_closed is False
+    assert runtime.sample_calls == 0 and score_calls == []
+
+
+def test_global_reject_discards_locally_closed_cot(monkeypatch):
+    runtime = _closure_runtime()
+    score_calls = []
+    monkeypatch.setattr(runtime, "_all_cots_closed", lambda local: False)
+    monkeypatch.setattr(runtime, "score_local_cot",
+                        lambda *args: score_calls.append(args))
+    reward = make_sample8_fullsid_reward_func(runtime)
+    values = reward(
+        ["prompt"], ["completion"], [[1, 99]], route=["think"],
+        all_gold_sids=[[]], target_domain=["video"],
+        recommendation_group_id=["group"],
+    )
+    assert values == [0.0]
+    assert runtime.sample_calls == 0 and score_calls == []
+
+
+def test_closed_cot_enters_sid_scoring(monkeypatch):
+    runtime = _closure_runtime()
+    monkeypatch.setattr(runtime, "score_local_cot", lambda *args: {"cot_reward": 2.5})
+    reward = make_sample8_fullsid_reward_func(runtime)
+    values = reward(
+        ["prompt"], ["completion"], [[1, 99]], route=["think"],
+        all_gold_sids=[[]], target_domain=["video"],
+        recommendation_group_id=["group"],
+    )
+    assert values == [2.5]
+    assert runtime.last_global_cot_closed is True
+
+
+def test_closure_recovery_is_bounded_and_keeps_sid_after_acceptance():
+    source = Path(__file__).with_name("sample8_fullsid_trainer.py").read_text()
+    assert MAX_COT_CLOSURE_RETRIES == 3
+    assert "range(MAX_COT_CLOSURE_RETRIES + 1)" in source
+    assert "SAMPLE8_FULLSID_SID_SAMPLED_BEFORE_COT_ACCEPTANCE" in source
+    assert "SAMPLE8_FULLSID_COT_NOT_CLOSED_AFTER_RETRIES" in source
 
 
 def test_loss_weights_are_one_to_one():
