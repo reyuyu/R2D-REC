@@ -260,3 +260,77 @@ Step 250 的 1.3579 是一个明确的早期正向信号：它同时高于 basel
 - `baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/launch_sample8_fullsid_train.sh`
 - `baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/gpu_preflight.py`
 - `baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/test_sample8_fullsid_contract.py`
+
+## 11. 独立最优点搜索：OPTSEARCH450
+
+由于原正式 run 的 checkpoint-250 外部分数达到 `1.3579`，而 checkpoint-500 后续分数出现回落，2026-08-29 从同一原始 parent checkpoint-1500、fresh optimizer、相同 seed 和完全相同训练数学重新启动独立搜索 run：
+
+`GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829`
+
+该 run **不是**从 GRPO-TK checkpoint-1000 恢复；checkpoint-1000 只作为旧正式 run 的完整留档。搜索 run 使用 `max_steps=450`、`save_steps=50`、`probe_every_steps=50`，保留 `50/100/150/200/250/300/350/400/450` 九个检查点。
+
+### 11.1 完成与安全状态
+
+- 完成：`450/450` optimizer steps。
+- Fresh rollouts：`225`；业务 group：`225`；CoT：`900`；Sample8 SID：`7200`。
+- 训练耗时：`14116.01 s`，约 `3 h 55 min`。
+- 最终 train loss：`-0.00727624`。
+- `LoRA delta=0.00174821`，`Base delta=0.0`。
+- 无 OOM、NCCL error、Traceback、非有限梯度或 checkpoint 保存错误。
+- 九个 checkpoint 均包含 adapter、optimizer、scheduler、trainer state 和四卡 RNG 状态。
+- 每个 checkpoint 对应的 Probe 均为 `4/4`，并全部出现在 8878 Monitor API。
+
+### 11.2 训练信号分布
+
+7200 条 sampled SID 的层级分布：
+
+| 层级 | 数量 | 占比 |
+|---|---:|---:|
+| invalid | 21 | 0.29% |
+| wrong-domain | 146 | 2.03% |
+| domain | 5709 | 79.29% |
+| A | 1111 | 15.43% |
+| AB | 104 | 1.44% |
+| Exact | 109 | 1.51% |
+
+- SID 非零 reward 比例：`20.71%`；正 reward 比例：`18.39%`。
+- SID G8 zero-std 比例：`38.78%`。
+- CoT reward：mean `1.7533`，median `0.5`，范围 `[-2.5, 64.0]`。
+- CoT reward 正值比例：`56.89%`；CoT G4 zero-std 比例：`14.22%`。
+- 检测到多 SID 输出 `88` 条；训练按既定 parser 只评分第一个完整 SID，未修改解析或训练数学。
+
+### 11.3 固定 Probe4 趋势
+
+下表的 Think 值是四个固定 Probe group 的 Beam32 reward mean 均值，仅用于同 run 内候选筛选：
+
+| Step | Think Probe mean | NoThink Probe mean | Exact candidate hits | AB candidate hits | A candidate hits |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 2.3516 | 0.1875 | 4 | 1 | 14 |
+| 50 | 1.3633 | 0.1406 | 1 | 4 | 24 |
+| 100 | 1.6934 | 0.2500 | 2 | 3 | 23 |
+| 150 | **2.0098** | 0.1406 | **3** | 2 | 16 |
+| 200 | 1.2891 | 0.1562 | 1 | 3 | 26 |
+| 250 | 0.8340 | 0.4844 | 0 | 4 | 22 |
+| 300 | 0.9063 | 0.1719 | 0 | 5 | 20 |
+| 350 | 0.8984 | 0.5156 | 0 | 4 | 25 |
+| 400 | **1.4238** | 0.3906 | 1 | **6** | 19 |
+| 450 | 1.0859 | 0.2656 | 0 | **7** | 22 |
+
+训练后 checkpoint 的内部 Think Probe 排序为：
+
+`150 > 100 > 400 > 50 > 200 > 450 > 300 > 350 > 250`
+
+其中 checkpoint-150 是当前固定 Probe4 的首选外测候选，checkpoint-100 与 checkpoint-400 是次选。checkpoint-400/450 的 AB 命中更强，但 Exact 并未持续同步增加，提示后期训练可能更多改善部分层级而非完整 SID 命中。
+
+这个排序不能直接宣布“最佳外部分数点”：Probe4 只有四个固定样本，且 Think CoT 生成具有随机性。正式选点仍应使用同一外部评测协议，优先评测 `150/100/400`，再覆盖用户指定的 `50/200/350/450`；`250/300` 作为复现和补充点保留。本轮没有自动启动 external benchmark。
+
+结构化汇总：
+
+`baselines/native_source_domain_r32_v3/grpo/results/grpo_tk_optsearch450_probe_trend_20260829.json`
+
+### 11.4 新 run 产物位置
+
+- Monitor run：`/data/GRPO/runs/GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829`
+- Checkpoints：`/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829`
+- 日志：`/data/GRPO/logs/GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829.log`
+- 前端：`http://127.0.0.1:8878/?kind=recommendation_grpo&run=GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829`

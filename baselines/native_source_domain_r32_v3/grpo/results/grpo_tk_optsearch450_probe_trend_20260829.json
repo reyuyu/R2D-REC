@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "experiment_codename": "GRPO-TK",
+  "run_id": "GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829",
+  "launch_commit": "403c98fe804bcee43f0f222c9601e9740342ab06",
+  "status": "completed",
+  "completion": {
+    "optimizer_steps": 450,
+    "fresh_rollouts": 225,
+    "business_groups": 225,
+    "cot_candidates": 900,
+    "sampled_sid_candidates": 7200,
+    "train_runtime_sec": 14116.005425214767,
+    "train_loss": -0.007276243782705731,
+    "lora_delta": 0.0017482066413805342,
+    "base_delta": 0.0,
+    "engineering_errors": 0
+  },
+  "training_distribution": {
+    "target_domain_groups": {
+      "video": 68,
+      "prod": 69,
+      "ad": 63,
+      "living": 25
+    },
+    "sid_reward_level_counts": {
+      "invalid": 21,
+      "wrong_domain": 146,
+      "domain": 5709,
+      "A": 1111,
+      "AB": 104,
+      "EXACT": 109
+    },
+    "sid_nonzero_fraction": 0.20708333333333334,
+    "sid_positive_fraction": 0.18388888888888888,
+    "sid_g8_zero_std_fraction": 0.3877777777777778,
+    "cot_reward_mean": 1.7533333333333334,
+    "cot_reward_median": 0.5,
+    "cot_reward_min": -2.5,
+    "cot_reward_max": 64.0,
+    "cot_reward_positive_fraction": 0.5688888888888889,
+    "cot_reward_zero_fraction": 0.38555555555555554,
+    "cot_g4_zero_std_fraction": 0.14222222222222222,
+    "multi_sid_outputs": 88
+  },
+  "checkpoint_validation": {
+    "steps": [50, 100, 150, 200, 250, 300, 350, 400, 450],
+    "all_resume_files_complete": true,
+    "all_probe_counts": 4,
+    "all_visible_in_monitor_api": true,
+    "output_root": "/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-OPTSEARCH450-20260829"
+  },
+  "fixed_probe_contract": {
+    "probe_groups": 4,
+    "probe_steps": [0, 50, 100, 150, 200, 250, 300, 350, 400, 450],
+    "evaluator": "original fixed Probe4 Beam32 official-style evaluator",
+    "note": "Internal Probe4 is a small stochastic screening signal and is not an external benchmark."
+  },
+  "fixed_probe_trend": [
+    {
+      "step": 0,
+      "think_reward_mean": 2.3515625,
+      "nothink_reward_mean": 0.1875,
+      "think_candidate_hit_counts": {"EXACT": 4, "AB": 1, "A": 14, "INVALID": 0},
+      "think_reward_by_domain": {"video": 8.53125, "living": 0.5, "prod": 0.0, "ad": 0.375}
+    },
+    {
+      "step": 50,
+      "think_reward_mean": 1.36328125,
+      "nothink_reward_mean": 0.140625,
+      "think_candidate_hit_counts": {"EXACT": 1, "AB": 4, "A": 24, "INVALID": 0},
+      "think_reward_by_domain": {"video": 4.140625, "living": 0.5, "prod": 0.3125, "ad": 0.5}
+    },
+    {
+      "step": 100,
+      "think_reward_mean": 1.693359375,
+      "nothink_reward_mean": 0.25,
+      "think_candidate_hit_counts": {"EXACT": 2, "AB": 3, "A": 23, "INVALID": 0},
+      "think_reward_by_domain": {"video": 5.6484375, "living": 0.5, "prod": 0.125, "ad": 0.5}
+    },
+    {
+      "step": 150,
+      "think_reward_mean": 2.009765625,
+      "nothink_reward_mean": 0.140625,
+      "think_candidate_hit_counts": {"EXACT": 3, "AB": 2, "A": 16, "INVALID": 0},
+      "think_reward_by_domain": {"video": 7.0390625, "living": 0.5, "prod": 0.0, "ad": 0.5}
+    },
+    {
+      "step": 200,
+      "think_reward_mean": 1.2890625,
+      "nothink_reward_mean": 0.15625,
+      "think_candidate_hit_counts": {"EXACT": 1, "AB": 3, "A": 26, "INVALID": 0},
+      "think_reward_by_domain": {"video": 3.96875, "living": 0.5, "prod": 0.1875, "ad": 0.5}
+    },
+    {
+      "step": 250,
+      "think_reward_mean": 0.833984375,
+      "nothink_reward_mean": 0.484375,
+      "think_candidate_hit_counts": {"EXACT": 0, "AB": 4, "A": 22, "INVALID": 0},
+      "think_reward_by_domain": {"video": 2.4609375, "living": 0.375, "prod": 0.125, "ad": 0.375}
+    },
+    {
+      "step": 300,
+      "think_reward_mean": 0.90625,
+      "nothink_reward_mean": 0.171875,
+      "think_candidate_hit_counts": {"EXACT": 0, "AB": 5, "A": 20, "INVALID": 0},
+      "think_reward_by_domain": {"video": 2.625, "living": 0.375, "prod": 0.125, "ad": 0.5}
+    },
+    {
+      "step": 350,
+      "think_reward_mean": 0.8984375,
+      "nothink_reward_mean": 0.515625,
+      "think_candidate_hit_counts": {"EXACT": 0, "AB": 4, "A": 25, "INVALID": 0},
+      "think_reward_by_domain": {"video": 2.46875, "living": 0.5, "prod": 0.125, "ad": 0.5}
+    },
+    {
+      "step": 400,
+      "think_reward_mean": 1.423828125,
+      "nothink_reward_mean": 0.390625,
+      "think_candidate_hit_counts": {"EXACT": 1, "AB": 6, "A": 19, "INVALID": 0},
+      "think_reward_by_domain": {"video": 4.3203125, "living": 0.75, "prod": 0.125, "ad": 0.5}
+    },
+    {
+      "step": 450,
+      "think_reward_mean": 1.0859375,
+      "nothink_reward_mean": 0.265625,
+      "think_candidate_hit_counts": {"EXACT": 0, "AB": 7, "A": 22, "INVALID": 0},
+      "think_reward_by_domain": {"video": 2.84375, "living": 0.875, "prod": 0.125, "ad": 0.5}
+    }
+  ],
+  "internal_screening": {
+    "think_reward_checkpoint_order": [150, 100, 400, 50, 200, 450, 300, 350, 250],
+    "primary_candidate": 150,
+    "secondary_candidates": [100, 400],
+    "interpretation": "Checkpoint-150 is the strongest internal Probe4 candidate, but no checkpoint is declared externally optimal without the official external benchmark."
+  },
+  "external_benchmark_started": false
+}
