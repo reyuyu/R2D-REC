@@ -362,6 +362,13 @@ class V5MonitorWriter:
                 "noncopy": "unchanged q_reward",
             },
             "cot_reward": "sum raw q_reward for non-copy candidates; every complete copy contributes 0",
+            "warmup_reward": {
+                "index_basis": "frozen fresh rollout / business group index",
+                "groups_0_19": "non-copy raw q=0 gets SID 0.25 only",
+                "groups_20_39": "non-copy raw q=0 gets SID 0.25 and CoT contribution 0.25",
+                "groups_40_plus": "off; exact original V5 rewards",
+                "iteration2": "reuse frozen rollout reward without recomputation",
+            },
             "loss": "L_cot + L_sid (1:1)",
             "num_iterations": 2,
             "iteration2_reuse": [
