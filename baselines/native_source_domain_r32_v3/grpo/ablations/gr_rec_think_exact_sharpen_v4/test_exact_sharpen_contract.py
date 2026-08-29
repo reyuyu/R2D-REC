@@ -71,6 +71,8 @@ def test_audit_contains_every_baseline_manifest_key():
 
 
 def test_parent_checkpoint_and_sha_guard():
+    assert runner.PARENT_ADAPTER.name == "checkpoint-250"
+    assert runner.PARENT_ADAPTER_SHA256 == "64e1a85500b68f48d1996e6a215ea7a0bfe0dfdb925d6d53a86579ea23650be5"
     assert runner.validate_parent_adapter() == {
         "path": str(runner.PARENT_ADAPTER),
         "adapter_sha256": runner.PARENT_ADAPTER_SHA256,
@@ -285,3 +287,4 @@ def test_gpu_preflight_covers_three_branch_zero_update_contract():
         '"probe_beam_stats_restored"', '"probe_parameter_unchanged"',
     ):
         assert contract in source
+    assert 'probe_monitor.run_dir / "probes.jsonl"' in source

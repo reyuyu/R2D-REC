@@ -8,4 +8,4 @@ This directory intentionally contains no GPU preflight artifact. Review and an
 explicit launch decision are required before running `launch_exact_sharpen_train.sh`.
 
 Key immutable inputs are enforced by the runner: dataset SHA256, row/group count,
-Think-only routing, Probe4 exclusion, V3 checkpoint-1500 path, and adapter SHA256.
+Think-only routing, Probe4 exclusion, V3 checkpoint-250 path, and adapter SHA256.

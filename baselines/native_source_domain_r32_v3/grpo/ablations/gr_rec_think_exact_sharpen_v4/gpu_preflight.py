@@ -283,7 +283,10 @@ def main(argv=None):
     dist.barrier()
 
     if rank == 0:
-        probe_rows = [json.loads(line) for line in (probe_root / "probes.jsonl").read_text(encoding="utf-8").splitlines()]
+        probe_rows = [
+            json.loads(line)
+            for line in (probe_monitor.run_dir / "probes.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
         probe0 = [row for row in probe_rows if row.get("step") == 0]
         duplicate_parity = all(
             row["free_duplicate_penalties"] == duplicate_penalties(row["free_sids"], row["free_raw_rewards"])
