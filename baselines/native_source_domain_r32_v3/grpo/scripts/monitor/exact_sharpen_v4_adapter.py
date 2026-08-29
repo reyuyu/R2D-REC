@@ -2,10 +2,15 @@
 from __future__ import annotations
 
 import math
+import re
+from collections import Counter
 from typing import Any, Callable, Iterable
 
 
 EXPERIMENT = "GR_REC_ThinkExactSharpen_v4"
+_PROMPT_SID_RE = re.compile(
+    r"<\|([a-z_]+)_begin\|><s_a_(\d+)><s_b_(\d+)><s_c_(\d+)>"
+)
 
 
 def is_exact_sharpen_v4_manifest(manifest: dict[str, Any]) -> bool:
@@ -39,6 +44,30 @@ def _sid_key(value: Any, length: int = 4) -> tuple[Any, ...] | None:
     return tuple(value[:length])
 
 
+def _sid_component(value: Any) -> str:
+    text = str(value)
+    domain = re.fullmatch(r"<\|([a-z_]+)_begin\|>", text)
+    if domain:
+        return domain.group(1)
+    token = re.fullmatch(r"<s_[abc]_(\d+)>", text)
+    if token:
+        return token.group(1)
+    return text
+
+
+def _canonical_sid(value: Any) -> tuple[str, str, str, str] | None:
+    key = _sid_key(value)
+    if key is None:
+        return None
+    return tuple(_sid_component(part) for part in key)  # type: ignore[return-value]
+
+
+def _history_sid_counts(prompt: Any) -> Counter[tuple[str, str, str, str]]:
+    if not isinstance(prompt, str):
+        return Counter()
+    return Counter(match.groups() for match in _PROMPT_SID_RE.finditer(prompt))
+
+
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
@@ -69,6 +98,7 @@ def _reward_level(value: float) -> str:
 def _candidate_rows(
     cot: dict[str, Any], branch: str,
     decode_token_ids: Callable[[list[int]], str] | None = None,
+    history_sid_counts: Counter[tuple[str, str, str, str]] | None = None,
 ) -> list[dict[str, Any]]:
     raw = cot[f"{branch}_raw_rewards"]
     shaped = cot[f"{branch}_rewards"]
@@ -79,8 +109,12 @@ def _candidate_rows(
     saturated = bool(cot[f"{branch}_saturated"])
     parser_statuses = cot.get("free_parser_statuses", []) if branch == "free" else []
     action_spans = cot.get("free_action_spans", []) if branch == "free" else []
-    return [
-        {
+    rows = []
+    history_sid_counts = history_sid_counts or Counter()
+    for index in range(8):
+        canonical_sid = _canonical_sid(sids[index])
+        history_occurrences = history_sid_counts.get(canonical_sid, 0) if canonical_sid else 0
+        rows.append({
             "candidate_id": index,
             "sid": sids[index],
             "token_ids": token_ids[index],
@@ -104,9 +138,10 @@ def _candidate_rows(
                 if branch == "free" else "fixed target-domain begin; stochastic ABC3"
             ),
             "completion_text": decode_token_ids(token_ids[index]) if decode_token_ids else None,
-        }
-        for index in range(8)
-    ]
+            "copied_from_history": history_occurrences > 0,
+            "history_occurrence_count": history_occurrences,
+        })
+    return rows
 
 
 def _branch_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -123,6 +158,7 @@ def _branch_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "unique_sid_count": len(unique_sids),
         "duplicate_penalized_count": sum(float(row["duplicate_penalty"]) != 0.0 for row in rows),
         "a_reward_removed_count": sum(bool(row["a_reward_removed"]) for row in rows),
+        "history_copy_count": sum(bool(row["copied_from_history"]) for row in rows),
     }
 
 
@@ -175,12 +211,14 @@ def adapt_events(
             continue
         if group_id is not None and current_group != group_id:
             continue
+        source = (source_index or {}).get(str(current_group), {})
+        history_sid_counts = _history_sid_counts(source.get("prompt"))
         cot_rewards = [float(cot["cot_reward"]) for cot in event.get("cots", [])]
         cot_advantages = _population_advantages(cot_rewards)
         cots = []
         for index, cot in enumerate(event.get("cots", [])):
-            free_rows = _candidate_rows(cot, "free", decode_token_ids)
-            official_rows = _candidate_rows(cot, "official", decode_token_ids)
+            free_rows = _candidate_rows(cot, "free", decode_token_ids, history_sid_counts)
+            official_rows = _candidate_rows(cot, "official", decode_token_ids, history_sid_counts)
             cots.append({
                 "cot_id": index,
                 "cot_text": cot.get("cot_text", ""),
@@ -199,7 +237,12 @@ def adapt_events(
         exact_overlap = sum(cot["branch_consistency"]["exact_sid_overlap"] for cot in cots)
         ab_overlap = sum(cot["branch_consistency"]["ab_prefix_overlap"] for cot in cots)
         a_overlap = sum(cot["branch_consistency"]["a_prefix_overlap"] for cot in cots)
-        source = (source_index or {}).get(str(current_group), {})
+        free_history_copy_count = sum(
+            cot["free_summary"]["history_copy_count"] for cot in cots
+        )
+        official_history_copy_count = sum(
+            cot["official_summary"]["history_copy_count"] for cot in cots
+        )
         groups.append({
             "valid": len(cots) == 4,
             "route": "v4",
@@ -210,6 +253,17 @@ def adapt_events(
             "input_prompt": source.get("prompt"),
             "gold_sids": source.get("all_gold_sids", source.get("gold_sids", [])),
             "target_domain": source.get("target_domain", cots[0].get("target_domain") if cots else None),
+            "history_sid_count": sum(history_sid_counts.values()),
+            "history_unique_sid_count": len(history_sid_counts),
+            "history_copy_summary": {
+                "free_count": free_history_copy_count,
+                "free_denominator": 32,
+                "official_count": official_history_copy_count,
+                "official_denominator": 32,
+                "total_count": free_history_copy_count + official_history_copy_count,
+                "total_denominator": 64,
+                "semantics": "exact full SID match against the input history (domain+A+B+C)",
+            },
             "rollout_fingerprint": event.get("rollout_fingerprint"),
             "free_saturated": bool(event.get("free_saturated")),
             "official_saturated": bool(event.get("official_saturated")),

@@ -40,7 +40,11 @@ def test_v4_adapter_exposes_two_g8_branches_and_removed_a_reward():
     }
     group = adapt_events(
         [event],
-        source_index={"group": {"prompt": "model input", "all_gold_sids": ["gold"]}},
+        source_index={"group": {
+            "prompt": "model input <|video_begin|><s_a_0><s_b_2><s_c_3> repeated "
+                      "<|video_begin|><s_a_0><s_b_2><s_c_3>",
+            "all_gold_sids": ["gold"],
+        }},
         decode_token_ids=lambda ids: "decoded:" + ",".join(map(str, ids)),
     )[0]
     assert len(group["cots"]) == 4
@@ -54,9 +58,21 @@ def test_v4_adapter_exposes_two_g8_branches_and_removed_a_reward():
     assert group["cots"][0]["free_summary"]["parsed_count"] == 8
     assert group["cots"][0]["branch_consistency"]["exact_sid_overlap"] == 8
     assert group["branch_consistency"]["cot_count"] == 4
-    assert group["input_prompt"] == "model input"
+    assert group["input_prompt"].startswith("model input")
     assert group["gold_sids"] == ["gold"]
     assert group["cots"][0]["free"][0]["completion_text"] == "decoded:1,2,3,4"
+    assert group["cots"][0]["free"][0]["copied_from_history"] is True
+    assert group["cots"][0]["free"][0]["history_occurrence_count"] == 2
+    assert group["cots"][0]["free"][1]["copied_from_history"] is False
+    assert group["cots"][0]["free_summary"]["history_copy_count"] == 1
+    assert group["history_sid_count"] == 2
+    assert group["history_unique_sid_count"] == 1
+    assert group["history_copy_summary"] == {
+        "free_count": 4, "free_denominator": 32,
+        "official_count": 4, "official_denominator": 32,
+        "total_count": 8, "total_denominator": 64,
+        "semantics": "exact full SID match against the input history (domain+A+B+C)",
+    }
     assert captured_payload([group])["formula"] == "exact_sharpen_v4"
     assert is_exact_sharpen_v4_manifest({"experiment": "GR_REC_ThinkExactSharpen_v4"})
 
@@ -86,5 +102,6 @@ def test_v4_monitor_endpoint_and_frontend_contract(tmp_path):
         "v4ProbeOfficialRewardChart", "展开 32 条 Beam SID", "完整 Free 采样",
         "branch_consistency", "A+ rate 绝对差", "采样与解析明细",
         "模型输入原文", "completion_text", "var(--ink)",
+        "抄历史", "history_copy", "historySidKeys", "copiedFromHistory",
     ):
         assert contract in dashboard
