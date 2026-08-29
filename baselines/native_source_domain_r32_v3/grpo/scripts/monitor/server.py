@@ -313,6 +313,8 @@ def create_app(
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     install_truerec_routes(app, truerec_runs_dir, STATIC_DIR)
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
+    tokenizer_cache: dict[str, Any] = {}
+    decoded_text_cache: dict[tuple[str, tuple[int, ...]], str] = {}
     plus_gamma_exposure_index = load_plus_gamma_exposure_index()
 
     def run_paths() -> list[Path]:
@@ -460,6 +462,68 @@ def create_app(
         }
         source_cache[cache_key] = indexed
         return indexed
+
+    def exact_sharpen_v4_source_rows(selected: Path) -> dict[str, dict[str, Any]]:
+        """Read only the SHA-guarded V4 dataset fields needed by the dashboard."""
+        try:
+            manifest_data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
+            if not is_exact_sharpen_v4_manifest(manifest_data):
+                return {}
+            dataset = Path(manifest_data["dataset_path"]).expanduser().resolve()
+            dataset.relative_to(Path("/data/GRPO/data").resolve())
+            expected_sha = str(manifest_data["dataset_sha256"])
+            stat = dataset.stat()
+        except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+            return {}
+        if dataset.suffix != ".jsonl" or re.fullmatch(r"[0-9a-f]{64}", expected_sha) is None:
+            return {}
+        cache_key = (str(dataset), stat.st_mtime_ns, stat.st_size, expected_sha)
+        cached = source_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        try:
+            if hashlib.sha256(dataset.read_bytes()).hexdigest() != expected_sha:
+                return {}
+        except OSError:
+            return {}
+        allowed = ("prompt", "all_gold_sids", "gold_sids", "target_domain")
+        indexed = {
+            str(row["recommendation_group_id"]): {
+                key: row[key] for key in allowed if key in row
+            }
+            for row in read_jsonl(dataset)
+            if row.get("recommendation_group_id")
+        }
+        source_cache[cache_key] = indexed
+        return indexed
+
+    def exact_sharpen_v4_decoder(manifest_data: dict[str, Any]):
+        """Lazily decode captured token ids without loading model weights or touching GPU."""
+        try:
+            model_path = Path(manifest_data["model_path"]).expanduser().resolve()
+            model_path.relative_to(Path("/data/models").resolve())
+        except (KeyError, OSError, TypeError, ValueError):
+            return None
+        cache_key = str(model_path)
+        if cache_key not in tokenizer_cache:
+            try:
+                from transformers import AutoTokenizer
+                tokenizer_cache[cache_key] = AutoTokenizer.from_pretrained(
+                    model_path, local_files_only=True, trust_remote_code=True,
+                )
+            except Exception:
+                tokenizer_cache[cache_key] = None
+        tokenizer = tokenizer_cache[cache_key]
+        if tokenizer is None:
+            return None
+
+        def decode(token_ids: list[int]) -> str:
+            ids = tuple(int(value) for value in token_ids)
+            key = (cache_key, ids)
+            if key not in decoded_text_cache:
+                decoded_text_cache[key] = tokenizer.decode(ids, skip_special_tokens=False)
+            return decoded_text_cache[key]
+        return decode
 
     def two_level_event_path(selected: Path, manifest_data: dict[str, Any]) -> Path:
         filename = ("sample8_fullsid.jsonl"
@@ -1117,6 +1181,8 @@ def create_app(
                 rollout_id=rollout_id,
                 group_id=group_id,
                 limit=limit,
+                source_index=exact_sharpen_v4_source_rows(selected),
+                decode_token_ids=exact_sharpen_v4_decoder(manifest_data),
             )
             return exact_sharpen_v4_payload(groups)
         if is_dual_beam8_manifest(manifest_data):
