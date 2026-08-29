@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from . import run_exact_sharpen_train as runner
-from .dual_probe import probe_summary
+from .dual_probe import probe_summary, restore_beam_stats
 from .exact_sharpen_trainer import (
     COT_G, SID_G, branch_is_saturated, duplicate_penalties,
     finalize_global_records, independent_g8_advantages, population_advantages,
@@ -48,6 +48,26 @@ def test_run_plan_replaces_training_data_but_retains_probe4():
     assert len(plan["dataset"]) == 611 and plan["max_steps"] == 1222
     assert tuple(plan["probe_group_ids"]) == runner.FIXED_PROBE4_IDS
     assert plan["probe_train_overlap"] == []
+
+
+def test_audit_contains_every_baseline_manifest_key():
+    required = {
+        "selected_groups", "trained_groups", "dropped_groups",
+        "think_unique_groups", "nothink_unique_groups",
+        "think_rollouts", "nothink_rollouts", "fresh_rollout_count",
+        "unique_groups_per_global_rollout", "optimizer_steps",
+        "think_optimizer_steps", "nothink_optimizer_steps",
+    }
+    audit = runner.prepare_v4_run_plan(
+        runner.build_v4_parser().parse_args([
+            "--run-id", "V4-AUDIT-CPU-TEST", "--n-groups", "all", "--probe-groups", "4",
+        ])
+    )["audit"]
+    assert required <= set(audit)
+    assert audit["think_rollouts"] == 611 and audit["nothink_rollouts"] == 0
+    assert audit["dropped_groups"] == 0
+    assert audit["unique_groups_per_global_rollout"] == 1
+    assert audit["nothink_optimizer_steps"] == 0
 
 
 def test_parent_checkpoint_and_sha_guard():
@@ -179,10 +199,56 @@ def test_free_and_official_probe_routes_are_not_confused():
 
 
 def test_probe_summary_reports_hierarchical_counts():
-    free = probe_summary([{"reward": 0.5}, {"reward": 2.0}, {"reward": 8.0}, {"reward": -1.0}])
+    free = probe_summary(
+        [{"reward": 0.5, "closed": True}, {"reward": 2.0, "closed": True},
+         {"reward": 8.0, "closed": True}, {"reward": -1.0, "closed": False}],
+        reward_semantics="free q_reward", reward_denominator="4 candidates")
     assert (free["a_count"], free["ab_count"], free["exact_count"], free["invalid_count"]) == (1, 1, 1, 1)
-    official = probe_summary([{"reward": 10.0, "a": 1, "ab": 2, "exact": 3, "invalid": 4}])
+    assert free["candidate_count"] == 4 and free["closure_rate"] == 0.75
+    assert free["reward_semantics"] == "free q_reward"
+    assert free["reward_denominator"] == "4 candidates"
+    official = probe_summary(
+        [{"reward": 10.0, "a": 1, "ab": 2, "exact": 3, "invalid": 4,
+          "closed": True}],
+        reward_semantics="official Beam32", reward_denominator="1 CoT")
     assert (official["a_count"], official["ab_count"], official["exact_count"], official["invalid_count"]) == (1, 2, 3, 4)
+    assert official["candidate_count"] == 1 and official["closure_rate"] == 1.0
+
+
+def test_beam_stats_restore_preserves_or_removes_temporary_state():
+    class Model: pass
+    original = {"before": 1}
+    model = Model()
+    model._beam_stats = original
+    model._beam_stats = {"probe": 2}
+    restore_beam_stats(model, True, original)
+    assert model._beam_stats is original
+    fresh = Model()
+    fresh._beam_stats = {"probe": 2}
+    restore_beam_stats(fresh, False, None)
+    assert not hasattr(fresh, "_beam_stats")
+
+
+def test_evaluator_records_and_restores_beam_stats_contract():
+    source = Path(__file__).with_name("dual_probe.py").read_text()
+    assert 'had_beam_stats = hasattr(model, "_beam_stats")' in source
+    assert 'previous_beam_stats = getattr(model, "_beam_stats", None)' in source
+    assert "restore_beam_stats(model, had_beam_stats, previous_beam_stats)" in source
+
+
+def test_optimization_monitor_is_passive_and_complete():
+    source = Path(__file__).with_name("exact_sharpen_trainer.py").read_text()
+    block = source[source.index("    def log(self, logs"):source.index("\n\ndef audit_v4_sampler")]
+    for key in (
+        "policy_iteration", "rollout_fingerprint", "cot_loss", "free_loss",
+        "official_loss", "total_loss", "cot_ratio_mean", "free_ratio_mean",
+        "official_ratio_mean", "cot_clip_fraction", "free_clip_fraction",
+        "official_clip_fraction", "cot_approx_kl", "free_approx_kl",
+        "official_approx_kl", "cot_action_tokens", "free_action_tokens",
+        "official_action_tokens", "total_lora_grad_norm", "logs_grad_norm",
+    ):
+        assert f'"{key}"' in block
+    assert "generate(" not in block and "score_local_cot" not in block
 
 
 def test_config_and_optimizer_are_frozen():

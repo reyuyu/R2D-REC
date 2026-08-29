@@ -442,6 +442,38 @@ class ThinkExactSharpenTrainer(RecGRPOTrainer):
             self._smoke_log[-1].update(stats)
         return total
 
+    def log(self, logs, start_time=None):
+        result = super().log(logs, start_time)
+        if (self.accelerator.is_main_process and self._monitor.enabled and
+                self._smoke_log and "loss" in logs):
+            rollout = self._smoke_log[-1]
+            self._monitor.write_exact_sharpen_v4({
+                "type": "optimization",
+                "step": int(self.state.global_step),
+                "rollout_id": rollout.get("rollout_id"),
+                "policy_iteration": rollout.get("policy_iteration"),
+                "rollout_fingerprint": rollout.get("rollout_fingerprint"),
+                "cot_loss": rollout.get("cot_loss"),
+                "free_loss": rollout.get("free_loss"),
+                "official_loss": rollout.get("official_loss"),
+                "total_loss": rollout.get("total_loss"),
+                "cot_ratio_mean": rollout.get("cot_ratio_mean"),
+                "free_ratio_mean": rollout.get("free_ratio_mean"),
+                "official_ratio_mean": rollout.get("official_ratio_mean"),
+                "cot_clip_fraction": rollout.get("cot_clip_fraction"),
+                "free_clip_fraction": rollout.get("free_clip_fraction"),
+                "official_clip_fraction": rollout.get("official_clip_fraction"),
+                "cot_approx_kl": rollout.get("cot_approx_kl"),
+                "free_approx_kl": rollout.get("free_approx_kl"),
+                "official_approx_kl": rollout.get("official_approx_kl"),
+                "cot_action_tokens": rollout.get("cot_action_tokens"),
+                "free_action_tokens": rollout.get("free_action_tokens"),
+                "official_action_tokens": rollout.get("official_action_tokens"),
+                "total_lora_grad_norm": logs.get("grad_norm"),
+                "logs_grad_norm": logs.get("grad_norm"),
+            })
+        return result
+
 
 def audit_v4_sampler(dataset, sampler):
     rows = list(dataset)
@@ -451,12 +483,15 @@ def audit_v4_sampler(dataset, sampler):
     if any(row.get("route") != "think" for row in rows):
         raise RuntimeError("V4 dataset must be Think-only")
     return {
-        "selected_groups": 611, "trained_groups": 611, "think_unique_groups": 611,
-        "nothink_unique_groups": 0, "fresh_rollout_count": 611,
+        "selected_groups": 611, "trained_groups": 611, "dropped_groups": 0,
+        "think_unique_groups": 611, "nothink_unique_groups": 0,
+        "think_rollouts": 611, "nothink_rollouts": 0,
+        "fresh_rollout_count": 611, "unique_groups_per_global_rollout": 1,
         "cot_candidates_per_group": 4, "free_candidates_per_group": 32,
         "official_candidates_per_group": 32, "free_g8_groups": 4,
         "official_g8_groups": 4, "repeat_count": 2, "num_iterations": 2,
         "optimizer_steps": 1222, "think_optimizer_steps": 1222,
+        "nothink_optimizer_steps": 0,
         "route_schedule_preview": ["think"] * 24,
         "rollout_group_ids_preview": gids[:8],
     }

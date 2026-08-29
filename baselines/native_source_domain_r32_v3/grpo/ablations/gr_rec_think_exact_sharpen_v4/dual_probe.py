@@ -16,11 +16,14 @@ from grpo_sid import final_sid, q_reward
 from .exact_sharpen_trainer import FREE_MAX_NEW_TOKENS, SID_G, scan_full_sid_ids
 
 
-def probe_summary(candidates):
+def probe_summary(candidates, *, reward_semantics, reward_denominator):
     rewards = [float(item["reward"]) for item in candidates]
-    return {
+    result = {
         "reward_mean": statistics.fmean(rewards),
         "reward_std": statistics.pstdev(rewards),
+        "reward_semantics": reward_semantics,
+        "reward_denominator": reward_denominator,
+        "candidate_count": len(candidates),
         "a_count": sum(int(item.get("a") or 0) for item in candidates)
                    if any("a" in item for item in candidates) else sum(float(v) == 0.5 for v in rewards),
         "ab_count": sum(int(item.get("ab") or 0) for item in candidates)
@@ -31,6 +34,16 @@ def probe_summary(candidates):
                          if any("invalid" in item for item in candidates) else sum(float(v) == -1.0 for v in rewards),
         "candidates": candidates,
     }
+    if candidates and all("closed" in item for item in candidates):
+        result["closure_rate"] = sum(bool(item["closed"]) for item in candidates) / len(candidates)
+    return result
+
+
+def restore_beam_stats(model, had_beam_stats, previous_beam_stats):
+    if had_beam_stats:
+        model._beam_stats = previous_beam_stats
+    elif hasattr(model, "_beam_stats"):
+        delattr(model, "_beam_stats")
 
 
 class DualContractProbeEvaluator(FixedProbeEvaluator):
@@ -108,8 +121,16 @@ class DualContractProbeEvaluator(FixedProbeEvaluator):
         return {
             "group_id": gid, "prompt": row["prompt"], "gold_sids": row["all_gold_sids"],
             "target_domain": row["target_domain"],
-            "probe_free": probe_summary([item for group in free for item in group]),
-            "probe_official": probe_summary(official),
+            "probe_free": probe_summary(
+                [item for group in free for item in group],
+                reward_semantics="six-level q_reward per parsed Free SID candidate",
+                reward_denominator="32 Free candidates (4 CoTs x Sample8)",
+            ),
+            "probe_official": probe_summary(
+                official,
+                reward_semantics="production hierarchical Beam32 reward per sampled CoT",
+                reward_denominator="4 sampled CoTs (each evaluated by Beam32)",
+            ),
             "generation_wall_sec": generation_wall,
             "wall_sec": time.perf_counter() - started,
         }
@@ -126,6 +147,9 @@ class DualContractProbeEvaluator(FixedProbeEvaluator):
         python_rng = random.getstate()
         previous_route = (self.trainer.num_generations, self.trainer.args.temperature,
                           self.trainer.args.top_p, self.trainer.temperature, self.trainer.top_p)
+        model = self.trainer.model
+        had_beam_stats = hasattr(model, "_beam_stats")
+        previous_beam_stats = getattr(model, "_beam_stats", None)
         started = time.perf_counter()
         try:
             self._set_seed()
@@ -173,5 +197,6 @@ class DualContractProbeEvaluator(FixedProbeEvaluator):
             if getattr(self.trainer, "generation_config", None) is not None:
                 self.trainer.generation_config.temperature = previous_route[1]
                 self.trainer.generation_config.top_p = previous_route[2]
+            restore_beam_stats(model, had_beam_stats, previous_beam_stats)
             self.trainer.accelerator.wait_for_everyone()
         self.last_step = step
