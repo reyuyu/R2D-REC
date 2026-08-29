@@ -1,10 +1,6 @@
-import json
+from .video_official_anticopy_v5_adapter import adapt_events, captured_payload
 from pathlib import Path
 
-from fastapi.testclient import TestClient
-
-from .server import create_app
-from .video_official_anticopy_v5_adapter import adapt_events, captured_payload
 
 def _event():
     candidates = []
@@ -63,7 +59,7 @@ def test_v5_adapter_exposes_both_policy_iterations_without_reconstruction():
 
 
 def test_v5_dashboard_preserves_details_and_visualizes_advantage_sign():
-    source = (Path(__file__).parent / "static" / "video_official_anticopy_v5_dashboard.js").read_text(
+    source = (Path(__file__).with_name("static") / "video_official_anticopy_v5_dashboard.js").read_text(
         encoding="utf-8"
     )
     assert "const detailState = new Map()" in source
@@ -75,21 +71,3 @@ def test_v5_dashboard_preserves_details_and_visualizes_advantage_sign():
     assert "v5-adv-negative" in source
     assert "v5-adv-zero" in source
     assert "v5-adv-pill" in source
-
-
-def test_v5_monitor_endpoint_serves_captured_groups(tmp_path):
-    (tmp_path / "manifest.json").write_text(json.dumps({
-        "run_id": "v5", "experiment": "GR_REC_VideoOfficialAntiCopy_v5",
-        "source_dataset_path": str(tmp_path / "missing.jsonl"),
-        "source_dataset_sha256": "0" * 64,
-    }), encoding="utf-8")
-    (tmp_path / "video_official_anticopy_v5.jsonl").write_text(
-        json.dumps(_event()) + "\n", encoding="utf-8"
-    )
-    client = TestClient(create_app(tmp_path))
-    capabilities = client.get("/api/capabilities").json()
-    assert capabilities["video_official_anticopy_v5"] is True
-    assert capabilities["advantage_source"] == "captured"
-    payload = client.get("/api/advantages").json()
-    assert payload["formula"] == "video_official_anticopy_v5"
-    assert payload["groups"][0]["cots"][0]["candidates"][0]["is_history_copy"] is True

@@ -93,7 +93,7 @@
   <main id="probes" class="view"><div class="wrap">
     <div class="probe-controls"><label class="label" for="probeGroupSelect">固定评估组</label><select id="probeGroupSelect"></select><label class="label" for="probeStepSelect">评估步数</label><select id="probeStepSelect"></select><span class="probe-note" id="probeMeta">当前实验未启用固定探针</span></div>
     <section class="charts">
-      <div class="panel" data-metric="probeRewardChart"><h2>固定评估组奖励趋势</h2><div class="legend"><span class="key" style="--c:#16835f">思考路线</span><span class="key" style="--c:#b36b08">直答路线</span></div><canvas class="chart" id="probeRewardChart"></canvas></div>
+      <div class="panel" data-metric="probeRewardChart"><h2>固定评估组奖励趋势</h2><div class="legend"><span class="key" style="--c:#bd3f4c">思考路线</span><span class="key" style="--c:#c28a1e">直答路线</span><span class="key" style="--c:#3479bf" hidden>Prod</span><span class="key" style="--c:#16835f" hidden>Living</span></div><canvas class="chart" id="probeRewardChart"></canvas></div>
       <div class="panel" id="v4ProbeFreePanel" hidden><h2>Free Probe 奖励趋势</h2><div class="legend"><span class="key" style="--c:#16835f">Free Sample8 candidate reward mean</span></div><canvas class="chart" id="v4ProbeFreeRewardChart"></canvas></div>
       <div class="panel" id="v4ProbeOfficialPanel" hidden><h2>Official Probe 奖励趋势</h2><div class="legend"><span class="key" style="--c:#b36b08">Official Beam32 CoT reward mean</span></div><canvas class="chart" id="v4ProbeOfficialRewardChart"></canvas></div>
     </section>
@@ -102,7 +102,7 @@
       <div class="panel" data-metric="probeThinkTimelineChart"><h2>思考路线证据覆盖率</h2><div class="legend"><span class="key" style="--c:#16835f">Grounded N / Raw N</span></div><canvas class="chart" id="probeThinkTimelineChart"></canvas></div>
       <div class="panel" data-metric="probeNoThinkTimelineChart"><h2>直答路线正确 A 命中</h2><div class="legend"><span class="key" style="--c:#16835f">正确 A 命中</span></div><canvas class="chart" id="probeNoThinkTimelineChart"></canvas></div>
     </section>
-    <details class="diagnostic-more"><summary>更多探针诊断（1）</summary><section class="charts"><div class="panel" data-metric="probeClosureChart"><h2>闭合率与无效 Beam</h2><div class="legend"><span class="key" style="--c:#2d6cdf">闭合率</span><span class="key" style="--c:#bd3f4c">无效 Beam 数</span></div><canvas class="chart" id="probeClosureChart"></canvas></div></section></details>
+    <details class="diagnostic-more"><summary>更多探针诊断（1）</summary><section class="charts"><div class="panel" data-metric="probeClosureChart"><h2>闭合率与无效 Beam</h2><div class="legend"><span class="key" style="--c:#bd3f4c">闭合率</span><span class="key" style="--c:#c28a1e">无效 Beam 数</span><span class="key" style="--c:#3479bf" hidden>Prod</span><span class="key" style="--c:#16835f" hidden>Living</span></div><canvas class="chart" id="probeClosureChart"></canvas></div></section></details>
     <section id="probeDetail" style="margin-top:14px"></section>
   </div></main>
 
@@ -815,6 +815,6 @@ document.querySelectorAll('.diagnostic-more').forEach(details=>details.addEventL
 <script src="/static/suffix_sid_dashboard.js?v=20260828-suffix-sid-v1"></script>
 <script src="/static/dual_beam8_dashboard.js?v=20260828-sample8-fullsid-v3"></script>
 <script src="/static/exact_sharpen_v4_dashboard.js?v=20260829-v4-details-v1"></script>
-<script src="/static/video_official_anticopy_v5_dashboard.js?v=20260830-v5-monitor-v2"></script>
+<script src="/static/video_official_anticopy_v5_dashboard.js?v=20260830-mixed-v5-domains-v2"></script>
 </body>
 </html>

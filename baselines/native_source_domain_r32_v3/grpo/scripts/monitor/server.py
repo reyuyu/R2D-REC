@@ -40,6 +40,8 @@ try:
     from .video_official_anticopy_v5_adapter import (
         adapt_events as adapt_video_official_anticopy_v5_events,
         captured_payload as video_official_anticopy_v5_payload,
+        is_official_anticopy_mixed_v5_manifest,
+        is_official_anticopy_v5_manifest,
         is_video_official_anticopy_v5_manifest,
     )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
@@ -65,6 +67,8 @@ except ImportError:  # Direct execution: python monitor/server.py
     from video_official_anticopy_v5_adapter import (
         adapt_events as adapt_video_official_anticopy_v5_events,
         captured_payload as video_official_anticopy_v5_payload,
+        is_official_anticopy_mixed_v5_manifest,
+        is_official_anticopy_v5_manifest,
         is_video_official_anticopy_v5_manifest,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
@@ -156,10 +160,12 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     """Select only formulas whose immutable run manifest identifies them exactly."""
     experiment = str(manifest.get("experiment") or "")
     runner = str(manifest.get("runner") or "")
-    if is_exact_sharpen_v4_manifest(manifest):
-        return "exact_sharpen_v4"
+    if is_official_anticopy_mixed_v5_manifest(manifest):
+        return "official_anticopy_mixed_v5"
     if is_video_official_anticopy_v5_manifest(manifest):
         return "video_official_anticopy_v5"
+    if is_exact_sharpen_v4_manifest(manifest):
+        return "exact_sharpen_v4"
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
     if is_dual_beam8_manifest(manifest):
@@ -510,10 +516,10 @@ def create_app(
         return indexed
 
     def video_official_anticopy_v5_source_rows(selected: Path) -> dict[str, dict[str, Any]]:
-        """Read the SHA-guarded original V3 source fields used by V5."""
+        """Read V5 prompt/gold fields only after verifying its source dataset SHA."""
         try:
             manifest_data = json.loads((selected / "manifest.json").read_text(encoding="utf-8"))
-            if not is_video_official_anticopy_v5_manifest(manifest_data):
+            if not is_official_anticopy_v5_manifest(manifest_data):
                 return {}
             dataset = Path(manifest_data["source_dataset_path"]).expanduser().resolve()
             dataset.relative_to(Path("/data/GRPO/data").resolve())
@@ -532,13 +538,11 @@ def create_app(
                 return {}
         except OSError:
             return {}
-        allowed = ("prompt", "all_gold_sids", "gold_sids", "gold_count", "target_domain")
+        allowed = ("prompt", "all_gold_sids", "gold_sids", "target_domain")
         indexed = {
-            str(row["recommendation_group_id"]): {
-                key: row[key] for key in allowed if key in row
-            }
+            str(row["recommendation_group_id"]): {key: row[key] for key in allowed if key in row}
             for row in read_jsonl(dataset)
-            if row.get("recommendation_group_id")
+            if row.get("recommendation_group_id") and row.get("route") == "think"
         }
         source_cache[cache_key] = indexed
         return indexed
@@ -1072,6 +1076,10 @@ def create_app(
             is_video_official_anticopy_v5_manifest(manifest_data)
             or (selected / "video_official_anticopy_v5.jsonl").is_file()
         )
+        official_anticopy_mixed_v5 = (
+            is_official_anticopy_mixed_v5_manifest(manifest_data)
+            or (selected / "official_anticopy_mixed_v5.jsonl").is_file()
+        )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
@@ -1092,9 +1100,10 @@ def create_app(
             "dual_beam8": dual_beam8,
             "exact_sharpen_v4": exact_sharpen_v4,
             "video_official_anticopy_v5": video_official_anticopy_v5,
+            "official_anticopy_mixed_v5": official_anticopy_mixed_v5,
             "advantage_formula": advantage_formula,
             "advantage_source": (
-                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4 or video_official_anticopy_v5
+                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4 or video_official_anticopy_v5 or official_anticopy_mixed_v5
                 else "reconstructed" if advantage_formula is not None
                 else None
             ),
@@ -1224,14 +1233,14 @@ def create_app(
         """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
         manifest_data = read_json(selected / "manifest.json", {})
-        if is_video_official_anticopy_v5_manifest(manifest_data):
+        if is_official_anticopy_v5_manifest(manifest_data):
+            event_name = ("official_anticopy_mixed_v5.jsonl"
+                          if is_official_anticopy_mixed_v5_manifest(manifest_data)
+                          else "video_official_anticopy_v5.jsonl")
             groups, optimization = adapt_video_official_anticopy_v5_events(
-                read_jsonl(selected / "video_official_anticopy_v5.jsonl"),
-                from_step=from_step,
-                to_step=to_step,
-                rollout_id=rollout_id,
-                group_id=group_id,
-                limit=limit,
+                read_jsonl(selected / event_name),
+                from_step=from_step, to_step=to_step, rollout_id=rollout_id,
+                group_id=group_id, limit=limit,
                 source_index=video_official_anticopy_v5_source_rows(selected),
             )
             return video_official_anticopy_v5_payload(groups, optimization)
