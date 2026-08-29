@@ -1,7 +1,10 @@
 import pytest
 import torch
 
-from .official_probe import beam_copy_details, official_probe_summary, restore_beam_stats
+from .official_probe import (
+    beam_copy_details, heldout_video_probe_due, official_probe_summary,
+    restore_beam_stats,
+)
 from .run_video_official_anticopy_train import (
     EXPECTED_AFTER_PROBE4, EXPECTED_RAW_GROUPS, EXPECTED_STEPS,
     EXPECTED_TRAIN_GROUPS, EXPECTED_VIDEO_GROUPS,
@@ -200,6 +203,16 @@ def test_probe_copy_anatomy_and_denominator():
     assert summary["copy_Exact"] == 1
     assert summary["copy_AB"] == 1
     assert summary["noncopy_A"] == 1
+
+
+def test_heldout_video_probe_cadence_is_step0_every100_and_final():
+    assert heldout_video_probe_due(0, "baseline")
+    assert not heldout_video_probe_due(0, "interval")
+    assert not heldout_video_probe_due(50, "interval")
+    assert heldout_video_probe_due(100, "interval")
+    assert heldout_video_probe_due(200, "interval")
+    assert heldout_video_probe_due(1074, "final")
+    assert heldout_video_probe_due(100, "final")
 
 
 def test_beam_stats_restore_contract():

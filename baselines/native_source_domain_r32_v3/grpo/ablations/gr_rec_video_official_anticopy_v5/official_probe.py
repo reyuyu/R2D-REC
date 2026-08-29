@@ -15,6 +15,17 @@ from grpo_sid import parse_sid, q_reward
 
 from .video_official_anticopy_trainer import extract_history_sids, reward_level
 
+HELDOUT_VIDEO_PROBE_EVERY_STEPS = 100
+
+
+def heldout_video_probe_due(step, reason):
+    step = int(step)
+    return (
+        (step == 0 and reason == "baseline")
+        or reason == "final"
+        or (reason == "interval" and step > 0 and step % HELDOUT_VIDEO_PROBE_EVERY_STEPS == 0)
+    )
+
 
 def _normalize_sid(value):
     if value is None:
@@ -196,7 +207,11 @@ class VideoOfficialProbeEvaluator(FixedProbeEvaluator):
         }
 
     def _evaluate_heldout(self, step, reason):
-        if not self.heldout_group_ids or self._heldout_complete(step):
+        if (
+            not self.heldout_group_ids
+            or not heldout_video_probe_due(step, reason)
+            or self._heldout_complete(step)
+        ):
             return
         self.trainer.accelerator.wait_for_everyone()
         cpu_rng = torch.get_rng_state()

@@ -378,6 +378,7 @@ class V5MonitorWriter:
                 "excluded_from_training": True,
                 "probe4_overlap": 0,
                 "contract": "fixed Video Think CoT -> fixed Video begin -> Beam32 ABC3",
+                "schedule": {"step0": True, "every_steps": 100, "final": True},
             },
             "expected_optimizer_steps": EXPECTED_STEPS,
         })
