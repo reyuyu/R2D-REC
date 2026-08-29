@@ -32,6 +32,11 @@ try:
         captured_payload as dual_beam8_payload,
         is_dual_beam8_manifest,
     )
+    from .exact_sharpen_v4_adapter import (
+        adapt_events as adapt_exact_sharpen_v4_events,
+        captured_payload as exact_sharpen_v4_payload,
+        is_exact_sharpen_v4_manifest,
+    )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from .truerec_dashboard import install_truerec_routes
 except ImportError:  # Direct execution: python monitor/server.py
@@ -46,6 +51,11 @@ except ImportError:  # Direct execution: python monitor/server.py
         adapt_events as adapt_dual_beam8_events,
         captured_payload as dual_beam8_payload,
         is_dual_beam8_manifest,
+    )
+    from exact_sharpen_v4_adapter import (
+        adapt_events as adapt_exact_sharpen_v4_events,
+        captured_payload as exact_sharpen_v4_payload,
+        is_exact_sharpen_v4_manifest,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from truerec_dashboard import install_truerec_routes
@@ -136,6 +146,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     """Select only formulas whose immutable run manifest identifies them exactly."""
     experiment = str(manifest.get("experiment") or "")
     runner = str(manifest.get("runner") or "")
+    if is_exact_sharpen_v4_manifest(manifest):
+        return "exact_sharpen_v4"
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
     if is_dual_beam8_manifest(manifest):
@@ -942,6 +954,10 @@ def create_app(
             or (selected / "dual_beam8.jsonl").is_file()
             or (selected / "sample8_fullsid.jsonl").is_file()
         )
+        exact_sharpen_v4 = (
+            is_exact_sharpen_v4_manifest(manifest_data)
+            or (selected / "exact_sharpen_v4.jsonl").is_file()
+        )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
@@ -960,9 +976,10 @@ def create_app(
             "rollouts": (selected / "rollouts.jsonl").is_file(),
             "composite_interest": composite,
             "dual_beam8": dual_beam8,
+            "exact_sharpen_v4": exact_sharpen_v4,
             "advantage_formula": advantage_formula,
             "advantage_source": (
-                "captured" if composite_formula or dual_beam8
+                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4
                 else "reconstructed" if advantage_formula is not None
                 else None
             ),
@@ -1092,6 +1109,16 @@ def create_app(
         """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
         manifest_data = read_json(selected / "manifest.json", {})
+        if is_exact_sharpen_v4_manifest(manifest_data):
+            groups = adapt_exact_sharpen_v4_events(
+                read_jsonl(selected / "exact_sharpen_v4.jsonl"),
+                from_step=from_step,
+                to_step=to_step,
+                rollout_id=rollout_id,
+                group_id=group_id,
+                limit=limit,
+            )
+            return exact_sharpen_v4_payload(groups)
         if is_dual_beam8_manifest(manifest_data):
             groups = adapt_dual_beam8_events(
                 read_jsonl(two_level_event_path(selected, manifest_data)),

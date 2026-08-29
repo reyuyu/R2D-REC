@@ -92,6 +92,8 @@
     <div class="probe-controls"><label class="label" for="probeGroupSelect">固定评估组</label><select id="probeGroupSelect"></select><label class="label" for="probeStepSelect">评估步数</label><select id="probeStepSelect"></select><span class="probe-note" id="probeMeta">当前实验未启用固定探针</span></div>
     <section class="charts">
       <div class="panel" data-metric="probeRewardChart"><h2>固定评估组奖励趋势</h2><div class="legend"><span class="key" style="--c:#16835f">思考路线</span><span class="key" style="--c:#b36b08">直答路线</span></div><canvas class="chart" id="probeRewardChart"></canvas></div>
+      <div class="panel" id="v4ProbeFreePanel" hidden><h2>Free Probe 奖励趋势</h2><div class="legend"><span class="key" style="--c:#16835f">Free Sample8 candidate reward mean</span></div><canvas class="chart" id="v4ProbeFreeRewardChart"></canvas></div>
+      <div class="panel" id="v4ProbeOfficialPanel" hidden><h2>Official Probe 奖励趋势</h2><div class="legend"><span class="key" style="--c:#b36b08">Official Beam32 CoT reward mean</span></div><canvas class="chart" id="v4ProbeOfficialRewardChart"></canvas></div>
     </section>
     <section class="probe-overview section-gap" id="probeOverview"></section>
     <section class="charts" id="probeDsrTimeline" hidden>
@@ -809,5 +811,6 @@ document.querySelectorAll('.diagnostic-more').forEach(details=>details.addEventL
 <script src="/static/composite_dashboard.js?v=20260825-composite-live-v5"></script>
 <script src="/static/suffix_sid_dashboard.js?v=20260828-suffix-sid-v1"></script>
 <script src="/static/dual_beam8_dashboard.js?v=20260828-sample8-fullsid-v3"></script>
+<script src="/static/exact_sharpen_v4_dashboard.js?v=20260829-v4-details-v1"></script>
 </body>
 </html>
