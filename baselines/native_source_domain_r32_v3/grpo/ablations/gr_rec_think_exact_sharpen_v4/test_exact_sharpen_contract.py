@@ -258,10 +258,30 @@ def test_config_and_optimizer_are_frozen():
 
 
 def test_no_gpu_preflight_is_added():
-    assert not Path(__file__).with_name("gpu_preflight.py").exists()
+    source = Path(__file__).with_name("gpu_preflight.py").read_text()
+    assert "optimizer.step" not in source and "scheduler.step" not in source
+    assert '"optimizer_steps": 0' in source
+    assert '"scheduler_steps": 0' in source
+    assert '"parameter_update": False' in source
+    assert '"checkpoint_saved": False' in source
 
 
 def test_launcher_declares_four_gpu_formal_but_is_not_a_test_launch():
     source = Path(__file__).with_name("launch_exact_sharpen_train.sh").read_text()
     assert "--nproc_per_node=4" in source
     assert "gpu_preflight" not in source
+
+
+def test_gpu_preflight_covers_three_branch_zero_update_contract():
+    source = Path(__file__).with_name("gpu_preflight.py").read_text()
+    for contract in (
+        'branch_backward(trainer, model, prepared1, "cot")',
+        'branch_backward(trainer, model, prepared1, "free")',
+        'branch_backward(trainer, model, prepared1, "official")',
+        "cot_loss + 0.5 * free_loss + 0.5 * official_loss",
+        '"lora_sha_unchanged"', '"base_sha_unchanged"',
+        '"iteration2_same_fingerprint_no_resample"',
+        '"dual_probe0_four_groups"', '"probe_rng_restored"',
+        '"probe_beam_stats_restored"', '"probe_parameter_unchanged"',
+    ):
+        assert contract in source
