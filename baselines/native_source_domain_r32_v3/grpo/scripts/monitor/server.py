@@ -49,6 +49,11 @@ try:
         captured_payload as official_finegrained_v6_payload,
         is_official_finegrained_v6_manifest,
     )
+    from .official_sample8_v3_adapter import (
+        adapt_events as adapt_official_sample8_v3_events,
+        captured_payload as official_sample8_v3_payload,
+        is_official_sample8_v3_manifest,
+    )
     from .plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from .truerec_dashboard import install_truerec_routes
 except ImportError:  # Direct execution: python monitor/server.py
@@ -80,6 +85,11 @@ except ImportError:  # Direct execution: python monitor/server.py
         adapt_events as adapt_official_finegrained_v6_events,
         captured_payload as official_finegrained_v6_payload,
         is_official_finegrained_v6_manifest,
+    )
+    from official_sample8_v3_adapter import (
+        adapt_events as adapt_official_sample8_v3_events,
+        captured_payload as official_sample8_v3_payload,
+        is_official_sample8_v3_manifest,
     )
     from plus_gamma_exposure import annotate as annotate_plus_gamma_exposure, load_index as load_plus_gamma_exposure_index
     from truerec_dashboard import install_truerec_routes
@@ -170,6 +180,8 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     """Select only formulas whose immutable run manifest identifies them exactly."""
     experiment = str(manifest.get("experiment") or "")
     runner = str(manifest.get("runner") or "")
+    if is_official_sample8_v3_manifest(manifest):
+        return "official_sample8_v3"
     if is_official_finegrained_v6_manifest(manifest):
         return "official_finegrained_v6"
     if is_official_anticopy_mixed_v5_manifest(manifest):
@@ -534,11 +546,16 @@ def create_app(
             if not (
                 is_official_anticopy_v5_manifest(manifest_data)
                 or is_official_finegrained_v6_manifest(manifest_data)
+                or is_official_sample8_v3_manifest(manifest_data)
             ):
                 return {}
-            dataset = Path(manifest_data["source_dataset_path"]).expanduser().resolve()
+            dataset_value = manifest_data.get("source_dataset_path") or manifest_data.get("dataset_path")
+            dataset = Path(dataset_value).expanduser().resolve()
             dataset.relative_to(Path("/data/GRPO/data").resolve())
-            expected_sha = str(manifest_data["source_dataset_sha256"])
+            expected_sha = str(
+                manifest_data.get("source_dataset_sha256")
+                or manifest_data.get("dataset_guard", {}).get("source_sha256")
+            )
             stat = dataset.stat()
         except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
             return {}
@@ -1099,6 +1116,10 @@ def create_app(
             is_official_finegrained_v6_manifest(manifest_data)
             or (selected / "official_finegrained_v6.jsonl").is_file()
         )
+        official_sample8_v3 = (
+            is_official_sample8_v3_manifest(manifest_data)
+            or (selected / "official_sample8.jsonl").is_file()
+        )
         advantage_formula = monitor_advantage_formula(manifest_data)
         return {
             "run_kind": normalized_run_kind(manifest_data),
@@ -1121,9 +1142,10 @@ def create_app(
             "video_official_anticopy_v5": video_official_anticopy_v5,
             "official_anticopy_mixed_v5": official_anticopy_mixed_v5,
             "official_finegrained_v6": official_finegrained_v6,
+            "official_sample8_v3": official_sample8_v3,
             "advantage_formula": advantage_formula,
             "advantage_source": (
-                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4 or video_official_anticopy_v5 or official_anticopy_mixed_v5 or official_finegrained_v6
+                "captured" if composite_formula or dual_beam8 or exact_sharpen_v4 or video_official_anticopy_v5 or official_anticopy_mixed_v5 or official_finegrained_v6 or official_sample8_v3
                 else "reconstructed" if advantage_formula is not None
                 else None
             ),
@@ -1253,6 +1275,14 @@ def create_app(
         """Expose captured Composite credit or reconstruct supported legacy credit."""
         selected = selected_run(run_id)
         manifest_data = read_json(selected / "manifest.json", {})
+        if is_official_sample8_v3_manifest(manifest_data):
+            groups, optimization = adapt_official_sample8_v3_events(
+                read_jsonl(selected / "official_sample8.jsonl"),
+                from_step=from_step, to_step=to_step, rollout_id=rollout_id,
+                group_id=group_id, limit=limit,
+                source_index=official_source_rows(selected),
+            )
+            return official_sample8_v3_payload(groups, optimization)
         if is_official_finegrained_v6_manifest(manifest_data):
             groups, optimization = adapt_official_finegrained_v6_events(
                 read_jsonl(selected / "official_finegrained_v6.jsonl"),
