@@ -16,8 +16,8 @@ FORBIDDEN_POSITIVE_DATASET = Path(
     "/data/GRPO/data/grpo_tk_positive_groups_1946_20260829/train.jsonl"
 )
 SOURCE_DATASET_SHA256 = "791d5696b87d18720fccfff5b4dbbb3c72d996095b8e2bc9d7c7f7c57fdcf3dc"
-FINAL_TRAIN_CANONICAL_SHA256 = "1ff7965aab7ac0126f1898699b704e5df65b9ad270f8f50c40cf12b5f6d49055"
-FINAL_GROUP_ID_LIST_SHA256 = "c1416069c076469252668bb27f69b0904946bd2d2154cbe3024115a17175be5f"
+FINAL_TRAIN_CANONICAL_SHA256 = "e43cef3572e095e064e10d1fd40d88e92dea48120e99384e8d2df2be7b413efb"
+FINAL_GROUP_ID_LIST_SHA256 = "1900ce3dd322e0237468210c7f4dee3f738bd59f8f8c2b1eeafbe91d2defa038"
 PARENT_ADAPTER = Path(
     "/root/GRPO-checkpoints/"
     "GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-1500"
@@ -25,8 +25,9 @@ PARENT_ADAPTER = Path(
 PARENT_ADAPTER_SHA256 = "3bc818109c8895225133c5cc77cfd1916ad8777292e7865969730708d0b48740"
 EXPECTED_RAW_GROUPS = 1549
 EXPECTED_AFTER_PROBE4 = 1545
-EXPECTED_DOMAIN_GROUPS = {"ad": 426, "living": 189, "prod": 381, "video": 549}
-EXPECTED_TRAIN_GROUPS = 1545
+EXPECTED_AFTER_PROBE16 = 1533
+EXPECTED_DOMAIN_GROUPS = {"ad": 423, "living": 186, "prod": 378, "video": 546}
+EXPECTED_TRAIN_GROUPS = 1533
 EXPECTED_STEPS = EXPECTED_TRAIN_GROUPS * 2
 FIXED_PROBE4_IDS = (
     "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
@@ -34,6 +35,21 @@ FIXED_PROBE4_IDS = (
     "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
     "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8",
 )
+EXTRA_PROBE12_IDS = (
+    "7ee11d79f71960090e4ed33719367b4a06d2bd2373e17bc4692c7b474756ad26",
+    "73bbd41bd5449a4d28a7a2bb73f6f66ce96c20f01b34398c6942a71612b8de73",
+    "a26b9927310bb09d606ae8a2632137326222f983d8bde7d29183940d068d4460",
+    "6081a4847c2ccea83ad57faeb370d987721b8b82a0387eacf5c2d33d6ce1ddd8",
+    "02cdfed2e24fc36a7dd2939c4ca0d34aa189f187908dc23e9fce986b07bbb09e",
+    "87ac33d73d5afa9d5d180e87ebd0f8e78d30d4d1ba92564bc53a38b38d1885f6",
+    "fd487b0a9bf3cd0069dea7a3070a1cabe3ba90567a228bb2f286257c1bd15e87",
+    "74e68ff55efc91c30341116349157915fe0d94fc7bd4fdf9446970d88d18b89b",
+    "c399e01d9eaa30e416df6c29ee118db4b9a6361bf558433439ccec27500e0d46",
+    "88a0d179ef5072e8172ebb56bc74c27900a596f9a7df5241355d5d141f3c5a55",
+    "9cec7983b7387dd0b399bde5a31fa49e142618d56754459afa36f88030e39fee",
+    "9dabef351f0971928e9bfc0e3799f0222b497edb9a01deb2ee93b6c3c9e9b316",
+)
+FIXED_PROBE16_IDS = FIXED_PROBE4_IDS + EXTRA_PROBE12_IDS
 
 if SOURCE_DATASET.resolve() == FORBIDDEN_POSITIVE_DATASET.resolve():
     raise RuntimeError("V5 must never use the 611 positive-filtered dataset")
@@ -141,11 +157,11 @@ def validate_source_dataset():
 def build_mixed_dataset(base_plan):
     if base_plan["raw_groups"] != EXPECTED_RAW_GROUPS:
         raise RuntimeError("V5 raw group count drift")
-    if tuple(base_plan["probe_group_ids"]) != FIXED_PROBE4_IDS:
-        raise RuntimeError("V5 Probe4 selection drift")
+    if tuple(base_plan["probe_group_ids"]) != FIXED_PROBE16_IDS:
+        raise RuntimeError("V5 Probe16 selection drift")
     base_groups = set(base_plan["dataset"]["recommendation_group_id"])
-    if len(base_groups) != EXPECTED_AFTER_PROBE4:
-        raise RuntimeError("V5 Probe4 exclusion count drift")
+    if len(base_groups) != EXPECTED_AFTER_PROBE16:
+        raise RuntimeError("V5 Probe16 exclusion count drift")
     train = [
         dict(row) for row in base_plan["dataset"]
         if row["route"] == "think"
@@ -153,8 +169,8 @@ def build_mixed_dataset(base_plan):
     group_ids = [row["recommendation_group_id"] for row in train]
     if len(train) != EXPECTED_TRAIN_GROUPS or len(set(group_ids)) != EXPECTED_TRAIN_GROUPS:
         raise RuntimeError("V5 final train topology drift")
-    if set(group_ids) & set(FIXED_PROBE4_IDS):
-        raise RuntimeError("V5 final train overlaps Probe4")
+    if set(group_ids) & set(FIXED_PROBE16_IDS):
+        raise RuntimeError("V5 final train overlaps Probe16")
     domain_counts = dict(sorted(collections.Counter(
         row["target_domain"] for row in train
     ).items()))
@@ -186,12 +202,14 @@ def build_mixed_dataset(base_plan):
     return Dataset.from_list(train), {
         "source_business_groups": EXPECTED_RAW_GROUPS,
         "groups_after_probe4": EXPECTED_AFTER_PROBE4,
+        "groups_after_probe16": EXPECTED_AFTER_PROBE16,
         "train_rows": len(train),
         "unique_groups": len(set(group_ids)),
         "think_only": True,
         "all_domains": sorted(EXPECTED_DOMAIN_GROUPS),
         "domain_group_counts": domain_counts,
         "probe4_overlap": 0,
+        "probe16_overlap": 0,
         "canonical_train_sha256": actual_dataset_sha,
         "group_id_list_sha256": actual_ids_sha,
         "gold_count_distribution": dict(sorted(gold_counts.items())),
@@ -288,6 +306,10 @@ def make_v5_config(output_dir, max_steps, lr, seed, *, save_strategy="no",
 
 def build_v5_parser():
     parser = _BASE_PARSER()
+    for action in parser._actions:
+        if action.dest == "probe_groups":
+            action.choices = (0, 4, 16)
+            break
     parser.set_defaults(
         output_dir="/root/GRPO-checkpoints",
         save_steps=50,
@@ -361,7 +383,8 @@ class MixedV5MonitorWriter:
             ],
             "fixed_probe": {
                 "enabled": True,
-                "group_ids": list(FIXED_PROBE4_IDS),
+                "group_ids": list(FIXED_PROBE16_IDS),
+                "groups_per_domain": 4,
                 "contract": "all-domain production Official Beam32 ABC3",
                 "training_copy_discount_applied": False,
                 "extra_diagnostics": [

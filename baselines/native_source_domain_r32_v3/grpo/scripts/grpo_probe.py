@@ -20,7 +20,7 @@ PROBE_DOMAINS = ("video", "living", "prod", "ad")
 
 
 def select_probe_group_ids(data_path, n_groups, seed, count=0, explicit_ids=None):
-    """Select one held-out group per domain from the shuffled training prefix."""
+    """Select an equal number of held-out groups for each target domain."""
     rows = [json.loads(line) for line in open(data_path, encoding="utf-8")]
     gids = sorted({row["recommendation_group_id"] for row in rows})
     domains_by_gid = defaultdict(set)
@@ -34,32 +34,39 @@ def select_probe_group_ids(data_path, n_groups, seed, count=0, explicit_ids=None
     rng.shuffle(gids)
     selected = gids[:n_groups]
     explicit = list(dict.fromkeys(explicit_ids or ()))
+    effective_count = len(explicit) if explicit and count == 0 else count
+    if effective_count and effective_count % len(PROBE_DOMAINS):
+        raise ValueError("--probe-groups must be a multiple of 4")
+    per_domain = effective_count // len(PROBE_DOMAINS) if effective_count else 0
     if explicit:
         if count not in (0, len(explicit)):
             raise ValueError("--probe-groups must match the number of --probe-group-id values")
         probes = explicit
     else:
-        probes_by_domain = {}
+        probes_by_domain = defaultdict(list)
         for gid in selected:
             domain = domain_by_gid[gid]
-            if domain in PROBE_DOMAINS and domain not in probes_by_domain:
-                probes_by_domain[domain] = gid
-        probes = [probes_by_domain[domain] for domain in PROBE_DOMAINS
-                  if domain in probes_by_domain][:count]
-    if probes and len(probes) != 4:
+            if domain in PROBE_DOMAINS and len(probes_by_domain[domain]) < per_domain:
+                probes_by_domain[domain].append(gid)
+        probes = [probes_by_domain[domain][index]
+                  for index in range(per_domain)
+                  for domain in PROBE_DOMAINS
+                  if index < len(probes_by_domain[domain])]
+    if probes and (len(probes) % len(PROBE_DOMAINS) or not per_domain):
         missing_domains = [domain for domain in PROBE_DOMAINS
                            if domain not in {domain_by_gid.get(gid) for gid in probes}]
         raise ValueError(
-            "fixed probes require exactly 4 groups covering video/living/prod/ad; "
+            "fixed probes require an equal number of groups covering video/living/prod/ad; "
             f"missing domains: {missing_domains}"
         )
     missing = set(probes).difference(selected)
     if missing:
         raise ValueError(f"probe group IDs are outside the selected dataset: {sorted(missing)}")
     probe_domains = [domain_by_gid[gid] for gid in probes]
-    if probes and probe_domains != list(PROBE_DOMAINS):
+    expected_domains = list(PROBE_DOMAINS) * per_domain
+    if probes and probe_domains != expected_domains:
         raise ValueError(
-            "fixed probe groups must be ordered video/living/prod/ad; "
+            "fixed probe groups must repeat the video/living/prod/ad order; "
             f"got {probe_domains}"
         )
     return probes

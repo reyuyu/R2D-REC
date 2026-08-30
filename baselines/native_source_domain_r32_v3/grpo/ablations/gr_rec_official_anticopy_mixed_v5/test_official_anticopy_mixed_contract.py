@@ -8,6 +8,7 @@ from ablations.gr_rec_video_official_anticopy_v5.video_official_anticopy_trainer
 from .official_probe import beam_copy_details, official_probe_summary
 from .run_official_anticopy_mixed_train import (
     EXPECTED_AFTER_PROBE4,
+    EXPECTED_AFTER_PROBE16,
     EXPECTED_DOMAIN_GROUPS,
     EXPECTED_RAW_GROUPS,
     EXPECTED_STEPS,
@@ -15,6 +16,7 @@ from .run_official_anticopy_mixed_train import (
     FINAL_GROUP_ID_LIST_SHA256,
     FINAL_TRAIN_CANONICAL_SHA256,
     FIXED_PROBE4_IDS,
+    FIXED_PROBE16_IDS,
     FORBIDDEN_POSITIVE_DATASET,
     PARENT_ADAPTER_SHA256,
     SOURCE_DATASET,
@@ -46,9 +48,9 @@ from .official_anticopy_mixed_trainer import (
 def _args():
     values = [
         "--run-id", "V5-MIXED-CPU-TEST", "--n-groups", "all",
-        "--max-steps", "2", "--probe-groups", "4",
+        "--max-steps", "2", "--probe-groups", "16",
     ]
-    for gid in FIXED_PROBE4_IDS:
+    for gid in FIXED_PROBE16_IDS:
         values.extend(["--probe-group-id", gid])
     return build_v5_parser().parse_args(values)
 
@@ -77,20 +79,29 @@ def test_dataset_guards_and_four_domain_distribution(plan):
     guard = plan["dataset_guard"]
     assert guard["source_business_groups"] == EXPECTED_RAW_GROUPS
     assert guard["groups_after_probe4"] == EXPECTED_AFTER_PROBE4
+    assert guard["groups_after_probe16"] == EXPECTED_AFTER_PROBE16
     assert guard["train_rows"] == guard["unique_groups"] == EXPECTED_TRAIN_GROUPS
     assert guard["domain_group_counts"] == EXPECTED_DOMAIN_GROUPS
     assert guard["canonical_train_sha256"] == FINAL_TRAIN_CANONICAL_SHA256
     assert guard["group_id_list_sha256"] == FINAL_GROUP_ID_LIST_SHA256
     assert guard["probe4_overlap"] == 0
+    assert guard["probe16_overlap"] == 0
 
 
-def test_dataset_is_think_only_unique_and_probe4_excluded(plan):
+def test_dataset_is_think_only_unique_and_probe16_excluded(plan):
     rows = list(plan["dataset"])
     gids = {row["recommendation_group_id"] for row in rows}
     assert len(rows) == len(gids) == EXPECTED_TRAIN_GROUPS
     assert {row["route"] for row in rows} == {"think"}
     assert {row["target_domain"] for row in rows} == set(EXPECTED_DOMAIN_GROUPS)
-    assert not gids.intersection(FIXED_PROBE4_IDS)
+    assert not gids.intersection(FIXED_PROBE16_IDS)
+
+
+def test_probe16_is_four_fixed_groups_per_domain(plan):
+    domains = [plan["probe_records"][gid]["think"]["target_domain"]
+               for gid in FIXED_PROBE16_IDS]
+    assert domains == ["video", "living", "prod", "ad"] * 4
+    assert len(FIXED_PROBE4_IDS) == 4
 
 
 def test_history_parser_is_complete_domain_aware_and_user_history_only():
