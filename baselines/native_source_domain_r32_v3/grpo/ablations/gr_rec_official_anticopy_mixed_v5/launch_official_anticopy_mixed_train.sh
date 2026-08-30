@@ -51,5 +51,11 @@ exec torchrun --nproc_per_node=4 --master_addr=127.0.0.1 --master_port="${MASTER
   --probe-group-id 9dabef351f0971928e9bfc0e3799f0222b497edb9a01deb2ee93b6c3c9e9b316 \
   --probe-every-steps 50 \
   --probe-seed 20260818 \
+  --secondary-probe-suite history_copy_exact \
+  --secondary-probe-every-steps 50 \
+  --secondary-probe-group-id 38a1cd737cddfae7bddb24c0429d643047d203e7870078216bb75725e4f11f8f \
+  --secondary-probe-group-id 8018a2ceba46df4065db69256444553385b8d5dcd4114208054af17adecb3b08 \
+  --secondary-probe-group-id 383b75f18ffa0656534ba0ddf2139f3912008e118da72b285b7f28ec10df8152 \
+  --secondary-probe-group-id 15cdfbc23e15631e68e6fbf0da62b34a90ef661fa5e738424720b57f064fa7ed \
   "${RESUME_ARGS[@]}" \
   "$@"

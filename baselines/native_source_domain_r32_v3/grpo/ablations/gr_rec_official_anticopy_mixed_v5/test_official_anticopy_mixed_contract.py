@@ -23,6 +23,8 @@ from .run_official_anticopy_mixed_train import (
     FINAL_TRAIN_CANONICAL_SHA256,
     FIXED_PROBE4_IDS,
     FIXED_PROBE16_IDS,
+    HISTORY_COPY_PROBE4_IDS,
+    HISTORY_COPY_PROBE4_OVERLAP,
     FORBIDDEN_POSITIVE_DATASET,
     PARENT_ADAPTER_SHA256,
     SOURCE_DATASET,
@@ -32,6 +34,7 @@ from .run_official_anticopy_mixed_train import (
     prepare_v5_run_plan,
     validate_parent_adapter,
     validate_source_dataset,
+    validate_history_copy_probe,
 )
 from .official_anticopy_mixed_trainer import (
     COT_G,
@@ -80,6 +83,14 @@ def test_probe_only_requires_matching_resume_step_and_probe_groups():
     assert validate_probe_only(
         parent_args, {"resume_step": None, "probe_group_ids": ["g"]}
     )
+
+
+def test_history_copy_probe4_has_one_strong_exact_overlap_group_per_domain():
+    from grpo_probe import load_probe_records
+
+    records = load_probe_records(SOURCE_DATASET, HISTORY_COPY_PROBE4_IDS)
+    assert validate_history_copy_probe(records) == HISTORY_COPY_PROBE4_OVERLAP
+    assert len(HISTORY_COPY_PROBE4_IDS) == 4
 
 
 @pytest.fixture(scope="module")
@@ -157,7 +168,26 @@ def test_probe16_resume_only_schedules_groups_missing_at_checkpoint(tmp_path):
     )
     evaluator.monitor = SimpleNamespace(run_dir=tmp_path)
     evaluator.group_ids = list(FIXED_PROBE16_IDS)
+    evaluator.probe_suite = None
     assert evaluator._pending_group_ids(950) == list(FIXED_PROBE16_IDS[4:])
+
+
+def test_history_copy_probe_suite_does_not_collide_with_standard_probe_rows(tmp_path):
+    rows = [
+        {"step": 50, "group_id": gid, "probe_suite": None}
+        for gid in HISTORY_COPY_PROBE4_IDS
+    ]
+    (tmp_path / "probes.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+    )
+    evaluator = FixedProbeEvaluator.__new__(FixedProbeEvaluator)
+    evaluator.trainer = SimpleNamespace(
+        accelerator=SimpleNamespace(is_main_process=True)
+    )
+    evaluator.monitor = SimpleNamespace(run_dir=tmp_path)
+    evaluator.group_ids = list(HISTORY_COPY_PROBE4_IDS)
+    evaluator.probe_suite = "history_copy_exact"
+    assert evaluator._pending_group_ids(50) == list(HISTORY_COPY_PROBE4_IDS)
 
 
 def test_history_parser_is_complete_domain_aware_and_user_history_only():

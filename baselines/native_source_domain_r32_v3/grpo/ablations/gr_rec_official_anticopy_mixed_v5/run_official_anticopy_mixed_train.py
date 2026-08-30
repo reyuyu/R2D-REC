@@ -50,6 +50,13 @@ EXTRA_PROBE12_IDS = (
     "9dabef351f0971928e9bfc0e3799f0222b497edb9a01deb2ee93b6c3c9e9b316",
 )
 FIXED_PROBE16_IDS = FIXED_PROBE4_IDS + EXTRA_PROBE12_IDS
+HISTORY_COPY_PROBE4_IDS = (
+    "38a1cd737cddfae7bddb24c0429d643047d203e7870078216bb75725e4f11f8f",
+    "8018a2ceba46df4065db69256444553385b8d5dcd4114208054af17adecb3b08",
+    "383b75f18ffa0656534ba0ddf2139f3912008e118da72b285b7f28ec10df8152",
+    "15cdfbc23e15631e68e6fbf0da62b34a90ef661fa5e738424720b57f064fa7ed",
+)
+HISTORY_COPY_PROBE4_OVERLAP = {"video": 3, "ad": 9, "prod": 3, "living": 2}
 
 if SOURCE_DATASET.resolve() == FORBIDDEN_POSITIVE_DATASET.resolve():
     raise RuntimeError("V5 must never use the 611 positive-filtered dataset")
@@ -157,6 +164,21 @@ def validate_source_dataset():
     }
 
 
+def validate_history_copy_probe(records):
+    if tuple(records) != HISTORY_COPY_PROBE4_IDS:
+        raise RuntimeError("V5 history-copy Probe4 group selection drift")
+    observed = {}
+    for gid in HISTORY_COPY_PROBE4_IDS:
+        row = records[gid]["think"]
+        domain = row["target_domain"]
+        history = extract_history_sids(row["prompt"], domain)
+        gold = {sid for raw in row["all_gold_sids"] if (sid := parse_sid(raw)) is not None}
+        observed[domain] = len(history & gold)
+    if observed != HISTORY_COPY_PROBE4_OVERLAP:
+        raise RuntimeError(f"V5 history-copy Probe4 overlap drift: {observed}")
+    return observed
+
+
 def build_mixed_dataset(base_plan):
     if base_plan["raw_groups"] != EXPECTED_RAW_GROUPS:
         raise RuntimeError("V5 raw group count drift")
@@ -243,6 +265,9 @@ def prepare_v5_run_plan(args):
     validate_source_dataset()
     base = _BASE_PREPARE(args)
     dataset, guard = build_mixed_dataset(base)
+    history_overlap = None
+    if base["secondary_probe_group_ids"]:
+        history_overlap = validate_history_copy_probe(base["secondary_probe_records"])
     sampler = ThinkG4SingleGroupSampler(dataset, repeat_count=2, shuffle=False)
     audit = audit_v5_sampler(dataset, sampler)
     max_steps = args.max_steps if args.max_steps is not None else EXPECTED_STEPS
@@ -255,6 +280,7 @@ def prepare_v5_run_plan(args):
         "max_steps": max_steps,
         "probe_train_overlap": [],
         "dataset_guard": guard,
+        "history_copy_probe_overlap": history_overlap,
     })
     return base
 
@@ -393,6 +419,15 @@ class MixedV5MonitorWriter:
                 "extra_diagnostics": [
                     "history_copy_rate", "copy/noncopy A/AB/Exact", "CoT length",
                 ],
+            },
+            "history_copy_probe": {
+                "enabled": True,
+                "suite": "history_copy_exact",
+                "group_ids": list(HISTORY_COPY_PROBE4_IDS),
+                "groups_per_domain": 1,
+                "gold_history_exact_overlap": HISTORY_COPY_PROBE4_OVERLAP,
+                "training_overlap_allowed": True,
+                "contract": "Official Beam32 ABC3; production reward; exact Gold appears in same-domain history",
             },
             "expected_optimizer_steps": EXPECTED_STEPS,
         })

@@ -41,6 +41,7 @@ def official_probe_summary(candidates):
     ]
     copied = [item for item in beam_details if item["is_history_copy"]]
     noncopied = [item for item in beam_details if not item["is_history_copy"]]
+    first = candidates[0] if candidates else {}
     return {
         "reward_mean": statistics.fmean(rewards) if rewards else 0.0,
         "reward_std": statistics.pstdev(rewards) if rewards else 0.0,
@@ -68,6 +69,9 @@ def official_probe_summary(candidates):
             statistics.fmean(float(item["completion_length"]) for item in candidates)
             if candidates else 0.0
         ),
+        "history_sid_count": int(first.get("history_sid_count") or 0),
+        "gold_history_exact_overlap": int(first.get("gold_history_exact_overlap") or 0),
+        "gold_history_exact_sids": first.get("gold_history_exact_sids") or [],
         "candidates": candidates,
     }
 
@@ -80,9 +84,11 @@ class MixedOfficialProbeEvaluator(FixedProbeEvaluator):
         target_domain = part["target_domain"]
         history = extract_history_sids(part["prompt"], target_domain)
         gold = _gold_set(part["gold_sids"])
+        overlap = sorted(set(gold) & history)
         for candidate in part["candidates"]:
             candidate["history_sid_count"] = len(history)
             candidate["gold_history_exact_overlap"] = len(set(gold) & history)
+            candidate["gold_history_exact_sids"] = [list(sid) for sid in overlap]
             candidate["beam_candidate_details"] = beam_copy_details(
                 candidate.get("beam_sids"), gold, history
             )

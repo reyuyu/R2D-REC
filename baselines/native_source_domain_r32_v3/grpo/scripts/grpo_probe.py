@@ -117,7 +117,8 @@ def _gold_set(values):
 class FixedProbeEvaluator:
     """Run production-shaped Think/NoThink sampling without optimizer updates."""
 
-    def __init__(self, trainer, records, group_ids, beam32_fn, monitor, seed, every_steps):
+    def __init__(self, trainer, records, group_ids, beam32_fn, monitor, seed, every_steps,
+                 probe_suite=None):
         self.trainer = trainer
         self.records = records
         self.group_ids = list(group_ids)
@@ -125,6 +126,7 @@ class FixedProbeEvaluator:
         self.monitor = monitor
         self.seed = int(seed)
         self.every_steps = int(every_steps)
+        self.probe_suite = probe_suite
         self.last_step = None
         self._group_offset = 0
 
@@ -139,7 +141,7 @@ class FixedProbeEvaluator:
                         row = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    if row.get("step") == step:
+                    if row.get("step") == step and row.get("probe_suite") == self.probe_suite:
                         seen.add(row.get("group_id"))
             complete = set(self.group_ids).issubset(seen)
         decision = [complete]
@@ -158,7 +160,7 @@ class FixedProbeEvaluator:
                         row = json.loads(line)
                     except json.JSONDecodeError:
                         continue
-                    if row.get("step") == step:
+                    if row.get("step") == step and row.get("probe_suite") == self.probe_suite:
                         seen.add(row.get("group_id"))
             pending = [gid for gid in self.group_ids if gid not in seen]
         decision = [pending]
@@ -343,6 +345,7 @@ class FixedProbeEvaluator:
                     gid = think_part["group_id"]
                     no_part = no_meta[gid]
                     self.monitor.write_probe({
+                        "probe_suite": self.probe_suite,
                         "step": int(step),
                         "reason": reason,
                         "group_id": gid,

@@ -66,6 +66,9 @@ def build_arg_parser():
     parser.add_argument("--probe-group-id", action="append", default=[])
     parser.add_argument("--probe-every-steps", type=int, default=200)
     parser.add_argument("--probe-seed", type=int, default=20260818)
+    parser.add_argument("--secondary-probe-group-id", action="append", default=[])
+    parser.add_argument("--secondary-probe-suite", default=None)
+    parser.add_argument("--secondary-probe-every-steps", type=int, default=None)
     parser.add_argument(
         "--probe-only-step",
         type=int,
@@ -131,6 +134,16 @@ def prepare_run_plan(args):
     )
     validate_probe_schedule(probe_group_ids, args.probe_every_steps)
     probe_records = load_probe_records(DATA, probe_group_ids) if probe_group_ids else {}
+    secondary_probe_group_ids = list(args.secondary_probe_group_id)
+    if secondary_probe_group_ids:
+        if len(secondary_probe_group_ids) % 4:
+            raise ValueError("secondary fixed probe groups must be a multiple of four")
+        if not args.secondary_probe_suite:
+            raise ValueError("secondary fixed probe groups require --secondary-probe-suite")
+    secondary_probe_records = (
+        load_probe_records(DATA, secondary_probe_group_ids)
+        if secondary_probe_group_ids else {}
+    )
     dataset = build_route_dataset(
         DATA, n_groups=selected_groups, seed=args.seed, chunk=8,
         exclude_group_ids=probe_group_ids,
@@ -153,6 +166,8 @@ def prepare_run_plan(args):
         "resume_step": resume_step,
         "probe_group_ids": probe_group_ids,
         "probe_records": probe_records,
+        "secondary_probe_group_ids": secondary_probe_group_ids,
+        "secondary_probe_records": secondary_probe_records,
     }
 
 
@@ -246,6 +261,14 @@ def main(argv=None):
                     "no_think": "2 groups x G=8 (two batches)",
                 },
             },
+            "secondary_fixed_probe": {
+                "enabled": bool(plan["secondary_probe_group_ids"]),
+                "group_ids": plan["secondary_probe_group_ids"],
+                "suite": args.secondary_probe_suite,
+                "every_steps": args.secondary_probe_every_steps or args.probe_every_steps,
+                "seed": args.probe_seed,
+                "excluded_from_training": False,
+            },
             "checkpoint": {
                 "save_strategy": "steps",
                 "save_steps": args.save_steps,
@@ -294,8 +317,23 @@ def main(argv=None):
             every_steps=args.probe_every_steps,
         )
         trainer.add_callback(FixedProbeCallback(probe_evaluator))
+    secondary_probe_evaluator = None
+    if plan["secondary_probe_group_ids"]:
+        secondary_probe_evaluator = FixedProbeEvaluator(
+            trainer=trainer,
+            records=plan["secondary_probe_records"],
+            group_ids=plan["secondary_probe_group_ids"],
+            beam32_fn=probe_beam32_fn,
+            monitor=monitor,
+            seed=args.probe_seed,
+            every_steps=args.secondary_probe_every_steps or args.probe_every_steps,
+            probe_suite=args.secondary_probe_suite,
+        )
+        trainer.add_callback(FixedProbeCallback(secondary_probe_evaluator))
     if probe_only:
         probe_evaluator.evaluate(args.probe_only_step, "backfill")
+        if secondary_probe_evaluator is not None:
+            secondary_probe_evaluator.evaluate(args.probe_only_step, "backfill")
         trainer.accelerator.wait_for_everyone()
         return None
     started_wall = time.time()

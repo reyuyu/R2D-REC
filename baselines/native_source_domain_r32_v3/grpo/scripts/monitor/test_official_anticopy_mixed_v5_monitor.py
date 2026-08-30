@@ -86,6 +86,10 @@ def test_dashboard_has_four_domain_copy_curves_and_g8_copy_sid_markers():
     assert "16 groups × 4 CoT × Beam32" in source
     assert "probeCoverage" in source
     assert "probeSlot" in source
+    assert "历史答案 Probe4" in source
+    assert "History-Copy Exact Probe4" in source
+    assert "Gold ∩ History Exact" in source
+    assert "probe_suite==='history_copy_exact'" in source
     assert "历史抄写 SID" in source
     assert "matched history SID" in source
     assert "4 × G8" in source and "32 仅总候选数" in source
