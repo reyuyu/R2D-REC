@@ -19,6 +19,14 @@ from grpo_sid import final_sid, parse_sid, q_reward
 PROBE_DOMAINS = ("video", "living", "prod", "ad")
 
 
+def probe_group_batches(group_ids):
+    group_ids = list(group_ids)
+    if len(group_ids) % len(PROBE_DOMAINS):
+        raise ValueError("fixed probe group count must be a multiple of 4")
+    return [group_ids[start:start + len(PROBE_DOMAINS)]
+            for start in range(0, len(group_ids), len(PROBE_DOMAINS))]
+
+
 def select_probe_group_ids(data_path, n_groups, seed, count=0, explicit_ids=None):
     """Select an equal number of held-out groups for each target domain."""
     rows = [json.loads(line) for line in open(data_path, encoding="utf-8")]
@@ -118,6 +126,7 @@ class FixedProbeEvaluator:
         self.seed = int(seed)
         self.every_steps = int(every_steps)
         self.last_step = None
+        self._group_offset = 0
 
     def _already_complete(self, step):
         complete = False
@@ -134,6 +143,25 @@ class FixedProbeEvaluator:
                         seen.add(row.get("group_id"))
             complete = set(self.group_ids).issubset(seen)
         decision = [complete]
+        if dist.is_initialized():
+            dist.broadcast_object_list(decision, src=0)
+        return decision[0]
+
+    def _pending_group_ids(self, step):
+        pending = None
+        if self.trainer.accelerator.is_main_process:
+            path = self.monitor.run_dir / "probes.jsonl"
+            seen = set()
+            if path.exists():
+                for line in path.read_text(encoding="utf-8").splitlines():
+                    try:
+                        row = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if row.get("step") == step:
+                        seen.add(row.get("group_id"))
+            pending = [gid for gid in self.group_ids if gid not in seen]
+        decision = [pending]
         if dist.is_initialized():
             dist.broadcast_object_list(decision, src=0)
         return decision[0]
@@ -158,7 +186,7 @@ class FixedProbeEvaluator:
 
     def _think(self):
         rank = self.trainer.accelerator.process_index
-        gid = self.group_ids[rank]
+        gid = self.group_ids[self._group_offset + rank]
         row = self.records[gid]["think"]
         prompts = [row["prompt"]] * 4
         self.trainer._set_route_config("think")
@@ -212,8 +240,8 @@ class FixedProbeEvaluator:
 
     def _nothink_batch(self, batch_index):
         rank = self.trainer.accelerator.process_index
-        group_offset = batch_index * 2 + rank // 2
-        gid = self.group_ids[group_offset]
+        group_index = self._group_offset + batch_index * 2 + rank // 2
+        gid = self.group_ids[group_index]
         row = self.records[gid]["no_think"]
         prompts = [row["prompt"]] * 4
         self.trainer._set_route_config("no_think")
@@ -262,9 +290,17 @@ class FixedProbeEvaluator:
         return result
 
     def evaluate(self, step, reason):
-        if self.last_step == step or self._already_complete(step):
+        if self.last_step == step:
             self.last_step = step
             return
+        pending_group_ids = self._pending_group_ids(step)
+        if not pending_group_ids:
+            self.last_step = step
+            return
+        evaluation_group_ids = (
+            pending_group_ids if len(pending_group_ids) % len(PROBE_DOMAINS) == 0
+            else self.group_ids
+        )
         if self.trainer.accelerator.num_processes != 4:
             raise RuntimeError("fixed probe evaluation requires the production 4-rank shape")
         self.trainer.accelerator.wait_for_everyone()
@@ -281,13 +317,19 @@ class FixedProbeEvaluator:
         model = self.trainer.model
         had_beam_stats = hasattr(model, "_beam_stats")
         previous_beam_stats = getattr(model, "_beam_stats", None)
+        configured_group_ids = self.group_ids
+        configured_group_offset = self._group_offset
         started = time.perf_counter()
         try:
+            self.group_ids = list(evaluation_group_ids)
             self._set_seed()
-            think_by_rank = self._gather(self._think())
+            think_by_rank = []
             nothink_parts = []
-            for batch_index in range(2):
-                nothink_parts.extend(self._gather(self._nothink_batch(batch_index)))
+            for group_offset in range(0, len(self.group_ids), len(PROBE_DOMAINS)):
+                self._group_offset = group_offset
+                think_by_rank.extend(self._gather(self._think()))
+                for batch_index in range(2):
+                    nothink_parts.extend(self._gather(self._nothink_batch(batch_index)))
             torch.cuda.synchronize()
             local_wall = time.perf_counter() - started
             rank_walls = self._gather(local_wall)
@@ -317,6 +359,8 @@ class FixedProbeEvaluator:
                         "seed": self.seed,
                     })
         finally:
+            self.group_ids = configured_group_ids
+            self._group_offset = configured_group_offset
             torch.set_rng_state(cpu_rng)
             torch.cuda.set_rng_state(cuda_rng, self.trainer.accelerator.device)
             random.setstate(python_rng)

@@ -1,5 +1,10 @@
+import json
+from types import SimpleNamespace
+
 import pytest
 import torch
+
+from grpo_probe import FixedProbeEvaluator, probe_group_batches
 
 from ablations.gr_rec_video_official_anticopy_v5.video_official_anticopy_trainer import (
     shape_sid_reward as original_v5_shape_sid_reward,
@@ -102,6 +107,23 @@ def test_probe16_is_four_fixed_groups_per_domain(plan):
                for gid in FIXED_PROBE16_IDS]
     assert domains == ["video", "living", "prod", "ad"] * 4
     assert len(FIXED_PROBE4_IDS) == 4
+    assert probe_group_batches(FIXED_PROBE16_IDS) == [
+        list(FIXED_PROBE16_IDS[index:index + 4]) for index in range(0, 16, 4)
+    ]
+
+
+def test_probe16_resume_only_schedules_groups_missing_at_checkpoint(tmp_path):
+    rows = [{"step": 950, "group_id": gid} for gid in FIXED_PROBE4_IDS]
+    (tmp_path / "probes.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+    )
+    evaluator = FixedProbeEvaluator.__new__(FixedProbeEvaluator)
+    evaluator.trainer = SimpleNamespace(
+        accelerator=SimpleNamespace(is_main_process=True)
+    )
+    evaluator.monitor = SimpleNamespace(run_dir=tmp_path)
+    evaluator.group_ids = list(FIXED_PROBE16_IDS)
+    assert evaluator._pending_group_ids(950) == list(FIXED_PROBE16_IDS[4:])
 
 
 def test_history_parser_is_complete_domain_aware_and_user_history_only():
