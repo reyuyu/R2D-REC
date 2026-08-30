@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from .official_sample8_v3_adapter import adapt_events, captured_payload, is_official_sample8_v3_manifest
+from .official_sample8_v3_adapter import (
+    adapt_events, captured_payload, extract_history_sids, is_official_sample8_v3_manifest,
+)
 
 
 def _cot(offset: float = 0.0):
@@ -46,17 +48,36 @@ def test_v3_official_adapter_preserves_captured_g4_g8_and_optimization():
     }
     groups, rows = adapt_events(
         [event, optimization],
-        source_index={"group": {"prompt": "full model input", "target_domain": "ad"}},
+        source_index={"group": {
+            "prompt": "instruction\n<|ad_begin|><s_a_3><s_b_2><s_c_3> /think example "
+                      "<|ad_begin|><s_a_4><s_b_2><s_c_3>",
+            "target_domain": "ad",
+        }},
     )
     assert is_official_sample8_v3_manifest({"experiment": "GR_REC_ThinkOfficialSample8_v3"})
-    assert groups[0]["valid"] and groups[0]["input_prompt"] == "full model input"
+    assert groups[0]["valid"] and "<s_a_3>" in groups[0]["input_prompt"]
     assert len(groups[0]["cots"]) == 4
     assert all(len(cot["candidates"]) == 8 for cot in groups[0]["cots"])
     candidate = groups[0]["cots"][0]["candidates"][3]
     assert candidate["raw_q_reward"] == candidate["final_sid_reward"] == candidate["cot_contribution"] == 8.0
     assert candidate["sid_advantage"] == 1.8 and candidate["masked_action_token_count"] == 3
+    assert candidate["is_history_copy"] and candidate["copied_history_sid"] == ["ad", 3, 2, 3]
+    assert not groups[0]["cots"][0]["candidates"][4]["is_history_copy"]
     assert rows == [optimization]
     assert captured_payload(groups, rows)["formula"] == "official_sample8_v3"
+
+
+def test_v3_official_copy_parser_is_full_sid_target_domain_and_history_only():
+    prompt = (
+        "instruction <|video_begin|><s_a_9><s_b_9><s_c_9>\n"
+        "<|video_begin|><s_a_1><s_b_2><s_c_3> "
+        "<|video_begin|><s_a_1><s_b_8><s_c_8> "
+        "<|ad_begin|><s_a_1><s_b_2><s_c_3> /think "
+        "<|video_begin|><s_a_7><s_b_7><s_c_7>"
+    )
+    assert extract_history_sids(prompt, "video") == {
+        ("video", 1, 2, 3), ("video", 1, 8, 8),
+    }
 
 
 def test_v3_official_dashboard_persists_details_and_exposes_ppo_diagnostics():
