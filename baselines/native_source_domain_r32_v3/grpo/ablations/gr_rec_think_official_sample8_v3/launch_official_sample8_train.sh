@@ -9,10 +9,10 @@ RUN_ID="${RUN_ID:-GR-REC-THINK-OFFICIAL-SAMPLE8-V3-FORMAL-E1}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-/root/GRPO-checkpoints}"
 MASTER_PORT="${MASTER_PORT:-29671}"
 MAX_STEPS="${MAX_STEPS:-3090}"
-
-if [[ -n "${RESUME_FROM_CHECKPOINT:-}" ]]; then
-  echo "V3-Official must start fresh from the frozen Beta parent; resume is forbidden" >&2
-  exit 2
+RESUME_FROM_CHECKPOINT="${RESUME_FROM_CHECKPOINT:-}"
+RESUME_ARGS=()
+if [[ -n "${RESUME_FROM_CHECKPOINT}" ]]; then
+  RESUME_ARGS+=(--resume-from-checkpoint "${RESUME_FROM_CHECKPOINT}")
 fi
 
 export GRPO_RUN_ID="${RUN_ID}"
@@ -39,4 +39,5 @@ exec torchrun --nproc_per_node=4 --master_addr=127.0.0.1 --master_port="${MASTER
   --probe-group-id 2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8 \
   --probe-every-steps 50 \
   --probe-seed 20260818 \
+  "${RESUME_ARGS[@]}" \
   "$@"

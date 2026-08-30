@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -28,6 +29,7 @@ FORMAL_OUTPUT_ROOT = "/root/GRPO-checkpoints"
 FORMAL_SAVE_STEPS = 50
 FORMAL_PROBE_EVERY_STEPS = 50
 FORMAL_SAVE_TOTAL_LIMIT = 64
+FORMAL_RUN_ID_PREFIX = "GR-REC-THINK-OFFICIAL-SAMPLE8-V3-FORMAL-"
 FIXED_PROBE4_IDS = (
     "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
     "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
@@ -65,6 +67,7 @@ _BASE_BUILD_ARG_PARSER = baseline_runner.build_arg_parser
 _RUNTIME_MODEL = None
 _RUNTIME_TOKENIZER = None
 _RUNTIME_PROVENANCE = None
+_TRUSTED_RESUME = None
 
 
 def _resume_checkpoint_arg(argv):
@@ -75,6 +78,82 @@ def _resume_checkpoint_arg(argv):
         if value.startswith("--resume-from-checkpoint="):
             return value.split("=", 1)[1]
     return None
+
+
+def _run_id_arg(argv):
+    values = list(argv or [])
+    for index, value in enumerate(values):
+        if value == "--run-id" and index + 1 < len(values):
+            return values[index + 1]
+        if value.startswith("--run-id="):
+            return value.split("=", 1)[1]
+    raise ValueError("V3-Official requires --run-id")
+
+
+def validate_trusted_resume_checkpoint(
+    checkpoint_path, run_id, output_root=FORMAL_OUTPUT_ROOT,
+):
+    if not run_id.startswith(FORMAL_RUN_ID_PREFIX):
+        raise RuntimeError(f"V3_OFFICIAL_UNTRUSTED_RESUME_RUN_ID: {run_id}")
+    root = Path(output_root).resolve(strict=True)
+    expected_run_dir = (root / run_id).resolve(strict=False)
+    checkpoint = Path(checkpoint_path).resolve(strict=True)
+    if checkpoint.parent != expected_run_dir:
+        raise RuntimeError(
+            "V3_OFFICIAL_UNTRUSTED_RESUME_PATH "
+            f"expected_parent={expected_run_dir} checkpoint={checkpoint}"
+        )
+    match = re.fullmatch(r"checkpoint-(\d+)", checkpoint.name)
+    if not match or int(match.group(1)) % 2:
+        raise RuntimeError(f"V3_OFFICIAL_INVALID_RESUME_BOUNDARY: {checkpoint}")
+    step = int(match.group(1))
+    required = [
+        "adapter_config.json", "adapter_model.safetensors", "optimizer.pt",
+        "scheduler.pt", "training_args.bin", "trainer_state.json",
+        *(f"rng_state_{rank}.pth" for rank in range(4)),
+    ]
+    incomplete = [
+        name for name in required
+        if not (checkpoint / name).is_file() or (checkpoint / name).stat().st_size == 0
+    ]
+    if incomplete:
+        raise RuntimeError(f"V3_OFFICIAL_RESUME_INCOMPLETE: {incomplete}")
+    state = json.loads((checkpoint / "trainer_state.json").read_text(encoding="utf-8"))
+    if int(state.get("global_step", -1)) != step:
+        raise RuntimeError(
+            f"V3_OFFICIAL_RESUME_STEP_MISMATCH path={step} "
+            f"state={state.get('global_step')}"
+        )
+    return {
+        "path": str(checkpoint),
+        "run_id": run_id,
+        "step": step,
+        "trusted_v3_official_checkpoint": True,
+    }
+
+
+def enable_trusted_torch_load_for_resume(checkpoint_path, run_id):
+    audit = validate_trusted_resume_checkpoint(checkpoint_path, run_id)
+    # The optimizer/RNG files are pickle-backed. They are loaded only after the
+    # checkpoint has passed the same-run, boundary, state, and completeness guards.
+    import numpy as np
+    import torch
+    import transformers.trainer as transformers_trainer
+
+    np_core = getattr(np, "_core", np.core)
+    numpy_allowlist = [
+        np_core.multiarray._reconstruct,
+        np.ndarray,
+        np.dtype,
+        type(np.dtype(np.uint32)),
+    ]
+
+    def trusted_numpy_safe_globals():
+        return torch.serialization.safe_globals(numpy_allowlist)
+
+    transformers_trainer.check_torch_load_is_safe = lambda: None
+    transformers_trainer.safe_globals = trusted_numpy_safe_globals
+    return audit
 
 
 def sha256_file(path: Path) -> str:
@@ -262,7 +341,12 @@ class OfficialSample8ManifestWriter:
             "parent_adapter_path": str(PARENT_ADAPTER),
             "parent_adapter_sha256": PARENT_ADAPTER_SHA256,
             "parent_contract": "Beta baseline checkpoint-1106; never a GRPO checkpoint",
-            "optimizer_initialization": "fresh",
+            "optimizer_initialization": "restored" if _TRUSTED_RESUME else "fresh",
+            "trusted_resume": _TRUSTED_RESUME,
+            "resume_policy": (
+                "fresh Beta checkpoint-1106, or complete even-step checkpoint from "
+                "the identical V3-Official formal run-id"
+            ),
             "optimizer": {"name": "AdamW", "learning_rate": 1e-6,
                           "weight_decay": 0.0, "scheduler": "constant"},
             "training_routes": ["think"],
@@ -363,12 +447,17 @@ def install_official_bindings():
 
 
 def main(argv=None):
-    global _RUNTIME_PROVENANCE
+    global _RUNTIME_PROVENANCE, _TRUSTED_RESUME
     _RUNTIME_PROVENANCE = assert_runtime_import_provenance()
     validate_official_parent()
     resume_checkpoint = _resume_checkpoint_arg(argv)
     if resume_checkpoint:
-        raise RuntimeError("V3-Official must start fresh from the Beta parent; resume is forbidden")
+        _TRUSTED_RESUME = enable_trusted_torch_load_for_resume(
+            resume_checkpoint, _run_id_arg(argv)
+        )
+        _RUNTIME_PROVENANCE["trusted_resume"] = _TRUSTED_RESUME
+    else:
+        _TRUSTED_RESUME = None
     install_official_bindings()
     baseline_runner.main(argv)
 

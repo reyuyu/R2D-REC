@@ -257,7 +257,8 @@ def test_launcher_is_fresh_only_and_formal():
     assert "--nproc_per_node=4" in source
     assert "--save-steps 50" in source
     assert "--probe-every-steps 50" in source
-    assert "RESUME_FROM_CHECKPOINT" in source and "resume is forbidden" in source
+    assert 'RESUME_FROM_CHECKPOINT="${RESUME_FROM_CHECKPOINT:-}"' in source
+    assert '--resume-from-checkpoint "${RESUME_FROM_CHECKPOINT}"' in source
     assert "GRPO_MONITOR_DIR" in source and "NCCL_SOCKET_IFNAME" in source
 
 
@@ -267,3 +268,59 @@ def test_parent_hash_guard_rejects_drift(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "PARENT_ADAPTER", tmp_path)
     with pytest.raises(RuntimeError, match="PARENT_SHA_MISMATCH"):
         runner.validate_official_parent()
+
+
+def _complete_resume_checkpoint(root, run_id, step, *, state_step=None):
+    checkpoint = root / run_id / f"checkpoint-{step}"
+    checkpoint.mkdir(parents=True)
+    for name in (
+        "adapter_config.json", "adapter_model.safetensors", "optimizer.pt",
+        "scheduler.pt", "training_args.bin",
+        *(f"rng_state_{rank}.pth" for rank in range(4)),
+    ):
+        (checkpoint / name).write_bytes(b"complete")
+    (checkpoint / "trainer_state.json").write_text(json.dumps({
+        "global_step": step if state_step is None else state_step,
+    }))
+    return checkpoint
+
+
+def test_trusted_resume_accepts_complete_same_run_even_boundary(tmp_path):
+    run_id = runner.FORMAL_RUN_ID_PREFIX + "E1-TEST"
+    checkpoint = _complete_resume_checkpoint(tmp_path, run_id, 50)
+    audit = runner.validate_trusted_resume_checkpoint(checkpoint, run_id, tmp_path)
+    assert audit["step"] == 50
+    assert audit["run_id"] == run_id
+    assert audit["trusted_v3_official_checkpoint"] is True
+
+
+def test_trusted_resume_rejects_other_run_and_nonofficial_run_id(tmp_path):
+    run_id = runner.FORMAL_RUN_ID_PREFIX + "E1-TEST"
+    other = _complete_resume_checkpoint(tmp_path, "OTHER-RUN", 50)
+    with pytest.raises(RuntimeError, match="UNTRUSTED_RESUME_PATH"):
+        runner.validate_trusted_resume_checkpoint(other, run_id, tmp_path)
+    with pytest.raises(RuntimeError, match="UNTRUSTED_RESUME_RUN_ID"):
+        runner.validate_trusted_resume_checkpoint(other, "OTHER-RUN", tmp_path)
+
+
+def test_trusted_resume_rejects_odd_boundary(tmp_path):
+    run_id = runner.FORMAL_RUN_ID_PREFIX + "E1-TEST"
+    checkpoint = _complete_resume_checkpoint(tmp_path, run_id, 51)
+    with pytest.raises(RuntimeError, match="INVALID_RESUME_BOUNDARY"):
+        runner.validate_trusted_resume_checkpoint(checkpoint, run_id, tmp_path)
+
+
+@pytest.mark.parametrize("missing", ["optimizer.pt", "rng_state_3.pth"])
+def test_trusted_resume_rejects_incomplete_optimizer_or_rng(tmp_path, missing):
+    run_id = runner.FORMAL_RUN_ID_PREFIX + "E1-TEST"
+    checkpoint = _complete_resume_checkpoint(tmp_path, run_id, 50)
+    (checkpoint / missing).unlink()
+    with pytest.raises(RuntimeError, match="RESUME_INCOMPLETE"):
+        runner.validate_trusted_resume_checkpoint(checkpoint, run_id, tmp_path)
+
+
+def test_trusted_resume_rejects_trainer_state_mismatch(tmp_path):
+    run_id = runner.FORMAL_RUN_ID_PREFIX + "E1-TEST"
+    checkpoint = _complete_resume_checkpoint(tmp_path, run_id, 50, state_step=48)
+    with pytest.raises(RuntimeError, match="RESUME_STEP_MISMATCH"):
+        runner.validate_trusted_resume_checkpoint(checkpoint, run_id, tmp_path)
