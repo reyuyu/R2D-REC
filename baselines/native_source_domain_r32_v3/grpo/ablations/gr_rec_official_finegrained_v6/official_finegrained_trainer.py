@@ -630,7 +630,7 @@ class ThinkOfficialFineGrainedTrainer(RecGRPOTrainer):
             ).mean()
         loss = loss / self.current_gradient_accumulation_steps
         selected = log_ratio[action.bool()].detach().float()
-        return loss, {
+        stats = {
             f"{name}_loss": float(loss.detach()),
             f"{name}_ratio_mean": float(selected.exp().mean()) if selected.numel() else 1.0,
             f"{name}_clip_fraction": (
@@ -643,6 +643,25 @@ class ThinkOfficialFineGrainedTrainer(RecGRPOTrainer):
             ),
             f"{name}_action_tokens": int(action.sum()),
         }
+        if token_level and name == "sid":
+            for index, level in enumerate(("A", "B", "C")):
+                level_selected = log_ratio[:, index][action[:, index].bool()].detach().float()
+                level_ratio = level_selected.exp()
+                stats.update({
+                    f"sid_{level}_ratio_mean": (
+                        float(level_ratio.mean()) if level_selected.numel() else 1.0
+                    ),
+                    f"sid_{level}_clip_fraction": (
+                        float(((level_ratio - 1).abs() > self.epsilon_low).float().mean())
+                        if level_selected.numel() else 0.0
+                    ),
+                    f"sid_{level}_approx_kl": (
+                        float((level_ratio - 1 - level_selected).mean())
+                        if level_selected.numel() else 0.0
+                    ),
+                    f"sid_{level}_action_tokens": int(action[:, index].sum()),
+                })
+        return loss, stats
 
     def _compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         del return_outputs, num_items_in_batch
@@ -712,8 +731,20 @@ class ThinkOfficialFineGrainedTrainer(RecGRPOTrainer):
                 "sid_clip_fraction": rollout.get("sid_clip_fraction"),
                 "cot_approx_kl": rollout.get("cot_approx_kl"),
                 "sid_approx_kl": rollout.get("sid_approx_kl"),
+                "sid_A_ratio_mean": rollout.get("sid_A_ratio_mean"),
+                "sid_A_clip_fraction": rollout.get("sid_A_clip_fraction"),
+                "sid_A_approx_kl": rollout.get("sid_A_approx_kl"),
+                "sid_B_ratio_mean": rollout.get("sid_B_ratio_mean"),
+                "sid_B_clip_fraction": rollout.get("sid_B_clip_fraction"),
+                "sid_B_approx_kl": rollout.get("sid_B_approx_kl"),
+                "sid_C_ratio_mean": rollout.get("sid_C_ratio_mean"),
+                "sid_C_clip_fraction": rollout.get("sid_C_clip_fraction"),
+                "sid_C_approx_kl": rollout.get("sid_C_approx_kl"),
                 "cot_action_tokens": rollout.get("cot_action_tokens"),
                 "sid_action_tokens": rollout.get("sid_action_tokens"),
+                "sid_A_action_tokens": rollout.get("sid_A_action_tokens"),
+                "sid_B_action_tokens": rollout.get("sid_B_action_tokens"),
+                "sid_C_action_tokens": rollout.get("sid_C_action_tokens"),
                 "sid_active_A_tokens": rollout.get("sid_active_A_tokens"),
                 "sid_active_B_tokens": rollout.get("sid_active_B_tokens"),
                 "sid_active_C_tokens": rollout.get("sid_active_C_tokens"),

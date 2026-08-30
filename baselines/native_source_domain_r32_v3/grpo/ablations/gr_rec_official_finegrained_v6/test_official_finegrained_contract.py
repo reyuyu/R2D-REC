@@ -192,6 +192,13 @@ def test_sid_ppo_averages_only_active_token_advantages():
     )
     assert loss.item() == pytest.approx(-(2.0 + 4.0 - 2.0) / 3.0)
     assert stats["sid_action_tokens"] == 3
+    assert stats["sid_A_action_tokens"] == 2
+    assert stats["sid_B_action_tokens"] == 1
+    assert stats["sid_C_action_tokens"] == 0
+    assert stats["sid_A_ratio_mean"] == stats["sid_B_ratio_mean"] == 1.0
+    assert stats["sid_C_ratio_mean"] == 1.0
+    assert stats["sid_A_clip_fraction"] == stats["sid_B_clip_fraction"] == 0.0
+    assert stats["sid_A_approx_kl"] == stats["sid_B_approx_kl"] == 0.0
     loss.backward()
     assert torch.isfinite(current.grad).all()
     assert current.grad[0, 2] == 0 and current.grad[1, 1] == 0
