@@ -5,6 +5,7 @@ import pytest
 import torch
 
 from grpo_probe import FixedProbeEvaluator, probe_group_batches
+from run_grpo_trl_train import validate_probe_only
 
 from ablations.gr_rec_video_official_anticopy_v5.video_official_anticopy_trainer import (
     shape_sid_reward as original_v5_shape_sid_reward,
@@ -59,6 +60,18 @@ def _args():
     for gid in FIXED_PROBE16_IDS:
         values.extend(["--probe-group-id", gid])
     return build_v5_parser().parse_args(values)
+
+
+def test_probe_only_requires_matching_resume_step_and_probe_groups():
+    args = SimpleNamespace(
+        probe_only_step=900,
+        resume_from_checkpoint="/tmp/checkpoint-900",
+    )
+    assert validate_probe_only(args, {"resume_step": 900, "probe_group_ids": ["g"]})
+    with pytest.raises(ValueError, match="must equal"):
+        validate_probe_only(args, {"resume_step": 850, "probe_group_ids": ["g"]})
+    with pytest.raises(ValueError, match="fixed probe groups"):
+        validate_probe_only(args, {"resume_step": 900, "probe_group_ids": []})
 
 
 @pytest.fixture(scope="module")

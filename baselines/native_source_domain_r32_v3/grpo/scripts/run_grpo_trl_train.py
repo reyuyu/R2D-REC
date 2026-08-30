@@ -16,6 +16,7 @@ if str(CURRENT_SCRIPTS_DIR) in sys.path:
     sys.path.remove(str(CURRENT_SCRIPTS_DIR))
 sys.path.insert(0, str(CURRENT_SCRIPTS_DIR))
 import trl_import_fix  # noqa: F401
+import grpo_model
 from grpo_model import ADAPTER, BASE, load_model
 from grpo_probe import (
     FixedProbeCallback,
@@ -65,6 +66,12 @@ def build_arg_parser():
     parser.add_argument("--probe-group-id", action="append", default=[])
     parser.add_argument("--probe-every-steps", type=int, default=200)
     parser.add_argument("--probe-seed", type=int, default=20260818)
+    parser.add_argument(
+        "--probe-only-step",
+        type=int,
+        default=None,
+        help="Load the resume checkpoint as the inference adapter and append only fixed-probe rows.",
+    )
     return parser
 
 
@@ -85,6 +92,21 @@ def validate_run_id(run_id):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,159}", run_id):
         raise ValueError("--run-id must contain only letters, digits, '.', '_' or '-'")
     return run_id
+
+
+def validate_probe_only(args, plan):
+    if args.probe_only_step is None:
+        return False
+    if args.resume_from_checkpoint is None:
+        raise ValueError("--probe-only-step requires --resume-from-checkpoint")
+    if args.probe_only_step != plan["resume_step"]:
+        raise ValueError(
+            "--probe-only-step must equal the resume checkpoint global step: "
+            f"probe={args.probe_only_step} resume={plan['resume_step']}"
+        )
+    if not plan["probe_group_ids"]:
+        raise ValueError("--probe-only-step requires fixed probe groups")
+    return True
 
 
 def prepare_run_plan(args):
@@ -129,6 +151,7 @@ def main(argv=None):
     args = build_arg_parser().parse_args(argv)
     apply_monitor_defaults(args.run_id)
     plan = prepare_run_plan(args)
+    probe_only = validate_probe_only(args, plan)
     rank = int(os.environ.get("LOCAL_RANK", "0"))
     world = int(os.environ.get("WORLD_SIZE", "1"))
     is_main = rank == 0
@@ -149,6 +172,11 @@ def main(argv=None):
 
     torch.cuda.set_device(rank)
     torch.manual_seed(args.seed + rank)
+    if probe_only:
+        # PeftModel.from_pretrained reads this module global. Loading the target
+        # checkpoint directly avoids constructing/restoring optimizer state and
+        # makes backfill strictly inference-only.
+        grpo_model.ADAPTER = str(Path(args.resume_from_checkpoint).resolve())
     model, tokenizer, _ = load_model(f"cuda:{rank}")
     for name, parameter in model.named_parameters():
         parameter.requires_grad = "lora" in name.lower()
@@ -176,7 +204,7 @@ def main(argv=None):
     )
     monitor = monitor_from_env(args.run_id, rank)
     started = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-    if monitor.enabled:
+    if monitor.enabled and not probe_only:
         monitor.write_manifest({
             "run_id": args.run_id,
             "start_time": started,
@@ -243,6 +271,7 @@ def main(argv=None):
         ],
         monitor_writer=monitor,
     )
+    probe_evaluator = None
     if plan["probe_group_ids"]:
         probe_beam32_fn = make_beam32_fn(model, tokenizer, monitor_writer=monitor)
         probe_evaluator = FixedProbeEvaluator(
@@ -255,6 +284,10 @@ def main(argv=None):
             every_steps=args.probe_every_steps,
         )
         trainer.add_callback(FixedProbeCallback(probe_evaluator))
+    if probe_only:
+        probe_evaluator.evaluate(args.probe_only_step, "backfill")
+        trainer.accelerator.wait_for_everyone()
+        return None
     started_wall = time.time()
     result = trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
     post_lora = lora_norm()

@@ -81,7 +81,11 @@ def test_dashboard_has_four_domain_copy_curves_and_g8_copy_sid_markers():
     for token in ("video", "ad", "prod", "living"):
         assert token in source
     assert "四域训练 History Copy Rate" in source
-    assert "Official Probe History Copy Rate · 四域" in source
+    assert "Official Probe16 History Copy Rate · 四域均值" in source
+    assert "Official Probe16 Production Reward · 四域均值" in source
+    assert "16 groups × 4 CoT × Beam32" in source
+    assert "probeCoverage" in source
+    assert "probeSlot" in source
     assert "历史抄写 SID" in source
     assert "matched history SID" in source
     assert "4 × G8" in source and "32 仅总候选数" in source
