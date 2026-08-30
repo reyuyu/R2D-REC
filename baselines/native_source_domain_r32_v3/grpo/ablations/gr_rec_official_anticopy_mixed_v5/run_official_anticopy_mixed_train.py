@@ -76,6 +76,9 @@ from .official_anticopy_mixed_trainer import (
 from ablations.gr_rec_think_suffix_sid_v1.runtime_import_provenance import (
     assert_runtime_import_provenance,
 )
+from ablations.gr_rec_think_sample8_fullsid_v3.run_sample8_fullsid_train import (
+    enable_trusted_torch_load_for_resume,
+)
 from grpo_sid import parse_sid
 
 _BASE_PREPARE = baseline_runner.prepare_run_plan
@@ -424,6 +427,19 @@ def install_bindings():
 def main(argv=None):
     global _RUNTIME_PROVENANCE
     _RUNTIME_PROVENANCE = assert_runtime_import_provenance()
+    values = list(argv or ())
+    resume_path = None
+    for index, value in enumerate(values):
+        if value == "--resume-from-checkpoint" and index + 1 < len(values):
+            resume_path = values[index + 1]
+            break
+        if value.startswith("--resume-from-checkpoint="):
+            resume_path = value.split("=", 1)[1]
+            break
+    if resume_path:
+        _RUNTIME_PROVENANCE["trusted_resume"] = (
+            enable_trusted_torch_load_for_resume(resume_path)
+        )
     validate_parent_adapter()
     validate_source_dataset()
     install_bindings()

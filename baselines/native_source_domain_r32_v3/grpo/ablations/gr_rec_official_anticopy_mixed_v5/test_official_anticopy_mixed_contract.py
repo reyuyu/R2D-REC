@@ -27,6 +27,7 @@ from .run_official_anticopy_mixed_train import (
     SOURCE_DATASET,
     SOURCE_DATASET_SHA256,
     build_v5_parser,
+    enable_trusted_torch_load_for_resume,
     prepare_v5_run_plan,
     validate_parent_adapter,
     validate_source_dataset,
@@ -78,6 +79,18 @@ def test_source_is_exact_v3_dataset_not_positive_dataset():
 
 def test_parent_checkpoint_and_adapter_sha():
     assert validate_parent_adapter()["adapter_sha256"] == PARENT_ADAPTER_SHA256
+
+
+def test_trusted_resume_loader_is_inherited_from_v3():
+    import transformers.trainer as transformers_trainer
+
+    checkpoint = (
+        "/root/GRPO-checkpoints/"
+        "GR-REC-OFFICIAL-ANTICOPY-MIXED-V5-FORMAL-E1-20260830/checkpoint-950"
+    )
+    audit = enable_trusted_torch_load_for_resume(checkpoint)
+    assert audit["step"] == 950 and audit["trusted_local_checkpoint"] is True
+    assert transformers_trainer.check_torch_load_is_safe() is None
 
 
 def test_dataset_guards_and_four_domain_distribution(plan):
