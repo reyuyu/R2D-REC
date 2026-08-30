@@ -72,6 +72,14 @@ def test_probe_only_requires_matching_resume_step_and_probe_groups():
         validate_probe_only(args, {"resume_step": 850, "probe_group_ids": ["g"]})
     with pytest.raises(ValueError, match="fixed probe groups"):
         validate_probe_only(args, {"resume_step": 900, "probe_group_ids": []})
+    parent_args = SimpleNamespace(
+        probe_only_step=0,
+        probe_only_adapter="/tmp/v3-parent",
+        resume_from_checkpoint=None,
+    )
+    assert validate_probe_only(
+        parent_args, {"resume_step": None, "probe_group_ids": ["g"]}
+    )
 
 
 @pytest.fixture(scope="module")

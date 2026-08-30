@@ -72,6 +72,11 @@ def build_arg_parser():
         default=None,
         help="Load the resume checkpoint as the inference adapter and append only fixed-probe rows.",
     )
+    parser.add_argument(
+        "--probe-only-adapter",
+        default=None,
+        help="Optional adapter path for probe-only evaluation (used for the step-0 parent).",
+    )
     return parser
 
 
@@ -97,9 +102,13 @@ def validate_run_id(run_id):
 def validate_probe_only(args, plan):
     if args.probe_only_step is None:
         return False
-    if args.resume_from_checkpoint is None:
-        raise ValueError("--probe-only-step requires --resume-from-checkpoint")
-    if args.probe_only_step != plan["resume_step"]:
+    probe_only_adapter = getattr(args, "probe_only_adapter", None)
+    adapter_path = probe_only_adapter or args.resume_from_checkpoint
+    if adapter_path is None:
+        raise ValueError(
+            "--probe-only-step requires --resume-from-checkpoint or --probe-only-adapter"
+        )
+    if probe_only_adapter is None and args.probe_only_step != plan["resume_step"]:
         raise ValueError(
             "--probe-only-step must equal the resume checkpoint global step: "
             f"probe={args.probe_only_step} resume={plan['resume_step']}"
@@ -157,7 +166,7 @@ def main(argv=None):
     is_main = rank == 0
     output_dir = plan["output_dir"]
     monitor_dir = Path(os.environ.get("GRPO_MONITOR_DIR", "/data/GRPO/runs")) / args.run_id
-    if args.resume_from_checkpoint is None:
+    if args.resume_from_checkpoint is None and not probe_only:
         occupied = (
             (output_dir.exists() and any(output_dir.iterdir()))
             or (monitor_dir.exists() and any(monitor_dir.iterdir()))
@@ -176,7 +185,8 @@ def main(argv=None):
         # PeftModel.from_pretrained reads this module global. Loading the target
         # checkpoint directly avoids constructing/restoring optimizer state and
         # makes backfill strictly inference-only.
-        grpo_model.ADAPTER = str(Path(args.resume_from_checkpoint).resolve())
+        adapter_path = args.probe_only_adapter or args.resume_from_checkpoint
+        grpo_model.ADAPTER = str(Path(adapter_path).resolve())
     model, tokenizer, _ = load_model(f"cuda:{rank}")
     for name, parameter in model.named_parameters():
         parameter.requires_grad = "lora" in name.lower()
