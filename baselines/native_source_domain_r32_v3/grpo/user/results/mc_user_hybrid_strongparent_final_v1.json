@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "experiment": "MC_USER Hybrid K4 Strong-Parent Refinement",
+  "run_id": "MC-USER-HYBRID-K4-STRONGPARENT-LR3E7-200-20260831-171920",
+  "git_commit": "d961d527d0b088c5907557e4ce12d2013bd8a58e",
+  "status": "PASS",
+  "selected_checkpoint_step": 100,
+  "selected_checkpoint_path": "/root/GRPO-checkpoints/MC_USER_HYBRID/MC-USER-HYBRID-K4-STRONGPARENT-LR3E7-200-20260831-171920/checkpoints/prompt-step-0100",
+  "lineage": [
+    {
+      "stage": "sft",
+      "experiment": "BETA-baseline Epoch 2",
+      "checkpoint": 1106,
+      "path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+      "headline_score": 1.33,
+      "recorded_aggregates": [1.3246, 1.3313]
+    },
+    {
+      "stage": "recommendation_dual_route_grpo",
+      "experiment": "GR_REC_v1",
+      "checkpoint": 1500,
+      "path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+      "recorded_aggregate": 1.351
+    },
+    {
+      "stage": "recommendation_think_grpo",
+      "experiment": "GR_REC_ThinkSample8_FullSID_v3",
+      "checkpoint": 250,
+      "path": "/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-250",
+      "recorded_aggregate": 1.3579
+    },
+    {
+      "stage": "user_hybrid_grpo",
+      "experiment": "MC_USER Hybrid K4 Strong-Parent Refinement",
+      "checkpoint": 100,
+      "path": "/root/GRPO-checkpoints/MC_USER_HYBRID/MC-USER-HYBRID-K4-STRONGPARENT-LR3E7-200-20260831-171920/checkpoints/prompt-step-0100",
+      "project_conservative_headline": 1.356,
+      "recorded_aggregates": [1.3639, 1.3595],
+      "recorded_aggregate_mean": 1.3617,
+      "recorded_aggregate_range": 0.0044
+    }
+  ],
+  "parent": {
+    "experiment": "GR_REC_ThinkSample8_FullSID_v3",
+    "checkpoint": 250,
+    "adapter_path": "/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-250",
+    "recorded_external_aggregate": 1.3579
+  },
+  "training_contract": {
+    "base_model": "/data/models/onereason-8b-pretrain-competition",
+    "train_data": "/data/GRPO_USER/data/gr_user_v1/train_3000.jsonl",
+    "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "prompt_count": 200,
+    "action_count": 100,
+    "chain_count": 100,
+    "route_schedule": "strict_alternating",
+    "candidate_count_per_prompt": 4,
+    "world_size": 4,
+    "parallelism": "candidate_parallel",
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "learning_rate": 3e-7,
+    "weight_decay": 0.0,
+    "gradient_accumulation_steps": 1,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3,
+    "checkpoint_steps": [25, 50, 75, 100, 150, 200]
+  },
+  "training_integrity": {
+    "prompt_step": 200,
+    "optimizer_step": 200,
+    "metrics_row_count": 200,
+    "rollout_row_count": 800,
+    "valid_candidate_rate": 0.99625,
+    "no_credit_prompt_rate": 0.0,
+    "projection_required_rate": 0.02375,
+    "overlap_candidate_rate": 0.0,
+    "base_hash_unchanged": true,
+    "trainable_tensor_count": 504,
+    "lora_tensor_count": 504,
+    "peak_vram_mib": 22740.43701171875,
+    "wall_seconds": 3972.656884585507
+  },
+  "external_evaluations": [
+    {
+      "label": "repeat_a",
+      "aggregate": 1.3639,
+      "material": [0.0521, 0.0361, 0.0516, 0.0420],
+      "user": [0.1586, 0.0986],
+      "recommendation": [0.1400, 0.1700, 0.2100, 0.1692],
+      "world": [0.2357],
+      "displayed_group_sums": {
+        "material": 0.1818,
+        "user": 0.2572,
+        "recommendation": 0.6892,
+        "world": 0.2357
+      }
+    },
+    {
+      "label": "repeat_b",
+      "aggregate": 1.3595,
+      "material": [0.0514, 0.0359, 0.0522, 0.0421],
+      "user": [0.1586, 0.0986],
+      "recommendation": [0.1391, 0.1700, 0.2072, 0.1692],
+      "world": [0.2353],
+      "displayed_group_sums": {
+        "material": 0.1816,
+        "user": 0.2572,
+        "recommendation": 0.6855,
+        "world": 0.2353
+      },
+      "rounding_note": "Displayed rounded components sum to 1.3596; evaluator aggregate is 1.3595."
+    }
+  ],
+  "score_semantics": {
+    "project_conservative_headline": 1.356,
+    "project_conservative_headline_is_raw_evaluation": false,
+    "exact_recorded_repeat_mean": 1.3617,
+    "approximate_single_evaluation_variation": 0.01,
+    "selection_note": "Selected practical checkpoint; repeated deltas versus the single parent record remain within the approximate external-evaluation variation band."
+  }
+}

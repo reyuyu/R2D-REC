@@ -4,6 +4,28 @@
 
 仓库不提交模型权重、原始 JSONL、tokenized cache、日志、checkpoint 或任何凭据；这些内容保留在开发机，仓库只保留代码、配置、测试和可审计的版本元数据。
 
+## 最终方案全链条（当前采用）
+
+当前最终方案不是一次训练，而是四段 checkpoint 逐级继承：
+
+```text
+多任务 SFT BETA-baseline（约 1.33）
+  -> 懂推荐双路 GR_REC_v1 Step 1500（1.3510）
+  -> 懂推荐 Think-only GRPO-TK Step 250（1.3579）
+  -> 懂用户 MC_USER Hybrid K4 Step 100（项目保守口径约 1.356）
+```
+
+| 阶段 | 选中 checkpoint | 为什么做 | 核心 trick | 记录分数 |
+| --- | --- | --- | --- | ---: |
+| **SFT** | BETA Epoch 2 `checkpoint-1106` | 建立懂物料、懂用户、懂推荐的多任务基础能力 | Native Source-Domain R32、8K neat packing、SID8 加权 CE、2 epoch | 约 `1.33`；历史 `1.3246 / 1.3313` |
+| **懂推荐双路 GRPO V1** | `GR_REC_v1 checkpoint-1500` | 用真实生成 outcome 强化推荐，同时覆盖 Think/NoThink 两条生产路径 | Think G4 + Beam32；NoThink G8 六档 SID reward；route weight `1.0/0.5` | `1.3510` |
+| **懂推荐 Think GRPO** | `GR_REC_ThinkSample8_FullSID_v3 checkpoint-250` | 让 CoT 的质量直接由其后完整 SID 采样结果监督 | Think G4；每条 CoT 独立 Sample8 FullSID；`L_cot + L_sid` | `1.3579` |
+| **懂用户保守精修** | strong-parent MC_USER Hybrid K4 `prompt-step-0100` | 在当前最强推荐 parent 上加入 Action/Chain 能力，同时限制共享 LoRA 漂移 | K4 四卡 candidate parallel；`L_sequence + 0.3 L_local`；LR `3e-7`；200-prompt 短预算密集存档 | 保守展示约 `1.356`；原始复测 `1.3639 / 1.3595`，均值 `1.3617` |
+
+这条链的关键不是“持续训练到最后”，而是每一段都从外部评测选中的中间 checkpoint 继续。`GR_REC_v1` 在 Step 1500 后回落，GRPO-TK 在 Step 250 后也出现回落，因此最终 MC_USER 同样选择 Step 100，而不是自动采用 Step 200。
+
+最后一段的 `约 1.356` 是项目指定的保守展示口径，不是一条额外 raw 测次。可追溯的 Step 100 外部结果是 `1.3639` 和 `1.3595`；两次相对 GRPO-TK 单次 `1.3579` 分别为 `+0.0060/+0.0016`，仍落在仓库约 `+/-0.01` 的单次评测波动带内。最终应表述为“保住强推荐 parent 并得到两个有竞争力的复测”，而不是已证明稳定显著提升。完整动机、开发机路径、训练合同和 11 项原始分数见 [最终 strong-parent MC_USER 实验记录](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_strongparent_final_v1.md)。
+
 ## 背景
 
 模型需要同时学习三类主要能力：
@@ -158,7 +180,7 @@ Composite 已完成 CPU 校准、4-GPU zero-update preflight 与 Smoke12 合同�
 - CoT loss 只更新 CoT action tokens；SID loss 只更新第一个完整 SID 的 4 个 tokens。Base 冻结，只训练 LoRA。
 - `num_iterations=2` 的第二次 policy pass 完整复用第一次 rollout 和 detached full-forward old logp；当前正式版本不做 zero-std reroll。
 
-当前 parent 三次外部评测均值为 `1.3481`，GRPO-TK checkpoint-250 单次为 **`1.3579`**：相对 parent 均值 `+0.0098`，相对 parent 三次最好值 `1.3510` 为 `+0.0069`。这是当前仓库最高的已记录单次总分，但尚未完成同 checkpoint 多次复测，因此记录为早期正向信号，而不是统计复现后的最终结论。
+当时 parent 三次外部评测均值为 `1.3481`，GRPO-TK checkpoint-250 单次为 **`1.3579`**：相对 parent 均值 `+0.0098`，相对 parent 三次最好值 `1.3510` 为 `+0.0069`。它是 strong-parent MC_USER 之前的最高单次记录，并被选为下一阶段 parent；单独看该测次仍只是早期正向信号。
 
 完整公式、11 项分数和分项分析见 [GRPO-TK 实验记录](./docs/experiment_GRPO_TK.md)；从私有数据契约到 4-GPU 启动、恢复与监控的步骤见 [GRPO-TK 复现指南](./docs/reproduce_GRPO_TK.md)。
 
@@ -181,7 +203,7 @@ Composite 已完成 CPU 校准、4-GPU zero-update preflight 与 Smoke12 合同�
 3. **Checkpoint 选择**：不按“越晚越好”选择，也不只看训练 reward。先比较 Step 1000/1500/2000/final 的外部 11 项，再结合 CoT 长度、多样性、zero-std、Beam invalid 和固定四域 Probe。当前 Step 1500 是优先复测候选。
 4. **后续实验隔离原则**：CoT 后期单一兴趣收缩与 NoThink/Think 零方差是两类不同问题。后续若分别测试多样性约束或稀疏 reward 改进，必须单变量立项，不在同一实验中同时改 G、reward、sampler 或数据顺序。
 
-### 当前最高单次记录：GRPO-TK Step 250 = 1.3579
+### Strong-parent 前一阶段高点：GRPO-TK Step 250 = 1.3579
 
 GRPO-TK 使用 `GR_REC_v1 checkpoint-1500` parent。该 parent 三次同口径外部评测分别为 `1.3436 / 1.3497 / 1.3510`，均值 `1.3481`；GRPO-TK step 250 得到 `1.3579`。
 
@@ -229,6 +251,8 @@ Recommendation Gold 相对 History 的纯 CPU 任务结构审计见 [Recommendat
 
 Hybrid 训练健康完成，但外部任务呈现随 step 增强的 User/Recommendation 权衡：相对 Parent，User 从 `+0.0034` 增至 `+0.0060`，Recommendation 从 `-0.0110` 扩大到 `-0.0212`。这更支持 User-only objective 的跨任务干扰，而不是“学习率低到没有学到”；`1e-6` 已经产生稳定方向性变化，提高学习率本身不能保证保留 Recommendation。完整原始 11 项、逐项 delta 和保留策略见 [MC_USER Hybrid 外部评测记录](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md)。
 
+为降低上述漂移，后续 strong-parent 版本改用 `GRPO-TK checkpoint-250`、LR `3e-7` 和 200-prompt 短预算。最终选择 Step 100；两次外部 aggregate 为 `1.3639 / 1.3595`。完整记录见 [strong-parent 最终实验](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_strongparent_final_v1.md)。
+
 ### 代码、Runner、文档和结果入口
 
 | 路线 / 实验 | 正式入口 | 核心实现 | 说明与结果 |
@@ -241,7 +265,7 @@ Hybrid 训练健康完成，但外部任务呈现随 step 增强的 User/Recomme
 | Think-only Composite | [`run_gr_rec_think_composite_interest_v1.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/run_gr_rec_think_composite_interest_v1.py) | [`composite_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/composite_trainer.py) / [`interest_metric.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/interest_metric.py) | [实验文档](./baselines/native_source_domain_r32_v3/grpo/docs/experiment_GR_REC_Think_CompositeInterest_v1.md) / [目录说明](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/README.md) |
 | **GRPO-TK / Sample8 FullSID** | [`run_sample8_fullsid_train.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/run_sample8_fullsid_train.py) | [`sample8_fullsid_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_v3/sample8_fullsid_trainer.py) | [实验记录](./docs/experiment_GRPO_TK.md) / [复现指南](./docs/reproduce_GRPO_TK.md) / [Preflight 证据](./baselines/native_source_domain_r32_v3/grpo/results/gr_rec_think_sample8_fullsid_v3_gpu_preflight_scan_20260828.json) |
 | GR_USER_v1 | [`run_user_full_epoch.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_user_full_epoch.py) | [`user_grpo_trainer.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_grpo_trainer.py) | [项目入口](./baselines/native_source_domain_r32_v3/grpo/user/README.md) / [Reward 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/reward_contract_v1.md) / [Trainer 合同](./baselines/native_source_domain_r32_v3/grpo/user/docs/trainer_objective_contract_v1.md) / [Full epoch](./baselines/native_source_domain_r32_v3/grpo/user/docs/full_epoch_v1.md) |
-| MC_USER Hybrid K4 | [`run_mc_user_formal_hybrid_k4_ddp_v1.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_mc_user_formal_hybrid_k4_ddp_v1.py) | [`user_mc_hybrid_objective.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_mc_hybrid_objective.py) | [外部评测与跨任务权衡](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md) |
+| MC_USER Hybrid K4 | [`run_mc_user_formal_hybrid_k4_ddp_v1.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/run_mc_user_formal_hybrid_k4_ddp_v1.py) | [`user_mc_hybrid_objective.py`](./baselines/native_source_domain_r32_v3/grpo/user/scripts/user_mc_hybrid_objective.py) | [早期跨任务权衡](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_external_eval_v1.md) / [strong-parent 最终链条](./baselines/native_source_domain_r32_v3/grpo/user/docs/mc_user_hybrid_strongparent_final_v1.md) |
 
 总入口：[GRPO 工程 README](./baselines/native_source_domain_r32_v3/grpo/README.md) / [实验记录总索引](./实验记录/README.md)。
 
