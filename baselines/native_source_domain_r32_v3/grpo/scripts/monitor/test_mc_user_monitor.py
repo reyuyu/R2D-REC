@@ -96,6 +96,17 @@ class MCUserMonitorTests(unittest.TestCase):
         checkpoint.mkdir(parents=True)
         (checkpoint / "adapter_config.json").write_text("{}", encoding="utf-8")
         (checkpoint / "adapter_model.safetensors").write_bytes(b"adapter")
+        self.strong = self.user_runs / "mc_user_v1_hybrid_formal" / "MC-USER-STRONG-PARENT-200"
+        write_json(self.strong / "manifest.json", {
+            "run_id": self.strong.name, "run_kind": "user_grpo",
+            "algorithm": "mc_user_hybrid_grpo_v1", "K": 4, "max_steps": 200,
+            "prompt_count": 200, "checkpoint_steps": [25, 50, 75, 100, 150, 200],
+            "probe_parent_label": "Parent",
+        })
+        write_json(self.strong / "evaluations" / "user_light_probe" / "probe_queue.json", {
+            "status": "PENDING_TRAINING_CHECKPOINTS",
+            "items": [{"step": step, "label": "Parent" if step == 0 else str(step), "status": "waiting"} for step in (0, 25, 50, 75, 100, 150, 200)],
+        })
         self.client = TestClient(
             create_app(runs_dir=self.runs, outputs_dir=self.outputs, user_runs_dir=self.user_runs)
         )
@@ -124,6 +135,13 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertEqual(metrics[0]["total_loss"], 0.04)
         checkpoints = self.client.get(f"/api/checkpoints?run_id={self.hybrid.name}").json()
         self.assertEqual([row["step"] for row in checkpoints], [128])
+
+    def test_strong_parent_200_step_probe_contract(self):
+        manifest = self.client.get(f"/api/manifest?run_id={self.strong.name}").json()
+        self.assertEqual((manifest["max_steps"], manifest["prompt_count"]), (200, 200))
+        probe = self.client.get(f"/api/user-light-probe?run_id={self.strong.name}").json()
+        self.assertEqual(probe["checkpoint_schedule"], [0, 25, 50, 75, 100, 150, 200])
+        self.assertEqual(probe["items"][0]["label"], "Parent")
 
     def test_checkpoint_discovery_and_legacy_regressions(self):
         checkpoints = self.client.get(f"/api/checkpoints?run_id={self.mc.name}").json()
@@ -265,7 +283,7 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("user_dashboard.js?v=20260822-hybrid-health-v4", html)
+        self.assertIn("user_dashboard.js?v=20260831-strong-parent-v1", html)
         self.assertIn("user_dashboard.css?v=20260822-hybrid-health-v4", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)
@@ -277,12 +295,13 @@ class MCUserMonitorTests(unittest.TestCase):
         self.assertIn("Chain · Event Marginal Credit", javascript)
         self.assertIn("该历史 run 未落盘 unit-level marginal trace", javascript)
         self.assertIn("generated_token_indices", javascript)
-        self.assertIn("固定 3+3 inference-only sidecar 尚未写入 BETA", javascript)
+        self.assertIn("sidecar 尚未写入 ${escapeHtml(baselineLabel)}", javascript)
         self.assertIn("当前训练样本 / on-policy / 参与训练", javascript)
         self.assertIn("checkpoint_schedule", javascript)
         self.assertIn("Waiting for adapter-only checkpoint", javascript)
         self.assertIn("mcProbeSampleDetail", javascript)
         self.assertIn("relative_to_beta_delta", javascript)
+        self.assertIn("relative_to_parent_delta", javascript)
         self.assertIn("Action Mean F1", javascript)
         self.assertIn("Sequence A / token", javascript)
         self.assertIn("Aux A / token", javascript)

@@ -66,6 +66,11 @@ RUN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 ALGORITHM = "mc_user_hybrid_grpo_v1"
 OUTPUT_ROOT = Path("/data/GRPO_USER/runs/mc_user_v1_hybrid_formal")
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
+STRONG_PARENT_CONFIG_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "configs"
+    / "mc_user_hybrid_strongparent_lr3e7_200.json"
+)
 FROZEN_CONFIG = {
     "experiment_type": "formal",
     "stage": "stage1_512_hybrid_k4",
@@ -96,6 +101,44 @@ FROZEN_CONFIG = {
     "resume_supported": False,
     "resume_policy": "continuous_run_only",
 }
+STRONG_PARENT_CONFIG = {
+    "experiment_type": "formal",
+    "stage": "strongparent_lr3e7_200",
+    "base_model": "/data/models/onereason-8b-pretrain-competition",
+    "adapter": (
+        "/root/GRPO-checkpoints/"
+        "GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-250"
+    ),
+    "parent_experiment": "GR_REC_ThinkSample8_FullSID_v3",
+    "parent_checkpoint_step": 250,
+    "parent_recorded_external_score": None,
+    "train_data": "/data/GRPO_USER/data/gr_user_v1/train_3000.jsonl",
+    "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "prompt_count": 200,
+    "action_count": 100,
+    "chain_count": 100,
+    "selection_seed": 20260823,
+    "route_schedule": "strict_alternating",
+    "K": K,
+    "world_size": WORLD_SIZE,
+    "parallelism": "candidate_parallel",
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "learning_rate": 3e-7,
+    "weight_decay": 0.0,
+    "forward_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3,
+    "checkpoint_steps": [25, 50, 75, 100, 150, 200],
+    "resume_supported": False,
+    "resume_policy": "continuous_run_only",
+}
+SUPPORTED_FROZEN_CONFIGS = {
+    FROZEN_CONFIG["stage"]: FROZEN_CONFIG,
+    STRONG_PARENT_CONFIG["stage"]: STRONG_PARENT_CONFIG,
+}
 
 
 class MCK4Error(RuntimeError):
@@ -104,14 +147,39 @@ class MCK4Error(RuntimeError):
 
 def load_k4_config(path: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
+    expected_config = SUPPORTED_FROZEN_CONFIGS.get(config.get("stage"))
+    if expected_config is None:
+        raise MCK4Error(f"unsupported frozen K4 stage: {config.get('stage')}")
+    keys = set(config).union(expected_config)
     mismatches = {
-        key: {"actual": config.get(key), "expected": expected}
-        for key, expected in FROZEN_CONFIG.items()
-        if config.get(key) != expected
+        key: {"actual": config.get(key), "expected": expected_config.get(key)}
+        for key in sorted(keys)
+        if config.get(key) != expected_config.get(key)
     }
     if mismatches:
         raise MCK4Error(f"frozen K4 config mismatch: {mismatches}")
     return config
+
+
+def validate_parent_adapter_contract(path: Path) -> dict[str, Any]:
+    from safetensors import safe_open
+
+    weights = path / "adapter_model.safetensors"
+    if not weights.is_file():
+        raise MCK4Error("BLOCKED_PARENT_CONTRACT: adapter_model.safetensors missing")
+    with safe_open(weights, framework="pt", device="cpu") as handle:
+        tensor_names = list(handle.keys())
+    lora_names = [name for name in tensor_names if "lora_" in name.lower()]
+    if len(tensor_names) != 504 or len(lora_names) != 504:
+        raise MCK4Error(
+            "BLOCKED_PARENT_CONTRACT: expected 504/504 LoRA tensors, "
+            f"found {len(tensor_names)}/{len(lora_names)}"
+        )
+    return {
+        "trainable_lora_tensor_count": len(lora_names),
+        "lora_tensor_count": len(lora_names),
+        "adapter_tensor_count": len(tensor_names),
+    }
 
 
 def validate_checkpoint_root(path: Path, *, minimum_free_bytes: int = 2 * 1024**3) -> Path:
@@ -135,14 +203,16 @@ def candidate_seed(selection_seed: int, prompt_step: int, sample_id: str, candid
     return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big") % (2**63 - 1)
 
 
-def probe_queue_value() -> dict[str, Any]:
+def probe_queue_value(config: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    frozen = FROZEN_CONFIG if config is None else config
+    parent_label = "Parent" if frozen["stage"] == STRONG_PARENT_CONFIG["stage"] else "BETA"
     return {
         "status": "PENDING_TRAINING_CHECKPOINTS",
         "mode": "POST_TRAINING_INFERENCE_ONLY",
         "training_blocked_by_probe": False,
         "items": [
-            {"step": step, "label": "BETA" if step == 0 else str(step), "status": "pending" if step == 0 else "waiting", "available_for_probe": step == 0}
-            for step in (0, 128, 256, 384, 512)
+            {"step": step, "label": parent_label if step == 0 else str(step), "status": "pending" if step == 0 else "waiting", "available_for_probe": step == 0}
+            for step in (0, *frozen["checkpoint_steps"])
         ],
     }
 
@@ -174,19 +244,31 @@ def build_manifest(
     *,
     smoke_prompts: int = 0,
 ) -> dict[str, Any]:
-    selected = list(rows[:smoke_prompts] if smoke_prompts else rows)
+    selected_count = smoke_prompts or int(config["prompt_count"])
+    selected = list(rows[:selected_count])
+    expected_action = 1 if smoke_prompts else int(config["action_count"])
+    expected_chain = 1 if smoke_prompts else int(config["chain_count"])
+    if len(selected) != selected_count:
+        raise MCK4Error("selected prompt count is smaller than frozen contract")
+    if (
+        sum(row["route"] == "action" for row in selected) != expected_action
+        or sum(row["route"] == "chain" for row in selected) != expected_chain
+    ):
+        raise MCK4Error("selected route counts violate frozen contract")
     return {
         "status": "READY_TO_EXECUTE",
         "run_kind": "user_grpo",
         "algorithm": ALGORITHM,
         "experiment_type": "formal_k4_smoke" if smoke_prompts else "formal",
-        "stage": "stage1_512_k4_smoke" if smoke_prompts else config["stage"],
+        "stage": f"{config['stage']}_smoke" if smoke_prompts else config["stage"],
         "run_id": run_id,
         "base_model": config["base_model"],
         "adapter": config["adapter"],
         "parent_experiment": config["parent_experiment"],
         "parent_checkpoint_step": config["parent_checkpoint_step"],
         "parent_recorded_external_score": config["parent_recorded_external_score"],
+        "probe_parent_label": "Parent" if config["stage"] == STRONG_PARENT_CONFIG["stage"] else "BETA",
+        "probe_parent_adapter": config["adapter"] if config["stage"] == STRONG_PARENT_CONFIG["stage"] else None,
         "train_data": config["train_data"],
         "train_sha256": config["train_sha256"],
         "config_path": str(config_path),
@@ -207,6 +289,7 @@ def build_manifest(
         "learning_rate": config["learning_rate"],
         "weight_decay": config["weight_decay"],
         "forward_batch_size": config["forward_batch_size"],
+        "gradient_accumulation_steps": config.get("gradient_accumulation_steps", 1),
         "sequence_weight": config["sequence_weight"],
         "local_weight": config["local_weight"],
         "checkpoint_steps": [] if smoke_prompts else list(config["checkpoint_steps"]),
@@ -224,6 +307,7 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
     config_path = args.config.expanduser().resolve()
     config = load_k4_config(config_path)
     paths = validate_paths(Path(config["base_model"]), Path(config["adapter"]), Path(config["train_data"]))
+    parent_contract = validate_parent_adapter_contract(Path(config["adapter"]))
     if paths["train_sha256"] != config["train_sha256"]:
         raise MCK4Error("frozen train SHA mismatch")
     repo_root = Path(__file__).resolve().parents[5]
@@ -263,10 +347,11 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
         "world_size": WORLD_SIZE,
         "parallelism": "candidate_parallel",
         "checkpoint_root": str(checkpoint_root),
+        "parent_contract": parent_contract,
         "execute_required": True,
     }
     _write_json(run_dir / "preflight.json", preflight)
-    _write_json(run_dir / "evaluations" / "user_light_probe" / "probe_queue.json", probe_queue_value())
+    _write_json(run_dir / "evaluations" / "user_light_probe" / "probe_queue.json", probe_queue_value(config))
     return preflight
 
 
@@ -286,6 +371,8 @@ def _load_execute_contract(args: argparse.Namespace) -> tuple[dict[str, Any], di
         raise MCK4Error("execute checkpoint-root differs from preflight")
     config_path = args.config.expanduser().resolve()
     config = load_k4_config(config_path)
+    if validate_parent_adapter_contract(Path(config["adapter"])) != preflight.get("parent_contract"):
+        raise MCK4Error("execute parent adapter contract differs from preflight")
     if file_sha256(config_path) != manifest.get("config_sha256"):
         raise MCK4Error("execute config SHA differs from preflight")
     if file_sha256(Path(config["train_data"])) != manifest.get("train_sha256"):

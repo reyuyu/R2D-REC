@@ -104,10 +104,16 @@ def load_formal_manifest(formal_run_dir: Path) -> dict[str, Any]:
     prompts = manifest.get("prompts", [])
     ids = [row.get("sample_id") for row in prompts]
     routes = [str(row.get("route", "")).lower() for row in prompts]
-    if len(ids) != 512 or None in ids or len(set(ids)) != 512:
-        raise FormalProbeError("formal manifest must contain 512 unique samples")
-    if routes != [route for _ in range(256) for route in ("action", "chain")]:
+    prompt_count = int(manifest.get("prompt_count", len(ids)))
+    if len(ids) != prompt_count or None in ids or len(set(ids)) != prompt_count:
+        raise FormalProbeError("formal manifest prompt count/uniqueness mismatch")
+    expected_routes = [route for _ in range(prompt_count // 2) for route in ("action", "chain")]
+    if prompt_count % 2 or routes != expected_routes:
         raise FormalProbeError("formal manifest route schedule is not strict alternating")
+    if int(manifest.get("action_count", prompt_count // 2)) != prompt_count // 2:
+        raise FormalProbeError("formal manifest Action count mismatch")
+    if int(manifest.get("chain_count", prompt_count // 2)) != prompt_count // 2:
+        raise FormalProbeError("formal manifest Chain count mismatch")
     return manifest
 
 
@@ -192,9 +198,14 @@ def validate_adapter_only(path: Path, step: int) -> None:
             raise FormalProbeError(f"formal checkpoint step mismatch: {path}")
 
 
-def checkpoint_spec(formal_run_dir: Path, beta_adapter: Path, step: int) -> dict[str, Any]:
+def checkpoint_spec(
+    formal_run_dir: Path,
+    parent_adapter: Path,
+    step: int,
+    parent_label: str = "BETA",
+) -> dict[str, Any]:
     if step == 0:
-        return {"step": 0, "name": "BETA", "path": beta_adapter}
+        return {"step": 0, "name": parent_label, "path": parent_adapter}
     name = f"prompt-step-{step:04d}"
     manifest_path = formal_run_dir / "manifest.json"
     if manifest_path.is_file():
@@ -239,6 +250,7 @@ def score_candidate(
             "exact_match": bool(score.exact_set_match),
             "gold_sids": list(score.gold_sids),
             "pred_sids": list(score.pred_sids_unique),
+            "predicted_sid_count": len(score.pred_sids_unique),
         }
     score = score_chain(completion, dict(sample), tokenizer)
     return {
@@ -263,11 +275,13 @@ def summarize_checkpoint(step: int, samples: Sequence[Mapping[str, Any]]) -> dic
         "precision": statistics.fmean(float(item["precision"]) for item in action),
         "recall": statistics.fmean(float(item["recall"]) for item in action),
         "exact_match_rate": statistics.fmean(float(item["exact_match"]) for item in action),
+        "predicted_sid_count": statistics.fmean(float(item["predicted_sid_count"]) for item in action),
     }
     chain_summary = {
         "total_reward": statistics.fmean(float(item["total_reward"]) for item in chain),
         "action_alignment": statistics.fmean(float(item["action_alignment"]) for item in chain),
         "logic_alignment": statistics.fmean(float(item["logic_alignment"]) for item in chain),
+        "predicted_event_count": statistics.fmean(float(item["predicted_event_count"]) for item in chain),
     }
     return {
         "step": step,
@@ -283,11 +297,13 @@ def incremental_result(
     probe_sha256: str,
     sample_ids: Sequence[str],
     sample_seeds: Mapping[str, int],
+    checkpoint_steps: Sequence[int] = CHECKPOINT_STEPS,
+    baseline_label: str = "BETA",
 ) -> dict[str, Any]:
     ordered = [dict(checkpoint) for checkpoint in sorted(checkpoints, key=lambda row: int(row["step"]))]
     evaluated_steps = [int(row["step"]) for row in ordered]
     if evaluated_steps and evaluated_steps[0] != 0:
-        raise FormalProbeError("BETA must be evaluated first")
+        raise FormalProbeError("parent checkpoint must be evaluated first")
     baseline_means = {}
     if ordered:
         baseline_means = {
@@ -299,7 +315,9 @@ def incremental_result(
         for sample in checkpoint["samples"]:
             mean_reward = statistics.fmean(float(candidate["reward"]) for candidate in sample["candidates"])
             sample["mean_reward"] = mean_reward
-            sample["relative_to_beta_delta"] = mean_reward - baseline_means.get(str(sample["sample_id"]), mean_reward)
+            delta = mean_reward - baseline_means.get(str(sample["sample_id"]), mean_reward)
+            sample["relative_to_parent_delta"] = delta
+            sample["relative_to_beta_delta"] = delta
         if int(checkpoint["step"]) == 0:
             continue
         base = ordered[0]["summary"]
@@ -314,7 +332,7 @@ def incremental_result(
                 "delta_overall_user_proxy": summary["overall_user_proxy"] - base["overall_user_proxy"],
             }
         )
-    waiting = [step for step in CHECKPOINT_STEPS if step not in evaluated_steps]
+    waiting = [int(step) for step in checkpoint_steps if int(step) not in evaluated_steps]
     return {
         "status": "PASS" if not waiting else "WAITING_FOR_CHECKPOINTS",
         "mode": "FIXED_SAMPLES_INFERENCE_ONLY",
@@ -323,7 +341,8 @@ def incremental_result(
         "sample_ids": list(sample_ids),
         "sample_seeds": dict(sample_seeds),
         "generation_config": generation_config(),
-        "checkpoint_schedule": list(CHECKPOINT_STEPS),
+        "checkpoint_schedule": [int(step) for step in checkpoint_steps],
+        "baseline_label": baseline_label,
         "evaluated_steps": evaluated_steps,
         "waiting_steps": waiting,
         "checkpoints": ordered,
@@ -341,6 +360,8 @@ def publish_incremental(
         probe_sha256=str(preflight["probe_sha256"]),
         sample_ids=preflight["sample_ids"],
         sample_seeds=preflight["sample_seeds"],
+        checkpoint_steps=preflight["checkpoint_steps"],
+        baseline_label=preflight["parent_label"],
     )
     results_path, status_path = output_paths(formal_run_dir)
     atomic_json(results_path, result)
@@ -465,12 +486,22 @@ def run_preflight(
 ) -> dict[str, Any]:
     if not args.base_model.is_dir():
         raise FormalProbeError("base model directory is missing")
-    validate_adapter_only(args.beta_adapter, 0)
     rows, probe_contract = load_probe(args.probe)
     manifest = load_formal_manifest(args.formal_run_dir)
+    requested_parent = getattr(args, "parent_adapter", None)
+    if requested_parent is None:
+        requested_parent = getattr(args, "beta_adapter", None)
+    manifest_parent = manifest.get("probe_parent_adapter")
+    parent_adapter = Path(requested_parent or manifest_parent or BETA_ADAPTER)
+    parent_label = str(manifest.get("probe_parent_label") or "BETA")
+    checkpoint_steps = [0, *[int(step) for step in manifest.get("checkpoint_steps", CHECKPOINT_STEPS[1:])]]
+    validate_adapter_only(parent_adapter, 0)
     validate_probe_disjoint(rows, manifest)
     gpu = dict(gpu_checker(args.gpu_id, args.memory_threshold_mib))
-    specs = [checkpoint_spec(args.formal_run_dir, args.beta_adapter, step) for step in CHECKPOINT_STEPS]
+    specs = [
+        checkpoint_spec(args.formal_run_dir, parent_adapter, step, parent_label)
+        for step in checkpoint_steps
+    ]
     return {
         "status": "READY_TO_EXECUTE",
         "gpu": gpu,
@@ -481,6 +512,9 @@ def run_preflight(
         "sample_ids": [row["sample_id"] for row in rows],
         "sample_seeds": sample_seed_map(rows),
         "checkpoints": specs,
+        "checkpoint_steps": checkpoint_steps,
+        "parent_label": parent_label,
+        "parent_adapter": str(parent_adapter),
         "generation_config": generation_config(),
         "formal_manifest_sha256": file_sha256(args.formal_run_dir / "manifest.json"),
     }
@@ -542,7 +576,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gpu-id", type=int, required=True)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--base-model", type=Path, default=BASE_MODEL)
-    parser.add_argument("--beta-adapter", type=Path, default=BETA_ADAPTER)
+    parser.add_argument("--parent-adapter", "--beta-adapter", dest="parent_adapter", type=Path)
     parser.add_argument("--probe", type=Path, default=PROBE_DATA)
     parser.add_argument("--memory-threshold-mib", type=int, default=MEMORY_THRESHOLD_MIB)
     parser.add_argument("--poll-seconds", type=float, default=10.0)
@@ -557,7 +591,9 @@ def public_preflight(preflight: Mapping[str, Any]) -> dict[str, Any]:
         "probe_sha256": preflight["probe_sha256"],
         "sample_ids": preflight["sample_ids"],
         "counts": {"action": 3, "chain": 3},
-        "checkpoint_steps": list(CHECKPOINT_STEPS),
+        "checkpoint_steps": list(preflight["checkpoint_steps"]),
+        "parent_label": preflight["parent_label"],
+        "parent_adapter": preflight["parent_adapter"],
         "generation_config": preflight["generation_config"],
         "execute_required": True,
     }

@@ -802,7 +802,10 @@
   }
 
   function mcProbeStepLabel(step) {
-    return Number(step) === 0 ? 'BETA' : `Step ${step}`;
+    if (Number(step) !== 0) return `Step ${step}`;
+    const checkpoint = (state.userLightProbe?.checkpoints || []).find(item => Number(item.step) === 0);
+    const queueItem = (state.userLightProbe?.items || []).find(item => Number(item.step) === 0);
+    return checkpoint?.name || queueItem?.label || state.userLightProbe?.baseline_label || 'BETA';
   }
 
   function mcProbeQueueState(step, evaluated) {
@@ -821,9 +824,10 @@
     const sampleSelect = $('mcProbeSampleId');
     const stepSelect = $('mcProbeSampleStep');
     if (!checkpoints.length) {
-      sampleSelect.innerHTML = '<option value="">等待 BETA</option>';
-      stepSelect.innerHTML = '<option value="">等待 BETA</option>';
-      $('mcProbeSampleDetail').innerHTML = '<div class="empty mc-empty">BETA 固定探针完成后可查看 6 个固定样本及其真实 completion。</div>';
+      const baselineLabel = mcProbeStepLabel(0);
+      sampleSelect.innerHTML = `<option value="">等待 ${escapeHtml(baselineLabel)}</option>`;
+      stepSelect.innerHTML = `<option value="">等待 ${escapeHtml(baselineLabel)}</option>`;
+      $('mcProbeSampleDetail').innerHTML = `<div class="empty mc-empty">${escapeHtml(baselineLabel)} 固定探针完成后可查看 6 个固定样本及其真实 completion。</div>`;
       return;
     }
     const route = routeSelect.value || 'action';
@@ -854,17 +858,18 @@
         : `Total ${fmt(candidate.total_reward ?? candidate.reward)} · Action ${fmt(candidate.action_alignment)} · Logic ${fmt(candidate.logic_alignment)} · Events ${candidate.predicted_event_count ?? '-'}`;
       return `<article class="mc-probe-candidate"><header><strong>Candidate ${candidate.candidate_id ?? '-'}</strong><span>${score} · ${candidate.completion_length ?? '-'} tokens</span></header><pre>${escapeHtml(candidate.completion || '')}</pre>${sidHtml}</article>`;
     }).join('');
-    $('mcProbeSampleDetail').innerHTML = `${renderUserSampleContext(sample, route)}<div class="mc-probe-sample-meta"><strong>${mcProbeStepLabel(checkpoint.step)}</strong><span>Mean reward ${fmt(sample.mean_reward)}</span><span>Δ vs BETA ${signed(sample.relative_to_beta_delta)}</span><span>Seed ${sample.seed ?? '-'}</span></div>${candidateHtml}`;
+    $('mcProbeSampleDetail').innerHTML = `${renderUserSampleContext(sample, route)}<div class="mc-probe-sample-meta"><strong>${mcProbeStepLabel(checkpoint.step)}</strong><span>Mean reward ${fmt(sample.mean_reward)}</span><span>Δ vs ${escapeHtml(mcProbeStepLabel(0))} ${signed(sample.relative_to_parent_delta ?? sample.relative_to_beta_delta)}</span><span>Seed ${sample.seed ?? '-'}</span></div>${candidateHtml}`;
   }
 
   function renderMcProbe() {
     const rows = mcProbeRows();
     const schedule = mcProbeSchedule();
     const evaluated = new Set(rows.map(row => row.step));
-    const status = state.userLightProbe?.status || 'WAITING_FOR_BETA';
+    const baselineLabel = mcProbeStepLabel(0);
+    const status = state.userLightProbe?.status || 'WAITING_FOR_PARENT';
     $('mcProbeNotice').textContent = rows.length
       ? `固定 3+3、独立 inference-only sidecar、不参与训练。当前状态：${status}；结果为本地趋势代理，不是官方分数。`
-      : '固定 3+3 inference-only sidecar 尚未写入 BETA 结果；该探针不参与 reward、loss 或 optimizer。';
+      : `固定 3+3 inference-only sidecar 尚未写入 ${escapeHtml(baselineLabel)} 结果；该探针不参与 reward、loss 或 optimizer。`;
     $('mcProbeSchedule').innerHTML = schedule.map(step => {
       const queueState = mcProbeQueueState(step, evaluated);
       return `<span class="mc-probe-stage ${queueState.className}"><strong>${mcProbeStepLabel(step)}</strong> · ${queueState.label}</span>`;
@@ -872,7 +877,7 @@
     $('mcProbeCharts').hidden = !rows.length;
     if (!rows.length) {
       $('mcProbeCards').innerHTML = '';
-      $('mcProbeTable').innerHTML = '<div class="empty mc-empty">等待 BETA 固定探针先完成。</div>';
+      $('mcProbeTable').innerHTML = `<div class="empty mc-empty">等待 ${escapeHtml(baselineLabel)} 固定探针先完成。</div>`;
       $('mcProbeDeltas').innerHTML = '';
       renderMcProbeSampleDetail();
       renderMcRecommendationGuard();
@@ -897,7 +902,7 @@
       const row = byStep.get(step);
       return row ? `<tr><td>${mcProbeStepLabel(step)}</td><td>${fmt(row.action.f1)}</td><td>${fmt(row.action.precision)}</td><td>${fmt(row.action.recall)}</td><td>${fmt(row.chain.total_reward)}</td><td>${fmt(row.chain.action_alignment)}</td><td>${fmt(row.chain.logic_alignment)}</td><td>${fmt(row.proxy)}</td></tr>` : `<tr class="mc-probe-waiting-row"><td>${mcProbeStepLabel(step)}</td><td colspan="7">Waiting for adapter-only checkpoint</td></tr>`;
     }).join('')}</tbody></table>`;
-    $('mcProbeDeltas').innerHTML = rows.slice(1).map(row => `<div><strong>${mcProbeStepLabel(row.step)} vs BETA</strong><span>ΔAction ${signed(Number(row.action.f1) - Number(baseline.action.f1))}</span><span>ΔChain ${signed(Number(row.chain.total_reward) - Number(baseline.chain.total_reward))}</span><span>ΔChainAction ${signed(Number(row.chain.action_alignment) - Number(baseline.chain.action_alignment))}</span><span>ΔChainLogic ${signed(Number(row.chain.logic_alignment) - Number(baseline.chain.logic_alignment))}</span><span>ΔProxy ${signed(row.proxy - baseline.proxy)}</span></div>`).join('') || '<div class="empty-inline">BETA 已完成；等待首个 checkpoint 后计算 paired delta。</div>';
+    $('mcProbeDeltas').innerHTML = rows.slice(1).map(row => `<div><strong>${mcProbeStepLabel(row.step)} vs ${escapeHtml(baselineLabel)}</strong><span>ΔAction ${signed(Number(row.action.f1) - Number(baseline.action.f1))}</span><span>ΔChain ${signed(Number(row.chain.total_reward) - Number(baseline.chain.total_reward))}</span><span>ΔChainAction ${signed(Number(row.chain.action_alignment) - Number(baseline.chain.action_alignment))}</span><span>ΔChainLogic ${signed(Number(row.chain.logic_alignment) - Number(baseline.chain.logic_alignment))}</span><span>ΔProxy ${signed(row.proxy - baseline.proxy)}</span></div>`).join('') || `<div class="empty-inline">${escapeHtml(baselineLabel)} 已完成；等待首个 checkpoint 后计算 paired delta。</div>`;
     renderMcProbeSampleDetail();
     renderMcRecommendationGuard();
   }

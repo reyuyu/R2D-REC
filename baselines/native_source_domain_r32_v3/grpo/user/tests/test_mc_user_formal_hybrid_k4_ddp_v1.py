@@ -12,15 +12,19 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     ALGORITHM,
     FROZEN_CONFIG,
+    STRONG_PARENT_CONFIG,
     append_rank0_prompt_artifacts,
     build_manifest,
     load_k4_config,
+    probe_queue_value,
+    validate_parent_adapter_contract,
     validate_checkpoint_root,
 )
 from run_mc_user_formal_probe_sidecar_v1 import checkpoint_spec  # noqa: E402
 
 
 CONFIG = USER_DIR / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
+STRONG_CONFIG = USER_DIR / "configs" / "mc_user_hybrid_strongparent_lr3e7_200.json"
 
 
 class HybridFormalRunnerTests(unittest.TestCase):
@@ -43,6 +47,39 @@ class HybridFormalRunnerTests(unittest.TestCase):
         self.assertEqual((manifest["K"], manifest["world_size"]), (4, 4))
         self.assertEqual(manifest["parallelism"], "candidate_parallel")
         self.assertEqual(manifest["prompt_count"], 512)
+
+    def test_strong_parent_frozen_config_and_first200_contract(self):
+        config = load_k4_config(STRONG_CONFIG)
+        self.assertEqual(config, STRONG_PARENT_CONFIG)
+        self.assertEqual(config["learning_rate"], 3e-7)
+        self.assertEqual(config["checkpoint_steps"], [25, 50, 75, 100, 150, 200])
+        self.assertEqual(config["gradient_accumulation_steps"], 1)
+        self.assertTrue(config["adapter"].endswith("checkpoint-250"))
+        rows = [
+            {"sample_id": f"sample-{index}", "route": "action" if index % 2 else "chain"}
+            for index in range(1, 513)
+        ]
+        original = build_manifest("old", CONFIG, "a" * 64, FROZEN_CONFIG, rows, "b" * 40)
+        strong = build_manifest("new", STRONG_CONFIG, "c" * 64, config, rows, "d" * 40)
+        self.assertEqual(strong["prompts"], original["prompts"][:200])
+        self.assertEqual((strong["prompt_count"], strong["action_count"], strong["chain_count"]), (200, 100, 100))
+        self.assertEqual([item["step"] for item in probe_queue_value(config)["items"]], [0, 25, 50, 75, 100, 150, 200])
+        self.assertEqual(probe_queue_value(config)["items"][0]["label"], "Parent")
+
+    def test_parent_adapter_contract_requires_exact_504_lora_tensors(self):
+        from safetensors.torch import save_file
+        import torch
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            tensors = {f"layer.{index}.lora_A.weight": torch.zeros(1) for index in range(504)}
+            save_file(tensors, root / "adapter_model.safetensors")
+            result = validate_parent_adapter_contract(root)
+            self.assertEqual((result["trainable_lora_tensor_count"], result["lora_tensor_count"]), (504, 504))
+            tensors.pop("layer.503.lora_A.weight")
+            save_file(tensors, root / "adapter_model.safetensors")
+            with self.assertRaisesRegex(RuntimeError, "BLOCKED_PARENT_CONTRACT"):
+                validate_parent_adapter_contract(root)
 
     def test_checkpoint_root_rejects_data_and_accepts_external(self):
         with self.assertRaisesRegex(RuntimeError, "must not be under /data"):

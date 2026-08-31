@@ -158,6 +158,45 @@ class SelectionAndPreflightTests(unittest.TestCase):
             self.assertEqual(result["gpu"]["index"], 1)
             self.assertEqual([item["step"] for item in result["checkpoints"]], list(CHECKPOINT_STEPS))
 
+    def test_strong_parent_200_prompt_schedule_comes_from_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir = root / "run"
+            run_dir.mkdir()
+            prompts = formal_prompts()[:200]
+            parent = root / "parent"
+            base = root / "base"
+            probe = root / "probe.jsonl"
+            parent.mkdir()
+            base.mkdir()
+            probe.write_text("{}\n", encoding="utf-8")
+            (run_dir / "manifest.json").write_text(json.dumps({
+                "prompt_count": 200,
+                "action_count": 100,
+                "chain_count": 100,
+                "checkpoint_steps": [25, 50, 75, 100, 150, 200],
+                "probe_parent_label": "Parent",
+                "probe_parent_adapter": str(parent),
+                "prompts": prompts,
+            }), encoding="utf-8")
+            args = SimpleNamespace(
+                base_model=base,
+                parent_adapter=None,
+                probe=probe,
+                formal_run_dir=run_dir,
+                gpu_id=1,
+                memory_threshold_mib=1024,
+            )
+            with patch("run_mc_user_formal_probe_sidecar_v1.validate_adapter_only"), patch(
+                "run_mc_user_formal_probe_sidecar_v1.load_probe",
+                return_value=(probe_rows(), {"sha256": PROBE_SHA256, "selection_audit": {}}),
+            ):
+                result = run_preflight(args, gpu_checker=Mock(return_value={"index": 1}))
+            self.assertEqual(result["checkpoint_steps"], [0, 25, 50, 75, 100, 150, 200])
+            self.assertEqual(result["parent_label"], "Parent")
+            self.assertEqual(result["checkpoints"][0]["name"], "Parent")
+            self.assertEqual(Path(result["checkpoints"][0]["path"]), parent)
+
 
 class WatcherTests(unittest.TestCase):
     def test_incomplete_checkpoint_waits_then_evaluates_once(self):
