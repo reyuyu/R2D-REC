@@ -6,10 +6,16 @@ from typing import Any, Iterable
 
 EXPERIMENT = "GR_REC_ThinkDualBeam8_v2"
 SAMPLE8_EXPERIMENT = "GR_REC_ThinkSample8_FullSID_v3"
+POSITIVE_A0_EXPERIMENT = "GR_REC_ThinkSample8_FullSID_PositiveA0_v3"
+SAMPLE8_EXPERIMENTS = {SAMPLE8_EXPERIMENT, POSITIVE_A0_EXPERIMENT}
 
 
 def is_dual_beam8_manifest(manifest: dict[str, Any]) -> bool:
-    return manifest.get("experiment") in {EXPERIMENT, SAMPLE8_EXPERIMENT}
+    return manifest.get("experiment") == EXPERIMENT or manifest.get("experiment") in SAMPLE8_EXPERIMENTS
+
+
+def is_sample8_fullsid_manifest(manifest: dict[str, Any]) -> bool:
+    return manifest.get("experiment") in SAMPLE8_EXPERIMENTS
 
 
 def _sid_text(value: Any) -> str | None:

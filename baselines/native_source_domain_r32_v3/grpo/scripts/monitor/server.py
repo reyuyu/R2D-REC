@@ -31,6 +31,7 @@ try:
         adapt_events as adapt_dual_beam8_events,
         captured_payload as dual_beam8_payload,
         is_dual_beam8_manifest,
+        is_sample8_fullsid_manifest,
     )
     from .exact_sharpen_v4_adapter import (
         adapt_events as adapt_exact_sharpen_v4_events,
@@ -68,6 +69,7 @@ except ImportError:  # Direct execution: python monitor/server.py
         adapt_events as adapt_dual_beam8_events,
         captured_payload as dual_beam8_payload,
         is_dual_beam8_manifest,
+        is_sample8_fullsid_manifest,
     )
     from exact_sharpen_v4_adapter import (
         adapt_events as adapt_exact_sharpen_v4_events,
@@ -193,7 +195,7 @@ def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
     if is_composite_manifest(manifest):
         return "composite_interest_v1"
     if is_dual_beam8_manifest(manifest):
-        return ("sample8_fullsid_v3" if experiment == "GR_REC_ThinkSample8_FullSID_v3"
+        return ("sample8_fullsid_v3" if is_sample8_fullsid_manifest(manifest)
                 else "dual_beam8_v2")
     if experiment == "GR_REC_ThinkSuffixSID_Resample_v1":
         return "think_suffix_sid_v1"
@@ -609,7 +611,7 @@ def create_app(
 
     def two_level_event_path(selected: Path, manifest_data: dict[str, Any]) -> Path:
         filename = ("sample8_fullsid.jsonl"
-                    if manifest_data.get("experiment") == "GR_REC_ThinkSample8_FullSID_v3"
+                    if is_sample8_fullsid_manifest(manifest_data)
                     else "dual_beam8.jsonl")
         return selected / filename
 

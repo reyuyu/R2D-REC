@@ -7,11 +7,11 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 try:
-    from .dual_beam8_adapter import adapt_events
+    from .dual_beam8_adapter import adapt_events, is_dual_beam8_manifest
     from .export_nonzero_samples import export_available
     from .server import create_app, monitor_advantage_formula
 except ImportError:
-    from dual_beam8_adapter import adapt_events
+    from dual_beam8_adapter import adapt_events, is_dual_beam8_manifest
     from export_nonzero_samples import export_available
     from server import create_app, monitor_advantage_formula
 
@@ -155,6 +155,36 @@ def test_sample8_api_uses_its_stream_and_preserves_first_sid_metadata():
         assert sid["parser_status"] == "multiple_sids"
 
 
+def test_positive_a0_uses_sample8_stream_and_captured_advantage_contract():
+    manifest = {
+        "experiment": "GR_REC_ThinkSample8_FullSID_PositiveA0_v3",
+        "dataset_path": "/data/GRPO/data/grpo_tk_positive_groups_1946_20260829/train.jsonl",
+    }
+    assert is_dual_beam8_manifest(manifest) is True
+    assert monitor_advantage_formula(manifest) == "sample8_fullsid_v3"
+    with tempfile.TemporaryDirectory() as temporary:
+        run = Path(temporary)
+        (run / "manifest.json").write_text(
+            json.dumps({"run_id": run.name, **manifest}), encoding="utf-8"
+        )
+        event = captured_sample8_event()
+        event["cots"][1]["sid_reward_levels"][2] = "a"
+        event["cots"][1]["sid_rewards"][2] = 0.0
+        (run / "sample8_fullsid.jsonl").write_text(
+            json.dumps(event) + "\n", encoding="utf-8"
+        )
+        client = TestClient(create_app(run_dir=run))
+        capability = client.get("/api/capabilities").json()
+        assert capability["dual_beam8"] is True
+        assert capability["advantage_formula"] == "sample8_fullsid_v3"
+        assert capability["advantage_source"] == "captured"
+        payload = client.get("/api/advantages").json()
+        assert payload["supported"] is True
+        assert payload["formula"] == "sample8_fullsid_v3"
+        assert payload["groups"][0]["sample8_fullsid"] is True
+        assert payload["groups"][0]["candidates"][1]["sid_candidates"][2]["reward"] == 0.0
+
+
 def test_nonzero_export_is_incremental_deduplicated_and_keeps_prompt():
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
@@ -216,7 +246,9 @@ def test_frontend_contract_shows_cot_and_sid_credit_without_recalculation():
     index = (static / "index.html").read_text(encoding="utf-8")
     for text in ("CoT 分数", "CoT 优势", "答案分数", "答案优势", "模型输入",
                  "Reward-only Reference · NOT MODEL INPUT", "实采", "多 SID · 训练取第一个",
-                 "查看完整 sampled continuation"):
+                 "查看完整 sampled continuation", "GR_REC_ThinkSample8_FullSID_PositiveA0_v3",
+                 "A-only 已清零", "V3 0.5 → 本阶段 0", "Probe 是 production 评价",
+                 "data-dual-detail", "expandedDetails", "dual-sid-row"):
         assert text in source
     assert "8 个 SID 独立做 G8 归一化" in source
     assert "前端未重算" in source
