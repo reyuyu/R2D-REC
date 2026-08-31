@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OneReason 复现质量监控</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">ONEREASON / REPRODUCTION</p>
+      <h1>四阶段复现质量监控</h1>
+    </div>
+    <div class="header-actions">
+      <span id="liveState" class="live-state"><span class="live-dot"></span>正在连接</span>
+      <button id="autoRefresh" class="button secondary" type="button" aria-pressed="true">自动刷新：开</button>
+      <button id="refreshNow" class="button primary" type="button">立即刷新</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary-band" aria-label="复现总览">
+      <div class="summary-copy">
+        <p id="rootPath" class="mono muted">读取复现根目录...</p>
+        <h2 id="overallTitle">正在建立质量快照</h2>
+        <p id="overallNote">合同门禁与训练曲线采用不同判定口径。</p>
+      </div>
+      <div id="summaryMetrics" class="summary-metrics"></div>
+    </section>
+
+    <section class="stage-band" aria-labelledby="stageHeading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PIPELINE</p>
+          <h2 id="stageHeading">四阶段继承链</h2>
+        </div>
+        <p>点击阶段查看匹配窗口、检查点和指标定义。</p>
+      </div>
+      <div id="stageRail" class="stage-rail"></div>
+    </section>
+
+    <section class="score-band" aria-labelledby="scoreHeading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">EXTERNAL SCORE</p>
+          <h2 id="scoreHeading">历史得分与复现评测</h2>
+        </div>
+        <p>训练内 reward 不替代外部 11 项评测；未录入时明确显示待评测。</p>
+      </div>
+      <div class="score-layout">
+        <div class="chart-shell">
+          <canvas id="scoreChart" width="960" height="300" aria-label="四阶段外部分数曲线"></canvas>
+          <div id="scoreLegend" class="legend"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>阶段</th><th>历史参考</th><th>复现值</th><th>差值</th><th>判定</th></tr></thead>
+            <tbody id="scoreRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="detail-band" aria-labelledby="detailHeading">
+      <div class="section-heading detail-heading">
+        <div>
+          <p class="eyebrow">TRAINING GAP</p>
+          <h2 id="detailHeading">阶段训练差距</h2>
+        </div>
+        <div class="selectors">
+          <label>阶段<select id="stageSelect"></select></label>
+          <label>指标<select id="metricSelect"></select></label>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="chart-shell large">
+          <canvas id="metricChart" width="960" height="360" aria-label="复现与历史参考窗口对比"></canvas>
+          <div id="metricHint" class="chart-hint"></div>
+        </div>
+        <div class="quality-panel">
+          <h3>当前质量判断</h3>
+          <div id="qualityFacts" class="fact-list"></div>
+        </div>
+      </div>
+      <div class="table-wrap gap-table">
+        <table>
+          <thead><tr><th>里程碑</th><th>指标</th><th>历史均值</th><th>复现均值</th><th>绝对差</th><th>参考带</th><th>状态</th></tr></thead>
+          <tbody id="gapRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="integrity-band" aria-labelledby="integrityHeading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">INTEGRITY</p>
+          <h2 id="integrityHeading">检查点与权重证据</h2>
+        </div>
+        <p>SHA 不同表示并非位级相同；它本身不等同于合同失败。</p>
+      </div>
+      <div id="integrityGrid" class="integrity-grid"></div>
+    </section>
+
+    <section class="definitions-band" aria-labelledby="definitionsHeading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">SEMANTICS</p>
+          <h2 id="definitionsHeading">指标定义与健康趋势</h2>
+        </div>
+      </div>
+      <div id="definitions" class="definitions"></div>
+      <div class="policy-note">
+        <strong>复现判定边界</strong>
+        <p>数据、代码、配置、父检查点、LoRA 结构与保存合同必须一致。GPU sampling、FlashAttention 与 NCCL 的浮点轨迹可能不同，因此曲线越界和 adapter SHA 不同进入人工复核，不自动伪装成失败或成功。</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="errorBanner" class="error-banner" hidden></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

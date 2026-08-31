@@ -13,15 +13,21 @@ from pathlib import Path
 GRPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = GRPO_ROOT / "scripts"
 PARENT_ADAPTER = Path(
-    "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/"
-    "REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500"
+    os.environ.get(
+        "GRPO_TK_PARENT_ADAPTER",
+        "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/"
+        "REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+    )
 )
-PARENT_ADAPTER_SHA256 = "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436"
+PARENT_ADAPTER_SHA256 = os.environ.get(
+    "GRPO_TK_PARENT_SHA256",
+    "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
+)
 PARENT_RECORDED_SCORE = 1.3510
 EXPECTED_RAW_GROUPS = 1549
 EXPECTED_TRAIN_GROUPS = 1545
-EXPECTED_FORMAL_STEPS = 3090
-FORMAL_OUTPUT_ROOT = "/root/GRPO-checkpoints"
+EXPECTED_FORMAL_STEPS = int(os.environ.get("GRPO_TK_EXPECTED_STEPS", "3090"))
+FORMAL_OUTPUT_ROOT = os.environ.get("GRPO_TK_OUTPUT_ROOT", "/root/GRPO-checkpoints")
 FORMAL_SAVE_STEPS = 50
 FORMAL_PROBE_EVERY_STEPS = 50
 FORMAL_SAVE_TOTAL_LIMIT = 64

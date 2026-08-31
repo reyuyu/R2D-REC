@@ -39,7 +39,7 @@ from grpo_beam_domain import (
 from grpo_model import load_model, encode_prompt, generate_batch, BASE, ADAPTER
 from monitor.writer import monitor_from_env
 
-DATA = "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl"
+DATA = os.environ.get("GRPO_DATA_PATH", "/data/GRPO/data/rec_mp_grpo_v2/train.jsonl")
 OUT_DIR = "/data/GRPO/outputs"
 WORLD_CHUNK = 4  # per_device_train_batch_size
 N_GROUPS = 8     # one full T,T,N,N,N,N cycle (8 think + 8 no_think records)

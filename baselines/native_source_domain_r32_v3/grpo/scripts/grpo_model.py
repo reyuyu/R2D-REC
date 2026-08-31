@@ -6,8 +6,11 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 from llamafactory.data.template import TEMPLATES
 
-BASE = "/data/models/onereason-8b-pretrain-competition"
-DEFAULT_ADAPTER = "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333"
+BASE = os.environ.get("GRPO_BASE_MODEL", "/data/models/onereason-8b-pretrain-competition")
+DEFAULT_ADAPTER = os.environ.get(
+    "GRPO_DEFAULT_PARENT_ADAPTER",
+    "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333",
+)
 ADAPTER = os.environ.get("GRPO_PARENT_ADAPTER", DEFAULT_ADAPTER)
 TEMPLATE_NAME = "qwen3_nothink"
 

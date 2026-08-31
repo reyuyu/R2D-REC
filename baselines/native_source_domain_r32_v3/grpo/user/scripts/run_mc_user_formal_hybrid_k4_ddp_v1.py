@@ -64,7 +64,10 @@ WORLD_SIZE = 4
 K = 4
 RUN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 ALGORITHM = "mc_user_hybrid_grpo_v1"
-OUTPUT_ROOT = Path("/data/GRPO_USER/runs/mc_user_v1_hybrid_formal")
+REPRO_ROOT = Path(os.environ.get("MC_USER_REPRO_ROOT", "/root/onereason_final_reproduction_20260901"))
+OUTPUT_ROOT = Path(
+    os.environ.get("MC_USER_OUTPUT_ROOT", "/data/GRPO_USER/runs/mc_user_v1_hybrid_formal")
+)
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
 STRONG_PARENT_CONFIG_PATH = (
     Path(__file__).resolve().parents[1]
@@ -135,9 +138,47 @@ STRONG_PARENT_CONFIG = {
     "resume_supported": False,
     "resume_policy": "continuous_run_only",
 }
+REPRO_STEP100_CONFIG = {
+    "experiment_type": "formal",
+    "stage": "strongparent_lr3e7_step100_repro",
+    "base_model": os.environ.get("MC_USER_BASE_MODEL", "/data/models/onereason-8b-pretrain-competition"),
+    "adapter": os.environ.get(
+        "MC_USER_PARENT_ADAPTER",
+        str(REPRO_ROOT / "outputs/03_grpo_tk/GRPO-TK-REPRO-TO250/checkpoint-250"),
+    ),
+    "parent_experiment": "GR_REC_ThinkSample8_FullSID_v3",
+    "parent_checkpoint_step": 250,
+    "parent_recorded_external_score": 1.3579,
+    "train_data": os.environ.get(
+        "MC_USER_TRAIN_DATA",
+        "/root/reproduce_datasets/onereason_final_chain_20260901/03_user_grpo/train_3000.jsonl",
+    ),
+    "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "prompt_count": 100,
+    "action_count": 50,
+    "chain_count": 50,
+    "selection_seed": 20260823,
+    "route_schedule": "strict_alternating",
+    "K": K,
+    "world_size": WORLD_SIZE,
+    "parallelism": "candidate_parallel",
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "learning_rate": 3e-7,
+    "weight_decay": 0.0,
+    "forward_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3,
+    "checkpoint_steps": [25, 50, 75, 100],
+    "resume_supported": False,
+    "resume_policy": "continuous_run_only",
+}
 SUPPORTED_FROZEN_CONFIGS = {
     FROZEN_CONFIG["stage"]: FROZEN_CONFIG,
     STRONG_PARENT_CONFIG["stage"]: STRONG_PARENT_CONFIG,
+    REPRO_STEP100_CONFIG["stage"]: REPRO_STEP100_CONFIG,
 }
 
 
@@ -205,7 +246,7 @@ def candidate_seed(selection_seed: int, prompt_step: int, sample_id: str, candid
 
 def probe_queue_value(config: Mapping[str, Any] | None = None) -> dict[str, Any]:
     frozen = FROZEN_CONFIG if config is None else config
-    parent_label = "Parent" if frozen["stage"] == STRONG_PARENT_CONFIG["stage"] else "BETA"
+    parent_label = "Parent" if frozen["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else "BETA"
     return {
         "status": "PENDING_TRAINING_CHECKPOINTS",
         "mode": "POST_TRAINING_INFERENCE_ONLY",
@@ -267,8 +308,8 @@ def build_manifest(
         "parent_experiment": config["parent_experiment"],
         "parent_checkpoint_step": config["parent_checkpoint_step"],
         "parent_recorded_external_score": config["parent_recorded_external_score"],
-        "probe_parent_label": "Parent" if config["stage"] == STRONG_PARENT_CONFIG["stage"] else "BETA",
-        "probe_parent_adapter": config["adapter"] if config["stage"] == STRONG_PARENT_CONFIG["stage"] else None,
+        "probe_parent_label": "Parent" if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else "BETA",
+        "probe_parent_adapter": config["adapter"] if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else None,
         "train_data": config["train_data"],
         "train_sha256": config["train_sha256"],
         "config_path": str(config_path),

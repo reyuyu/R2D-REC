@@ -4,6 +4,8 @@
 
 仓库不提交模型权重、原始 JSONL、tokenized cache、日志、checkpoint 或任何凭据；这些内容保留在开发机，仓库只保留代码、配置、测试和可审计的版本元数据。
 
+完整四阶段复现入口、数据注册合同、环境锁、历史训练窗口和独立复现质量前端见 [Final Chain Reproduction](./reproduction/final_chain_20260901/README.md)。复现前端使用独立端口 `8891`，只读四阶段产物，不替代原实验监控端口 `8878`。供网页版 GPT 做逐文件 correctness review 的提示词见 [GPT Review Prompt](./reproduction/final_chain_20260901/docs/GPT_REVIEW_PROMPT.md)。
+
 ## 最终方案全链条（当前采用）
 
 当前最终方案不是一次训练，而是四段 checkpoint 逐级继承：
