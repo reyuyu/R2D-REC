@@ -98,6 +98,12 @@ failures are hard failures; trajectory-band and adapter-SHA differences are
 separate review signals because distributed stochastic training is not bitwise
 portable.
 
+The dashboard also loads `historical_curves.json`, a compact snapshot exported
+from each original run's complete metric log. Stage charts draw the historical
+and reproduced trajectories together and show both values on hover. Curves are
+aggregated by training step and downsampled only for rendering; milestone
+window checks retain their original contract.
+
 Create a machine-readable snapshot:
 
 ```bash
@@ -113,6 +119,19 @@ python compare_adapters.py \
   --reproduced /path/to/reproduced/adapter_model.safetensors \
   --output results/stage_adapter_gap.json
 ```
+
+To populate every available same-step comparison automatically, run the
+low-priority CPU watcher:
+
+```bash
+CUDA_VISIBLE_DEVICES='' nice -n 19 ionice -c3 python \
+  build_adapter_comparisons.py \
+  --root /root/onereason_final_reproduction_20260901 --watch
+```
+
+These values compare LoRA adapter tensors only, never the 8B base model. The
+watcher writes cosine similarity, relative L2, and maximum absolute delta
+atomically under `evidence/adapter_comparisons/` for the read-only monitor.
 
 External evaluation is intentionally not inferred from online reward. Put a
 small JSON file at `evaluations/<stage-id>.json`, for example:

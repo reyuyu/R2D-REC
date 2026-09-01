@@ -14,7 +14,8 @@ function labelStatus(value) {
     pending: "待产生", fail: "合同失败", complete: "完整", invalid: "异常", missing: "缺失",
     within_reference_band: "参考带内", review: "需复核", bitwise_match: "位级一致",
     different_expected_stochastic: "SHA 不同", recorded: "已录入", healthy: "健康", ready: "就绪",
-    contract_failure: "合同失败"
+    contract_failure: "合同失败", numerically_compared: "已数值对比", structure_mismatch: "结构不一致",
+    shape_mismatch: "形状不一致"
   };
   return labels[value] || value || "未知";
 }
@@ -147,31 +148,65 @@ function metricTrend(metric) {
   return "以历史窗口和合同语义联合判断，不用单点下结论。";
 }
 
+function nearestPoint(points, step) {
+  if (!points.length) return null;
+  return points.reduce((best, point) => Math.abs(point.step - step) < Math.abs(best.step - step) ? point : best, points[0]);
+}
+
+function drawMetricSeries(ctx, axes, points, metric, maxStep, color, dashed = false) {
+  if (!points.length) return;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.setLineDash(dashed ? [7, 5] : []); ctx.beginPath();
+  points.forEach((point, index) => {
+    const x = axes.x(point.step / maxStep), y = axes.y(point[metric]);
+    index ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+function bindMetricTooltip(canvas, axes, maxStep, metric, historical, reproduced) {
+  const tooltip = $("metricTooltip");
+  canvas.onmousemove = event => {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    if (x < axes.pad.left || x > rect.width - axes.pad.right) { tooltip.hidden = true; return; }
+    const step = Math.max(0, Math.min(maxStep, (x - axes.pad.left) / axes.innerW * maxStep));
+    const historyPoint = nearestPoint(historical, step);
+    const reproducedPoint = nearestPoint(reproduced, step);
+    tooltip.innerHTML = `<strong>${metric}</strong><span class="history">历史 step ${historyPoint?.step ?? "—"} · ${fmt(historyPoint?.[metric])}</span><span class="reproduced">复现 step ${reproducedPoint?.step ?? "—"} · ${fmt(reproducedPoint?.[metric])}</span>`;
+    tooltip.style.left = `${Math.min(Math.max(x + 14, 10), rect.width - 210)}px`;
+    tooltip.style.top = `${Math.max(event.clientY - rect.top - 76, 8)}px`;
+    tooltip.hidden = false;
+  };
+  canvas.onmouseleave = () => { tooltip.hidden = true; };
+}
+
 function renderMetricChart(stage) {
   const metric = state.selectedMetric;
   const points = stage.curve.filter(point => Number.isFinite(point[metric]));
+  const historical = stage.historical_curve.filter(point => Number.isFinite(point[metric]));
   const refs = stage.milestones.map(item => {
     const gap = item.gaps.find(entry => entry.metric === metric);
     return gap ? { step: item.step, ...gap } : null;
   }).filter(Boolean);
-  const values = [...points.map(point => point[metric]), ...refs.flatMap(item => [item.reference_mean, ...item.reference_band])].filter(Number.isFinite);
+  const values = [...points.map(point => point[metric]), ...historical.map(point => point[metric]), ...refs.flatMap(item => [item.reference_mean, ...item.reference_band])].filter(Number.isFinite);
   const canvas = $("metricChart"); const { ctx, width, height } = setupCanvas(canvas);
   if (!values.length) {
     ctx.clearRect(0, 0, width, height); ctx.fillStyle = "#66747b"; ctx.font = "14px Segoe UI"; ctx.fillText("当前阶段尚无该指标数据", 24, 42);
-    $("metricHint").textContent = `${stage.metric_definitions[metric]} 健康趋势：${metricTrend(metric)}`; return;
+    $("metricHint").textContent = `${stage.metric_definitions[metric]} 健康趋势：${metricTrend(metric)}`;
+    $("metricLegend").innerHTML = ""; $("metricTooltip").hidden = true; return;
   }
   const min = Math.min(...values), max = Math.max(...values), margin = Math.max((max - min) * .12, Math.abs(max || 1) * .03);
-  const maxStep = Math.max(stage.target_step, ...points.map(point => point.step));
+  const maxStep = Math.max(stage.target_step, ...points.map(point => point.step), ...historical.map(point => point.step));
   const axes = drawAxes(ctx, width, height, { minY: min - margin, maxY: max + margin }, ["0", String(Math.round(maxStep / 2)), String(maxStep)]);
   refs.forEach(ref => {
     const x = axes.x(ref.step / maxStep); const y1 = axes.y(ref.reference_band[1]); const y2 = axes.y(ref.reference_band[0]);
     ctx.fillStyle = "rgba(167,104,19,.14)"; ctx.fillRect(x - 5, y1, 10, y2 - y1);
     ctx.fillStyle = "#a76813"; ctx.beginPath(); ctx.arc(x, axes.y(ref.reference_mean), 4, 0, Math.PI * 2); ctx.fill();
   });
-  if (points.length) {
-    ctx.strokeStyle = "#286da8"; ctx.lineWidth = 2; ctx.beginPath();
-    points.forEach((point, index) => { const x = axes.x(point.step / maxStep), y = axes.y(point[metric]); index ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-  }
+  drawMetricSeries(ctx, axes, historical, metric, maxStep, "#16835f");
+  drawMetricSeries(ctx, axes, points, metric, maxStep, "#286da8", true);
+  bindMetricTooltip(canvas, axes, maxStep, metric, historical, points);
+  $("metricLegend").innerHTML = `<span class="legend-key" style="--legend-color:#16835f">历史完整轨迹 · ${historical.length} 点</span><span class="legend-key dashed" style="--legend-color:#286da8">当前复现 · ${points.length} 点</span><span class="legend-key milestone" style="--legend-color:#a76813">历史里程碑均值 / 参考带</span>`;
   $("metricHint").textContent = `${stage.metric_definitions[metric]} 健康趋势：${metricTrend(metric)}`;
 }
 
@@ -198,6 +233,10 @@ function renderIntegrity(snapshot) {
       <div>${pill(stage.contract_status)} ${pill(stage.adapter.status)}</div>
       <div class="checkpoint-list">${stage.checkpoints.map(cp => `<span class="checkpoint ${cp.status}" title="${cp.path}" aria-label="检查点 ${cp.step} ${labelStatus(cp.status)}">${cp.step} · ${labelStatus(cp.status)}</span>`).join("")}</div>
       <span class="hash">历史 ${stage.adapter.reference_sha256.slice(0, 16)}…<br>复现 ${stage.adapter.reproduced_sha256 ? stage.adapter.reproduced_sha256.slice(0, 16) + "…" : "待产生"}</span>
+      <div class="adapter-caption">同 step 历史 vs 复现 LoRA adapter</div>
+      <div class="table-wrap adapter-table"><table><thead><tr><th>Step</th><th>Cosine</th><th>Rel L2</th><th>Max abs</th><th>状态</th></tr></thead><tbody>
+        ${stage.adapter_comparisons.map(item => `<tr><td>${item.step}</td><td>${fmt(item.cosine_similarity, 7)}</td><td>${fmt(item.relative_l2, 7)}</td><td>${fmt(item.max_abs_delta, 7)}</td><td>${pill(item.status)}</td></tr>`).join("")}
+      </tbody></table></div>
     </article>`).join("");
 }
 

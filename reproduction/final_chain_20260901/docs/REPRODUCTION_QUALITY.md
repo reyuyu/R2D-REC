@@ -17,6 +17,16 @@ green/red label:
 Only item 1 is a hard reproduction gate. Items 2-4 are evidence requiring the
 correct interpretation; none is silently converted into a contract result.
 
+The training chart uses two actual step-indexed series: the immutable original
+run snapshot and the live reproduction log. Both series are aggregated by step
+before display, so duplicate distributed-rank records cannot visually weight a
+step more heavily. The existing milestone window bands remain the decision
+surface for trajectory review.
+
+Checkpoint cosine, relative L2, and max-absolute delta compare the historical
+and reproduced LoRA adapter at the same stage and same step. They are not
+full-model metrics and are not comparable across different LoRA structures.
+
 ## Stage references
 
 | Stage | Selected checkpoint | Retained comparison points | Historical adapter SHA prefix | Historical score |

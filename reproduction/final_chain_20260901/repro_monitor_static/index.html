@@ -76,6 +76,8 @@
       <div class="detail-grid">
         <div class="chart-shell large">
           <canvas id="metricChart" width="960" height="360" aria-label="复现与历史参考窗口对比"></canvas>
+          <div id="metricTooltip" class="chart-tooltip" hidden></div>
+          <div id="metricLegend" class="legend"></div>
           <div id="metricHint" class="chart-hint"></div>
         </div>
         <div class="quality-panel">
@@ -97,7 +99,7 @@
           <p class="eyebrow">INTEGRITY</p>
           <h2 id="integrityHeading">检查点与权重证据</h2>
         </div>
-        <p>SHA 不同表示并非位级相同；它本身不等同于合同失败。</p>
+        <p>参数数值仅比较同 step 的 LoRA adapter，不是 8B 全模型余弦；SHA 不同本身不等同于合同失败。</p>
       </div>
       <div id="integrityGrid" class="integrity-grid"></div>
     </section>

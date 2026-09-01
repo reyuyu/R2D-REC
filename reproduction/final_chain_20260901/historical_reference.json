@@ -2,6 +2,7 @@
   "schema_version": 1,
   "reference_name": "OneReason selected four-stage chain",
   "captured_at": "2026-09-01",
+  "historical_curves_file": "historical_curves.json",
   "comparison_policy": {
     "contract_mismatch_is_failure": true,
     "adapter_sha_mismatch_is_failure": false,
@@ -28,6 +29,7 @@
       "selected_checkpoint_relative": "outputs/01_sft_beta/checkpoint-1106",
       "historical_adapter_sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3",
       "historical_checkpoint_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106",
+      "historical_metrics_path": "/data/outputs/baselines/native_source_domain_r32_v3/BATA-BASELINE-R32-2E-GC04-4GPU-AUTO-RETRY3-20260812-063333/checkpoint-1106/trainer_state.json",
       "metrics_candidates": [
         "outputs/01_sft_beta/trainer_log.jsonl",
         "outputs/01_sft_beta/checkpoint-1106/trainer_state.json"
@@ -73,6 +75,7 @@
       "selected_checkpoint_relative": "outputs/02_gr_rec_v1/GR-REC-V1-REPRO-TO1500/checkpoint-1500",
       "historical_adapter_sha256": "a5e92db011662799e07b4e1f16a2779afbbab9d66efcb481a5f2e199c75d3436",
       "historical_checkpoint_path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500",
+      "historical_metrics_path": "/root/data_checkpoints_backup_20260824/GRPO/outputs/formal/REC-MP-GRPO-FULL-E1-PROBE4-DOMAIN-20260818/checkpoint-1500/trainer_state.json",
       "metrics_candidates": [
         "monitor/GR-REC-V1-REPRO-TO1500/metrics.jsonl",
         "outputs/02_gr_rec_v1/GR-REC-V1-REPRO-TO1500/metrics.jsonl",
@@ -135,6 +138,7 @@
       "selected_checkpoint_relative": "outputs/03_grpo_tk/GRPO-TK-REPRO-TO250/checkpoint-250",
       "historical_adapter_sha256": "64e1a85500b68f48d1996e6a215ea7a0bfe0dfdb925d6d53a86579ea23650be5",
       "historical_checkpoint_path": "/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-250",
+      "historical_metrics_path": "/root/GRPO-checkpoints/GR-REC-THINK-SAMPLE8-FULLSID-V3-FORMAL-E1-20260828/checkpoint-250/trainer_state.json",
       "metrics_candidates": [
         "monitor/GRPO-TK-REPRO-TO250/metrics.jsonl",
         "outputs/03_grpo_tk/GRPO-TK-REPRO-TO250/metrics.jsonl",
@@ -170,6 +174,7 @@
       "selected_checkpoint_relative": "checkpoints/04_mc_user/MC-USER-HYBRID-K4-REPRO-TO100/checkpoints/prompt-step-0100",
       "historical_adapter_sha256": "cca496b3ec4139fe066c345f0807f27f66a0e8f2217c44e16d7763ce9974e0d2",
       "historical_checkpoint_path": "/root/GRPO-checkpoints/MC_USER_HYBRID/MC-USER-HYBRID-K4-STRONGPARENT-LR3E7-200-20260831-171920/checkpoints/prompt-step-0100",
+      "historical_metrics_path": "/data/GRPO_USER/runs/mc_user_v1_hybrid_formal/MC-USER-HYBRID-K4-STRONGPARENT-LR3E7-200-20260831-171920/metrics.jsonl",
       "metrics_candidates": [
         "outputs/04_mc_user/runs/MC-USER-HYBRID-K4-REPRO-TO100/metrics.jsonl"
       ],

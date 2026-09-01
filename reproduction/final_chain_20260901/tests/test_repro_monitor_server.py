@@ -22,6 +22,7 @@ def test_monitor_serves_health_snapshot_and_frontend(tmp_path: Path) -> None:
         snapshot = json.load(urllib.request.urlopen(base + "/api/snapshot", timeout=3))
         html = urllib.request.urlopen(base + "/", timeout=3).read().decode("utf-8")
         css = urllib.request.urlopen(base + "/static/styles.css", timeout=3).read().decode("utf-8")
+        js = urllib.request.urlopen(base + "/static/app.js", timeout=3).read().decode("utf-8")
     finally:
         server.shutdown()
         server.server_close()
@@ -29,7 +30,10 @@ def test_monitor_serves_health_snapshot_and_frontend(tmp_path: Path) -> None:
     assert health["status"] == "ok"
     assert snapshot["summary"]["stage_count"] == 4
     assert "四阶段复现质量监控" in html
+    assert "metricTooltip" in html
     assert ".stage-rail" in css
+    assert "historical_curve" in js
+    assert "adapter_comparisons" in js
 
 
 def test_static_path_traversal_is_rejected(tmp_path: Path) -> None:

@@ -13,8 +13,10 @@ from repro_quality import (  # noqa: E402
     build_snapshot,
     cached_sha256_file,
     inspect_checkpoint,
+    load_metric_rows_from_path,
     metric_gap,
     read_jsonl,
+    sampled_curve,
     window_summary,
 )
 
@@ -28,6 +30,25 @@ def test_jsonl_reader_ignores_partial_append(tmp_path: Path) -> None:
     path = tmp_path / "metrics.jsonl"
     path.write_text('{"step":1,"loss":1.0}\n{"step":', encoding="utf-8")
     assert read_jsonl(path) == [{"step": 1, "loss": 1.0}]
+
+
+def test_trainer_metric_aliases_are_normalized(tmp_path: Path) -> None:
+    path = tmp_path / "trainer_state.json"
+    write_json(path, {"log_history": [{
+        "step": 1, "reward": 0.5, "frac_reward_zero_std": 0.25,
+        "completions/mean_length": 64.0, "completions/clipped_ratio": 0.125,
+    }]})
+    assert load_metric_rows_from_path(path)[0] | {"step": 1} == {
+        "step": 1,
+        "reward": 0.5,
+        "frac_reward_zero_std": 0.25,
+        "completions/mean_length": 64.0,
+        "completions/clipped_ratio": 0.125,
+        "reward_mean": 0.5,
+        "zero_std_ratio": 0.25,
+        "completion_mean_length": 64.0,
+        "clip_fraction": 0.125,
+    }
 
 
 def test_window_summary_uses_rows_at_or_before_milestone() -> None:
@@ -62,6 +83,47 @@ def test_llamafactory_current_steps_drives_live_progress(tmp_path: Path) -> None
     assert stage["runtime_status"] == "running"
     assert stage["progress"] == pytest.approx(620 / 1106)
     assert stage["curve"] == [{"step": 620, "loss": 1.1}]
+
+
+def test_sampled_curve_aggregates_duplicate_rank_rows_by_step() -> None:
+    stage = {"step_field": "step", "target_step": 2, "metric_definitions": {"loss": "fixture", "grad_norm": "fixture"}}
+    rows = [
+        {"step": 1, "loss": 1.0, "grad_norm": 2.0},
+        {"step": 1, "loss": 3.0, "grad_norm": 4.0},
+        {"step": 2, "loss": 5.0},
+        {"step": 3, "loss": 999.0},
+    ]
+    assert sampled_curve(rows, stage) == [
+        {"step": 1, "loss": 2.0, "grad_norm": 3.0},
+        {"step": 2, "loss": 5.0},
+    ]
+
+
+def test_snapshot_exposes_historical_curve_and_adapter_comparison(tmp_path: Path) -> None:
+    reference = {
+        "reference_name": "fixture", "comparison_policy": {}, "datasets": {},
+        "historical_curves_file": "historical_curves.json",
+        "stages": [{
+            "id": "s1", "label": "Stage 1", "short_label": "S1", "objective": "fixture",
+            "target_step": 2, "step_field": "step", "window_rows": 1,
+            "expected_checkpoints": [2], "checkpoint_kind": "trainer",
+            "selected_checkpoint_relative": "outputs/checkpoint-2",
+            "historical_adapter_sha256": "0" * 64, "historical_checkpoint_path": "/historical/checkpoint-2",
+            "metrics_candidates": [], "external_score": {"primary": 1.0, "recorded": [1.0]},
+            "metric_definitions": {"loss": "fixture"},
+            "milestones": {"2": {"loss": {"mean": 1.0, "min": 0.5, "max": 1.5}}},
+        }],
+    }
+    reference_path = tmp_path / "historical_reference.json"
+    write_json(reference_path, reference)
+    write_json(tmp_path / "historical_curves.json", {"schema_version": 1, "stages": {"s1": {"curve": [{"step": 1, "loss": 1.25}]}}})
+    write_json(tmp_path / "evidence" / "adapter_comparisons" / "s1-2.json", {
+        "status": "numerically_compared", "cosine_similarity": 0.99, "relative_l2": 0.1, "max_abs_delta": 0.01,
+    })
+    stage = build_snapshot(tmp_path, reference_path)["stages"][0]
+    assert stage["historical_curve"] == [{"step": 1, "loss": 1.25}]
+    assert stage["adapter_comparisons"][0]["cosine_similarity"] == 0.99
+    assert stage["adapter_comparisons"][0]["step"] == 2
 
 
 def test_metric_gap_separates_reference_band_from_contract() -> None:

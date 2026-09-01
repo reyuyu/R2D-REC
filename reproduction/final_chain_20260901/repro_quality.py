@@ -32,6 +32,12 @@ METRIC_FLOORS = {
     "group_reward_std": 0.03,
 }
 _SHA_CACHE: dict[str, tuple[int, int, str]] = {}
+METRIC_ALIASES = {
+    "reward_mean": "reward",
+    "zero_std_ratio": "frac_reward_zero_std",
+    "completion_mean_length": "completions/mean_length",
+    "clip_fraction": "completions/clipped_ratio",
+}
 
 
 def utc_now() -> str:
@@ -104,11 +110,24 @@ def load_metric_rows(root: Path, stage: dict[str, Any]) -> tuple[Path | None, li
     path = locate_first(root, stage.get("metrics_candidates", []))
     if path is None:
         return None, []
+    return path, load_metric_rows_from_path(path)
+
+
+def load_metric_rows_from_path(path: Path) -> list[dict[str, Any]]:
     if path.name == "trainer_state.json":
         state = load_json(path)
         rows = state.get("log_history", []) if isinstance(state, dict) else []
-        return path, [row for row in rows if isinstance(row, dict)]
-    return path, read_jsonl(path)
+        raw_rows = [row for row in rows if isinstance(row, dict)]
+    else:
+        raw_rows = read_jsonl(path)
+    normalized = []
+    for row in raw_rows:
+        value = dict(row)
+        for canonical, source in METRIC_ALIASES.items():
+            if canonical not in value and finite_number(value.get(source)):
+                value[canonical] = value[source]
+        normalized.append(value)
+    return normalized
 
 
 def window_summary(
@@ -207,29 +226,56 @@ def load_external_evaluation(root: Path, stage_id: str) -> tuple[Path | None, fl
     return None, None
 
 
-def sampled_curve(rows: list[dict[str, Any]], stage: dict[str, Any]) -> list[dict[str, Any]]:
+def sampled_curve(rows: list[dict[str, Any]], stage: dict[str, Any], limit: int = 600) -> list[dict[str, Any]]:
     metrics = list(stage.get("metric_definitions", {}))
-    points = []
+    target_step = int(stage.get("target_step", 2**63 - 1))
+    by_step: dict[int, dict[str, list[float]]] = {}
     for row in rows:
         step = row_step(row, stage["step_field"])
-        if step < 0:
+        if step < 0 or step > target_step:
             continue
-        point = {"step": step}
+        metric_values = by_step.setdefault(step, {})
         for name in metrics:
             if finite_number(row.get(name)):
-                point[name] = float(row[name])
-        if len(point) > 1:
-            points.append(point)
-    if len(points) <= 600:
+                metric_values.setdefault(name, []).append(float(row[name]))
+    points = [
+        {
+            "step": step,
+            **{name: sum(values) / len(values) for name, values in metric_values.items() if values},
+        }
+        for step, metric_values in sorted(by_step.items())
+        if metric_values
+    ]
+    if len(points) <= limit:
         return points
-    stride = max(1, math.ceil(len(points) / 600))
+    stride = max(1, math.ceil(len(points) / limit))
     sampled = points[::stride]
     if sampled[-1] != points[-1]:
         sampled.append(points[-1])
     return sampled
 
 
-def compare_stage(root: Path, stage: dict[str, Any]) -> dict[str, Any]:
+def load_adapter_comparisons(root: Path, stage: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence_root = root / "evidence" / "adapter_comparisons"
+    results = []
+    for step in stage["expected_checkpoints"]:
+        path = evidence_root / f"{stage['id']}-{int(step)}.json"
+        if not path.is_file():
+            results.append({"step": int(step), "status": "pending", "path": str(path)})
+            continue
+        try:
+            payload = load_json(path)
+        except (OSError, json.JSONDecodeError) as error:
+            results.append({"step": int(step), "status": "invalid", "path": str(path), "error": str(error)})
+            continue
+        result = dict(payload) if isinstance(payload, dict) else {"status": "invalid"}
+        result["step"] = int(step)
+        result["path"] = str(path)
+        results.append(result)
+    return results
+
+
+def compare_stage(root: Path, stage: dict[str, Any], historical_curve: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     metrics_path, rows = load_metric_rows(root, stage)
     current_step = max((row_step(row, stage["step_field"]) for row in rows), default=0)
     pass_marker = root / "state" / f"{stage['id']}.PASS.json"
@@ -333,8 +379,10 @@ def compare_stage(root: Path, stage: dict[str, Any]) -> dict[str, Any]:
         "latest_metrics": latest_metrics,
         "metric_definitions": stage.get("metric_definitions", {}),
         "curve": sampled_curve(rows, stage),
+        "historical_curve": historical_curve or [],
         "milestones": milestones,
         "checkpoints": checkpoints,
+        "adapter_comparisons": load_adapter_comparisons(root, stage),
         "selected_checkpoint": str(selected),
         "adapter": {
             "status": adapter_status,
@@ -350,7 +398,13 @@ def build_snapshot(root: Path, reference_path: Path | None = None) -> dict[str, 
     root = root.resolve()
     reference_path = reference_path or Path(__file__).with_name("historical_reference.json")
     reference = load_json(reference_path)
-    stages = [compare_stage(root, stage) for stage in reference["stages"]]
+    historical_curves_path = reference_path.with_name(reference.get("historical_curves_file", "historical_curves.json"))
+    historical_payload = load_json(historical_curves_path) if historical_curves_path.is_file() else {}
+    historical_stages = historical_payload.get("stages", {}) if isinstance(historical_payload, dict) else {}
+    stages = [
+        compare_stage(root, stage, historical_stages.get(stage["id"], {}).get("curve", []))
+        for stage in reference["stages"]
+    ]
     contract_failures = sum(stage["contract_status"] == "fail" for stage in stages)
     contract_passes = sum(stage["contract_status"] == "pass" for stage in stages)
     trajectory_reviews = sum(stage["trajectory_status"] == "review" for stage in stages)
