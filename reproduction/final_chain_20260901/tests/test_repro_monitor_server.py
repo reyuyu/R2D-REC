@@ -31,9 +31,12 @@ def test_monitor_serves_health_snapshot_and_frontend(tmp_path: Path) -> None:
     assert snapshot["summary"]["stage_count"] == 4
     assert "四阶段复现质量监控" in html
     assert "metricTooltip" in html
+    assert "zoomIn" in html and "zoomOut" in html and "zoomReset" in html
     assert ".stage-rail" in css
     assert "historical_curve" in js
     assert "adapter_comparisons" in js
+    assert "changeMetricZoom" in js
+    assert "onwheel" in js
 
 
 def test_static_path_traversal_is_rejected(tmp_path: Path) -> None:

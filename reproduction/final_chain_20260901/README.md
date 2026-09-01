@@ -104,6 +104,10 @@ and reproduced trajectories together and show both values on hover. Curves are
 aggregated by training step and downsampled only for rendering; milestone
 window checks retain their original contract.
 
+Use the chart `+`, `-`, and reset controls or the mouse wheel to zoom around the
+cursor. Drag horizontally to pan. The selected step window and its auto-scaled
+Y axis survive the dashboard's five-second refresh cycle.
+
 Create a machine-readable snapshot:
 
 ```bash

@@ -75,6 +75,14 @@
       </div>
       <div class="detail-grid">
         <div class="chart-shell large">
+          <div class="chart-toolbar" aria-label="曲线缩放工具">
+            <span id="zoomState">全图</span>
+            <div class="zoom-actions">
+              <button id="zoomOut" class="icon-button" type="button" title="缩小曲线，显示更多 step" aria-label="缩小曲线，显示更多 step">−</button>
+              <button id="zoomIn" class="icon-button" type="button" title="放大曲线，查看更小 step 范围" aria-label="放大曲线，查看更小 step 范围">＋</button>
+              <button id="zoomReset" class="reset-button" type="button">复位</button>
+            </div>
+          </div>
           <canvas id="metricChart" width="960" height="360" aria-label="复现与历史参考窗口对比"></canvas>
           <div id="metricTooltip" class="chart-tooltip" hidden></div>
           <div id="metricLegend" class="legend"></div>

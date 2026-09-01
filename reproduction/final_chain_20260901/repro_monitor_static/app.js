@@ -1,9 +1,10 @@
-const state = { snapshot: null, selectedStage: null, selectedMetric: null, autoRefresh: true, timer: null };
+const state = { snapshot: null, selectedStage: null, selectedMetric: null, autoRefresh: true, timer: null, metricViews: {}, metricDrag: null };
 const $ = id => document.getElementById(id);
 
 function fmt(value, digits = 4) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
   const number = Number(value);
+  if (digits === 0) return String(Math.round(number));
   if (number !== 0 && Math.abs(number) < 0.001) return number.toExponential(2);
   return number.toFixed(digits).replace(/0+$/, "").replace(/\.$/, "");
 }
@@ -153,23 +154,69 @@ function nearestPoint(points, step) {
   return points.reduce((best, point) => Math.abs(point.step - step) < Math.abs(best.step - step) ? point : best, points[0]);
 }
 
-function drawMetricSeries(ctx, axes, points, metric, maxStep, color, dashed = false) {
+function drawMetricSeries(ctx, axes, points, metric, view, color, dashed = false) {
   if (!points.length) return;
   ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.setLineDash(dashed ? [7, 5] : []); ctx.beginPath();
   points.forEach((point, index) => {
-    const x = axes.x(point.step / maxStep), y = axes.y(point[metric]);
+    const x = axes.x((point.step - view.start) / view.span), y = axes.y(point[metric]);
     index ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   });
   ctx.stroke(); ctx.setLineDash([]);
 }
 
-function bindMetricTooltip(canvas, axes, maxStep, metric, historical, reproduced) {
+function metricViewKey(stage, metric) { return `${stage.id}:${metric}`; }
+
+function resolveMetricView(stage, metric, maxStep) {
+  const key = metricViewKey(stage, metric);
+  const stored = state.metricViews[key];
+  if (!stored) return { start: 0, end: maxStep, span: maxStep, custom: false };
+  const minimumSpan = Math.max(4, maxStep / 100);
+  const span = Math.max(minimumSpan, Math.min(stored.end - stored.start, maxStep));
+  const start = Math.max(0, Math.min(stored.start, maxStep - span));
+  return { start, end: start + span, span, custom: true };
+}
+
+function setMetricView(stage, metric, start, end, maxStep) {
+  const minimumSpan = Math.max(4, maxStep / 100);
+  const span = Math.max(minimumSpan, Math.min(end - start, maxStep));
+  if (span >= maxStep) { delete state.metricViews[metricViewKey(stage, metric)]; return; }
+  const boundedStart = Math.max(0, Math.min(start, maxStep - span));
+  state.metricViews[metricViewKey(stage, metric)] = { start: boundedStart, end: boundedStart + span };
+}
+
+function changeMetricZoom(factor, anchorRatio = 0.5) {
+  const stage = state.snapshot.stages.find(item => item.id === state.selectedStage);
+  const metric = state.selectedMetric;
+  const allSteps = [...stage.curve, ...stage.historical_curve].map(point => point.step);
+  const maxStep = Math.max(stage.target_step, ...allSteps);
+  const view = resolveMetricView(stage, metric, maxStep);
+  const anchor = view.start + view.span * anchorRatio;
+  const newSpan = view.span * factor;
+  setMetricView(stage, metric, anchor - newSpan * anchorRatio, anchor + newSpan * (1 - anchorRatio), maxStep);
+  renderDetail(stage);
+}
+
+function resetMetricZoom() {
+  const stage = state.snapshot.stages.find(item => item.id === state.selectedStage);
+  delete state.metricViews[metricViewKey(stage, state.selectedMetric)];
+  renderDetail(stage);
+}
+
+function bindMetricInteraction(canvas, axes, view, maxStep, stage, metric, historical, reproduced) {
   const tooltip = $("metricTooltip");
+  const dragKey = metricViewKey(stage, metric);
   canvas.onmousemove = event => {
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     if (x < axes.pad.left || x > rect.width - axes.pad.right) { tooltip.hidden = true; return; }
-    const step = Math.max(0, Math.min(maxStep, (x - axes.pad.left) / axes.innerW * maxStep));
+    if (state.metricDrag?.key === dragKey) {
+      const stepDelta = (state.metricDrag.x - event.clientX) / axes.innerW * state.metricDrag.span;
+      setMetricView(stage, metric, state.metricDrag.start + stepDelta, state.metricDrag.end + stepDelta, maxStep);
+      tooltip.hidden = true;
+      renderDetail(stage);
+      return;
+    }
+    const step = view.start + Math.max(0, Math.min(1, (x - axes.pad.left) / axes.innerW)) * view.span;
     const historyPoint = nearestPoint(historical, step);
     const reproducedPoint = nearestPoint(reproduced, step);
     tooltip.innerHTML = `<strong>${metric}</strong><span class="history">历史 step ${historyPoint?.step ?? "—"} · ${fmt(historyPoint?.[metric])}</span><span class="reproduced">复现 step ${reproducedPoint?.step ?? "—"} · ${fmt(reproducedPoint?.[metric])}</span>`;
@@ -177,7 +224,19 @@ function bindMetricTooltip(canvas, axes, maxStep, metric, historical, reproduced
     tooltip.style.top = `${Math.max(event.clientY - rect.top - 76, 8)}px`;
     tooltip.hidden = false;
   };
-  canvas.onmouseleave = () => { tooltip.hidden = true; };
+  canvas.onmousedown = event => {
+    if (event.button !== 0) return;
+    state.metricDrag = { key: dragKey, x: event.clientX, start: view.start, end: view.end, span: view.span };
+    canvas.classList.add("dragging");
+  };
+  canvas.onmouseup = () => { state.metricDrag = null; canvas.classList.remove("dragging"); };
+  canvas.onmouseleave = () => { state.metricDrag = null; canvas.classList.remove("dragging"); tooltip.hidden = true; };
+  canvas.onwheel = event => {
+    event.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left - axes.pad.left) / axes.innerW));
+    changeMetricZoom(event.deltaY < 0 ? 0.72 : 1.38, ratio);
+  };
 }
 
 function renderMetricChart(stage) {
@@ -188,25 +247,30 @@ function renderMetricChart(stage) {
     const gap = item.gaps.find(entry => entry.metric === metric);
     return gap ? { step: item.step, ...gap } : null;
   }).filter(Boolean);
-  const values = [...points.map(point => point[metric]), ...historical.map(point => point[metric]), ...refs.flatMap(item => [item.reference_mean, ...item.reference_band])].filter(Number.isFinite);
   const canvas = $("metricChart"); const { ctx, width, height } = setupCanvas(canvas);
+  const maxStep = Math.max(stage.target_step, ...points.map(point => point.step), ...historical.map(point => point.step));
+  const view = resolveMetricView(stage, metric, maxStep);
+  const visiblePoints = points.filter(point => point.step >= view.start && point.step <= view.end);
+  const visibleHistorical = historical.filter(point => point.step >= view.start && point.step <= view.end);
+  const visibleRefs = refs.filter(item => item.step >= view.start && item.step <= view.end);
+  const values = [...visiblePoints.map(point => point[metric]), ...visibleHistorical.map(point => point[metric]), ...visibleRefs.flatMap(item => [item.reference_mean, ...item.reference_band])].filter(Number.isFinite);
   if (!values.length) {
     ctx.clearRect(0, 0, width, height); ctx.fillStyle = "#66747b"; ctx.font = "14px Segoe UI"; ctx.fillText("当前阶段尚无该指标数据", 24, 42);
     $("metricHint").textContent = `${stage.metric_definitions[metric]} 健康趋势：${metricTrend(metric)}`;
     $("metricLegend").innerHTML = ""; $("metricTooltip").hidden = true; return;
   }
   const min = Math.min(...values), max = Math.max(...values), margin = Math.max((max - min) * .12, Math.abs(max || 1) * .03);
-  const maxStep = Math.max(stage.target_step, ...points.map(point => point.step), ...historical.map(point => point.step));
-  const axes = drawAxes(ctx, width, height, { minY: min - margin, maxY: max + margin }, ["0", String(Math.round(maxStep / 2)), String(maxStep)]);
-  refs.forEach(ref => {
-    const x = axes.x(ref.step / maxStep); const y1 = axes.y(ref.reference_band[1]); const y2 = axes.y(ref.reference_band[0]);
+  const axes = drawAxes(ctx, width, height, { minY: min - margin, maxY: max + margin }, [fmt(view.start, 0), fmt(view.start + view.span / 2, 0), fmt(view.end, 0)]);
+  visibleRefs.forEach(ref => {
+    const x = axes.x((ref.step - view.start) / view.span); const y1 = axes.y(ref.reference_band[1]); const y2 = axes.y(ref.reference_band[0]);
     ctx.fillStyle = "rgba(167,104,19,.14)"; ctx.fillRect(x - 5, y1, 10, y2 - y1);
     ctx.fillStyle = "#a76813"; ctx.beginPath(); ctx.arc(x, axes.y(ref.reference_mean), 4, 0, Math.PI * 2); ctx.fill();
   });
-  drawMetricSeries(ctx, axes, historical, metric, maxStep, "#16835f");
-  drawMetricSeries(ctx, axes, points, metric, maxStep, "#286da8", true);
-  bindMetricTooltip(canvas, axes, maxStep, metric, historical, points);
+  drawMetricSeries(ctx, axes, visibleHistorical, metric, view, "#16835f");
+  drawMetricSeries(ctx, axes, visiblePoints, metric, view, "#286da8", true);
+  bindMetricInteraction(canvas, axes, view, maxStep, stage, metric, visibleHistorical, visiblePoints);
   $("metricLegend").innerHTML = `<span class="legend-key" style="--legend-color:#16835f">历史完整轨迹 · ${historical.length} 点</span><span class="legend-key dashed" style="--legend-color:#286da8">当前复现 · ${points.length} 点</span><span class="legend-key milestone" style="--legend-color:#a76813">历史里程碑均值 / 参考带</span>`;
+  $("zoomState").textContent = view.custom ? `Step ${fmt(view.start, 0)}–${fmt(view.end, 0)} · ${fmt(maxStep / view.span, 1)}×` : `全图 · Step 0–${maxStep}`;
   $("metricHint").textContent = `${stage.metric_definitions[metric]} 健康趋势：${metricTrend(metric)}`;
 }
 
@@ -269,5 +333,8 @@ $("autoRefresh").addEventListener("click", event => {
 });
 $("stageSelect").addEventListener("change", event => selectStage(event.target.value));
 $("metricSelect").addEventListener("change", event => { state.selectedMetric = event.target.value; renderDetail(state.snapshot.stages.find(stage => stage.id === state.selectedStage)); });
+$("zoomIn").addEventListener("click", () => changeMetricZoom(0.5));
+$("zoomOut").addEventListener("click", () => changeMetricZoom(2));
+$("zoomReset").addEventListener("click", resetMetricZoom);
 window.addEventListener("resize", () => { if (state.snapshot) { renderScore(state.snapshot); renderDetail(state.snapshot.stages.find(stage => stage.id === state.selectedStage)); } });
 refresh(); state.timer = setInterval(() => { if (state.autoRefresh) refresh(); }, 5000);
