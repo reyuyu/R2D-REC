@@ -27,6 +27,7 @@ function overallCopy(snapshot) {
   if (snapshot.overall_status === "contract_failure") return ["发现复现合同失败", "先处理数据、配置、父检查点或保存结构问题，训练曲线不应掩盖合同错误。"];
   if (snapshot.overall_status === "review") return ["训练轨迹需要人工复核", "合同未失败，但至少一个历史窗口超出宽松参考带。"];
   if (snapshot.summary.completed_stage_count === 4) return ["四阶段复现链已完成", "继续录入固定外部评测，区分工程复现与效果复现。"];
+  if (snapshot.stages.some(stage => stage.runtime_status === "running")) return ["四阶段复现正在进行", "实时读取训练步数、同阶段指标窗口和检查点完整性；不会修改训练进程。"];
   return ["复现链已就绪", "监控只读训练产物；合同门禁失败与随机轨迹偏离分别处理。"];
 }
 
@@ -195,7 +196,7 @@ function renderIntegrity(snapshot) {
     <article class="integrity-item">
       <h3>${stage.short_label}</h3>
       <div>${pill(stage.contract_status)} ${pill(stage.adapter.status)}</div>
-      <div class="checkpoint-list">${stage.checkpoints.map(cp => `<span class="checkpoint ${cp.status}" title="${cp.path}">${cp.step}</span>`).join("")}</div>
+      <div class="checkpoint-list">${stage.checkpoints.map(cp => `<span class="checkpoint ${cp.status}" title="${cp.path}" aria-label="检查点 ${cp.step} ${labelStatus(cp.status)}">${cp.step} · ${labelStatus(cp.status)}</span>`).join("")}</div>
       <span class="hash">历史 ${stage.adapter.reference_sha256.slice(0, 16)}…<br>复现 ${stage.adapter.reproduced_sha256 ? stage.adapter.reproduced_sha256.slice(0, 16) + "…" : "待产生"}</span>
     </article>`).join("");
 }

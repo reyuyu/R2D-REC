@@ -115,7 +115,7 @@ select { min-width: 180px; height: 38px; padding: 0 32px 0 10px; border: 1px sol
 .integrity-item { border: 1px solid var(--line); border-radius: 6px; background: #fbfcfc; padding: 15px; min-width: 0; }
 .integrity-item h3 { margin: 0 0 10px; font-size: 14px; }
 .checkpoint-list { display: flex; gap: 6px; flex-wrap: wrap; }
-.checkpoint { min-width: 42px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; text-align: center; font-size: 11px; }
+.checkpoint { min-width: 72px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; text-align: center; font-size: 11px; }
 .checkpoint.complete { color: #116647; border-color: #80b9a4; background: var(--green-soft); }
 .checkpoint.invalid { color: #9d2f2f; border-color: #db9d9d; background: var(--red-soft); }
 .hash { display: block; margin-top: 10px; color: var(--muted); font: 11px/1.45 "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }

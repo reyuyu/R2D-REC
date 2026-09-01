@@ -85,7 +85,7 @@ def finite_number(value: Any) -> bool:
 
 
 def row_step(row: dict[str, Any], step_field: str) -> int:
-    for key in (step_field, "step", "prompt_step", "global_step"):
+    for key in (step_field, "step", "current_steps", "prompt_step", "global_step"):
         value = row.get(key)
         if finite_number(value):
             return int(value)

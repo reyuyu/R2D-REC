@@ -36,6 +36,34 @@ def test_window_summary_uses_rows_at_or_before_milestone() -> None:
     assert summary["loss"] == {"mean": 4.0, "min": 3.0, "max": 5.0, "count": 3}
 
 
+def test_llamafactory_current_steps_drives_live_progress(tmp_path: Path) -> None:
+    reference = {
+        "reference_name": "fixture", "comparison_policy": {}, "datasets": {},
+        "stages": [{
+            "id": "s1", "label": "Stage 1", "short_label": "S1", "objective": "fixture",
+            "target_step": 1106, "step_field": "step", "window_rows": 1,
+            "expected_checkpoints": [553, 1106], "checkpoint_kind": "trainer",
+            "selected_checkpoint_relative": "outputs/checkpoint-1106",
+            "historical_adapter_sha256": "0" * 64, "historical_checkpoint_path": "/historical/checkpoint-1106",
+            "metrics_candidates": ["trainer_log.jsonl"],
+            "external_score": {"primary": 1.0, "recorded": [1.0]},
+            "metric_definitions": {"loss": "fixture"},
+            "milestones": {"553": {"loss": {"mean": 1.0, "min": 0.5, "max": 1.5}}},
+        }],
+    }
+    reference_path = tmp_path / "reference.json"
+    write_json(reference_path, reference)
+    (tmp_path / "trainer_log.jsonl").write_text(
+        '{"current_steps":620,"total_steps":1106,"loss":1.1}\n', encoding="utf-8"
+    )
+    snapshot = build_snapshot(tmp_path, reference_path)
+    stage = snapshot["stages"][0]
+    assert stage["current_step"] == 620
+    assert stage["runtime_status"] == "running"
+    assert stage["progress"] == pytest.approx(620 / 1106)
+    assert stage["curve"] == [{"step": 620, "loss": 1.1}]
+
+
 def test_metric_gap_separates_reference_band_from_contract() -> None:
     reference = {"mean": 1.0, "min": 0.9, "max": 1.1}
     assert metric_gap("reward_mean", {"mean": 1.05}, reference)["status"] == "within_reference_band"
