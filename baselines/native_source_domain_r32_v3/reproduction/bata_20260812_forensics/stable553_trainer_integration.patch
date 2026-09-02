@@ -1,0 +1,12 @@
+diff --git a/scripts/train_native_source_domain_r32_v3.py b/scripts/train_native_source_domain_r32_v3.py
+--- a/scripts/train_native_source_domain_r32_v3.py
++++ b/scripts/train_native_source_domain_r32_v3.py
+@@ -23,0 +24,3 @@
++from stable553_runtime import stable553_callbacks
++
++
+@@ -1181 +1184,3 @@
+-    callbacks = [_StopAfterOptimizerStepsCallback(stop_after_steps)] if stop_after_steps else None
++    callbacks = [_StopAfterOptimizerStepsCallback(stop_after_steps)] if stop_after_steps else []
++    callbacks.extend(stable553_callbacks())
++    callbacks = callbacks or None

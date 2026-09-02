@@ -217,3 +217,23 @@ not affect the stability verdict or any checkpoint.
 The completed public-safe evidence is in `stable560_result.json` and
 `stable560_report.md`. The private server-side checkpoint paths and artifacts
 are intentionally excluded.
+
+## BATA-STABLE-V0 first-epoch repeatability
+
+The `stable553` tools extend the validated deterministic runtime to two
+independent fresh-base runs. `prepare_stable553.py` pins the recovered source,
+base-model files, 222,001-row BATA dataset, 35,380-row historical packed cache,
+generated configs, and LLaMAFactory runtime before creating `STABLE553-A` and
+`STABLE553-B`. Both configs explicitly disable checkpoint resume.
+
+`launch_stable553.sh` requires all four A800 GPUs to be empty, sets the same
+strict deterministic controls as STABLE560, preserves the original 1106-step
+scheduler horizon, and uses `stable553_runtime.py` only to save and stop at
+optimizer step553. It does not install gradient hashes, DDP hooks, FlashAttention
+patches, or any extra forward/backward operation.
+
+After both sequential runs finish, `compare_stable553.py` compares raw LoRA,
+effective B@A, optimizer, scheduler, four-rank RNG, and shared scalar logs. It
+also compares STABLE553-A with historical checkpoint-553 by projection and
+layer, but historical similarity is excluded from the repeatability verdict.
+`publish_stable553.py` emits only path-free JSON and Markdown evidence.
