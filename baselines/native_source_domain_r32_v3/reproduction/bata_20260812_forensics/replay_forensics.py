@@ -118,6 +118,12 @@ def cpu_batch_fingerprint(batch: dict[str, Any]) -> dict[str, Any]:
     fields: dict[str, dict[str, Any]] = {}
     for field in _BATCH_FIELDS:
         value = batch.get(field)
+        if field == "attention_mask" and field in batch and value is None:
+            fields[field] = {"value": "NONE"}
+            # Match the prior exact DET contract, whose full-mode encoder used
+            # ABSENT for the intentional FA2 neat-packing None mask.
+            parts.extend((field.encode(), b"ABSENT"))
+            continue
         if not torch.is_tensor(value):
             raise RuntimeError(f"CPU batch fingerprint requires tensor field: {field}.")
         if value.device.type != "cpu":

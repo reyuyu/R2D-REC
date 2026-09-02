@@ -177,6 +177,24 @@ def test_cpu_batch_fingerprint_rejects_non_cpu_tensor():
         module.cpu_batch_fingerprint(batch)
 
 
+def test_cpu_batch_fingerprint_preserves_explicit_fa2_none_attention_mask():
+    module = load_module()
+    batch = {
+        name: torch.tensor([[index]], dtype=torch.long)
+        for index, name in enumerate(module._BATCH_FIELDS)
+    }
+    batch["attention_mask"] = None
+
+    result = module.cpu_batch_fingerprint(batch)
+
+    assert result["fields"]["attention_mask"] == {"value": "NONE"}
+    parts = []
+    for field in module._BATCH_FIELDS:
+        encoded = b"ABSENT" if field == "attention_mask" else result["fields"][field]["sha256"].encode()
+        parts.extend((field.encode(), encoded))
+    assert result["fingerprint"] == module._hash_bytes(parts)
+
+
 def test_frozen_batch_contract_uses_actual_cpu_values(monkeypatch, tmp_path):
     module = load_module()
     inputs = {name: torch.zeros((1, 2), dtype=torch.long) for name in module._BATCH_FIELDS}
