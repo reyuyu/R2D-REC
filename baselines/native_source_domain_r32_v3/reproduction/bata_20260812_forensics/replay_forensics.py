@@ -1,17 +1,21 @@
-"""Low-interference evidence capture for the recovered BATA 553->560 replay."""
+"""Low-interference evidence capture for the recovered BATA 553->554 replay."""
 
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import os
 import random
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
+from torch.distributed.algorithms.ddp_comm_hooks import default_hooks
+from torch.nn.parallel import DistributedDataParallel
 from transformers import TrainerCallback
 
 
@@ -27,6 +31,7 @@ _BATCH_FIELDS = (
     "position_ids",
 )
 _DEFAULT_HEAVY_STEPS = {555, 560}
+_FROZEN_BATCH_MODE = "frozen_step554_contract"
 
 
 def _parse_step_set(value: str | None) -> set[int]:
@@ -87,6 +92,20 @@ def _tensor_fingerprint(name: str, tensor: torch.Tensor) -> str:
     )
 
 
+def _canonical_json_hash(value: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _tensor_metadata(tensor: torch.Tensor) -> dict[str, Any]:
+    return {
+        "dtype": str(tensor.dtype),
+        "shape": list(tensor.shape),
+        "device_type": tensor.device.type,
+    }
+
+
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -128,11 +147,36 @@ class ReplayForensics:
         self.checkpoint = Path(os.environ["BATA_REPLAY_CHECKPOINT"])
         self.events_path = self.output_dir / f"rank{self.rank}.jsonl"
         self.batch_hashes: dict[int, list[str]] = {}
+        self.batch_metadata: dict[int, list[str]] = {}
         self.losses: dict[int, list[torch.Tensor]] = {}
         self.last_grad_norm: torch.Tensor | float | None = None
         self.train_begin_seen = False
         self.restore_seen = False
+        self.ddp_hook_installed = False
+        self.ddp_bucket_sequence = 0
+        self._emit_lock = threading.Lock()
         self.heavy_steps = _parse_step_set(os.environ.get("BATA_REPLAY_HEAVY_STEPS"))
+        self.batch_fingerprint_mode = os.environ.get("BATA_REPLAY_BATCH_FINGERPRINT_MODE", "full")
+        self.batch_contract = self._load_batch_contract()
+
+    def _load_batch_contract(self) -> dict[str, Any] | None:
+        if self.batch_fingerprint_mode != _FROZEN_BATCH_MODE:
+            return None
+        path_value = os.environ.get("BATA_REPLAY_BATCH_CONTRACT_JSON")
+        if not path_value:
+            raise RuntimeError("Frozen batch mode requires BATA_REPLAY_BATCH_CONTRACT_JSON.")
+        path = Path(path_value)
+        contract = json.loads(path.read_text(encoding="utf-8"))
+        if contract.get("step") != 554 or contract.get("world_size") != self.world_size:
+            raise RuntimeError("Frozen batch contract step/world-size mismatch.")
+        rank_contract = contract.get("ranks", {}).get(str(self.rank))
+        if not rank_contract or rank_contract.get("microbatch_count") != 16:
+            raise RuntimeError(f"Frozen batch contract is missing rank {self.rank}.")
+        return {
+            "path": str(path),
+            "sha256": _file_sha256(path),
+            "rank": rank_contract,
+        }
 
     def emit(self, event: str, **payload: Any) -> None:
         record = {
@@ -142,8 +186,9 @@ class ReplayForensics:
             "time_unix": time.time(),
             **payload,
         }
-        with self.events_path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(record, sort_keys=True, ensure_ascii=True) + "\n")
+        with self._emit_lock:
+            with self.events_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, sort_keys=True, ensure_ascii=True) + "\n")
 
     def environment(self) -> dict[str, Any]:
         selected = {}
@@ -188,6 +233,25 @@ class ReplayForensics:
 
     def record_batch(self, trainer: Any, inputs: dict[str, Any]) -> None:
         target_step = int(trainer.state.global_step) + 1
+        if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE:
+            fields = {
+                field: _tensor_metadata(value) if torch.is_tensor(value) else None
+                for field in _BATCH_FIELDS
+                for value in [inputs.get(field)]
+            }
+            metadata_fingerprint = _canonical_json_hash(fields)
+            values = self.batch_metadata.setdefault(target_step, [])
+            values.append(metadata_fingerprint)
+            self.emit(
+                "microbatch_contract_observation",
+                target_step=target_step,
+                micro_index=len(values) - 1,
+                metadata_fingerprint=metadata_fingerprint,
+                fields=fields,
+                value_fingerprint_source="frozen_prior_exact_contract",
+            )
+            return
+
         parts = []
         fields = {}
         for field in _BATCH_FIELDS:
@@ -222,6 +286,134 @@ class ReplayForensics:
 
     def record_grad_norm(self, value: Any) -> None:
         self.last_grad_norm = value.detach() if torch.is_tensor(value) else value
+
+    def _canonical_lora_gradients(self, model: torch.nn.Module) -> dict[str, Any]:
+        model = getattr(model, "module", model)
+        tensors = {
+            _normalise_lora_name(name): parameter.grad.detach()
+            for name, parameter in model.named_parameters()
+            if "lora_" in name and parameter.requires_grad and parameter.grad is not None
+        }
+        digest = hashlib.sha256()
+        norm_sq = 0.0
+        tensor_records = []
+        for name in sorted(tensors):
+            value = tensors[name]
+            cpu_value = value.detach().contiguous().cpu()
+            raw_fingerprint = _tensor_fingerprint("gradient", cpu_value)
+            digest.update(name.encode())
+            digest.update(raw_fingerprint.encode())
+            norm_sq += float(torch.sum(cpu_value.double() ** 2))
+            tensor_records.append(
+                {
+                    "name": name,
+                    "dtype": str(value.dtype),
+                    "shape": list(value.shape),
+                    "numel": value.numel(),
+                    "sha256": raw_fingerprint,
+                }
+            )
+        return {
+            "sha256": digest.hexdigest(),
+            "tensor_count": len(tensors),
+            "numel": sum(value.numel() for value in tensors.values()),
+            "l2_norm": norm_sq**0.5,
+            "tensors": tensor_records,
+        }
+
+    def record_clip(self, stage: str, model: torch.nn.Module, returned_grad_norm: Any = None) -> None:
+        payload = {
+            "stage": stage,
+            "gradients": self._canonical_lora_gradients(model),
+        }
+        if returned_grad_norm is not None:
+            if torch.is_tensor(returned_grad_norm):
+                returned_grad_norm = float(returned_grad_norm.detach().float().cpu().item())
+            payload["returned_grad_norm"] = float(returned_grad_norm)
+        self.emit("gradient_clip", **payload)
+
+    def _bucket_metadata(self, bucket: Any, parameter_names: dict[int, str]) -> dict[str, Any]:
+        parameters = []
+        offset = 0
+        for position, parameter in enumerate(bucket.parameters()):
+            numel = parameter.numel()
+            parameters.append(
+                {
+                    "position": position,
+                    "name": parameter_names.get(id(parameter), f"unknown:{position}"),
+                    "dtype": str(parameter.dtype),
+                    "shape": list(parameter.shape),
+                    "numel": numel,
+                    "offset": offset,
+                }
+            )
+            offset += numel
+        layout = {
+            "parameters": parameters,
+            "parameter_count": len(parameters),
+            "parameter_numel": offset,
+        }
+        buffer = bucket.buffer()
+        return {
+            "bucket_index": int(bucket.index()),
+            "is_last": bool(bucket.is_last()),
+            "dtype": str(buffer.dtype),
+            "numel": buffer.numel(),
+            "shape": list(buffer.shape),
+            "layout_sha256": _canonical_json_hash(layout),
+            **layout,
+        }
+
+    def install_ddp_comm_hook(self, model: torch.nn.Module) -> None:
+        if self.ddp_hook_installed:
+            raise RuntimeError("DDP forensic communication hook was installed more than once.")
+        if not isinstance(model, DistributedDataParallel):
+            if self.world_size > 1:
+                raise RuntimeError(f"Expected DistributedDataParallel, got {type(model).__name__}.")
+            self.emit("ddp_hook_not_required", world_size=self.world_size)
+            return
+
+        parameter_names = {
+            id(parameter): _normalise_lora_name(name)
+            for name, parameter in model.named_parameters()
+        }
+        process_group = model.process_group
+
+        def forensic_allreduce_hook(state: Any, bucket: Any):
+            sequence = self.ddp_bucket_sequence
+            self.ddp_bucket_sequence += 1
+            metadata = self._bucket_metadata(bucket, parameter_names)
+            pre_sha = _tensor_fingerprint("pre_allreduce", bucket.buffer())
+            self.emit(
+                "ddp_pre_allreduce",
+                bucket_call_index=sequence,
+                fingerprint=pre_sha,
+                **metadata,
+            )
+            future = default_hooks.allreduce_hook(state, bucket)
+
+            def record_post(completed: Any):
+                reduced = completed.value()
+                self.emit(
+                    "ddp_post_allreduce",
+                    bucket_call_index=sequence,
+                    fingerprint=_tensor_fingerprint("post_allreduce", reduced),
+                    **metadata,
+                )
+                return reduced
+
+            return future.then(record_post)
+
+        model.register_comm_hook(process_group, forensic_allreduce_hook)
+        self.ddp_hook_installed = True
+        self.emit(
+            "ddp_hook_installed",
+            implementation="torch.distributed.algorithms.ddp_comm_hooks.default_hooks.allreduce_hook",
+            torch_version=torch.__version__,
+            default_allreduce_source_sha256=hashlib.sha256(
+                inspect.getsource(default_hooks._allreduce_fut).encode()
+            ).hexdigest(),
+        )
 
     def _canonical_lora(self, model: torch.nn.Module) -> tuple[str, dict[str, torch.Tensor]]:
         tensors = {
@@ -359,6 +551,7 @@ class ReplayForensics:
     def step_end(self, state: Any, model: Any, optimizer: Any, scheduler: Any) -> None:
         step = int(state.global_step)
         batch_hashes = self.batch_hashes.pop(step, [])
+        batch_metadata = self.batch_metadata.pop(step, [])
         losses = self.losses.pop(step, [])
         combined = _hash_bytes([value.encode() for value in batch_hashes]) if batch_hashes else None
         loss_values = [float(value.float().cpu().item()) for value in losses]
@@ -369,6 +562,32 @@ class ReplayForensics:
         else:
             grad_norm = float(self.last_grad_norm)
         lr_values = scheduler.get_last_lr() if scheduler is not None else []
+        batch_contract = None
+        if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE:
+            assert self.batch_contract is not None
+            expected = self.batch_contract["rank"]
+            batch_contract = {
+                "source": _FROZEN_BATCH_MODE,
+                "contract_sha256": self.batch_contract["sha256"],
+                "rank_ordered_batch_fingerprint": expected["ordered_batch_fingerprint"],
+                "expected_microbatch_count": expected["microbatch_count"],
+                "observed_microbatch_count": len(batch_metadata),
+                "runtime_ordered_metadata_sha256": batch_metadata,
+                "runtime_metadata_fingerprint": _hash_bytes(
+                    [value.encode() for value in batch_metadata]
+                ),
+            }
+            if len(batch_metadata) != expected["microbatch_count"]:
+                raise RuntimeError("Runtime microbatch count violates the frozen step554 contract.")
+            combined = expected["ordered_batch_fingerprint"]
+        else:
+            batch_contract = {
+                "source": "runtime_full_gpu_hash",
+                "expected_microbatch_count": len(batch_hashes),
+                "observed_microbatch_count": len(batch_hashes),
+                "runtime_ordered_microbatch_sha256": batch_hashes,
+            }
+
         self.emit(
             "optimizer_step",
             global_step=step,
@@ -377,9 +596,10 @@ class ReplayForensics:
             rank_local_loss_mean=sum(loss_values) / len(loss_values) if loss_values else None,
             rank_local_micro_losses=loss_values,
             grad_norm=grad_norm,
-            microbatch_count=len(batch_hashes),
+            microbatch_count=len(batch_metadata) if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE else len(batch_hashes),
             ordered_microbatch_sha256=batch_hashes,
             ordered_batch_fingerprint=combined,
+            batch_contract=batch_contract,
             rng=self.rng_hashes(),
         )
         if step in self.heavy_steps:
@@ -465,6 +685,7 @@ def install_replay_instrumentation(trainer_cls: type) -> None:
     original_compute_loss = trainer_cls.compute_loss
     original_load_rng_state = trainer_cls._load_rng_state
     original_clip_grad_norm = trainer_cls._clip_grad_norm
+    original_prepare_for_training = getattr(trainer_cls, "_prepare_for_training", None)
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         controller = get_controller()
@@ -479,13 +700,23 @@ def install_replay_instrumentation(trainer_cls: type) -> None:
         return result
 
     def clip_grad_norm(self, model):
+        controller = get_controller()
+        controller.record_clip("PRE_CLIP", model)
         result = original_clip_grad_norm(self, model)
-        get_controller().record_grad_norm(result)
+        controller.record_clip("POST_CLIP", model, returned_grad_norm=result)
+        controller.record_grad_norm(result)
         return result
+
+    def prepare_for_training(self, *args, **kwargs):
+        model, train_dataloader = original_prepare_for_training(self, *args, **kwargs)
+        get_controller().install_ddp_comm_hook(model)
+        return model, train_dataloader
 
     trainer_cls.compute_loss = compute_loss
     trainer_cls._load_rng_state = load_rng_state
     trainer_cls._clip_grad_norm = clip_grad_norm
+    if original_prepare_for_training is not None:
+        trainer_cls._prepare_for_training = prepare_for_training
     trainer_cls._bata_replay_installed = True
 
 

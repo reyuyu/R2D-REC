@@ -1,0 +1,25 @@
+{
+  "description": "Public-safe frozen exact-input contract established by DET-A/DET-B at step 554.",
+  "source_commit": "dbbf8fd4da4052c6ddac45c1b9444a647e86c816",
+  "step": 554,
+  "world_size": 4,
+  "gradient_accumulation_steps": 16,
+  "ranks": {
+    "0": {
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "acec704d63052dfeaf9464944c3c1a2904adc8bbc67af3e9580386642ac46095"
+    },
+    "1": {
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "045f5ddbc0e6d7d5c9b443bb1f2f6d2a66917d49e6b6d0bd3524a74ad4b0a034"
+    },
+    "2": {
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "b3d474278bda352f74334dcaaf4956f8e6c779a0d565b24c1fe3f9159c1a05ad"
+    },
+    "3": {
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "365d252daed708c22f23d3039917dc19112bfefdc57fb091fb35d51414d95f3f"
+    }
+  }
+}

@@ -11,8 +11,14 @@ state bytes.
 
 ## Components
 
-- `replay_forensics.py`: ordered batch, RNG, LoRA, effective B@A, optimizer,
-  scheduler, loss, and environment fingerprints.
+- `replay_forensics.py`: frozen batch-contract checks, RNG, DDP bucket
+  pre/post-allreduce gradients, pre/post-clip LoRA gradients, LoRA, effective
+  B@A, optimizer, scheduler, loss, and environment fingerprints.
+- `frozen_step554_batch_contract.json`: public-safe per-rank ordered input
+  fingerprints established by the exact-input DET-A/DET-B runs. Gradient
+  localization verifies runtime field shapes/order against this frozen
+  contract instead of copying eight complete CUDA tensors to CPU after every
+  microbatch.
 - `prepare_replays.py`: verifies the SHA-pinned historical checkpoint and
   creates independent replay directories.
 - `prepare_kernel_matrix.py`: configures already-prepared, evidence-empty
@@ -27,8 +33,9 @@ state bytes.
   initialized.
 - `case_c_step554.json`: public-safe raw fingerprint/scalar evidence for the
   first observed A/B divergence.
-- `summarize_replay_pair.py`: compares two four-rank evidence directories and
-  emits a public-safe D2/D3 summary.
+- `summarize_replay_pair.py`: compares two four-rank evidence directories,
+  fails closed on any checkpoint/input/RNG/layout mismatch, and localizes the
+  first divergence to local backward, DDP/NCCL, clipping, or optimizer update.
 - `deterministic_step554_result.json` and `deterministic_step554_report.md`:
   strict deterministic result and the bounded FA2/Liger isolation outcome.
 
@@ -127,9 +134,21 @@ disables the Transformers policy gate. `torch.load(weights_only=True)` remains
 active, and NumPy safe globals are allowlisted solely for historical RNG-state
 deserialization. Any SHA mismatch fails before the bypass is installed.
 
-## Current interpretation
+## Gradient-localization diagnostic
 
-The existing A/B result is `CASE_C`. Because local loss diverged before
-backward, the narrow root-cause level before the deterministic diagnostic is
-`UNRESOLVED`, bounded to local model-forward or local loss-aggregation runtime
-behavior. No specific CUDA operation has yet been proven responsible.
+The strict deterministic DET-A/DET-B pair established `CASE_C`: checkpoint,
+ordered inputs, restored RNG, all 16 per-rank microbatch losses, and rank-local
+mean loss match exactly, while the post-backward/update state differs. The
+bounded GRAD-A/GRAD-B diagnostic keeps FA2 and Liger enabled and executes only
+the 553-to-554 update. It wraps PyTorch 2.5.1's official default all-reduce
+hook, preserving its divide-by-world-size and asynchronous sum semantics.
+
+The classifier is fail closed:
+
+1. Any initial checkpoint/LoRA/optimizer, input, RNG, microbatch order/count,
+   or DDP bucket-layout mismatch is `CONTRACT_MISMATCH`.
+2. Matching contracts with different local losses are `D1_PRE_BACKWARD`.
+3. Matching local losses compare pre-allreduce, post-allreduce, pre-clip,
+   post-clip, and optimizer state in that order.
+4. Full equality is `STEP554_FULLY_REPEATABLE`; missing gradient evidence is
+   never treated as repeatability.

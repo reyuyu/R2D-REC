@@ -142,6 +142,195 @@ def test_batch_fingerprint_covers_all_training_fields(monkeypatch, tmp_path):
     assert all(record["fields"][name]["sha256"] for name in module._BATCH_FIELDS)
 
 
+def test_frozen_batch_contract_avoids_gpu_value_hashes(monkeypatch, tmp_path):
+    module = load_module()
+    contract_path = tmp_path / "contract.json"
+    contract_path.write_text(
+        json.dumps(
+            {
+                "step": 554,
+                "world_size": 4,
+                "ranks": {
+                    "0": {
+                        "microbatch_count": 16,
+                        "ordered_batch_fingerprint": "frozen-rank0",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", str(tmp_path / "evidence"))
+    monkeypatch.setenv("BATA_REPLAY_CHECKPOINT", str(tmp_path))
+    monkeypatch.setenv("BATA_REPLAY_BATCH_FINGERPRINT_MODE", "frozen_step554_contract")
+    monkeypatch.setenv("BATA_REPLAY_BATCH_CONTRACT_JSON", str(contract_path))
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setenv("WORLD_SIZE", "4")
+    monkeypatch.setattr(
+        module,
+        "_tensor_fingerprint",
+        lambda *args: (_ for _ in ()).throw(AssertionError("value hash must not run")),
+    )
+    controller = module.ReplayForensics()
+    trainer = SimpleNamespace(state=SimpleNamespace(global_step=553))
+    inputs = {name: torch.zeros((1, 2), dtype=torch.long) for name in module._BATCH_FIELDS}
+
+    for _ in range(16):
+        controller.record_batch(trainer, inputs)
+    controller.step_end(
+        SimpleNamespace(global_step=554, epoch=1.0),
+        torch.nn.Linear(1, 1),
+        object(),
+        SimpleNamespace(get_last_lr=lambda: [1e-4]),
+    )
+
+    rows = [
+        json.loads(line)
+        for line in controller.events_path.read_text(encoding="utf-8").splitlines()
+    ]
+    observations = [row for row in rows if row["event"] == "microbatch_contract_observation"]
+    optimizer = next(row for row in rows if row["event"] == "optimizer_step")
+    assert len(observations) == 16
+    assert all("sha256" not in (field or {}) for row in observations for field in row["fields"].values())
+    assert optimizer["ordered_batch_fingerprint"] == "frozen-rank0"
+    assert optimizer["batch_contract"]["observed_microbatch_count"] == 16
+
+
+def test_ddp_hook_wraps_official_default_and_records_pre_post(monkeypatch, tmp_path):
+    module = load_module()
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", str(tmp_path / "evidence"))
+    monkeypatch.setenv("BATA_REPLAY_CHECKPOINT", str(tmp_path))
+    monkeypatch.setenv("WORLD_SIZE", "4")
+    parameter = torch.nn.Parameter(torch.ones(2))
+    calls = []
+
+    class FakeDDP:
+        process_group = "group"
+
+        def named_parameters(self):
+            return [("module.layer.lora_A.default.weight", parameter)]
+
+        def register_comm_hook(self, state, hook):
+            self.state = state
+            self.hook = hook
+
+    class FakeBucket:
+        def __init__(self):
+            self.value = torch.tensor([2.0, 4.0])
+
+        def buffer(self):
+            return self.value
+
+        def parameters(self):
+            return [parameter]
+
+        def index(self):
+            return 7
+
+        def is_last(self):
+            return True
+
+    def official_default(state, bucket):
+        calls.append((state, bucket.index()))
+        bucket.buffer().div_(2)
+        future = torch.futures.Future()
+        future.set_result(bucket.buffer())
+        return future
+
+    monkeypatch.setattr(module, "DistributedDataParallel", FakeDDP)
+    monkeypatch.setattr(module.default_hooks, "allreduce_hook", official_default)
+    controller = module.ReplayForensics()
+    model = FakeDDP()
+    controller.install_ddp_comm_hook(model)
+    result = model.hook(model.state, FakeBucket()).wait()
+
+    assert calls == [("group", 7)]
+    assert torch.equal(result, torch.tensor([1.0, 2.0]))
+    rows = [
+        json.loads(line)
+        for line in controller.events_path.read_text(encoding="utf-8").splitlines()
+    ]
+    pre = next(row for row in rows if row["event"] == "ddp_pre_allreduce")
+    post = next(row for row in rows if row["event"] == "ddp_post_allreduce")
+    assert pre["layout_sha256"] == post["layout_sha256"]
+    assert pre["fingerprint"] != post["fingerprint"]
+    assert pre["parameter_count"] == 1
+
+
+def test_clip_wrapper_records_pre_and_post_without_changing_original(monkeypatch):
+    module = load_module()
+    calls = []
+
+    class FakeController:
+        def record_clip(self, stage, model, returned_grad_norm=None):
+            calls.append((stage, model.value, returned_grad_norm))
+
+        def record_grad_norm(self, value):
+            calls.append(("norm", value))
+
+    class FakeTrainer:
+        def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+            return torch.tensor(0.0)
+
+        def _load_rng_state(self, checkpoint):
+            return None
+
+        def _clip_grad_norm(self, model):
+            model.value = "clipped"
+            return torch.tensor(0.75)
+
+    model = SimpleNamespace(value="unclipped")
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", "enabled")
+    monkeypatch.delenv("BATA_REPLAY_ALLOW_TRUSTED_TORCH_LOAD", raising=False)
+    monkeypatch.setattr(module, "get_controller", lambda: FakeController())
+    module.install_replay_instrumentation(FakeTrainer)
+
+    result = FakeTrainer()._clip_grad_norm(model)
+
+    assert torch.equal(result, torch.tensor(0.75))
+    assert calls[0] == ("PRE_CLIP", "unclipped", None)
+    assert calls[1][0:2] == ("POST_CLIP", "clipped")
+    assert torch.equal(calls[1][2], torch.tensor(0.75))
+    assert torch.equal(calls[2][1], torch.tensor(0.75))
+
+
+def test_ddp_hook_is_installed_after_prepare_and_before_training(monkeypatch):
+    module = load_module()
+    calls = []
+    wrapped_model = object()
+
+    class FakeController:
+        def install_ddp_comm_hook(self, model):
+            calls.append(("hook", model))
+
+    class FakeTrainer:
+        def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+            return torch.tensor(0.0)
+
+        def _load_rng_state(self, checkpoint):
+            return None
+
+        def _clip_grad_norm(self, model):
+            return torch.tensor(0.0)
+
+        def _prepare_for_training(self, *args, **kwargs):
+            calls.append(("prepare", args, kwargs))
+            return wrapped_model, "dataloader"
+
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", "enabled")
+    monkeypatch.delenv("BATA_REPLAY_ALLOW_TRUSTED_TORCH_LOAD", raising=False)
+    monkeypatch.setattr(module, "get_controller", lambda: FakeController())
+    module.install_replay_instrumentation(FakeTrainer)
+
+    result = FakeTrainer()._prepare_for_training(1106, "input-loader", "/checkpoint-553")
+
+    assert result == (wrapped_model, "dataloader")
+    assert calls == [
+        ("prepare", (1106, "input-loader", "/checkpoint-553"), {}),
+        ("hook", wrapped_model),
+    ]
+
+
 def test_stop_callback_does_not_change_scheduler_horizon():
     module = load_module()
     callback = module.StopAfterOptimizerStepCallback(554)

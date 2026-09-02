@@ -11,6 +11,7 @@ RUN_ROOT="$1"
 LABEL="$2"
 MODE="${3:-}"
 [[ -z "${MODE}" || "${MODE}" == "--deterministic" ]] || usage
+FORENSICS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 RUNTIME_SOURCE="${BATA_REPLAY_RUNTIME_SOURCE:-${RUN_ROOT}/source_runtime}"
 RUN_DIR="${RUN_ROOT}/runs/${LABEL}"
@@ -55,6 +56,13 @@ export BATA_REPLAY_EXPECTED_SHA_JSON="${EXPECTED_SHA}"
 export BATA_REPLAY_ALLOW_TRUSTED_TORCH_LOAD="1"
 export BATA_REPLAY_STOP_AFTER_STEP="${BATA_REPLAY_STOP_AFTER_STEP:-554}"
 export BATA_REPLAY_HEAVY_STEPS="${BATA_REPLAY_HEAVY_STEPS:-554}"
+export BATA_REPLAY_BATCH_FINGERPRINT_MODE="${BATA_REPLAY_BATCH_FINGERPRINT_MODE:-frozen_step554_contract}"
+export BATA_REPLAY_BATCH_CONTRACT_JSON="${BATA_REPLAY_BATCH_CONTRACT_JSON:-${FORENSICS_DIR}/frozen_step554_batch_contract.json}"
+
+[[ -f "${BATA_REPLAY_BATCH_CONTRACT_JSON}" ]] || {
+  echo "missing frozen step554 batch contract: ${BATA_REPLAY_BATCH_CONTRACT_JSON}" >&2
+  exit 6
+}
 
 if [[ "${MODE}" == "--deterministic" ]]; then
   export CUBLAS_WORKSPACE_CONFIG=":4096:8"
