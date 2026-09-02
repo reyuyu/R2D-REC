@@ -379,7 +379,10 @@ class ReplayForensics:
         }
         process_group = model.process_group
 
-        def forensic_allreduce_hook(state: Any, bucket: Any):
+        # DDP 2.5.1 validates runtime annotation objects. This module uses
+        # postponed annotations, so leave this nested hook unannotated rather
+        # than exposing string annotations that DDP rejects.
+        def forensic_allreduce_hook(state, bucket):
             sequence = self.ddp_bucket_sequence
             self.ddp_bucket_sequence += 1
             metadata = self._bucket_metadata(bucket, parameter_names)

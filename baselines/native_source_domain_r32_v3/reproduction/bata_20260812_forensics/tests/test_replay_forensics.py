@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import importlib.util
 import json
 import random
@@ -242,6 +243,9 @@ def test_ddp_hook_wraps_official_default_and_records_pre_post(monkeypatch, tmp_p
     controller = module.ReplayForensics()
     model = FakeDDP()
     controller.install_ddp_comm_hook(model)
+    signature = inspect.signature(model.hook)
+    assert signature.parameters["bucket"].annotation is inspect.Signature.empty
+    assert signature.return_annotation is inspect.Signature.empty
     result = model.hook(model.state, FakeBucket()).wait()
 
     assert calls == [("group", 7)]
