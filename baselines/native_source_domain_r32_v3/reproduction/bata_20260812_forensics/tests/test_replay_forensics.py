@@ -5,6 +5,7 @@ import inspect
 import importlib.util
 import json
 import random
+from collections import UserDict
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -241,6 +242,22 @@ def test_cpu_fingerprinting_collator_preserves_training_fields():
     diagnostic = result.pop(module._CPU_FINGERPRINT_KEY)
     assert diagnostic == module.cpu_batch_fingerprint(original)
     assert all(torch.equal(result[name], original[name]) for name in module._BATCH_FIELDS)
+
+
+def test_cpu_fingerprinting_collator_accepts_batchencoding_style_mapping():
+    module = load_module()
+    original = UserDict(
+        {
+            name: torch.tensor([[index]], dtype=torch.long)
+            for index, name in enumerate(module._BATCH_FIELDS)
+        }
+    )
+    wrapped = module.CPUFingerprintingCollator(lambda _: UserDict(original.copy()))
+
+    result = wrapped([object()])
+
+    assert isinstance(result, UserDict)
+    assert result[module._CPU_FINGERPRINT_KEY]["source"] == "cpu_collator_before_accelerator"
 
 
 def test_ddp_hook_wraps_official_default_and_records_pre_post(monkeypatch, tmp_path):

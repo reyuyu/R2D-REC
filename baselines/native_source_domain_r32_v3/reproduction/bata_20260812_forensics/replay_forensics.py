@@ -10,6 +10,7 @@ import random
 import re
 import threading
 import time
+from collections.abc import MutableMapping
 from functools import wraps
 from pathlib import Path
 from typing import Any
@@ -142,10 +143,10 @@ class CPUFingerprintingCollator:
     def __init__(self, collator: Any) -> None:
         self.collator = collator
 
-    def __call__(self, features: Any) -> dict[str, Any]:
+    def __call__(self, features: Any) -> MutableMapping[str, Any]:
         batch = self.collator(features)
-        if not isinstance(batch, dict):
-            raise RuntimeError("Forensic CPU fingerprinting requires a mapping batch.")
+        if not isinstance(batch, MutableMapping):
+            raise RuntimeError("Forensic CPU fingerprinting requires a mutable mapping batch.")
         if _CPU_FINGERPRINT_KEY in batch:
             raise RuntimeError(f"Reserved forensic key already exists: {_CPU_FINGERPRINT_KEY}.")
         batch[_CPU_FINGERPRINT_KEY] = cpu_batch_fingerprint(batch)
