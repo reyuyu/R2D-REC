@@ -15,6 +15,8 @@ state bytes.
   scheduler, loss, and environment fingerprints.
 - `prepare_replays.py`: verifies the SHA-pinned historical checkpoint and
   creates independent replay directories.
+- `prepare_kernel_matrix.py`: configures already-prepared, evidence-empty
+  replay directories for the diagnostic-only FA2/Liger 2x2 matrix.
 - `mount_historical_packed_cache.py`: exposes the historical Arrow shards as a
   read-only `load_from_disk` dataset without retokenizing or repacking.
 - `trainer_integration.patch`: the minimal patch applied only to a copied
@@ -97,6 +99,21 @@ bash launch_replay.sh /root/bata_sft_deterministic_20260902 DET-B --deterministi
 Both runs retain `max_steps=1106` but execute only the 553-to-554 update. A
 strict deterministic `RuntimeError` is evidence and must not trigger an
 automatic fallback or another experiment.
+
+If DET-A/DET-B complete with identical rank-local losses but different
+post-backward state, prepare F2/F3/F4 A/B directories with
+`prepare_replays.py`, then run:
+
+```bash
+python prepare_kernel_matrix.py \
+  --runs-root /root/bata_sft_deterministic_20260902/runs \
+  --case F2 --case F3 --case F4
+```
+
+F1 is the original FA2-on/Liger-on DET-A/DET-B pair. Every additional cell is
+strict deterministic, executes only step 553 to 554, and is compared only to
+its same-cell repeat. These variants are diagnostic-only and are not a new
+historical training contract.
 
 ## Compatibility bypass
 
