@@ -31,7 +31,7 @@ if [[ -n "$(nvidia-smi --query-compute-apps=pid --format=csv,noheader 2>/dev/nul
 fi
 GPU_ROWS="$(nvidia-smi --query-gpu=index,memory.used --format=csv,noheader,nounits)"
 if [[ "$(printf '%s\n' "${GPU_ROWS}" | wc -l)" -ne 4 ]] || \
-   ! printf '%s\n' "${GPU_ROWS}" | awk -F, '{gsub(/ /,"",$2); if ($2 >= 1024) exit 1}'; then
+   ! printf '%s\n' "${GPU_ROWS}" | awk -F, '{gsub(/ /,"",$2); if (($2 + 0) >= 1024) exit 1}'; then
   echo "all four GPUs must report memory.used < 1024 MiB" >&2
   exit 4
 fi

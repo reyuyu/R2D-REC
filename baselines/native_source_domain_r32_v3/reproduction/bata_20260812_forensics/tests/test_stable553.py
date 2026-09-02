@@ -78,6 +78,7 @@ def test_horizon_stop_and_deterministic_contract_are_frozen():
     assert 'export FLASH_ATTENTION_DETERMINISTIC="1"' in launcher
     assert "torch.use_deterministic_algorithms(True, warn_only=False)" in runtime
     assert "BATA_STABLE_CHECKPOINT" in launcher and "unset BATA_STABLE_CHECKPOINT" in launcher
+    assert "(($2 + 0) >= 1024)" in launcher
 
 
 def test_callback_stops_at_553_without_changing_horizon():
