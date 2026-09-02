@@ -208,6 +208,19 @@ def paired(tmp_path: Path, changes_b: dict | None = None) -> dict:
 
 
 def paired_fadet(tmp_path: Path, changes_b: dict | None = None, *, missing_runtime: bool = False) -> dict:
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "checkpoint_sha256": {"adapter_model.safetensors": "checkpoint"},
+                "runtime_source_tree_sha256": "source",
+                "runtime_file_sha256": {"trainer.py": "trainer"},
+                "llamafactory_git_head": "llamafactory",
+                "llamafactory_git_diff_sha256": "diff",
+                "llamafactory_python_tree_sha256": "tree",
+            }
+        ),
+        encoding="utf-8",
+    )
     a = write_run(tmp_path, "FADET-A", {"fadet": True, "missing_fa_runtime": missing_runtime})
     changes = {"fadet": True, **(changes_b or {})}
     b = write_run(tmp_path, "FADET-B", changes)
@@ -269,6 +282,15 @@ def test_fadet_missing_runtime_confirmation_cannot_be_stable(tmp_path: Path) -> 
     result = paired_fadet(tmp_path, missing_runtime=True)
     assert result["fa2_deterministic_runtime"]["all_runs_all_ranks_confirmed"] is False
     assert result["verdict"] == "UNRESOLVED"
+
+
+def test_fadet_missing_source_manifest_is_contract_mismatch(tmp_path: Path) -> None:
+    a = write_run(tmp_path, "FADET-A", {"fadet": True})
+    b = write_run(tmp_path, "FADET-B", {"fadet": True})
+
+    result = MODULE.summarize_pair(a, b)
+
+    assert result["verdict"] == "CONTRACT_MISMATCH"
 
 
 def test_fadet_pre_allreduce_mismatch_is_local_backward(tmp_path: Path) -> None:

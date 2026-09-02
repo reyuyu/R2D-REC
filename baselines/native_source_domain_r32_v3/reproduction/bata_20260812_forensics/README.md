@@ -45,6 +45,10 @@ state bytes.
 - `gradient_step554_result.json` and `gradient_step554_report.md`:
   public-safe DDP bucket, clipping, and update evidence localizing the first
   repeat divergence to local backward.
+- `fadet_step554_result.json` and `fadet_step554_report.md`: the successful
+  strict FA2 deterministic-backward repeat. The result is fully repeatable
+  through step554 and supports the bounded material-source conclusion in the
+  report.
 
 ## Isolation contract
 

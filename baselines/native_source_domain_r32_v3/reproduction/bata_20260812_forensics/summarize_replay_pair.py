@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,28 @@ def canonical_hash(value: Any) -> str:
 
 def load_events(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def package_version(distribution: str) -> str | None:
+    try:
+        return version(distribution)
+    except PackageNotFoundError:
+        return None
+
+
+def public_manifest_contract(run_dir: Path) -> dict[str, Any] | None:
+    path = run_dir.parent / "manifest.json"
+    if not path.is_file():
+        return None
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "checkpoint_sha256": manifest.get("checkpoint_sha256"),
+        "runtime_source_tree_sha256": manifest.get("runtime_source_tree_sha256"),
+        "runtime_file_sha256": manifest.get("runtime_file_sha256"),
+        "llamafactory_git_head": manifest.get("llamafactory_git_head"),
+        "llamafactory_git_diff_sha256": manifest.get("llamafactory_git_diff_sha256"),
+        "llamafactory_python_tree_sha256": manifest.get("llamafactory_python_tree_sha256"),
+    }
 
 
 def one_event(events: list[dict[str, Any]], event: str, label: str | None = None) -> dict[str, Any]:
@@ -337,6 +360,8 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
     files_a, files_b = rank_files(run_a), rank_files(run_b)
     events_a = {rank: load_events(files_a[rank]) for rank in range(4)}
     events_b = {rank: load_events(files_b[rank]) for rank in range(4)}
+    manifest_a = public_manifest_contract(run_a)
+    manifest_b = public_manifest_contract(run_b)
     ranks = []
     contract_reasons = []
     gradient_evidence_complete = True
@@ -420,7 +445,6 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
         "optimizer_b": final_b["optimizer"]["sha256"],
         "optimizer_equal": final_a["optimizer"]["sha256"] == final_b["optimizer"]["sha256"],
     }
-    contract_equal = not contract_reasons
     losses_equal = all(row["micro_losses_equal"] and row["local_loss_equal"] for row in ranks)
     final_equal = all(final[key] for key in ("lora_equal", "effective_ba_equal", "optimizer_equal"))
     grad_norms_equal = all(row["grad_norm_equal"] for row in ranks)
@@ -437,6 +461,9 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
     fa2_runtime_b = _fa2_runtime_confirmation(events_b)
     fadet_mode = fa2_runtime_a["requested"] or fa2_runtime_b["requested"]
     fa2_runtime_confirmed = fa2_runtime_a["all_ranks_confirmed"] and fa2_runtime_b["all_ranks_confirmed"]
+    if fadet_mode and (manifest_a is None or manifest_a != manifest_b):
+        contract_reasons.append("source/checkpoint manifest contract mismatch or missing")
+    contract_equal = not contract_reasons
     expected_parameter_count = None
     if ranks and ranks[0]["ddp"] and ranks[0]["ddp"].get("buckets"):
         expected_parameter_count = ranks[0]["ddp"]["buckets"][0].get("parameter_count")
@@ -489,6 +516,14 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
     return {
         "repeatability_classification": repeatability,
         "verdict": verdict,
+        "software": {
+            "flash_attn_version": package_version("flash-attn"),
+        },
+        "source_and_checkpoint_contract": {
+            "run_a": manifest_a,
+            "run_b": manifest_b,
+            "equal": manifest_a is not None and manifest_a == manifest_b,
+        },
         "contract_equal": contract_equal,
         "contract_mismatch_reasons": contract_reasons,
         "pre_backward_local_loss_repeatable": contract_equal and losses_equal,
