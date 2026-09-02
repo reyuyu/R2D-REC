@@ -1,0 +1,99 @@
+{
+  "classification": "D3",
+  "current_root_cause_level": "UNRESOLVED",
+  "diagnostic_contract": {
+    "checkpoint": "historical BATA checkpoint-553",
+    "cublas_workspace_config": ":4096:8",
+    "deterministic_algorithms": true,
+    "deterministic_warn_only": false,
+    "flash_attention": "fa2",
+    "gradient_accumulation_steps": 16,
+    "liger": true,
+    "optimizer_updates": 1,
+    "trainer_max_steps": 1106,
+    "world_size": 4
+  },
+  "local_loss_capture": {
+    "after_model_forward": true,
+    "after_local_sid8_loss": true,
+    "before_accelerator_backward": true,
+    "before_ddp_gradient_allreduce": true
+  },
+  "pre_backward_local_loss_repeatable": true,
+  "post_backward_state_repeatable": false,
+  "ranks": [
+    {
+      "grad_norm_a": 0.7419519424438477,
+      "grad_norm_b": 0.7419999241828918,
+      "local_loss_a": 2.0197828598320484,
+      "local_loss_b": 2.0197828598320484,
+      "micro_losses_equal": true,
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "acec704d63052dfeaf9464944c3c1a2904adc8bbc67af3e9580386642ac46095",
+      "ordered_microbatches_equal": true,
+      "rank": 0,
+      "rng_fingerprint": "b3cfd074bc30e7a71f6a7695f974a3a272da0cd41737c940399eee7b8eed9e2f"
+    },
+    {
+      "grad_norm_a": 0.7419519424438477,
+      "grad_norm_b": 0.7419999241828918,
+      "local_loss_a": 1.59639323502779,
+      "local_loss_b": 1.59639323502779,
+      "micro_losses_equal": true,
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "045f5ddbc0e6d7d5c9b443bb1f2f6d2a66917d49e6b6d0bd3524a74ad4b0a034",
+      "ordered_microbatches_equal": true,
+      "rank": 1,
+      "rng_fingerprint": "2d745ebb3de4b116eb15753fc488081a999bede2292bed31b00074187511b323"
+    },
+    {
+      "grad_norm_a": 0.7419519424438477,
+      "grad_norm_b": 0.7419999241828918,
+      "local_loss_a": 2.560986466705799,
+      "local_loss_b": 2.560986466705799,
+      "micro_losses_equal": true,
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "b3d474278bda352f74334dcaaf4956f8e6c779a0d565b24c1fe3f9159c1a05ad",
+      "ordered_microbatches_equal": true,
+      "rank": 2,
+      "rng_fingerprint": "754dad7939c83a28ecd65ab647bf4c7b3867afd2f366c5280a8e39362bdac17f"
+    },
+    {
+      "grad_norm_a": 0.7419519424438477,
+      "grad_norm_b": 0.7419999241828918,
+      "local_loss_a": 1.3222751496359706,
+      "local_loss_b": 1.3222751496359706,
+      "micro_losses_equal": true,
+      "microbatch_count": 16,
+      "ordered_batch_fingerprint": "365d252daed708c22f23d3039917dc19112bfefdc57fb091fb35d51414d95f3f",
+      "ordered_microbatches_equal": true,
+      "rank": 3,
+      "rng_fingerprint": "4e147f717da4f9c815aecbb19e69501f265608f78433253baa06e080f2c68f8b"
+    }
+  ],
+  "step554": {
+    "effective_ba_a": "0549469b8113d2a7a141391eae94601b9c5e18ec63cd5a24266c81e42d029eb7",
+    "effective_ba_b": "8e88be2ef3a7b903bc31875c93b2a23bb25b3e0d21e75ebf50610777160c751f",
+    "effective_ba_equal": false,
+    "initial_lora_equal": true,
+    "initial_optimizer_equal": true,
+    "lora_a": "54ff5d4a8ab3dd554da1a4f3f976f4d9614daae402b1df17d95b0773b29b3af2",
+    "lora_b": "93d1cdda33b8e55a0a744e9fe3c7990154225c7c898c2070faa7bee3f1a1b0d5",
+    "lora_equal": false,
+    "optimizer_a": "18c362930a9be35d7d842c6f5789cbad954dfb81494867faa7248f5e9208d153",
+    "optimizer_b": "56d2680edd88eb31d85657acd9a1849cd2fb57573985f3d3b712be0b0d64f486",
+    "optimizer_equal": false
+  },
+  "kernel_isolation": {
+    "F1_fa2_on_liger_on": "D3: completed A/B; local losses equal, post-backward state differs",
+    "F2_fa2_off_liger_on": "A failed before step554: eager-attention forward CUDA OOM requesting 8.00 GiB; B not run",
+    "F3_fa2_on_liger_off": "A failed before step554: backward CUDA OOM requesting 5.38 GiB; B not run",
+    "F4_fa2_off_liger_off": "not run because both constituent disable paths exceeded the fixed 80 GiB memory contract"
+  },
+  "local_only_evidence": [
+    "DET-A/DET-B rank JSONL evidence",
+    "F2-A/F3-A raw tracebacks",
+    "isolated checkpoint copies and outputs"
+  ],
+  "next_minimum_diagnostic": "On the unchanged F1 path, fingerprint gradients immediately before and after DDP reduction during one 553-to-554 A/B pair; do not add another model forward."
+}

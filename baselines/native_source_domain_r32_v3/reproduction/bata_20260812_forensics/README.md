@@ -27,6 +27,10 @@ state bytes.
   initialized.
 - `case_c_step554.json`: public-safe raw fingerprint/scalar evidence for the
   first observed A/B divergence.
+- `summarize_replay_pair.py`: compares two four-rank evidence directories and
+  emits a public-safe D2/D3 summary.
+- `deterministic_step554_result.json` and `deterministic_step554_report.md`:
+  strict deterministic result and the bounded FA2/Liger isolation outcome.
 
 ## Isolation contract
 
