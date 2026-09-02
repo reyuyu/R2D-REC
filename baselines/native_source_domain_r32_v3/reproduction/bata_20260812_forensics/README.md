@@ -38,6 +38,9 @@ state bytes.
   first divergence to local backward, DDP/NCCL, clipping, or optimizer update.
 - `deterministic_step554_result.json` and `deterministic_step554_report.md`:
   strict deterministic result and the bounded FA2/Liger isolation outcome.
+- `gradient_step554_result.json` and `gradient_step554_report.md`:
+  public-safe DDP bucket, clipping, and update evidence localizing the first
+  repeat divergence to local backward.
 
 ## Isolation contract
 
