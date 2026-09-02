@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
+import numpy as np
 import torch
 from safetensors.torch import load_file
 
@@ -18,6 +19,7 @@ from safetensors.torch import load_file
 LABELS = ("STABLE560-A", "STABLE560-B", "STABLE560-C")
 LAYER_RE = re.compile(r"\.layers\.(\d+)\.")
 PROJECTION_RE = re.compile(r"\.(q|k|v|o|gate|up|down)_proj$")
+_EFFECTIVE_MODULE_INNER_CACHE: dict[tuple[int, float, int, float, str], float] = {}
 
 
 def sha256_file(path: Path) -> str:
@@ -29,7 +31,7 @@ def sha256_file(path: Path) -> str:
 
 
 def tensor_bytes(tensor: torch.Tensor) -> bytes:
-    return tensor.detach().contiguous().view(torch.uint8).numpy().tobytes()
+    return tensor.detach().contiguous().reshape(-1).view(torch.uint8).numpy().tobytes()
 
 
 def canonical_tensor_hash(tensors: dict[str, torch.Tensor]) -> str:
@@ -61,6 +63,19 @@ def canonical_state_hash(value: Any) -> str:
             digest.update(type(item).__name__.encode())
             for child in item:
                 visit(child)
+        elif isinstance(item, np.ndarray):
+            value = np.ascontiguousarray(item)
+            digest.update(b"ndarray")
+            digest.update(str(value.dtype).encode())
+            digest.update(json.dumps(list(value.shape)).encode())
+            digest.update(value.tobytes())
+        elif isinstance(item, np.generic):
+            digest.update(b"numpy_scalar")
+            digest.update(str(item.dtype).encode())
+            digest.update(item.tobytes())
+        elif isinstance(item, np.dtype):
+            digest.update(b"numpy_dtype")
+            digest.update(str(item).encode())
         elif isinstance(item, (str, int, float, bool)) or item is None:
             digest.update(type(item).__name__.encode())
             digest.update(repr(item).encode())
@@ -72,6 +87,11 @@ def canonical_state_hash(value: Any) -> str:
 
 
 def load_torch_state(path: Path) -> Any:
+    from numpy._core.multiarray import _reconstruct
+
+    torch.serialization.add_safe_globals(
+        [_reconstruct, np.ndarray, np.dtype, type(np.dtype(np.uint32))]
+    )
     return torch.load(path, map_location="cpu", weights_only=True)
 
 
@@ -146,16 +166,35 @@ def effective_inner(
     selected = list(prefixes) if prefixes is not None else module_prefixes(left)
     if set(module_prefixes(left)) != set(module_prefixes(right)):
         raise RuntimeError("effective B@A module mismatch")
-    total = 0.0
-    for prefix in selected:
+    return sum(
+        effective_module_inner(left, left_scale, right, right_scale, prefix)
+        for prefix in selected
+    )
+
+
+def effective_module_inner(
+    left: dict[str, torch.Tensor],
+    left_scale: float,
+    right: dict[str, torch.Tensor],
+    right_scale: float,
+    prefix: str,
+) -> float:
+    # The Frobenius inner product is symmetric. Canonicalizing object order
+    # also makes every checkpoint-pair/module multiplication execute once.
+    if id(left) > id(right):
+        return effective_module_inner(right, right_scale, left, left_scale, prefix)
+    key = (id(left), float(left_scale), id(right), float(right_scale), prefix)
+    if key not in _EFFECTIVE_MODULE_INNER_CACHE:
         la = left[prefix + ".lora_A.weight"].double()
         lb = left[prefix + ".lora_B.weight"].double()
         ra = right[prefix + ".lora_A.weight"].double()
         rb = right[prefix + ".lora_B.weight"].double()
         # trace((B_l^T B_r)(A_r A_l^T)); the elementwise form needs the
         # second rank-space factor transposed.
-        total += left_scale * right_scale * torch.sum((lb.T @ rb) * (ra @ la.T).T).item()
-    return total
+        _EFFECTIVE_MODULE_INNER_CACHE[key] = (
+            left_scale * right_scale * torch.sum((lb.T @ rb) * (ra @ la.T).T).item()
+        )
+    return _EFFECTIVE_MODULE_INNER_CACHE[key]
 
 
 def effective_pair(

@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import numpy as np
 import torch
 
 
@@ -81,6 +82,22 @@ def test_effective_ba_pair_matches_explicit_dense_math():
     assert actual["cosine"] == pytest.approx(expected_cosine.item(), abs=1e-12)
 
 
+def test_effective_ba_module_inner_cache_is_symmetric():
+    module = load("compare_stable_pilots.py")
+    left = {
+        "x.lora_A.weight": torch.tensor([[1.0, 2.0]]),
+        "x.lora_B.weight": torch.tensor([[3.0], [4.0]]),
+    }
+    right = {
+        "x.lora_A.weight": torch.tensor([[2.0, 1.0]]),
+        "x.lora_B.weight": torch.tensor([[5.0], [6.0]]),
+    }
+    first = module.effective_module_inner(left, 2.0, right, 2.0, "x")
+    second = module.effective_module_inner(right, 2.0, left, 2.0, "x")
+    assert first == second
+    assert len(module._EFFECTIVE_MODULE_INNER_CACHE) == 1
+
+
 def test_historical_direction_metrics_match_explicit_dense_math():
     module = load("compare_stable_pilots.py")
 
@@ -125,3 +142,69 @@ def test_canonical_state_hash_is_order_independent_and_value_sensitive():
     changed = {"a": {"x": 1}, "b": torch.tensor([3])}
     assert module.canonical_state_hash(left) == module.canonical_state_hash(right)
     assert module.canonical_state_hash(left) != module.canonical_state_hash(changed)
+
+
+def test_canonical_state_hash_supports_numpy_rng_payloads():
+    module = load("compare_stable_pilots.py")
+    value = {"numpy": ("MT19937", np.arange(8, dtype=np.uint32), 3, 0, 0.0)}
+    same = {"numpy": ("MT19937", np.arange(8, dtype=np.uint32), 3, 0, 0.0)}
+    changed = {"numpy": ("MT19937", np.arange(9, dtype=np.uint32), 3, 0, 0.0)}
+    assert module.canonical_state_hash(value) == module.canonical_state_hash(same)
+    assert module.canonical_state_hash(value) != module.canonical_state_hash(changed)
+
+
+def test_canonical_state_hash_supports_scalar_optimizer_step_tensor():
+    module = load("compare_stable_pilots.py")
+    value = {"state": {0: {"step": torch.tensor(7.0)}}}
+    same = {"state": {0: {"step": torch.tensor(7.0)}}}
+    changed = {"state": {0: {"step": torch.tensor(8.0)}}}
+    assert module.canonical_state_hash(value) == module.canonical_state_hash(same)
+    assert module.canonical_state_hash(value) != module.canonical_state_hash(changed)
+
+
+def test_public_result_rejects_server_paths(tmp_path):
+    module = load("publish_stable_pilot.py")
+    private = {
+        "verdict": "STABLE560_EXACT",
+        "checkpoints": {"STABLE560-A": "/root/private"},
+        "historical_checkpoints": {"step553": {"path": "/data/private"}},
+        "historical_direction": {
+            label: {
+                "layers": {
+                    "layer_00": {
+                        "hist_update_cosine": 1.0,
+                        "hist_progress": 0.1,
+                        "hist_residual": 0.0,
+                    }
+                }
+            }
+            for label in module.LABELS
+        },
+    }
+    manifest = {
+        "historical_checkpoint_sha256": {},
+        "pristine_source_sha256": {},
+        "runtime_source_sha256": {},
+        "llamafactory_contract": {},
+        "tokenized_path": "/private/cache",
+    }
+    for label in module.LABELS:
+        evidence = tmp_path / "runs" / label / "evidence"
+        evidence.mkdir(parents=True)
+        for rank in range(4):
+            (evidence / f"runtime_rank{rank}.json").write_text(
+                json.dumps(
+                    {
+                        "status": "PASS",
+                        "completed_global_step": 560,
+                        "wall_seconds": 1.0,
+                        "nvidia_smi": "0, NVIDIA A800, private-uuid, 550.1",
+                    }
+                ),
+                encoding="utf-8",
+            )
+    result = module.public_result(private, manifest, tmp_path)
+    payload = json.dumps(result)
+    assert "/root/" not in payload
+    assert "/data/" not in payload
+    assert result["contract"]["tokenized_path_recorded_server_side"] is True

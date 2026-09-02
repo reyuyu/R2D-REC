@@ -1,0 +1,1205 @@
+{
+  "adapters": {
+    "STABLE560-A": {
+      "canonical_tensor_sha256": "f4b1dbd7265fd71004db1e5511e22caf23f353757a95472a5cb9e860415504a3",
+      "file_sha256": "7ddbdffa133cac26ba66549f6dbe673153b4de0ec6caa8d3893e98d7007a8fd4",
+      "scaling": 2.0,
+      "tensor_count": 504
+    },
+    "STABLE560-B": {
+      "canonical_tensor_sha256": "f4b1dbd7265fd71004db1e5511e22caf23f353757a95472a5cb9e860415504a3",
+      "file_sha256": "7ddbdffa133cac26ba66549f6dbe673153b4de0ec6caa8d3893e98d7007a8fd4",
+      "scaling": 2.0,
+      "tensor_count": 504
+    },
+    "STABLE560-C": {
+      "canonical_tensor_sha256": "f4b1dbd7265fd71004db1e5511e22caf23f353757a95472a5cb9e860415504a3",
+      "file_sha256": "7ddbdffa133cac26ba66549f6dbe673153b4de0ec6caa8d3893e98d7007a8fd4",
+      "scaling": 2.0,
+      "tensor_count": 504
+    }
+  },
+  "contract": {
+    "historical_checkpoint_sha256": {
+      "adapter_model.safetensors": "9c5426a5c329e9ec19a5dddc351c51c498dab4b4ed3a81ce80cfa07dc84cab9e",
+      "optimizer.pt": "4806181f0754d954c4c9f30fe38d5b33587582dbb2a710e9571e7d7493213d98",
+      "rng_state_0.pth": "5d7293a18c2d02ee3cd516babc094c680cf849faba4e4352053bccf44a760996",
+      "rng_state_1.pth": "b1d4c3eebf0e573130bb904de7c972893cb4fadc5f6a5c4d33a4548714f67196",
+      "rng_state_2.pth": "e148a4b7c58775628765cd1617cad9edee5fcddab223723c80dc47ce79f9fe9a",
+      "rng_state_3.pth": "e31d3245179273a4f709cfc7b6529dc141494bab2b36d977ac14370970dde64d",
+      "scheduler.pt": "b951d51e69752e0946c62e098ed98dc80e281b252d1eca4f0c996ae08dc7dccb",
+      "trainer_state.json": "bacd549ddeaadde8d065d9d6184c68aa1fda88083a1577005fae8a79839e29d8",
+      "training_args.bin": "2007c7967597a348c3f8ff68991fff0ab399ce019501a55dbbe3c741da6bb7d2"
+    },
+    "llamafactory_contract": {
+      "git_diff_sha256": "1eabb66650106e6e56586544e5b330e8ff6a1e4863da889304e52e72c81f5ec3",
+      "git_head": "01398eb18dd475a6e27c36f15b970aeacf0d4a60",
+      "python_tree_sha256": "6f7bce5478bc164279cc3aff25e4f3c1e4e665bb0bb3b9ebcdd0279c74766e8e"
+    },
+    "pristine_source_sha256": {
+      "rec_pu/sid8_rec_pu_integration.py": "b272923dbbc6e744ade2d5e5f1e3007520f27ceaf1b563a32e5fb355a32944f4",
+      "scripts/train_native_source_domain_r32_v3.py": "91b9bfb360cfe2b0bfef8d333dcace433a99098c1facc0c898f1c7db117f8a10"
+    },
+    "runtime_source_sha256": {
+      "config/train_bata_baseline_4gpu_gc04_2epoch.yaml": "ff6b589b16c075b354569033159ddfa1c1cf0978dc55a5fe909a2d3e068d8445",
+      "rec_pu/sid8_rec_pu_integration.py": "b272923dbbc6e744ade2d5e5f1e3007520f27ceaf1b563a32e5fb355a32944f4",
+      "scripts/run_native_source_domain_r32_v3.sh": "28534965b0b3e96fb77401306bc73d440702512bd0edf152f428d4cad66b7f2b",
+      "scripts/stable_pilot_runtime.py": "7d7e403d0a844e03311b8480a72486dbab0de22caa7929a5999009d6e00d4c6a",
+      "scripts/train_native_source_domain_r32_v3.py": "a153a316f91559ba173fc9b3066178959e8f0d278ac8efdeeec247fa07192a75"
+    },
+    "tokenized_path_recorded_server_side": true
+  },
+  "historical_checkpoints": {
+    "step1106": {
+      "canonical_tensor_sha256": "fc1f7c8e5206d8e0328f2f43e3b9a3f1d336688c38f9b5516cb1daeb346af86d",
+      "file_sha256": "4c077d9b0865b883bf42c86a0ffd872785b15558dc46d54482e99612e1be53c3",
+      "scaling": 2.0,
+      "tensor_count": 504
+    },
+    "step553": {
+      "canonical_tensor_sha256": "277923713f1aa771fb6baffdd469f2fa3cc3f267aa2e0bd5908c2bc00ae5a98c",
+      "file_sha256": "9c5426a5c329e9ec19a5dddc351c51c498dab4b4ed3a81ce80cfa07dc84cab9e",
+      "scaling": 2.0,
+      "tensor_count": 504
+    }
+  },
+  "historical_direction": {
+    "STABLE560-A": {
+      "aggregate": {
+        "hist_progress": 0.026318278442775834,
+        "hist_residual": 0.10189669476960392,
+        "hist_update_cosine": 0.2500771882491677,
+        "historical_update_l2": 22.664822081054723,
+        "stable_update_l2": 2.385259937387182
+      },
+      "attention": {
+        "hist_progress": 0.03017899330326007,
+        "hist_residual": 0.11962914175413347,
+        "hist_update_cosine": 0.2446077826860563,
+        "historical_update_l2": 8.047620194958572,
+        "stable_update_l2": 0.9928918585658716
+      },
+      "layers": {
+        "layer_00": {
+          "hist_progress": 0.026076325292441933,
+          "hist_residual": 0.10365262821461431,
+          "hist_update_cosine": 0.24397217317459735,
+          "historical_update_l2": 3.1006140338843853,
+          "stable_update_l2": 0.33140099176809834
+        },
+        "layer_01": {
+          "hist_progress": 0.018665642735613084,
+          "hist_residual": 0.1050533730727159,
+          "hist_update_cosine": 0.17493782750194775,
+          "historical_update_l2": 3.6055207126157534,
+          "stable_update_l2": 0.3847044544827758
+        },
+        "layer_02": {
+          "hist_progress": 0.01902508562287918,
+          "hist_residual": 0.10089849149432364,
+          "hist_update_cosine": 0.18529156523302776,
+          "historical_update_l2": 2.883898645109688,
+          "stable_update_l2": 0.29610856048366563
+        },
+        "layer_03": {
+          "hist_progress": 0.022291343130690065,
+          "hist_residual": 0.0958233963761829,
+          "hist_update_cosine": 0.2265793780022854,
+          "historical_update_l2": 3.4375938990060275,
+          "stable_update_l2": 0.33819752628121863
+        },
+        "layer_04": {
+          "hist_progress": 0.025262572044750086,
+          "hist_residual": 0.10280273971230425,
+          "hist_update_cosine": 0.23863855652108834,
+          "historical_update_l2": 3.6922893895816076,
+          "stable_update_l2": 0.3908703106244647
+        },
+        "layer_05": {
+          "hist_progress": 0.025974223869443706,
+          "hist_residual": 0.10974937582926149,
+          "hist_update_cosine": 0.2303064466552195,
+          "historical_update_l2": 3.718861822120904,
+          "stable_update_l2": 0.41941748010164337
+        },
+        "layer_06": {
+          "hist_progress": 0.024523346550654898,
+          "hist_residual": 0.09793091200562236,
+          "hist_update_cosine": 0.242914283436463,
+          "historical_update_l2": 3.8352801075898966,
+          "stable_update_l2": 0.38718967804896864
+        },
+        "layer_07": {
+          "hist_progress": 0.022399050576982285,
+          "hist_residual": 0.10093681153745478,
+          "hist_update_cosine": 0.21664148469073058,
+          "historical_update_l2": 3.9035288704339997,
+          "stable_update_l2": 0.40359463342111584
+        },
+        "layer_08": {
+          "hist_progress": 0.023735100638614344,
+          "hist_residual": 0.09784184874553047,
+          "hist_update_cosine": 0.2357488511977022,
+          "historical_update_l2": 3.5357948287739416,
+          "stable_update_l2": 0.3559824180354676
+        },
+        "layer_09": {
+          "hist_progress": 0.02537611302807289,
+          "hist_residual": 0.10743803355915994,
+          "hist_update_cosine": 0.22986818424034572,
+          "historical_update_l2": 3.5807408969202426,
+          "stable_update_l2": 0.3952930068368408
+        },
+        "layer_10": {
+          "hist_progress": 0.025009675670631636,
+          "hist_residual": 0.1039924134327548,
+          "hist_update_cosine": 0.23382817128159403,
+          "historical_update_l2": 3.9864147836562607,
+          "stable_update_l2": 0.42637694286968125
+        },
+        "layer_11": {
+          "hist_progress": 0.02858118876063177,
+          "hist_residual": 0.11138958753412079,
+          "hist_update_cosine": 0.24853654365695454,
+          "historical_update_l2": 3.7089663481492328,
+          "stable_update_l2": 0.42652346308316436
+        },
+        "layer_12": {
+          "hist_progress": 0.02996253814806273,
+          "hist_residual": 0.10994809333954203,
+          "hist_update_cosine": 0.2629270488990176,
+          "historical_update_l2": 3.680035094346984,
+          "stable_update_l2": 0.41936800478420894
+        },
+        "layer_13": {
+          "hist_progress": 0.029236202729334894,
+          "hist_residual": 0.1129271932856583,
+          "hist_update_cosine": 0.2506310540378438,
+          "historical_update_l2": 3.6027809838136795,
+          "stable_update_l2": 0.4202656994622259
+        },
+        "layer_14": {
+          "hist_progress": 0.030996230328784038,
+          "hist_residual": 0.11929178289871471,
+          "hist_update_cosine": 0.2514846429880841,
+          "historical_update_l2": 3.334183803219546,
+          "stable_update_l2": 0.4109480717993227
+        },
+        "layer_15": {
+          "hist_progress": 0.0319353968869455,
+          "hist_residual": 0.12216055516031016,
+          "hist_update_cosine": 0.2529218386649861,
+          "historical_update_l2": 3.2753923675532266,
+          "stable_update_l2": 0.41357027835321164
+        },
+        "layer_16": {
+          "hist_progress": 0.03188060138543064,
+          "hist_residual": 0.12301724263295614,
+          "hist_update_cosine": 0.2508680893253813,
+          "historical_update_l2": 3.3256299047218496,
+          "stable_update_l2": 0.42262482100858484
+        },
+        "layer_17": {
+          "hist_progress": 0.03293737454781582,
+          "hist_residual": 0.12863256247708935,
+          "hist_update_cosine": 0.24805498492881517,
+          "historical_update_l2": 3.3382923023688673,
+          "stable_update_l2": 0.44326697947540816
+        },
+        "layer_18": {
+          "hist_progress": 0.03878132916403518,
+          "hist_residual": 0.1461790802294782,
+          "hist_update_cosine": 0.25642928890748573,
+          "historical_update_l2": 3.0963936470110967,
+          "stable_update_l2": 0.4682860595128344
+        },
+        "layer_19": {
+          "hist_progress": 0.03890680440075423,
+          "hist_residual": 0.13794051674156294,
+          "hist_update_cosine": 0.27146342764539505,
+          "historical_update_l2": 3.0404757251989385,
+          "stable_update_l2": 0.43576843979175756
+        },
+        "layer_20": {
+          "hist_progress": 0.030798515665425637,
+          "hist_residual": 0.1249629452529041,
+          "hist_update_cosine": 0.2393003989410107,
+          "historical_update_l2": 2.881279092392461,
+          "stable_update_l2": 0.37082729346133436
+        },
+        "layer_21": {
+          "hist_progress": 0.03298887403053265,
+          "hist_residual": 0.12383360507173297,
+          "hist_update_cosine": 0.25741916768797446,
+          "historical_update_l2": 2.915077487242574,
+          "stable_update_l2": 0.37357406163495777
+        },
+        "layer_22": {
+          "hist_progress": 0.03272243032555421,
+          "hist_residual": 0.11973929853046637,
+          "hist_update_cosine": 0.26361419605851055,
+          "historical_update_l2": 3.0513035394591785,
+          "stable_update_l2": 0.37875831030703894
+        },
+        "layer_23": {
+          "hist_progress": 0.025124839061175963,
+          "hist_residual": 0.11596589671196603,
+          "hist_update_cosine": 0.2117444501449991,
+          "historical_update_l2": 3.3792667796431157,
+          "stable_update_l2": 0.40097170870438936
+        },
+        "layer_24": {
+          "hist_progress": 0.0253036607636081,
+          "hist_residual": 0.10027006672341893,
+          "hist_update_cosine": 0.24468419954578624,
+          "historical_update_l2": 3.92744360656054,
+          "stable_update_l2": 0.4061508706859238
+        },
+        "layer_25": {
+          "hist_progress": 0.025036009824955786,
+          "hist_residual": 0.09055401289682413,
+          "hist_update_cosine": 0.2664788261122835,
+          "historical_update_l2": 4.083484443499513,
+          "stable_update_l2": 0.3836483301094644
+        },
+        "layer_26": {
+          "hist_progress": 0.025077112072335945,
+          "hist_residual": 0.0867914123498691,
+          "hist_update_cosine": 0.2775809004363577,
+          "historical_update_l2": 4.378171224921017,
+          "stable_update_l2": 0.3955311417558904
+        },
+        "layer_27": {
+          "hist_progress": 0.024987174470057764,
+          "hist_residual": 0.08832358314219098,
+          "hist_update_cosine": 0.2722209331427125,
+          "historical_update_l2": 4.361807570741717,
+          "stable_update_l2": 0.4003705575346192
+        },
+        "layer_28": {
+          "hist_progress": 0.024385625991322914,
+          "hist_residual": 0.08071559703024714,
+          "hist_update_cosine": 0.2892073315005332,
+          "historical_update_l2": 4.817618726770027,
+          "stable_update_l2": 0.4062160106048023
+        },
+        "layer_29": {
+          "hist_progress": 0.021156601816275714,
+          "hist_residual": 0.0818230883422404,
+          "hist_update_cosine": 0.2503324513718433,
+          "historical_update_l2": 4.5366075133532195,
+          "stable_update_l2": 0.3834069383764052
+        },
+        "layer_30": {
+          "hist_progress": 0.024077238654176825,
+          "hist_residual": 0.08709275839569411,
+          "hist_update_cosine": 0.2664601410652641,
+          "historical_update_l2": 4.569247595705293,
+          "stable_update_l2": 0.412875503225355
+        },
+        "layer_31": {
+          "hist_progress": 0.02611164021396608,
+          "hist_residual": 0.08371009740710604,
+          "hist_update_cosine": 0.2977786977551616,
+          "historical_update_l2": 4.749737846857505,
+          "stable_update_l2": 0.41649535948261523
+        },
+        "layer_32": {
+          "hist_progress": 0.02507363317797406,
+          "hist_residual": 0.08599114587249525,
+          "hist_update_cosine": 0.27992676575191044,
+          "historical_update_l2": 4.592480728502807,
+          "stable_update_l2": 0.4113582238343301
+        },
+        "layer_33": {
+          "hist_progress": 0.02303587841035,
+          "hist_residual": 0.08278867598768408,
+          "hist_update_cosine": 0.2680654250098283,
+          "historical_update_l2": 4.564118990386688,
+          "stable_update_l2": 0.39221205087922983
+        },
+        "layer_34": {
+          "hist_progress": 0.02653965863321475,
+          "hist_residual": 0.08481226503476129,
+          "hist_update_cosine": 0.29864224114817334,
+          "historical_update_l2": 4.228975748667574,
+          "stable_update_l2": 0.37581948322606773
+        },
+        "layer_35": {
+          "hist_progress": 0.027590676593939,
+          "hist_residual": 0.09287291593877606,
+          "hist_update_cosine": 0.2847787903472015,
+          "historical_update_l2": 3.7820839738461043,
+          "stable_update_l2": 0.3664256584778802
+        }
+      },
+      "mlp": {
+        "hist_progress": 0.02576131835762301,
+        "hist_residual": 0.09906452902452928,
+        "hist_update_cosine": 0.25167540407282457,
+        "historical_update_l2": 21.18796755622322,
+        "stable_update_l2": 2.1687855417485022
+      }
+    },
+    "STABLE560-B": {
+      "aggregate": {
+        "hist_progress": 0.026318278442774064,
+        "hist_residual": 0.10189669476958699,
+        "hist_update_cosine": 0.25007718824919084,
+        "historical_update_l2": 22.664822081054723,
+        "stable_update_l2": 2.3852599373868006
+      },
+      "attention": {
+        "hist_progress": 0.03017899330326007,
+        "hist_residual": 0.11962914175413347,
+        "hist_update_cosine": 0.2446077826860563,
+        "historical_update_l2": 8.047620194958572,
+        "stable_update_l2": 0.9928918585658716
+      },
+      "layers": {
+        "layer_00": {
+          "hist_progress": 0.026076325292440455,
+          "hist_residual": 0.10365262821460042,
+          "hist_update_cosine": 0.24397217317461511,
+          "historical_update_l2": 3.1006140338843853,
+          "stable_update_l2": 0.3314009917680555
+        },
+        "layer_01": {
+          "hist_progress": 0.018665642735614177,
+          "hist_residual": 0.10505337307271569,
+          "hist_update_cosine": 0.174937827501958,
+          "historical_update_l2": 3.6055207126157534,
+          "stable_update_l2": 0.3847044544827758
+        },
+        "layer_02": {
+          "hist_progress": 0.019025085622880886,
+          "hist_residual": 0.10089849149434026,
+          "hist_update_cosine": 0.18529156523301435,
+          "historical_update_l2": 2.883898645109688,
+          "stable_update_l2": 0.2961085604837136
+        },
+        "layer_03": {
+          "hist_progress": 0.022291343130690065,
+          "hist_residual": 0.0958233963761829,
+          "hist_update_cosine": 0.2265793780022854,
+          "historical_update_l2": 3.4375938990060275,
+          "stable_update_l2": 0.33819752628121863
+        },
+        "layer_04": {
+          "hist_progress": 0.025262572044750086,
+          "hist_residual": 0.10280273971230425,
+          "hist_update_cosine": 0.23863855652108834,
+          "historical_update_l2": 3.6922893895816076,
+          "stable_update_l2": 0.3908703106244647
+        },
+        "layer_05": {
+          "hist_progress": 0.025974223869443706,
+          "hist_residual": 0.10974937582926149,
+          "hist_update_cosine": 0.2303064466552195,
+          "historical_update_l2": 3.718861822120904,
+          "stable_update_l2": 0.41941748010164337
+        },
+        "layer_06": {
+          "hist_progress": 0.024523346550654898,
+          "hist_residual": 0.09793091200562236,
+          "hist_update_cosine": 0.242914283436463,
+          "historical_update_l2": 3.8352801075898966,
+          "stable_update_l2": 0.38718967804896864
+        },
+        "layer_07": {
+          "hist_progress": 0.022399050576982285,
+          "hist_residual": 0.10093681153745478,
+          "hist_update_cosine": 0.21664148469073058,
+          "historical_update_l2": 3.9035288704339997,
+          "stable_update_l2": 0.40359463342111584
+        },
+        "layer_08": {
+          "hist_progress": 0.023735100638614344,
+          "hist_residual": 0.09784184874553047,
+          "hist_update_cosine": 0.2357488511977022,
+          "historical_update_l2": 3.5357948287739416,
+          "stable_update_l2": 0.3559824180354676
+        },
+        "layer_09": {
+          "hist_progress": 0.02537611302807178,
+          "hist_residual": 0.1074380335591602,
+          "hist_update_cosine": 0.2298681842403357,
+          "historical_update_l2": 3.5807408969202426,
+          "stable_update_l2": 0.3952930068368408
+        },
+        "layer_10": {
+          "hist_progress": 0.02500967567063253,
+          "hist_residual": 0.10399241343275457,
+          "hist_update_cosine": 0.23382817128160238,
+          "historical_update_l2": 3.9864147836562607,
+          "stable_update_l2": 0.42637694286968125
+        },
+        "layer_11": {
+          "hist_progress": 0.02858118876063177,
+          "hist_residual": 0.11138958753412079,
+          "hist_update_cosine": 0.24853654365695454,
+          "historical_update_l2": 3.7089663481492328,
+          "stable_update_l2": 0.42652346308316436
+        },
+        "layer_12": {
+          "hist_progress": 0.02996253814806273,
+          "hist_residual": 0.10994809333954203,
+          "hist_update_cosine": 0.2629270488990176,
+          "historical_update_l2": 3.680035094346984,
+          "stable_update_l2": 0.41936800478420894
+        },
+        "layer_13": {
+          "hist_progress": 0.029236202729334894,
+          "hist_residual": 0.1129271932856583,
+          "hist_update_cosine": 0.2506310540378438,
+          "historical_update_l2": 3.6027809838136795,
+          "stable_update_l2": 0.4202656994622259
+        },
+        "layer_14": {
+          "hist_progress": 0.030996230328784038,
+          "hist_residual": 0.11929178289871471,
+          "hist_update_cosine": 0.2514846429880841,
+          "historical_update_l2": 3.334183803219546,
+          "stable_update_l2": 0.4109480717993227
+        },
+        "layer_15": {
+          "hist_progress": 0.031935396886946826,
+          "hist_residual": 0.12216055516030981,
+          "hist_update_cosine": 0.2529218386649965,
+          "historical_update_l2": 3.2753923675532266,
+          "stable_update_l2": 0.41357027835321164
+        },
+        "layer_16": {
+          "hist_progress": 0.0318806013854345,
+          "hist_residual": 0.1230172426329656,
+          "hist_update_cosine": 0.25086808932539173,
+          "historical_update_l2": 3.3256299047218496,
+          "stable_update_l2": 0.4226248210086185
+        },
+        "layer_17": {
+          "hist_progress": 0.03293737454782092,
+          "hist_residual": 0.12863256247710786,
+          "hist_update_cosine": 0.24805498492881772,
+          "historical_update_l2": 3.3382923023688673,
+          "stable_update_l2": 0.4432669794754723
+        },
+        "layer_18": {
+          "hist_progress": 0.03878132916403518,
+          "hist_residual": 0.1461790802294782,
+          "hist_update_cosine": 0.25642928890748573,
+          "historical_update_l2": 3.0963936470110967,
+          "stable_update_l2": 0.4682860595128344
+        },
+        "layer_19": {
+          "hist_progress": 0.03890680440075423,
+          "hist_residual": 0.13794051674156294,
+          "hist_update_cosine": 0.27146342764539505,
+          "historical_update_l2": 3.0404757251989385,
+          "stable_update_l2": 0.43576843979175756
+        },
+        "layer_20": {
+          "hist_progress": 0.030798515665423923,
+          "hist_residual": 0.12496294525289084,
+          "hist_update_cosine": 0.23930039894102212,
+          "historical_update_l2": 2.881279092392461,
+          "stable_update_l2": 0.37082729346129606
+        },
+        "layer_21": {
+          "hist_progress": 0.03298887403053432,
+          "hist_residual": 0.123833605071719,
+          "hist_update_cosine": 0.2574191676880137,
+          "historical_update_l2": 2.915077487242574,
+          "stable_update_l2": 0.3735740616349197
+        },
+        "layer_22": {
+          "hist_progress": 0.03272243032555421,
+          "hist_residual": 0.11973929853046637,
+          "hist_update_cosine": 0.26361419605851055,
+          "historical_update_l2": 3.0513035394591785,
+          "stable_update_l2": 0.37875831030703894
+        },
+        "layer_23": {
+          "hist_progress": 0.025124839061178454,
+          "hist_residual": 0.11596589671196551,
+          "hist_update_cosine": 0.21174445014502008,
+          "historical_update_l2": 3.3792667796431157,
+          "stable_update_l2": 0.40097170870438936
+        },
+        "layer_24": {
+          "hist_progress": 0.0253036607636081,
+          "hist_residual": 0.10027006672341893,
+          "hist_update_cosine": 0.24468419954578624,
+          "historical_update_l2": 3.92744360656054,
+          "stable_update_l2": 0.4061508706859238
+        },
+        "layer_25": {
+          "hist_progress": 0.025036009824955786,
+          "hist_residual": 0.09055401289682413,
+          "hist_update_cosine": 0.2664788261122835,
+          "historical_update_l2": 4.083484443499513,
+          "stable_update_l2": 0.3836483301094644
+        },
+        "layer_26": {
+          "hist_progress": 0.025077112072335206,
+          "hist_residual": 0.08679141234987786,
+          "hist_update_cosine": 0.2775809004363242,
+          "historical_update_l2": 4.378171224921017,
+          "stable_update_l2": 0.3955311417559263
+        },
+        "layer_27": {
+          "hist_progress": 0.024987174470056273,
+          "hist_residual": 0.08832358314219141,
+          "hist_update_cosine": 0.27222093314269624,
+          "historical_update_l2": 4.361807570741717,
+          "stable_update_l2": 0.4003705575346192
+        },
+        "layer_28": {
+          "hist_progress": 0.024385625991322303,
+          "hist_residual": 0.08071559703023974,
+          "hist_update_cosine": 0.2892073315005509,
+          "historical_update_l2": 4.817618726770027,
+          "stable_update_l2": 0.40621601060476725
+        },
+        "layer_29": {
+          "hist_progress": 0.021156601816275714,
+          "hist_residual": 0.0818230883422404,
+          "hist_update_cosine": 0.2503324513718433,
+          "historical_update_l2": 4.5366075133532195,
+          "stable_update_l2": 0.3834069383764052
+        },
+        "layer_30": {
+          "hist_progress": 0.024077238654176825,
+          "hist_residual": 0.08709275839569411,
+          "hist_update_cosine": 0.2664601410652641,
+          "historical_update_l2": 4.569247595705293,
+          "stable_update_l2": 0.412875503225355
+        },
+        "layer_31": {
+          "hist_progress": 0.02611164021396608,
+          "hist_residual": 0.08371009740710604,
+          "hist_update_cosine": 0.2977786977551616,
+          "historical_update_l2": 4.749737846857505,
+          "stable_update_l2": 0.41649535948261523
+        },
+        "layer_32": {
+          "hist_progress": 0.02507363317797406,
+          "hist_residual": 0.08599114587249525,
+          "hist_update_cosine": 0.27992676575191044,
+          "historical_update_l2": 4.592480728502807,
+          "stable_update_l2": 0.4113582238343301
+        },
+        "layer_33": {
+          "hist_progress": 0.023035878410351363,
+          "hist_residual": 0.0827886759876837,
+          "hist_update_cosine": 0.26806542500984415,
+          "historical_update_l2": 4.564118990386688,
+          "stable_update_l2": 0.39221205087922983
+        },
+        "layer_34": {
+          "hist_progress": 0.02653965863321475,
+          "hist_residual": 0.08481226503476129,
+          "hist_update_cosine": 0.29864224114817334,
+          "historical_update_l2": 4.228975748667574,
+          "stable_update_l2": 0.37581948322606773
+        },
+        "layer_35": {
+          "hist_progress": 0.027590676593939,
+          "hist_residual": 0.09287291593877606,
+          "hist_update_cosine": 0.2847787903472015,
+          "historical_update_l2": 3.7820839738461043,
+          "stable_update_l2": 0.3664256584778802
+        }
+      },
+      "mlp": {
+        "hist_progress": 0.02576131835762301,
+        "hist_residual": 0.09906452902452928,
+        "hist_update_cosine": 0.25167540407282457,
+        "historical_update_l2": 21.18796755622322,
+        "stable_update_l2": 2.1687855417485022
+      }
+    },
+    "STABLE560-C": {
+      "aggregate": {
+        "hist_progress": 0.026318278442774064,
+        "hist_residual": 0.10189669476958699,
+        "hist_update_cosine": 0.25007718824919084,
+        "historical_update_l2": 22.664822081054723,
+        "stable_update_l2": 2.3852599373868006
+      },
+      "attention": {
+        "hist_progress": 0.03017899330326007,
+        "hist_residual": 0.11962914175413347,
+        "hist_update_cosine": 0.2446077826860563,
+        "historical_update_l2": 8.047620194958572,
+        "stable_update_l2": 0.9928918585658716
+      },
+      "layers": {
+        "layer_00": {
+          "hist_progress": 0.026076325292440455,
+          "hist_residual": 0.10365262821460042,
+          "hist_update_cosine": 0.24397217317461511,
+          "historical_update_l2": 3.1006140338843853,
+          "stable_update_l2": 0.3314009917680555
+        },
+        "layer_01": {
+          "hist_progress": 0.018665642735614177,
+          "hist_residual": 0.10505337307271569,
+          "hist_update_cosine": 0.174937827501958,
+          "historical_update_l2": 3.6055207126157534,
+          "stable_update_l2": 0.3847044544827758
+        },
+        "layer_02": {
+          "hist_progress": 0.019025085622880886,
+          "hist_residual": 0.10089849149434026,
+          "hist_update_cosine": 0.18529156523301435,
+          "historical_update_l2": 2.883898645109688,
+          "stable_update_l2": 0.2961085604837136
+        },
+        "layer_03": {
+          "hist_progress": 0.022291343130690065,
+          "hist_residual": 0.0958233963761829,
+          "hist_update_cosine": 0.2265793780022854,
+          "historical_update_l2": 3.4375938990060275,
+          "stable_update_l2": 0.33819752628121863
+        },
+        "layer_04": {
+          "hist_progress": 0.025262572044750086,
+          "hist_residual": 0.10280273971230425,
+          "hist_update_cosine": 0.23863855652108834,
+          "historical_update_l2": 3.6922893895816076,
+          "stable_update_l2": 0.3908703106244647
+        },
+        "layer_05": {
+          "hist_progress": 0.025974223869443706,
+          "hist_residual": 0.10974937582926149,
+          "hist_update_cosine": 0.2303064466552195,
+          "historical_update_l2": 3.718861822120904,
+          "stable_update_l2": 0.41941748010164337
+        },
+        "layer_06": {
+          "hist_progress": 0.024523346550654898,
+          "hist_residual": 0.09793091200562236,
+          "hist_update_cosine": 0.242914283436463,
+          "historical_update_l2": 3.8352801075898966,
+          "stable_update_l2": 0.38718967804896864
+        },
+        "layer_07": {
+          "hist_progress": 0.022399050576982285,
+          "hist_residual": 0.10093681153745478,
+          "hist_update_cosine": 0.21664148469073058,
+          "historical_update_l2": 3.9035288704339997,
+          "stable_update_l2": 0.40359463342111584
+        },
+        "layer_08": {
+          "hist_progress": 0.023735100638614344,
+          "hist_residual": 0.09784184874553047,
+          "hist_update_cosine": 0.2357488511977022,
+          "historical_update_l2": 3.5357948287739416,
+          "stable_update_l2": 0.3559824180354676
+        },
+        "layer_09": {
+          "hist_progress": 0.02537611302807178,
+          "hist_residual": 0.1074380335591602,
+          "hist_update_cosine": 0.2298681842403357,
+          "historical_update_l2": 3.5807408969202426,
+          "stable_update_l2": 0.3952930068368408
+        },
+        "layer_10": {
+          "hist_progress": 0.02500967567063253,
+          "hist_residual": 0.10399241343275457,
+          "hist_update_cosine": 0.23382817128160238,
+          "historical_update_l2": 3.9864147836562607,
+          "stable_update_l2": 0.42637694286968125
+        },
+        "layer_11": {
+          "hist_progress": 0.02858118876063177,
+          "hist_residual": 0.11138958753412079,
+          "hist_update_cosine": 0.24853654365695454,
+          "historical_update_l2": 3.7089663481492328,
+          "stable_update_l2": 0.42652346308316436
+        },
+        "layer_12": {
+          "hist_progress": 0.02996253814806273,
+          "hist_residual": 0.10994809333954203,
+          "hist_update_cosine": 0.2629270488990176,
+          "historical_update_l2": 3.680035094346984,
+          "stable_update_l2": 0.41936800478420894
+        },
+        "layer_13": {
+          "hist_progress": 0.029236202729334894,
+          "hist_residual": 0.1129271932856583,
+          "hist_update_cosine": 0.2506310540378438,
+          "historical_update_l2": 3.6027809838136795,
+          "stable_update_l2": 0.4202656994622259
+        },
+        "layer_14": {
+          "hist_progress": 0.030996230328784038,
+          "hist_residual": 0.11929178289871471,
+          "hist_update_cosine": 0.2514846429880841,
+          "historical_update_l2": 3.334183803219546,
+          "stable_update_l2": 0.4109480717993227
+        },
+        "layer_15": {
+          "hist_progress": 0.031935396886946826,
+          "hist_residual": 0.12216055516030981,
+          "hist_update_cosine": 0.2529218386649965,
+          "historical_update_l2": 3.2753923675532266,
+          "stable_update_l2": 0.41357027835321164
+        },
+        "layer_16": {
+          "hist_progress": 0.0318806013854345,
+          "hist_residual": 0.1230172426329656,
+          "hist_update_cosine": 0.25086808932539173,
+          "historical_update_l2": 3.3256299047218496,
+          "stable_update_l2": 0.4226248210086185
+        },
+        "layer_17": {
+          "hist_progress": 0.03293737454782092,
+          "hist_residual": 0.12863256247710786,
+          "hist_update_cosine": 0.24805498492881772,
+          "historical_update_l2": 3.3382923023688673,
+          "stable_update_l2": 0.4432669794754723
+        },
+        "layer_18": {
+          "hist_progress": 0.03878132916403518,
+          "hist_residual": 0.1461790802294782,
+          "hist_update_cosine": 0.25642928890748573,
+          "historical_update_l2": 3.0963936470110967,
+          "stable_update_l2": 0.4682860595128344
+        },
+        "layer_19": {
+          "hist_progress": 0.03890680440075423,
+          "hist_residual": 0.13794051674156294,
+          "hist_update_cosine": 0.27146342764539505,
+          "historical_update_l2": 3.0404757251989385,
+          "stable_update_l2": 0.43576843979175756
+        },
+        "layer_20": {
+          "hist_progress": 0.030798515665423923,
+          "hist_residual": 0.12496294525289084,
+          "hist_update_cosine": 0.23930039894102212,
+          "historical_update_l2": 2.881279092392461,
+          "stable_update_l2": 0.37082729346129606
+        },
+        "layer_21": {
+          "hist_progress": 0.03298887403053432,
+          "hist_residual": 0.123833605071719,
+          "hist_update_cosine": 0.2574191676880137,
+          "historical_update_l2": 2.915077487242574,
+          "stable_update_l2": 0.3735740616349197
+        },
+        "layer_22": {
+          "hist_progress": 0.03272243032555421,
+          "hist_residual": 0.11973929853046637,
+          "hist_update_cosine": 0.26361419605851055,
+          "historical_update_l2": 3.0513035394591785,
+          "stable_update_l2": 0.37875831030703894
+        },
+        "layer_23": {
+          "hist_progress": 0.025124839061178454,
+          "hist_residual": 0.11596589671196551,
+          "hist_update_cosine": 0.21174445014502008,
+          "historical_update_l2": 3.3792667796431157,
+          "stable_update_l2": 0.40097170870438936
+        },
+        "layer_24": {
+          "hist_progress": 0.0253036607636081,
+          "hist_residual": 0.10027006672341893,
+          "hist_update_cosine": 0.24468419954578624,
+          "historical_update_l2": 3.92744360656054,
+          "stable_update_l2": 0.4061508706859238
+        },
+        "layer_25": {
+          "hist_progress": 0.025036009824955786,
+          "hist_residual": 0.09055401289682413,
+          "hist_update_cosine": 0.2664788261122835,
+          "historical_update_l2": 4.083484443499513,
+          "stable_update_l2": 0.3836483301094644
+        },
+        "layer_26": {
+          "hist_progress": 0.025077112072335206,
+          "hist_residual": 0.08679141234987786,
+          "hist_update_cosine": 0.2775809004363242,
+          "historical_update_l2": 4.378171224921017,
+          "stable_update_l2": 0.3955311417559263
+        },
+        "layer_27": {
+          "hist_progress": 0.024987174470056273,
+          "hist_residual": 0.08832358314219141,
+          "hist_update_cosine": 0.27222093314269624,
+          "historical_update_l2": 4.361807570741717,
+          "stable_update_l2": 0.4003705575346192
+        },
+        "layer_28": {
+          "hist_progress": 0.024385625991322303,
+          "hist_residual": 0.08071559703023974,
+          "hist_update_cosine": 0.2892073315005509,
+          "historical_update_l2": 4.817618726770027,
+          "stable_update_l2": 0.40621601060476725
+        },
+        "layer_29": {
+          "hist_progress": 0.021156601816275714,
+          "hist_residual": 0.0818230883422404,
+          "hist_update_cosine": 0.2503324513718433,
+          "historical_update_l2": 4.5366075133532195,
+          "stable_update_l2": 0.3834069383764052
+        },
+        "layer_30": {
+          "hist_progress": 0.024077238654176825,
+          "hist_residual": 0.08709275839569411,
+          "hist_update_cosine": 0.2664601410652641,
+          "historical_update_l2": 4.569247595705293,
+          "stable_update_l2": 0.412875503225355
+        },
+        "layer_31": {
+          "hist_progress": 0.02611164021396608,
+          "hist_residual": 0.08371009740710604,
+          "hist_update_cosine": 0.2977786977551616,
+          "historical_update_l2": 4.749737846857505,
+          "stable_update_l2": 0.41649535948261523
+        },
+        "layer_32": {
+          "hist_progress": 0.02507363317797406,
+          "hist_residual": 0.08599114587249525,
+          "hist_update_cosine": 0.27992676575191044,
+          "historical_update_l2": 4.592480728502807,
+          "stable_update_l2": 0.4113582238343301
+        },
+        "layer_33": {
+          "hist_progress": 0.023035878410351363,
+          "hist_residual": 0.0827886759876837,
+          "hist_update_cosine": 0.26806542500984415,
+          "historical_update_l2": 4.564118990386688,
+          "stable_update_l2": 0.39221205087922983
+        },
+        "layer_34": {
+          "hist_progress": 0.02653965863321475,
+          "hist_residual": 0.08481226503476129,
+          "hist_update_cosine": 0.29864224114817334,
+          "historical_update_l2": 4.228975748667574,
+          "stable_update_l2": 0.37581948322606773
+        },
+        "layer_35": {
+          "hist_progress": 0.027590676593939,
+          "hist_residual": 0.09287291593877606,
+          "hist_update_cosine": 0.2847787903472015,
+          "historical_update_l2": 3.7820839738461043,
+          "stable_update_l2": 0.3664256584778802
+        }
+      },
+      "mlp": {
+        "hist_progress": 0.02576131835762301,
+        "hist_residual": 0.09906452902452928,
+        "hist_update_cosine": 0.25167540407282457,
+        "historical_update_l2": 21.18796755622322,
+        "stable_update_l2": 2.1687855417485022
+      }
+    }
+  },
+  "historical_scalar_step560": {
+    "epoch": 1.0126625211984173,
+    "grad_norm": 0.954276442527771,
+    "learning_rate": 0.00010322309087571544,
+    "loss": 26.738397216796876
+  },
+  "layer_summaries": {
+    "STABLE560-A": {
+      "hist_progress": {
+        "max": 0.03890680440075423,
+        "mean": 0.02698793653381762,
+        "min": 0.018665642735613084
+      },
+      "hist_residual": {
+        "max": 0.1461790802294782,
+        "mean": 0.10466261119354817,
+        "min": 0.08071559703024714
+      },
+      "hist_update_cosine": {
+        "max": 0.29864224114817334,
+        "mean": 0.2505632988057921,
+        "min": 0.17493782750194775
+      }
+    },
+    "STABLE560-B": {
+      "hist_progress": {
+        "max": 0.03890680440075423,
+        "mean": 0.02698793653381796,
+        "min": 0.018665642735614177
+      },
+      "hist_residual": {
+        "max": 0.1461790802294782,
+        "mean": 0.10466261119354826,
+        "min": 0.08071559703023974
+      },
+      "hist_update_cosine": {
+        "max": 0.29864224114817334,
+        "mean": 0.25056329880579464,
+        "min": 0.174937827501958
+      }
+    },
+    "STABLE560-C": {
+      "hist_progress": {
+        "max": 0.03890680440075423,
+        "mean": 0.02698793653381796,
+        "min": 0.018665642735614177
+      },
+      "hist_residual": {
+        "max": 0.1461790802294782,
+        "mean": 0.10466261119354826,
+        "min": 0.08071559703023974
+      },
+      "hist_update_cosine": {
+        "max": 0.29864224114817334,
+        "mean": 0.25056329880579464,
+        "min": 0.174937827501958
+      }
+    }
+  },
+  "pairwise_stability": {
+    "STABLE560-A_vs_STABLE560-B": {
+      "effective_ba": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "left_l2": 62.37417844116542,
+        "relative_l2": 0.0,
+        "right_l2": 62.37417844116542
+      },
+      "optimizer_exact": true,
+      "raw_lora": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "exact": true,
+        "left_l2": 67.62415971996309,
+        "relative_l2": 0.0,
+        "right_l2": 67.62415971996309
+      },
+      "rng_exact": true,
+      "scheduler_exact": true
+    },
+    "STABLE560-A_vs_STABLE560-C": {
+      "effective_ba": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "left_l2": 62.37417844116542,
+        "relative_l2": 0.0,
+        "right_l2": 62.37417844116542
+      },
+      "optimizer_exact": true,
+      "raw_lora": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "exact": true,
+        "left_l2": 67.62415971996309,
+        "relative_l2": 0.0,
+        "right_l2": 67.62415971996309
+      },
+      "rng_exact": true,
+      "scheduler_exact": true
+    },
+    "STABLE560-B_vs_STABLE560-C": {
+      "effective_ba": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "left_l2": 62.37417844116542,
+        "relative_l2": 0.0,
+        "right_l2": 62.37417844116542
+      },
+      "optimizer_exact": true,
+      "raw_lora": {
+        "cosine": 1.0,
+        "difference_l2": 0.0,
+        "exact": true,
+        "left_l2": 67.62415971996309,
+        "relative_l2": 0.0,
+        "right_l2": 67.62415971996309
+      },
+      "rng_exact": true,
+      "scheduler_exact": true
+    }
+  },
+  "recipe": "BATA-STABLE-V0",
+  "runtime": {
+    "STABLE560-A": {
+      "completed_global_step": 560,
+      "cuda": "12.4",
+      "cudnn": 90100,
+      "driver_versions": [
+        "535.129.03"
+      ],
+      "environment": {
+        "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+        "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+        "FLASH_ATTENTION_DETERMINISTIC": "1",
+        "GLOO_SOCKET_IFNAME": "lo",
+        "NCCL_IB_DISABLE": "1",
+        "NCCL_SOCKET_IFNAME": "lo",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1"
+      },
+      "flash_attn": "2.7.4.post1",
+      "gpu_models": [
+        "NVIDIA A800-SXM4-80GB"
+      ],
+      "liger_kernel": "0.8.1",
+      "python": "3.11.14",
+      "rank_count": 4,
+      "status": "PASS",
+      "torch": "2.5.1+cu124",
+      "torch_flags": {
+        "allow_tf32_cudnn": true,
+        "allow_tf32_matmul": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "deterministic_algorithms": true,
+        "float32_matmul_precision": "highest"
+      },
+      "transformers": "5.3.0",
+      "wall_seconds_rank_max": 358.3164429664612,
+      "wall_seconds_rank_min": 358.3146095275879
+    },
+    "STABLE560-B": {
+      "completed_global_step": 560,
+      "cuda": "12.4",
+      "cudnn": 90100,
+      "driver_versions": [
+        "535.129.03"
+      ],
+      "environment": {
+        "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+        "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+        "FLASH_ATTENTION_DETERMINISTIC": "1",
+        "GLOO_SOCKET_IFNAME": "lo",
+        "NCCL_IB_DISABLE": "1",
+        "NCCL_SOCKET_IFNAME": "lo",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1"
+      },
+      "flash_attn": "2.7.4.post1",
+      "gpu_models": [
+        "NVIDIA A800-SXM4-80GB"
+      ],
+      "liger_kernel": "0.8.1",
+      "python": "3.11.14",
+      "rank_count": 4,
+      "status": "PASS",
+      "torch": "2.5.1+cu124",
+      "torch_flags": {
+        "allow_tf32_cudnn": true,
+        "allow_tf32_matmul": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "deterministic_algorithms": true,
+        "float32_matmul_precision": "highest"
+      },
+      "transformers": "5.3.0",
+      "wall_seconds_rank_max": 327.87566804885864,
+      "wall_seconds_rank_min": 327.87543392181396
+    },
+    "STABLE560-C": {
+      "completed_global_step": 560,
+      "cuda": "12.4",
+      "cudnn": 90100,
+      "driver_versions": [
+        "535.129.03"
+      ],
+      "environment": {
+        "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+        "CUDA_VISIBLE_DEVICES": "0,1,2,3",
+        "FLASH_ATTENTION_DETERMINISTIC": "1",
+        "GLOO_SOCKET_IFNAME": "lo",
+        "NCCL_IB_DISABLE": "1",
+        "NCCL_SOCKET_IFNAME": "lo",
+        "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1"
+      },
+      "flash_attn": "2.7.4.post1",
+      "gpu_models": [
+        "NVIDIA A800-SXM4-80GB"
+      ],
+      "liger_kernel": "0.8.1",
+      "python": "3.11.14",
+      "rank_count": 4,
+      "status": "PASS",
+      "torch": "2.5.1+cu124",
+      "torch_flags": {
+        "allow_tf32_cudnn": true,
+        "allow_tf32_matmul": false,
+        "cudnn_benchmark": false,
+        "cudnn_deterministic": false,
+        "deterministic_algorithms": true,
+        "float32_matmul_precision": "highest"
+      },
+      "transformers": "5.3.0",
+      "wall_seconds_rank_max": 328.135041475296,
+      "wall_seconds_rank_min": 328.13475155830383
+    }
+  },
+  "scope": {
+    "continued_to_step1106": false,
+    "external_evaluation_executed": false,
+    "heavy_forensic_instrumentation_enabled": false,
+    "scheduler_horizon": 1106,
+    "start_step": 553,
+    "stop_step": 560
+  },
+  "states": {
+    "STABLE560-A": {
+      "global_step": 560,
+      "max_steps": 1106,
+      "optimizer_adam_step_max": 560.0,
+      "optimizer_adam_step_min": 560.0,
+      "optimizer_canonical_sha256": "bc611733afa4b167a0f6371784ed5f0a9dede05cb3978f7c2f884358f08b0f38",
+      "rng_canonical_sha256": {
+        "rank0": "e73c779134a779cc53521438ee98c9a06c5223db98bf9abe37991d91434634b2",
+        "rank1": "1f32fa6869232e4f1d224bf1cf1f05e8ae02a6ef404e0c69623ef23db50687c8",
+        "rank2": "2410b39ed54926db1c59878490b6879c878cdbff72b53d40e32168e5af7399a4",
+        "rank3": "86dc05e8a7c4d23cbbe2145b0c265041bbbe43d1cd7def9289ff1bf52106c9e6"
+      },
+      "scalar_step560": {
+        "epoch": 1.0126625211984173,
+        "grad_norm": 0.9330812692642212,
+        "learning_rate": 0.00010322309087571544,
+        "loss": 26.74111328125
+      },
+      "scheduler_canonical_sha256": "162591940127fb915b8ccba7a4fea8d4d69b4b2123495044980748a659e62f6a"
+    },
+    "STABLE560-B": {
+      "global_step": 560,
+      "max_steps": 1106,
+      "optimizer_adam_step_max": 560.0,
+      "optimizer_adam_step_min": 560.0,
+      "optimizer_canonical_sha256": "bc611733afa4b167a0f6371784ed5f0a9dede05cb3978f7c2f884358f08b0f38",
+      "rng_canonical_sha256": {
+        "rank0": "e73c779134a779cc53521438ee98c9a06c5223db98bf9abe37991d91434634b2",
+        "rank1": "1f32fa6869232e4f1d224bf1cf1f05e8ae02a6ef404e0c69623ef23db50687c8",
+        "rank2": "2410b39ed54926db1c59878490b6879c878cdbff72b53d40e32168e5af7399a4",
+        "rank3": "86dc05e8a7c4d23cbbe2145b0c265041bbbe43d1cd7def9289ff1bf52106c9e6"
+      },
+      "scalar_step560": {
+        "epoch": 1.0126625211984173,
+        "grad_norm": 0.9330812692642212,
+        "learning_rate": 0.00010322309087571544,
+        "loss": 26.74111328125
+      },
+      "scheduler_canonical_sha256": "162591940127fb915b8ccba7a4fea8d4d69b4b2123495044980748a659e62f6a"
+    },
+    "STABLE560-C": {
+      "global_step": 560,
+      "max_steps": 1106,
+      "optimizer_adam_step_max": 560.0,
+      "optimizer_adam_step_min": 560.0,
+      "optimizer_canonical_sha256": "bc611733afa4b167a0f6371784ed5f0a9dede05cb3978f7c2f884358f08b0f38",
+      "rng_canonical_sha256": {
+        "rank0": "e73c779134a779cc53521438ee98c9a06c5223db98bf9abe37991d91434634b2",
+        "rank1": "1f32fa6869232e4f1d224bf1cf1f05e8ae02a6ef404e0c69623ef23db50687c8",
+        "rank2": "2410b39ed54926db1c59878490b6879c878cdbff72b53d40e32168e5af7399a4",
+        "rank3": "86dc05e8a7c4d23cbbe2145b0c265041bbbe43d1cd7def9289ff1bf52106c9e6"
+      },
+      "scalar_step560": {
+        "epoch": 1.0126625211984173,
+        "grad_norm": 0.9330812692642212,
+        "learning_rate": 0.00010322309087571544,
+        "loss": 26.74111328125
+      },
+      "scheduler_canonical_sha256": "162591940127fb915b8ccba7a4fea8d4d69b4b2123495044980748a659e62f6a"
+    }
+  },
+  "verdict": "STABLE560_EXACT"
+}

@@ -213,3 +213,7 @@ scheduler, and RNG state. It also projects each seven-step effective update
 onto the historical 553-to-1106 update globally, by attention/MLP projection,
 and by layer. The historical-direction metrics are observations only and do
 not affect the stability verdict or any checkpoint.
+
+The completed public-safe evidence is in `stable560_result.json` and
+`stable560_report.md`. The private server-side checkpoint paths and artifacts
+are intentionally excluded.
