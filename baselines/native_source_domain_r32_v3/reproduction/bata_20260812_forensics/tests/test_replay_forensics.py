@@ -90,7 +90,7 @@ def test_compute_loss_capture_occurs_after_forward_and_before_caller_backward(mo
     order = []
 
     class FakeController:
-        def record_batch(self, trainer, inputs):
+        def record_batch(self, trainer, inputs, cpu_fingerprint=None):
             order.append("batch_fingerprint")
 
         def record_loss(self, trainer, result):
@@ -143,8 +143,44 @@ def test_batch_fingerprint_covers_all_training_fields(monkeypatch, tmp_path):
     assert all(record["fields"][name]["sha256"] for name in module._BATCH_FIELDS)
 
 
-def test_frozen_batch_contract_avoids_gpu_value_hashes(monkeypatch, tmp_path):
+def test_cpu_batch_fingerprint_is_stable_and_detects_value_and_order_changes():
     module = load_module()
+    batch = {
+        name: torch.tensor([[index, index + 1]], dtype=torch.long)
+        for index, name in enumerate(module._BATCH_FIELDS)
+    }
+    same = {name: value.clone() for name, value in batch.items()}
+    changed = {name: value.clone() for name, value in batch.items()}
+    changed["labels"][0, 0] += 1
+
+    first = module.cpu_batch_fingerprint(batch)
+    second = module.cpu_batch_fingerprint(same)
+    value_change = module.cpu_batch_fingerprint(changed)
+
+    assert first == second
+    assert first["fingerprint"] != value_change["fingerprint"]
+    reversed_parts = []
+    for field in reversed(module._BATCH_FIELDS):
+        reversed_parts.extend((field.encode(), first["fields"][field]["sha256"].encode()))
+    assert module._hash_bytes(reversed_parts) != first["fingerprint"]
+
+
+def test_cpu_batch_fingerprint_rejects_non_cpu_tensor():
+    module = load_module()
+    batch = {
+        name: torch.zeros((1, 2), dtype=torch.long)
+        for name in module._BATCH_FIELDS
+    }
+    batch["labels"] = torch.empty((1, 2), device="meta", dtype=torch.long)
+    with pytest.raises(RuntimeError, match="non-CPU field: labels"):
+        module.cpu_batch_fingerprint(batch)
+
+
+def test_frozen_batch_contract_uses_actual_cpu_values(monkeypatch, tmp_path):
+    module = load_module()
+    inputs = {name: torch.zeros((1, 2), dtype=torch.long) for name in module._BATCH_FIELDS}
+    cpu_fingerprint = module.cpu_batch_fingerprint(inputs)
+    ordered = module._hash_bytes([cpu_fingerprint["fingerprint"].encode()] * 16)
     contract_path = tmp_path / "contract.json"
     contract_path.write_text(
         json.dumps(
@@ -154,7 +190,7 @@ def test_frozen_batch_contract_avoids_gpu_value_hashes(monkeypatch, tmp_path):
                 "ranks": {
                     "0": {
                         "microbatch_count": 16,
-                        "ordered_batch_fingerprint": "frozen-rank0",
+                        "ordered_batch_fingerprint": ordered,
                     }
                 },
             }
@@ -167,17 +203,11 @@ def test_frozen_batch_contract_avoids_gpu_value_hashes(monkeypatch, tmp_path):
     monkeypatch.setenv("BATA_REPLAY_BATCH_CONTRACT_JSON", str(contract_path))
     monkeypatch.setenv("RANK", "0")
     monkeypatch.setenv("WORLD_SIZE", "4")
-    monkeypatch.setattr(
-        module,
-        "_tensor_fingerprint",
-        lambda *args: (_ for _ in ()).throw(AssertionError("value hash must not run")),
-    )
     controller = module.ReplayForensics()
     trainer = SimpleNamespace(state=SimpleNamespace(global_step=553))
-    inputs = {name: torch.zeros((1, 2), dtype=torch.long) for name in module._BATCH_FIELDS}
 
     for _ in range(16):
-        controller.record_batch(trainer, inputs)
+        controller.record_batch(trainer, inputs, cpu_fingerprint=cpu_fingerprint)
     controller.step_end(
         SimpleNamespace(global_step=554, epoch=1.0),
         torch.nn.Linear(1, 1),
@@ -192,9 +222,25 @@ def test_frozen_batch_contract_avoids_gpu_value_hashes(monkeypatch, tmp_path):
     observations = [row for row in rows if row["event"] == "microbatch_contract_observation"]
     optimizer = next(row for row in rows if row["event"] == "optimizer_step")
     assert len(observations) == 16
-    assert all("sha256" not in (field or {}) for row in observations for field in row["fields"].values())
-    assert optimizer["ordered_batch_fingerprint"] == "frozen-rank0"
+    assert all(row["value_fingerprint_source"] == "cpu_collator_before_accelerator" for row in observations)
+    assert optimizer["ordered_batch_fingerprint"] == ordered
+    assert optimizer["batch_contract"]["actual_cpu_value_and_order_exact"] is True
+    assert len(optimizer["batch_contract"]["actual_cpu_ordered_microbatch_sha256"]) == 16
     assert optimizer["batch_contract"]["observed_microbatch_count"] == 16
+
+
+def test_cpu_fingerprinting_collator_preserves_training_fields():
+    module = load_module()
+    original = {
+        name: torch.tensor([[index]], dtype=torch.long)
+        for index, name in enumerate(module._BATCH_FIELDS)
+    }
+    wrapped = module.CPUFingerprintingCollator(lambda _: {key: value.clone() for key, value in original.items()})
+    result = wrapped([object()])
+
+    diagnostic = result.pop(module._CPU_FINGERPRINT_KEY)
+    assert diagnostic == module.cpu_batch_fingerprint(original)
+    assert all(torch.equal(result[name], original[name]) for name in module._BATCH_FIELDS)
 
 
 def test_ddp_hook_wraps_official_default_and_records_pre_post(monkeypatch, tmp_path):
@@ -391,3 +437,67 @@ def test_compatibility_bypass_never_disables_weights_only_loading():
     source = MODULE_PATH.read_text(encoding="utf-8")
     assert "check_torch_load_is_safe = lambda: None" in source
     assert "weights_only=False" not in source
+
+
+def test_fa2_runtime_probe_observes_actual_deterministic_kwarg(monkeypatch, tmp_path):
+    module = load_module()
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", str(tmp_path / "evidence"))
+    monkeypatch.setenv("BATA_REPLAY_CHECKPOINT", str(tmp_path))
+    monkeypatch.setenv("BATA_REPLAY_CONFIRM_FA_DETERMINISTIC", "1")
+    monkeypatch.setenv("FLASH_ATTENTION_DETERMINISTIC", "1")
+    import transformers.modeling_flash_attention_utils as flash_utils
+
+    seen = []
+
+    def flash(*args, **kwargs):
+        seen.append(kwargs)
+        return "output"
+
+    monkeypatch.setattr(
+        flash_utils,
+        "lazy_import_flash_attention",
+        lambda *args, **kwargs: ((flash, flash, object(), object()), object()),
+    )
+    controller = module.ReplayForensics()
+    controller.install_flash_attention_runtime_probe()
+    functions, _ = flash_utils.lazy_import_flash_attention("fa2")
+
+    assert functions[0](deterministic=True) == "output"
+    assert seen == [{"deterministic": True}]
+    rows = [json.loads(line) for line in controller.events_path.read_text(encoding="utf-8").splitlines()]
+    runtime = next(row for row in rows if row["event"] == "fa2_runtime_call")
+    assert runtime["deterministic_confirmed"] is True
+
+
+def test_fa2_runtime_probe_fails_closed_on_false_kwarg(monkeypatch, tmp_path):
+    module = load_module()
+    monkeypatch.setenv("BATA_REPLAY_EVIDENCE_DIR", str(tmp_path / "evidence"))
+    monkeypatch.setenv("BATA_REPLAY_CHECKPOINT", str(tmp_path))
+    monkeypatch.setenv("BATA_REPLAY_CONFIRM_FA_DETERMINISTIC", "1")
+    monkeypatch.setenv("FLASH_ATTENTION_DETERMINISTIC", "1")
+    import transformers.modeling_flash_attention_utils as flash_utils
+
+    def flash(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        flash_utils,
+        "lazy_import_flash_attention",
+        lambda *args, **kwargs: ((flash, flash, object(), object()), object()),
+    )
+    controller = module.ReplayForensics()
+    controller.install_flash_attention_runtime_probe()
+    functions, _ = flash_utils.lazy_import_flash_attention("fa2")
+
+    with pytest.raises(RuntimeError, match="did not receive deterministic=True"):
+        functions[1](deterministic=False)
+
+
+def test_fadet_launcher_sets_env_before_python_launch():
+    launcher = MODULE_PATH.with_name("launch_fadet_replay.sh").read_text(encoding="utf-8")
+    flash_export = launcher.index('export FLASH_ATTENTION_DETERMINISTIC="1"')
+    runtime_export = launcher.index('export BATA_REPLAY_CONFIRM_FA_DETERMINISTIC="1"')
+    process_launch = launcher.index('exec bash "${FORENSICS_DIR}/launch_replay.sh"')
+
+    assert flash_export < process_launch
+    assert runtime_export < process_launch

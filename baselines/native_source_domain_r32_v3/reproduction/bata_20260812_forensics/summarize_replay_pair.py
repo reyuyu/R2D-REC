@@ -56,6 +56,10 @@ def _batch_contract_equal(a: dict[str, Any], b: dict[str, Any]) -> tuple[bool, d
         keys = (
             "contract_sha256",
             "rank_ordered_batch_fingerprint",
+            "actual_cpu_ordered_batch_fingerprint",
+            "actual_cpu_ordered_microbatch_sha256",
+            "actual_cpu_value_and_order_exact",
+            "actual_value_source",
             "expected_microbatch_count",
             "observed_microbatch_count",
             "runtime_ordered_metadata_sha256",
@@ -66,11 +70,24 @@ def _batch_contract_equal(a: dict[str, Any], b: dict[str, Any]) -> tuple[bool, d
             contract_a.get("observed_microbatch_count") == contract_a.get("expected_microbatch_count")
             and contract_b.get("observed_microbatch_count") == contract_b.get("expected_microbatch_count")
         )
-        return equal and count_valid, {
-            "equal": equal and count_valid,
+        exact_value_valid = (
+            contract_a.get("actual_cpu_value_and_order_exact") is True
+            and contract_b.get("actual_cpu_value_and_order_exact") is True
+            and contract_a.get("actual_cpu_ordered_batch_fingerprint")
+            == contract_a.get("rank_ordered_batch_fingerprint")
+            and contract_b.get("actual_cpu_ordered_batch_fingerprint")
+            == contract_b.get("rank_ordered_batch_fingerprint")
+        )
+        contract_valid = equal and count_valid and exact_value_valid
+        return contract_valid, {
+            "equal": contract_valid,
             "source": source,
             "contract_sha256": contract_a.get("contract_sha256"),
             "rank_ordered_batch_fingerprint": contract_a.get("rank_ordered_batch_fingerprint"),
+            "actual_cpu_ordered_batch_fingerprint": contract_a.get(
+                "actual_cpu_ordered_batch_fingerprint"
+            ),
+            "actual_cpu_value_and_order_exact": exact_value_valid,
             "microbatch_count_and_order_equal": equal,
             "expected_count_observed": count_valid,
         }
@@ -190,6 +207,132 @@ def _compare_clip(events_a: list[dict[str, Any]], events_b: list[dict[str, Any]]
     }
 
 
+def _percentile(values: list[float], quantile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    position = (len(ordered) - 1) * quantile
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    fraction = position - lower
+    return ordered[lower] * (1.0 - fraction) + ordered[upper] * fraction
+
+
+def _fa2_runtime_confirmation(events: dict[int, list[dict[str, Any]]]) -> dict[str, Any]:
+    ranks = []
+    for rank in range(4):
+        installed = optional_event(events[rank], "fa2_runtime_probe_installed")
+        calls = [row for row in events[rank] if row.get("event") == "fa2_runtime_call"]
+        confirmed = bool(
+            installed
+            and installed.get("environment_value") == "1"
+            and calls
+            and all(
+                row.get("deterministic") is True
+                and row.get("deterministic_confirmed") is True
+                and row.get("environment_value") == "1"
+                for row in calls
+            )
+        )
+        ranks.append(
+            {
+                "rank": rank,
+                "probe_installed": installed is not None,
+                "environment_value": installed.get("environment_value") if installed else None,
+                "actual_api_call_count": len(calls),
+                "apis": sorted({row.get("api") for row in calls}),
+                "deterministic_true_confirmed": confirmed,
+            }
+        )
+    requested = any(row["probe_installed"] for row in ranks)
+    return {
+        "requested": requested,
+        "all_ranks_confirmed": requested and all(row["deterministic_true_confirmed"] for row in ranks),
+        "ranks": ranks,
+    }
+
+
+def _aggregate_parameter_divergence(
+    events_b: dict[int, list[dict[str, Any]]], expected_parameter_count: int | None
+) -> dict[str, Any] | None:
+    rank_records = []
+    for rank in range(4):
+        matches = [row for row in events_b[rank] if row.get("event") == "parameter_gradient_divergence"]
+        if len(matches) != 1:
+            return None
+        rank_records.append(matches[0])
+    names_by_rank = [tuple(item["name"] for item in row["parameters"]) for row in rank_records]
+    if not names_by_rank or any(names != names_by_rank[0] for names in names_by_rank[1:]):
+        return None
+    if expected_parameter_count is not None and len(names_by_rank[0]) != expected_parameter_count:
+        return None
+
+    parameters = []
+    for index, name in enumerate(names_by_rank[0]):
+        values = [row["parameters"][index] for row in rank_records]
+        if any(
+            item["layer"] != values[0]["layer"]
+            or item["category"] != values[0]["category"]
+            or item["numel"] != values[0]["numel"]
+            for item in values[1:]
+        ):
+            return None
+        difference_l2 = sum(float(item["difference_l2"]) ** 2 for item in values) ** 0.5
+        norm_a = sum(float(item["norm_a"]) ** 2 for item in values) ** 0.5
+        norm_b = sum(float(item["norm_b"]) ** 2 for item in values) ** 0.5
+        dot = sum(float(item["dot"]) for item in values)
+        denominator = max(norm_a, norm_b, 2.2250738585072014e-308)
+        if norm_a == 0.0 and norm_b == 0.0:
+            cosine = 1.0
+        elif norm_a == 0.0 or norm_b == 0.0:
+            cosine = 0.0
+        else:
+            cosine = dot / (norm_a * norm_b)
+        parameters.append(
+            {
+                "name": name,
+                "layer": values[0]["layer"],
+                "category": values[0]["category"],
+                "numel": values[0]["numel"],
+                "rank_count": len(values),
+                "equal": all(item["equal"] for item in values),
+                "relative_l2": difference_l2 / denominator,
+                "cosine": cosine,
+                "max_abs_delta": max(float(item["max_abs_delta"]) for item in values),
+            }
+        )
+
+    def summarize_group(items: list[dict[str, Any]]) -> dict[str, Any]:
+        relative = [float(item["relative_l2"]) for item in items]
+        return {
+            "parameter_count": len(items),
+            "divergent_parameter_count": sum(not item["equal"] for item in items),
+            "relative_l2_p10": _percentile(relative, 0.10),
+            "relative_l2_median": _percentile(relative, 0.50),
+            "relative_l2_p90": _percentile(relative, 0.90),
+        }
+
+    attention = [item for item in parameters if item["category"] in {"q", "k", "v", "o"}]
+    mlp = [item for item in parameters if item["category"] in {"gate", "up", "down"}]
+    layers = {}
+    for layer in sorted({item["layer"] for item in parameters if item["layer"] is not None}):
+        layers[str(layer)] = summarize_group([item for item in parameters if item["layer"] == layer])
+    return {
+        "complete": True,
+        "parameter_count": len(parameters),
+        "divergent_parameter_count": sum(not item["equal"] for item in parameters),
+        "comparison_scope": "FADET-A vs FADET-B PRE_ALLREDUCE, concatenated across matching ranks",
+        "relative_l2_formula": "||B-A||_2/max(||A||_2,||B||_2)",
+        "attention_projections": summarize_group(attention),
+        "mlp_projections": summarize_group(mlp),
+        "layerwise": layers,
+        "top_divergent_modules": sorted(
+            parameters, key=lambda item: (item["relative_l2"], item["max_abs_delta"]), reverse=True
+        )[:20],
+        "parameters": parameters,
+    }
+
+
 def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
     files_a, files_b = rank_files(run_a), rank_files(run_b)
     events_a = {rank: load_events(files_a[rank]) for rank in range(4)}
@@ -290,6 +433,14 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
         for row in ranks
     )
     post_update_equal = gradient_states_equal and grad_norms_equal and final_equal
+    fa2_runtime_a = _fa2_runtime_confirmation(events_a)
+    fa2_runtime_b = _fa2_runtime_confirmation(events_b)
+    fadet_mode = fa2_runtime_a["requested"] or fa2_runtime_b["requested"]
+    fa2_runtime_confirmed = fa2_runtime_a["all_ranks_confirmed"] and fa2_runtime_b["all_ranks_confirmed"]
+    expected_parameter_count = None
+    if ranks and ranks[0]["ddp"] and ranks[0]["ddp"].get("buckets"):
+        expected_parameter_count = ranks[0]["ddp"]["buckets"][0].get("parameter_count")
+    parameter_divergence = _aggregate_parameter_divergence(events_b, expected_parameter_count)
 
     if not contract_equal:
         repeatability = "CONTRACT_MISMATCH"
@@ -300,7 +451,22 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
     else:
         repeatability = "D3_POST_BACKWARD"
 
-    if not contract_equal:
+    if fadet_mode:
+        if not contract_equal:
+            verdict = "CONTRACT_MISMATCH"
+        elif not fa2_runtime_confirmed or not losses_equal or not gradient_evidence_complete:
+            verdict = "UNRESOLVED"
+        elif any(not row["ddp"]["pre_allreduce_equal"] for row in ranks):
+            verdict = (
+                "FADET_LOCAL_BACKWARD"
+                if parameter_divergence is not None and parameter_divergence.get("complete")
+                else "UNRESOLVED"
+            )
+        elif post_update_equal:
+            verdict = "FADET_STEP554_FULLY_REPEATABLE"
+        else:
+            verdict = "UNRESOLVED"
+    elif not contract_equal:
         verdict = "CONTRACT_MISMATCH"
     elif not losses_equal or not gradient_evidence_complete:
         verdict = "UNRESOLVED"
@@ -328,6 +494,13 @@ def summarize_pair(run_a: Path, run_b: Path) -> dict[str, Any]:
         "pre_backward_local_loss_repeatable": contract_equal and losses_equal,
         "gradient_evidence_complete": gradient_evidence_complete,
         "post_backward_state_repeatable": post_update_equal,
+        "fa2_deterministic_runtime": {
+            "requested": fadet_mode,
+            "all_runs_all_ranks_confirmed": fa2_runtime_confirmed,
+            "run_a": fa2_runtime_a,
+            "run_b": fa2_runtime_b,
+        },
+        "parameter_gradient_divergence": parameter_divergence,
         "ranks": ranks,
         "step554": final,
     }

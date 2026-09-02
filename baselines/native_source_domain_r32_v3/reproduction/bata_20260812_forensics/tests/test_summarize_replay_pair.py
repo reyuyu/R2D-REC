@@ -82,11 +82,18 @@ def write_run(root: Path, label: str, changes: dict | None = None) -> Path:
                 "rank": rank,
                 "microbatch_count": 2,
                 "ordered_batch_fingerprint": f"frozen-{rank}-{batch_suffix}",
-                "ordered_microbatch_sha256": [],
+                "ordered_microbatch_sha256": [f"micro-{rank}-0-{batch_suffix}", f"micro-{rank}-1-{batch_suffix}"],
                 "batch_contract": {
                     "source": "frozen_step554_contract",
                     "contract_sha256": f"contract-{batch_suffix}",
                     "rank_ordered_batch_fingerprint": f"frozen-{rank}-{batch_suffix}",
+                    "actual_cpu_ordered_batch_fingerprint": f"frozen-{rank}-{batch_suffix}",
+                    "actual_cpu_ordered_microbatch_sha256": [
+                        f"micro-{rank}-0-{batch_suffix}",
+                        f"micro-{rank}-1-{batch_suffix}",
+                    ],
+                    "actual_cpu_value_and_order_exact": True,
+                    "actual_value_source": "cpu_collator_before_accelerator",
                     "expected_microbatch_count": 2,
                     "observed_microbatch_count": observed_count,
                     "runtime_ordered_metadata_sha256": runtime_order,
@@ -98,6 +105,70 @@ def write_run(root: Path, label: str, changes: dict | None = None) -> Path:
                 "grad_norm": grad_norm,
             },
         ]
+        if changes.get("fadet"):
+            rows.extend(
+                [
+                    {
+                        "event": "fa2_runtime_probe_installed",
+                        "rank": rank,
+                        "environment_value": "1",
+                    },
+                    *(
+                        [
+                            {
+                                "event": "fa2_runtime_call",
+                                "rank": rank,
+                                "api": "flash_attn_varlen_func",
+                                "deterministic": True,
+                                "deterministic_confirmed": True,
+                                "environment_value": "1",
+                            }
+                        ]
+                        if not changes.get("missing_fa_runtime")
+                        else []
+                    ),
+                ]
+            )
+        if changes.get("parameter_divergence"):
+            rows.append(
+                {
+                    "event": "parameter_gradient_divergence",
+                    "rank": rank,
+                    "bucket_call_index": 0,
+                    "layout_sha256": "layout",
+                    "parameter_count": 2,
+                    "parameters": [
+                        {
+                            "name": "base_model.model.model.layers.0.self_attn.q_proj.lora_A.weight",
+                            "layer": 0,
+                            "category": "q",
+                            "numel": 4,
+                            "equal": False,
+                            "relative_l2": 0.1,
+                            "cosine": 0.99,
+                            "max_abs_delta": 0.01,
+                            "difference_l2": 0.2,
+                            "norm_a": 2.0,
+                            "norm_b": 2.0,
+                            "dot": 3.96,
+                        },
+                        {
+                            "name": "base_model.model.model.layers.0.mlp.up_proj.lora_B.weight",
+                            "layer": 0,
+                            "category": "up",
+                            "numel": 4,
+                            "equal": True,
+                            "relative_l2": 0.0,
+                            "cosine": 1.0,
+                            "max_abs_delta": 0.0,
+                            "difference_l2": 0.0,
+                            "norm_a": 1.0,
+                            "norm_b": 1.0,
+                            "dot": 1.0,
+                        },
+                    ],
+                }
+            )
         if rank == 0:
             rows.extend(
                 [
@@ -133,6 +204,13 @@ def write_run(root: Path, label: str, changes: dict | None = None) -> Path:
 def paired(tmp_path: Path, changes_b: dict | None = None) -> dict:
     a = write_run(tmp_path, "A")
     b = write_run(tmp_path, "B", changes_b)
+    return MODULE.summarize_pair(a, b)
+
+
+def paired_fadet(tmp_path: Path, changes_b: dict | None = None, *, missing_runtime: bool = False) -> dict:
+    a = write_run(tmp_path, "FADET-A", {"fadet": True, "missing_fa_runtime": missing_runtime})
+    changes = {"fadet": True, **(changes_b or {})}
+    b = write_run(tmp_path, "FADET-B", changes)
     return MODULE.summarize_pair(a, b)
 
 
@@ -185,3 +263,34 @@ def test_clipping_is_first_divergence(tmp_path: Path) -> None:
 def test_optimizer_is_first_divergence(tmp_path: Path) -> None:
     result = paired(tmp_path, {"final": "different"})
     assert result["verdict"] == "OPTIMIZER_UPDATE"
+
+
+def test_fadet_missing_runtime_confirmation_cannot_be_stable(tmp_path: Path) -> None:
+    result = paired_fadet(tmp_path, missing_runtime=True)
+    assert result["fa2_deterministic_runtime"]["all_runs_all_ranks_confirmed"] is False
+    assert result["verdict"] == "UNRESOLVED"
+
+
+def test_fadet_pre_allreduce_mismatch_is_local_backward(tmp_path: Path) -> None:
+    result = paired_fadet(
+        tmp_path,
+        {
+            "pre": "different",
+            "post": "different",
+            "final": "different",
+            "parameter_divergence": True,
+        },
+    )
+    assert result["pre_backward_local_loss_repeatable"] is True
+    assert result["verdict"] == "FADET_LOCAL_BACKWARD"
+    divergence = result["parameter_gradient_divergence"]
+    assert divergence["parameter_count"] == 2
+    assert divergence["divergent_parameter_count"] == 1
+    assert divergence["attention_projections"]["divergent_parameter_count"] == 1
+    assert divergence["mlp_projections"]["divergent_parameter_count"] == 0
+
+
+def test_fadet_full_equality_is_stable(tmp_path: Path) -> None:
+    result = paired_fadet(tmp_path)
+    assert result["fa2_deterministic_runtime"]["all_runs_all_ranks_confirmed"] is True
+    assert result["verdict"] == "FADET_STEP554_FULLY_REPEATABLE"

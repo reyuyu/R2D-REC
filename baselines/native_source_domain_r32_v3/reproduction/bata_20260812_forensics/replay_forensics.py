@@ -7,8 +7,10 @@ import inspect
 import json
 import os
 import random
+import re
 import threading
 import time
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +34,9 @@ _BATCH_FIELDS = (
 )
 _DEFAULT_HEAVY_STEPS = {555, 560}
 _FROZEN_BATCH_MODE = "frozen_step554_contract"
+_CPU_FINGERPRINT_KEY = "_bata_cpu_batch_fingerprint"
+_LORA_CATEGORY_PATTERN = re.compile(r"\.(q|k|v|o|gate|up|down)_proj\.")
+_LAYER_PATTERN = re.compile(r"\.layers\.(\d+)\.")
 
 
 def _parse_step_set(value: str | None) -> set[int]:
@@ -106,6 +111,47 @@ def _tensor_metadata(tensor: torch.Tensor) -> dict[str, Any]:
     }
 
 
+def cpu_batch_fingerprint(batch: dict[str, Any]) -> dict[str, Any]:
+    """Hash the exact collator output without moving any tensor between devices."""
+    parts: list[bytes] = []
+    fields: dict[str, dict[str, Any]] = {}
+    for field in _BATCH_FIELDS:
+        value = batch.get(field)
+        if not torch.is_tensor(value):
+            raise RuntimeError(f"CPU batch fingerprint requires tensor field: {field}.")
+        if value.device.type != "cpu":
+            raise RuntimeError(f"CPU batch fingerprint received non-CPU field: {field}.")
+        fingerprint = _tensor_fingerprint(field, value)
+        fields[field] = {
+            "dtype": str(value.dtype),
+            "shape": list(value.shape),
+            "sha256": fingerprint,
+        }
+        parts.extend((field.encode(), fingerprint.encode()))
+    return {
+        "fingerprint": _hash_bytes(parts),
+        "fields": fields,
+        "field_order": list(_BATCH_FIELDS),
+        "source": "cpu_collator_before_accelerator",
+    }
+
+
+class CPUFingerprintingCollator:
+    """Attach public-safe CPU fingerprints to the batch consumed by the trainer."""
+
+    def __init__(self, collator: Any) -> None:
+        self.collator = collator
+
+    def __call__(self, features: Any) -> dict[str, Any]:
+        batch = self.collator(features)
+        if not isinstance(batch, dict):
+            raise RuntimeError("Forensic CPU fingerprinting requires a mapping batch.")
+        if _CPU_FINGERPRINT_KEY in batch:
+            raise RuntimeError(f"Reserved forensic key already exists: {_CPU_FINGERPRINT_KEY}.")
+        batch[_CPU_FINGERPRINT_KEY] = cpu_batch_fingerprint(batch)
+        return batch
+
+
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -154,6 +200,7 @@ class ReplayForensics:
         self.restore_seen = False
         self.ddp_hook_installed = False
         self.ddp_bucket_sequence = 0
+        self.fa2_runtime_apis: set[str] = set()
         self._emit_lock = threading.Lock()
         self.heavy_steps = _parse_step_set(os.environ.get("BATA_REPLAY_HEAVY_STEPS"))
         self.batch_fingerprint_mode = os.environ.get("BATA_REPLAY_BATCH_FINGERPRINT_MODE", "full")
@@ -193,7 +240,12 @@ class ReplayForensics:
     def environment(self) -> dict[str, Any]:
         selected = {}
         for key, value in sorted(os.environ.items()):
-            if key in {"PYTHONHASHSEED", "CUBLAS_WORKSPACE_CONFIG", "CUDA_VISIBLE_DEVICES"} or key.startswith(
+            if key in {
+                "PYTHONHASHSEED",
+                "CUBLAS_WORKSPACE_CONFIG",
+                "CUDA_VISIBLE_DEVICES",
+                "FLASH_ATTENTION_DETERMINISTIC",
+            } or key.startswith(
                 ("NCCL_", "TORCH_")
             ):
                 selected[key] = value
@@ -231,24 +283,38 @@ class ReplayForensics:
             result["torch_cuda"] = hashlib.sha256(_tensor_bytes(torch.cuda.get_rng_state())).hexdigest()
         return result
 
-    def record_batch(self, trainer: Any, inputs: dict[str, Any]) -> None:
+    def record_batch(
+        self,
+        trainer: Any,
+        inputs: dict[str, Any],
+        cpu_fingerprint: dict[str, Any] | None = None,
+    ) -> None:
         target_step = int(trainer.state.global_step) + 1
         if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE:
+            if not cpu_fingerprint:
+                raise RuntimeError("Frozen batch replay is missing the CPU collator fingerprint.")
+            if cpu_fingerprint.get("field_order") != list(_BATCH_FIELDS):
+                raise RuntimeError("CPU collator fingerprint field order violates the contract.")
             fields = {
                 field: _tensor_metadata(value) if torch.is_tensor(value) else None
                 for field in _BATCH_FIELDS
                 for value in [inputs.get(field)]
             }
             metadata_fingerprint = _canonical_json_hash(fields)
+            fingerprint = str(cpu_fingerprint["fingerprint"])
+            values = self.batch_hashes.setdefault(target_step, [])
+            values.append(fingerprint)
             values = self.batch_metadata.setdefault(target_step, [])
             values.append(metadata_fingerprint)
             self.emit(
                 "microbatch_contract_observation",
                 target_step=target_step,
                 micro_index=len(values) - 1,
+                fingerprint=fingerprint,
+                cpu_fields=cpu_fingerprint["fields"],
                 metadata_fingerprint=metadata_fingerprint,
                 fields=fields,
-                value_fingerprint_source="frozen_prior_exact_contract",
+                value_fingerprint_source=cpu_fingerprint["source"],
             )
             return
 
@@ -276,6 +342,64 @@ class ReplayForensics:
             micro_index=len(values) - 1,
             fingerprint=fingerprint,
             fields=fields,
+        )
+
+    def record_fa2_runtime_call(self, api: str, deterministic: Any) -> None:
+        confirmed = deterministic is True
+        if api not in self.fa2_runtime_apis:
+            self.fa2_runtime_apis.add(api)
+            self.emit(
+                "fa2_runtime_call",
+                api=api,
+                deterministic=deterministic,
+                deterministic_confirmed=confirmed,
+                environment_value=os.environ.get("FLASH_ATTENTION_DETERMINISTIC"),
+            )
+        if not confirmed:
+            raise RuntimeError(f"FlashAttention call {api} did not receive deterministic=True.")
+
+    def install_flash_attention_runtime_probe(self) -> None:
+        if os.environ.get("BATA_REPLAY_CONFIRM_FA_DETERMINISTIC") != "1":
+            return
+        if os.environ.get("FLASH_ATTENTION_DETERMINISTIC") != "1":
+            raise RuntimeError("FA deterministic runtime probe requires FLASH_ATTENTION_DETERMINISTIC=1.")
+        import transformers.modeling_flash_attention_utils as flash_utils
+
+        original_lazy_import = flash_utils.lazy_import_flash_attention
+        wrapper_cache: dict[tuple[int, str], Any] = {}
+
+        def wrap_flash_api(function: Any, api: str) -> Any:
+            key = (id(function), api)
+            if key in wrapper_cache:
+                return wrapper_cache[key]
+
+            @wraps(function)
+            def checked(*args, **kwargs):
+                self.record_fa2_runtime_call(api, kwargs.get("deterministic"))
+                return function(*args, **kwargs)
+
+            wrapper_cache[key] = checked
+            return checked
+
+        @wraps(original_lazy_import)
+        def checked_lazy_import(*args, **kwargs):
+            functions, process_kwargs = original_lazy_import(*args, **kwargs)
+            flash_fn, flash_varlen_fn, pad_fn, unpad_fn = functions
+            return (
+                (
+                    wrap_flash_api(flash_fn, "flash_attn_func"),
+                    wrap_flash_api(flash_varlen_fn, "flash_attn_varlen_func"),
+                    pad_fn,
+                    unpad_fn,
+                ),
+                process_kwargs,
+            )
+
+        flash_utils.lazy_import_flash_attention = checked_lazy_import
+        self.emit(
+            "fa2_runtime_probe_installed",
+            environment_value=os.environ.get("FLASH_ATTENTION_DETERMINISTIC"),
+            transformers_module=str(flash_utils.__file__),
         )
 
     def record_loss(self, trainer: Any, loss: Any) -> None:
@@ -364,6 +488,124 @@ class ReplayForensics:
             **layout,
         }
 
+    @staticmethod
+    def _parameter_identity(name: str) -> tuple[int | None, str]:
+        layer_match = _LAYER_PATTERN.search(name)
+        category_match = _LORA_CATEGORY_PATTERN.search(name)
+        return (
+            int(layer_match.group(1)) if layer_match else None,
+            category_match.group(1) if category_match else "other",
+        )
+
+    def _gradient_reference_paths(self, root: Path, sequence: int) -> tuple[Path, Path]:
+        stem = f"rank{self.rank}.bucket{sequence}"
+        return root / f"{stem}.f32.bin", root / f"{stem}.json"
+
+    def _save_local_gradient_reference(
+        self,
+        cpu_buffer: torch.Tensor,
+        metadata: dict[str, Any],
+        sequence: int,
+    ) -> None:
+        root_value = os.environ.get("BATA_REPLAY_SAVE_LOCAL_GRAD_REFERENCE_DIR")
+        if not root_value:
+            return
+        if cpu_buffer.dtype != torch.float32:
+            raise RuntimeError("Local gradient reference currently requires a float32 DDP bucket.")
+        root = Path(root_value)
+        root.mkdir(parents=True, exist_ok=True)
+        binary_path, metadata_path = self._gradient_reference_paths(root, sequence)
+        if binary_path.exists() or metadata_path.exists():
+            raise RuntimeError("Refusing to overwrite a local gradient reference.")
+        cpu_buffer.numpy().tofile(binary_path)
+        reference_metadata = {
+            "rank": self.rank,
+            "bucket_call_index": sequence,
+            "dtype": str(cpu_buffer.dtype),
+            "numel": cpu_buffer.numel(),
+            "layout_sha256": metadata["layout_sha256"],
+            "binary_sha256": _file_sha256(binary_path),
+        }
+        metadata_path.write_text(
+            json.dumps(reference_metadata, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        self.emit("local_gradient_reference_saved", **reference_metadata)
+
+    def _compare_local_gradient_reference(
+        self,
+        cpu_buffer: torch.Tensor,
+        metadata: dict[str, Any],
+        sequence: int,
+    ) -> None:
+        root_value = os.environ.get("BATA_REPLAY_COMPARE_LOCAL_GRAD_REFERENCE_DIR")
+        if not root_value:
+            return
+        if cpu_buffer.dtype != torch.float32:
+            raise RuntimeError("Local gradient comparison currently requires a float32 DDP bucket.")
+        binary_path, metadata_path = self._gradient_reference_paths(Path(root_value), sequence)
+        if not binary_path.is_file() or not metadata_path.is_file():
+            raise RuntimeError("Missing FADET-A local gradient reference for comparison.")
+        reference_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        expected = {
+            "rank": self.rank,
+            "bucket_call_index": sequence,
+            "dtype": str(cpu_buffer.dtype),
+            "numel": cpu_buffer.numel(),
+            "layout_sha256": metadata["layout_sha256"],
+        }
+        if any(reference_metadata.get(key) != value for key, value in expected.items()):
+            raise RuntimeError("Local gradient reference metadata does not match the current bucket.")
+        if _file_sha256(binary_path) != reference_metadata.get("binary_sha256"):
+            raise RuntimeError("Local gradient reference binary SHA mismatch.")
+
+        reference = np.memmap(binary_path, mode="r", dtype=np.float32)
+        current = cpu_buffer.numpy()
+        if reference.size != current.size:
+            raise RuntimeError("Local gradient reference size mismatch.")
+        records = []
+        for parameter in metadata["parameters"]:
+            start = int(parameter["offset"])
+            end = start + int(parameter["numel"])
+            value_a = np.asarray(reference[start:end], dtype=np.float64)
+            value_b = np.asarray(current[start:end], dtype=np.float64)
+            difference = value_b - value_a
+            norm_a = float(np.linalg.norm(value_a))
+            norm_b = float(np.linalg.norm(value_b))
+            difference_l2 = float(np.linalg.norm(difference))
+            denominator = max(norm_a, norm_b, np.finfo(np.float64).tiny)
+            if norm_a == 0.0 and norm_b == 0.0:
+                cosine = 1.0
+            elif norm_a == 0.0 or norm_b == 0.0:
+                cosine = 0.0
+            else:
+                cosine = float(np.dot(value_a, value_b) / (norm_a * norm_b))
+            layer, category = self._parameter_identity(parameter["name"])
+            records.append(
+                {
+                    "name": parameter["name"],
+                    "layer": layer,
+                    "category": category,
+                    "numel": int(parameter["numel"]),
+                    "equal": bool(np.array_equal(value_a, value_b)),
+                    "relative_l2": difference_l2 / denominator,
+                    "cosine": cosine,
+                    "max_abs_delta": float(np.max(np.abs(difference))) if difference.size else 0.0,
+                    "difference_l2": difference_l2,
+                    "norm_a": norm_a,
+                    "norm_b": norm_b,
+                    "dot": float(np.dot(value_a, value_b)),
+                }
+            )
+        self.emit(
+            "parameter_gradient_divergence",
+            bucket_call_index=sequence,
+            layout_sha256=metadata["layout_sha256"],
+            parameter_count=len(records),
+            comparison_formula="relative_l2=||B-A||_2/max(||A||_2,||B||_2)",
+            parameters=records,
+        )
+
     def install_ddp_comm_hook(self, model: torch.nn.Module) -> None:
         if self.ddp_hook_installed:
             raise RuntimeError("DDP forensic communication hook was installed more than once.")
@@ -386,7 +628,10 @@ class ReplayForensics:
             sequence = self.ddp_bucket_sequence
             self.ddp_bucket_sequence += 1
             metadata = self._bucket_metadata(bucket, parameter_names)
-            pre_sha = _tensor_fingerprint("pre_allreduce", bucket.buffer())
+            cpu_buffer = bucket.buffer().detach().contiguous().cpu()
+            pre_sha = _tensor_fingerprint("pre_allreduce", cpu_buffer)
+            self._save_local_gradient_reference(cpu_buffer, metadata, sequence)
+            self._compare_local_gradient_reference(cpu_buffer, metadata, sequence)
             self.emit(
                 "ddp_pre_allreduce",
                 bucket_call_index=sequence,
@@ -569,20 +814,26 @@ class ReplayForensics:
         if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE:
             assert self.batch_contract is not None
             expected = self.batch_contract["rank"]
+            exact_value_match = combined == expected["ordered_batch_fingerprint"]
             batch_contract = {
                 "source": _FROZEN_BATCH_MODE,
                 "contract_sha256": self.batch_contract["sha256"],
                 "rank_ordered_batch_fingerprint": expected["ordered_batch_fingerprint"],
+                "actual_cpu_ordered_batch_fingerprint": combined,
+                "actual_cpu_ordered_microbatch_sha256": batch_hashes,
+                "actual_cpu_value_and_order_exact": exact_value_match,
+                "actual_value_source": "cpu_collator_before_accelerator",
                 "expected_microbatch_count": expected["microbatch_count"],
-                "observed_microbatch_count": len(batch_metadata),
+                "observed_microbatch_count": len(batch_hashes),
                 "runtime_ordered_metadata_sha256": batch_metadata,
                 "runtime_metadata_fingerprint": _hash_bytes(
                     [value.encode() for value in batch_metadata]
                 ),
             }
-            if len(batch_metadata) != expected["microbatch_count"]:
+            if len(batch_hashes) != expected["microbatch_count"] or len(batch_metadata) != len(batch_hashes):
                 raise RuntimeError("Runtime microbatch count violates the frozen step554 contract.")
-            combined = expected["ordered_batch_fingerprint"]
+            if not exact_value_match:
+                raise RuntimeError("Actual CPU batch values/order violate the frozen step554 contract.")
         else:
             batch_contract = {
                 "source": "runtime_full_gpu_hash",
@@ -599,7 +850,7 @@ class ReplayForensics:
             rank_local_loss_mean=sum(loss_values) / len(loss_values) if loss_values else None,
             rank_local_micro_losses=loss_values,
             grad_norm=grad_norm,
-            microbatch_count=len(batch_metadata) if self.batch_fingerprint_mode == _FROZEN_BATCH_MODE else len(batch_hashes),
+            microbatch_count=len(batch_hashes),
             ordered_microbatch_sha256=batch_hashes,
             ordered_batch_fingerprint=combined,
             batch_contract=batch_contract,
@@ -689,10 +940,14 @@ def install_replay_instrumentation(trainer_cls: type) -> None:
     original_load_rng_state = trainer_cls._load_rng_state
     original_clip_grad_norm = trainer_cls._clip_grad_norm
     original_prepare_for_training = getattr(trainer_cls, "_prepare_for_training", None)
+    original_get_train_dataloader = getattr(trainer_cls, "get_train_dataloader", None)
+    if os.environ.get("BATA_REPLAY_CONFIRM_FA_DETERMINISTIC") == "1":
+        get_controller().install_flash_attention_runtime_probe()
 
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         controller = get_controller()
-        controller.record_batch(self, inputs)
+        cpu_fingerprint = inputs.pop(_CPU_FINGERPRINT_KEY, None)
+        controller.record_batch(self, inputs, cpu_fingerprint=cpu_fingerprint)
         result = original_compute_loss(self, model, inputs, return_outputs=return_outputs, **kwargs)
         controller.record_loss(self, result)
         return result
@@ -715,11 +970,18 @@ def install_replay_instrumentation(trainer_cls: type) -> None:
         get_controller().install_ddp_comm_hook(model)
         return model, train_dataloader
 
+    def get_train_dataloader(self, *args, **kwargs):
+        if not isinstance(self.data_collator, CPUFingerprintingCollator):
+            self.data_collator = CPUFingerprintingCollator(self.data_collator)
+        return original_get_train_dataloader(self, *args, **kwargs)
+
     trainer_cls.compute_loss = compute_loss
     trainer_cls._load_rng_state = load_rng_state
     trainer_cls._clip_grad_norm = clip_grad_norm
     if original_prepare_for_training is not None:
         trainer_cls._prepare_for_training = prepare_for_training
+    if original_get_train_dataloader is not None:
+        trainer_cls.get_train_dataloader = get_train_dataloader
     trainer_cls._bata_replay_installed = True
 
 

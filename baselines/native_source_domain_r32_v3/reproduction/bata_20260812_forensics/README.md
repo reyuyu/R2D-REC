@@ -31,6 +31,10 @@ state bytes.
   `CUBLAS_WORKSPACE_CONFIG=:4096:8` before Python starts and requests strict
   `torch.use_deterministic_algorithms(True, warn_only=False)` before CUDA is
   initialized.
+- `launch_fadet_replay.sh` and `fadet_step554_contract.json`: the bounded
+  FADET-A/B launcher and frozen diagnostic contract. The launcher exports
+  `FLASH_ATTENTION_DETERMINISTIC=1` before Python starts; the runtime probe
+  fails closed unless an actual flash-attn call receives `deterministic=True`.
 - `case_c_step554.json`: public-safe raw fingerprint/scalar evidence for the
   first observed A/B divergence.
 - `summarize_replay_pair.py`: compares two four-rank evidence directories,
@@ -155,3 +159,27 @@ The classifier is fail closed:
    post-clip, and optimizer state in that order.
 4. Full equality is `STEP554_FULLY_REPEATABLE`; missing gradient evidence is
    never treated as repeatability.
+
+## FA2 deterministic-backward diagnostic
+
+FADET-A and FADET-B are fresh copies of the historical checkpoint-553 and
+execute exactly one optimizer update. For frozen-contract runs, all eight
+training tensors are hashed in the collator while they are still on CPU. Only
+the hashes and tensor metadata travel with the consumed batch; `compute_loss`
+removes that diagnostic key before the model forward. This verifies the 16
+actual rank-local microbatches and their consumption order without a CUDA to
+CPU copy or an extra forward.
+
+Run sequentially after preparing fresh `FADET-A` and `FADET-B` directories:
+
+```bash
+bash launch_fadet_replay.sh /root/bata_sft_fadet_20260902 FADET-A
+bash launch_fadet_replay.sh /root/bata_sft_fadet_20260902 FADET-B
+```
+
+FADET-A keeps the raw PRE_ALLREDUCE bucket only in its isolated server-side
+diagnostic directory. FADET-B compares matching parameter slices and emits
+public-safe per-LoRA statistics; raw gradient values are never included in
+the summary or committed. A stable verdict additionally requires confirmed
+`deterministic=True` calls on every rank. Missing confirmation is
+`UNRESOLVED`, never stable.

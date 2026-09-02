@@ -1,0 +1,27 @@
+{
+  "attention": "fa2",
+  "cublas_workspace_config": ":4096:8",
+  "diagnostic": "FADET-A/B checkpoint-553 to step-554 repeatability",
+  "flash_attention_deterministic": "1",
+  "gradient_accumulation_steps": 16,
+  "input_fingerprint_fields": [
+    "input_ids",
+    "labels",
+    "loss_weights",
+    "sample_ids",
+    "sample_task_ids",
+    "sample_domain_weights",
+    "attention_mask",
+    "position_ids"
+  ],
+  "input_fingerprint_location": "CPU collator output before Accelerator device placement",
+  "liger": true,
+  "max_steps_scheduler_horizon": 1106,
+  "runtime_call_confirmation_required": true,
+  "stop_after_optimizer_step": 554,
+  "torch_deterministic_algorithms": {
+    "enabled": true,
+    "warn_only": false
+  },
+  "world_size": 4
+}
