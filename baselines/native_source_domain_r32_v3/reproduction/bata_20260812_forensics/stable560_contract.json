@@ -1,0 +1,47 @@
+{
+  "checkpoint_start_step": 553,
+  "deterministic_controls": {
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+    "FLASH_ATTENTION_DETERMINISTIC": "1",
+    "torch_use_deterministic_algorithms": true,
+    "warn_only": false
+  },
+  "gradient_accumulation_steps": 16,
+  "max_steps_scheduler_horizon": 1106,
+  "optimizer_and_schedule": {
+    "learning_rate": 0.0002,
+    "lr_scheduler_type": "cosine",
+    "optimizer": "AdamW",
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.01
+  },
+  "production_like_forbidden_features": [
+    "DDP communication hook",
+    "gradient tensor hashing",
+    "local gradient reference",
+    "FlashAttention monkey patch"
+  ],
+  "recipe": "BATA-STABLE-V0",
+  "stop_after_optimizer_step": 560,
+  "training": {
+    "attention": "fa2",
+    "bf16": true,
+    "cutoff_len": 8192,
+    "enable_liger_kernel": true,
+    "neat_packing": true,
+    "pure_bf16": true,
+    "lora_alpha": 64,
+    "lora_dropout": 0.05,
+    "lora_rank": 32,
+    "lora_target": "all",
+    "seed": 20260806,
+    "world_size": 4
+  },
+  "torch_flags": {
+    "allow_tf32_cudnn": true,
+    "allow_tf32_matmul": false,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "highest"
+  }
+}

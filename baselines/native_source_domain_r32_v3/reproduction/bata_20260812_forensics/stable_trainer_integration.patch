@@ -1,0 +1,16 @@
+diff --git a/scripts/train_native_source_domain_r32_v3.py b/scripts/train_native_source_domain_r32_v3.py
+--- a/scripts/train_native_source_domain_r32_v3.py
++++ b/scripts/train_native_source_domain_r32_v3.py
+@@ -23,0 +24,7 @@
++from stable_pilot_runtime import (
++    install_trusted_checkpoint_compatibility,
++    stable_callbacks,
++)
++
++install_trusted_checkpoint_compatibility()
++
+@@ -1181 +1188,3 @@
+-    callbacks = [_StopAfterOptimizerStepsCallback(stop_after_steps)] if stop_after_steps else None
++    callbacks = [_StopAfterOptimizerStepsCallback(stop_after_steps)] if stop_after_steps else []
++    callbacks.extend(stable_callbacks())
++    callbacks = callbacks or None

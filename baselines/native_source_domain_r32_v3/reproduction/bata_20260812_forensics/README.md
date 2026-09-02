@@ -187,3 +187,29 @@ public-safe per-LoRA statistics; raw gradient values are never included in
 the summary or committed. A stable verdict additionally requires confirmed
 `deterministic=True` calls on every rank. Missing confirmation is
 `UNRESOLVED`, never stable.
+
+## BATA-STABLE-V0 production-like pilot
+
+`BATA-STABLE-V0` turns the confirmed FA2 deterministic-backward controls into
+a low-interference candidate recipe. It keeps the recovered 06:33 training
+source, historical packed cache, original optimizer/schedule, four A800 ranks,
+GA16, 8K neat packing, FA2, Liger, bf16, and the original 1106-step scheduler
+horizon. It adds only strict PyTorch determinism,
+`CUBLAS_WORKSPACE_CONFIG=:4096:8`,
+`FLASH_ATTENTION_DETERMINISTIC=1`, a startup contract snapshot, and a callback
+that saves checkpoint-560 before stopping.
+
+The stable runtime does not register a DDP communication hook, hash gradient
+tensors, retain a local gradient reference, monkey-patch FlashAttention, or
+execute extra forward/backward calls. Prepare three fresh checkpoint-553
+copies with `prepare_stable_pilot.py`, then launch `STABLE560-A`,
+`STABLE560-B`, and `STABLE560-C` sequentially with
+`launch_stable_pilot.sh`. Each launch fails if any GPU is already occupied or
+if source/checkpoint/config contracts changed.
+
+After all three runs stop at 560, `compare_stable_pilots.py` compares raw LoRA,
+full effective B@A geometry via low-rank trace identities, canonical optimizer,
+scheduler, and RNG state. It also projects each seven-step effective update
+onto the historical 553-to-1106 update globally, by attention/MLP projection,
+and by layer. The historical-direction metrics are observations only and do
+not affect the stability verdict or any checkpoint.
