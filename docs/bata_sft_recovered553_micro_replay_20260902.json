@@ -1,0 +1,89 @@
+{
+  "classification": "CASE_C",
+  "first_divergence": {
+    "step": 554,
+    "rank0_local_loss_delta_b_minus_a": 1.4901161193847656e-08,
+    "global_grad_norm_delta_b_minus_a": -6.92605972290039e-05,
+    "batch_fingerprints_equal_all_ranks_all_steps": true,
+    "rng_hashes_equal_all_ranks_all_steps": true
+  },
+  "retry1": {
+    "last_completed_step": 670,
+    "preserved_root": "/root/onereason_final_reproduction_20260902_sft_retry1",
+    "outer_driver_suspended": true,
+    "gpu_compute_processes_after_stop": 0
+  },
+  "historical_checkpoint_553": {
+    "global_step": 553,
+    "epoch": 1.0,
+    "scheduler_last_epoch": 553,
+    "sha256": {
+      "adapter_model.safetensors": "9c5426a5c329e9ec19a5dddc351c51c498dab4b4ed3a81ce80cfa07dc84cab9e",
+      "optimizer.pt": "4806181f0754d954c4c9f30fe38d5b33587582dbb2a710e9571e7d7493213d98",
+      "scheduler.pt": "b951d51e69752e0946c62e098ed98dc80e281b252d1eca4f0c996ae08dc7dccb",
+      "trainer_state.json": "bacd549ddeaadde8d065d9d6184c68aa1fda88083a1577005fae8a79839e29d8",
+      "training_args.bin": "2007c7967597a348c3f8ff68991fff0ab399ce019501a55dbbe3c741da6bb7d2",
+      "rng_state_0.pth": "5d7293a18c2d02ee3cd516babc094c680cf849faba4e4352053bccf44a760996",
+      "rng_state_1.pth": "b1d4c3eebf0e573130bb904de7c972893cb4fadc5f6a5c4d33a4548714f67196",
+      "rng_state_2.pth": "e148a4b7c58775628765cd1617cad9edee5fcddab223723c80dc47ce79f9fe9a",
+      "rng_state_3.pth": "e31d3245179273a4f709cfc7b6529dc141494bab2b36d977ac14370970dde64d"
+    }
+  },
+  "replays": {
+    "A": {
+      "updates": 7,
+      "final_step": 560,
+      "wall_seconds": 278.034,
+      "final_adapter_file_sha256": "b7727509c7b09017713dc149e299c09faadee10b5da98ba5973141c255155799"
+    },
+    "B": {
+      "updates": 7,
+      "final_step": 560,
+      "wall_seconds": 277.6075,
+      "final_adapter_file_sha256": "472b57f71342beeb78e14248d55c54c5a22321cae6f3b69a8052b66d3489a0f9"
+    }
+  },
+  "step560_a_vs_b": {
+    "raw_lora": {
+      "cosine": 0.9999841728620636,
+      "l2": 0.38046419624103267,
+      "relative_l2_vs_a": 0.005626194852755128,
+      "tensor_count": 504
+    },
+    "effective_ba": {
+      "cosine": 0.9999449366721759,
+      "l2": 0.6545380213844452,
+      "relative_l2_vs_a": 0.010493999827034738,
+      "module_count": 252
+    }
+  },
+  "step555_and_step560_identity_evidence": {
+    "a_equals_b": true,
+    "rank0": {
+      "step555": {
+        "ordered_batch_fingerprint": "13c1cb5893c132e16d1904293797cb60e3001b23c280df7ed48d88e022e78e62",
+        "compact_rng_hash": "50edca55d145837b3c8bdec71380ead707efab69ea32a3432f69167e6f71629c"
+      },
+      "step560": {
+        "ordered_batch_fingerprint": "73f803ec315360224b191b8b57beaee98d61e525dbe5fa50907a856c063e94e5",
+        "compact_rng_hash": "c9e6e68e9d6fe8da01cc697c27e59a6fda38e54a7ac3cd8329f56b407fd4978f"
+      }
+    }
+  },
+  "historical_comparison": {
+    "step555_loss_not_directly_comparable_due_to_logging_window": true,
+    "step560": {
+      "historical": {"loss": 26.738397216796876, "grad_norm": 0.954276442527771},
+      "A": {"loss": 26.738784790039062, "grad_norm": 0.9227518439292908},
+      "B": {"loss": 26.722833251953126, "grad_norm": 1.0998361110687256},
+      "learning_rate": 0.00010322309087571544,
+      "epoch": 1.0126625211984173
+    }
+  },
+  "restore_order_difference_found": false,
+  "dataloader_skip_difference_found": false,
+  "runtime_contract_difference": "Replay required a recorded Transformers torch-load safety bypass with weights_only=True; exact historical PyTorch/CUDA/NCCL build is not recorded.",
+  "downstream_started": false,
+  "deterministic_replay_started": false,
+  "replay_to_1106_started": false
+}
