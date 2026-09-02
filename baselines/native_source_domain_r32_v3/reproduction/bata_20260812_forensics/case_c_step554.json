@@ -1,0 +1,25 @@
+{
+  "classification": "CASE_C",
+  "capture_position": "after compute_loss returns; before accelerator.backward and DDP gradient all-reduce",
+  "first_divergence_step": 554,
+  "microbatch_count_per_rank": 16,
+  "runs": {
+    "RECOVERED553-REPLAY-A": [
+      {"rank": 0, "ordered_batch_fingerprint": "acec704d63052dfeaf9464944c3c1a2904adc8bbc67af3e9580386642ac46095", "rng_fingerprint": "b3cfd074bc30e7a71f6a7695f974a3a272da0cd41737c940399eee7b8eed9e2f", "rank_local_loss_mean": 2.01978275552392, "grad_norm": 0.7419703006744385},
+      {"rank": 1, "ordered_batch_fingerprint": "045f5ddbc0e6d7d5c9b443bb1f2f6d2a66917d49e6b6d0bd3524a74ad4b0a034", "rng_fingerprint": "2d745ebb3de4b116eb15753fc488081a999bede2292bed31b00074187511b323", "rank_local_loss_mean": 1.596393208950758, "grad_norm": 0.7419703006744385},
+      {"rank": 2, "ordered_batch_fingerprint": "b3d474278bda352f74334dcaaf4956f8e6c779a0d565b24c1fe3f9159c1a05ad", "rng_fingerprint": "754dad7939c83a28ecd65ab647bf4c7b3867afd2f366c5280a8e39362bdac17f", "rank_local_loss_mean": 2.560986455529928, "grad_norm": 0.7419703006744385},
+      {"rank": 3, "ordered_batch_fingerprint": "365d252daed708c22f23d3039917dc19112bfefdc57fb091fb35d51414d95f3f", "rng_fingerprint": "4e147f717da4f9c815aecbb19e69501f265608f78433253baa06e080f2c68f8b", "rank_local_loss_mean": 1.3222748776897788, "grad_norm": 0.7419703006744385}
+    ],
+    "RECOVERED553-REPLAY-B": [
+      {"rank": 0, "ordered_batch_fingerprint": "acec704d63052dfeaf9464944c3c1a2904adc8bbc67af3e9580386642ac46095", "rng_fingerprint": "b3cfd074bc30e7a71f6a7695f974a3a272da0cd41737c940399eee7b8eed9e2f", "rank_local_loss_mean": 2.0197827704250813, "grad_norm": 0.7419010400772095},
+      {"rank": 1, "ordered_batch_fingerprint": "045f5ddbc0e6d7d5c9b443bb1f2f6d2a66917d49e6b6d0bd3524a74ad4b0a034", "rng_fingerprint": "2d745ebb3de4b116eb15753fc488081a999bede2292bed31b00074187511b323", "rank_local_loss_mean": 1.5963931940495968, "grad_norm": 0.7419010400772095},
+      {"rank": 2, "ordered_batch_fingerprint": "b3d474278bda352f74334dcaaf4956f8e6c779a0d565b24c1fe3f9159c1a05ad", "rng_fingerprint": "754dad7939c83a28ecd65ab647bf4c7b3867afd2f366c5280a8e39362bdac17f", "rank_local_loss_mean": 2.560986425727606, "grad_norm": 0.7419010400772095},
+      {"rank": 3, "ordered_batch_fingerprint": "365d252daed708c22f23d3039917dc19112bfefdc57fb091fb35d51414d95f3f", "rng_fingerprint": "4e147f717da4f9c815aecbb19e69501f265608f78433253baa06e080f2c68f8b", "rank_local_loss_mean": 1.32227489259094, "grad_norm": 0.7419010400772095}
+    ]
+  },
+  "batch_fingerprints_equal": true,
+  "rng_fingerprints_equal": true,
+  "rank_local_losses_equal": false,
+  "grad_norms_equal": false,
+  "current_root_cause_level": "UNRESOLVED"
+}
