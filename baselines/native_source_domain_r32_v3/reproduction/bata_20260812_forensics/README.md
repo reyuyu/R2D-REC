@@ -238,7 +238,31 @@ also compares STABLE553-A with historical checkpoint-553 by projection and
 layer, but historical similarity is excluded from the repeatability verdict.
 `publish_stable553.py` emits only path-free JSON and Markdown evidence.
 
-## Controlled epoch-2 continuations
+## Fresh-base seed experiments
+
+`prepare_stable_seed.py`, `stable_seed_runtime.py`, and
+`launch_stable_seed.sh` implement isolated four-GPU seed experiments under
+`<stable-root>/seed_runs`. Every new experiment starts from the frozen base
+model with a caller-selected `seed` and `data_seed`; it never inherits the
+STABLE553-A adapter. The default scope is the original two epochs
+(`0 -> 1106`).
+
+The optional Epoch 1 early stop keeps `num_train_epochs=2` and the 1106-step
+cosine scheduler horizon, but saves and stops at step 553. This checkpoint is
+resumable only when adapter, optimizer, scheduler, trainer state, training
+arguments, and all four rank RNG files are present and SHA-pinned. The resume
+action then continues the same experiment from 553 to 1106. Both epoch
+checkpoints remain in the same seed-specific output directory. Launch is
+fail-closed unless all four GPUs are idle and the `/root` filesystem has at
+least 20 GiB available.
+
+The 8892 monitor keeps A/B repeatability at `/` and exposes fresh seed controls
+at `/seeds`. It provides a seed selector, optional Epoch 1 early stop, a
+one-epoch resume action only for eligible runs, separate Epoch 1/Epoch 2 score
+columns, training curves and statistics, and adapter-only downloads for both
+checkpoints. Manual scores and notes are stored in `manual_scores.json`.
+
+## Legacy controlled epoch-2 continuations
 
 `prepare_stable_epoch2.py`, `stable_epoch2_runtime.py`, and
 `launch_stable_epoch2.sh` provide an isolated checkpoint-553 to
@@ -247,11 +271,7 @@ its adapter, optimizer, scheduler, trainer state, and four rank RNG files are
 SHA-pinned before launch. Every run has a new seed-labelled directory and the
 launcher refuses occupied GPUs or reused output.
 
-The 8892 monitor exposes the same fixed workflow through a local-only button.
-Its API accepts only an integer seed and cannot accept a path or shell command.
-The dashboard keeps the A/B repeatability view at `/` and provides a dedicated
-random-seed experiment view at `/seeds`. The seed view shows per-run progress,
-loss/gradient statistics and curves, records separate Epoch 1/Epoch 2 scores,
-provides adapter-only downloads for both epoch checkpoints, and stores optional
-manually entered external scores and notes in `manual_scores.json`. Changing the seed is an explicit
-random-seed ablation; the original continuation uses seed `20260806`.
+These older continuation records remain visible in the seed table for evidence
+preservation, but the UI labels them as historical continuations rather than
+fresh seed experiments. The old launch endpoint remains backward-compatible;
+the new UI does not call it.

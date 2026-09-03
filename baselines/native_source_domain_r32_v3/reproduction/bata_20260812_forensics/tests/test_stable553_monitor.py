@@ -177,6 +177,10 @@ def test_manual_scores_are_atomic_and_run_allowlisted(tmp_path):
     with pytest.raises(ValueError):
         module.save_manual_score(tmp_path, "../bad", 1.0, "")
 
+    fresh_id = "SEED-S43-20260903-120001"
+    (tmp_path / "seed_runs" / fresh_id).mkdir(parents=True)
+    assert module.save_manual_score(tmp_path, fresh_id, 1.4, "fresh")["epoch2_score"] == 1.4
+
 
 def test_epoch2_checkpoint_download_is_allowlisted(tmp_path):
     module = load()
@@ -190,13 +194,55 @@ def test_epoch2_checkpoint_download_is_allowlisted(tmp_path):
     assert module.epoch2_checkpoint_download_path(tmp_path, run_id, "optimizer.pt") is None
 
 
+def test_fresh_seed_checkpoint_download_is_epoch_allowlisted(tmp_path):
+    module = load()
+    run_id = "SEED-S42-20260903-120000"
+    for epoch, step in ((1, 553), (2, 1106)):
+        checkpoint = tmp_path / "seed_runs" / run_id / "output" / f"checkpoint-{step}"
+        checkpoint.mkdir(parents=True)
+        adapter = checkpoint / "adapter_model.safetensors"
+        adapter.write_bytes(b"adapter")
+        assert module.seed_checkpoint_download_path(tmp_path, run_id, epoch, adapter.name) == adapter
+    assert module.seed_checkpoint_download_path(tmp_path, run_id, 3, "adapter_model.safetensors") is None
+    assert module.seed_checkpoint_download_path(tmp_path, "../bad", 1, "adapter_model.safetensors") is None
+
+
 def test_epoch2_controls_are_present_without_arbitrary_command_input():
     module = load()
-    assert "启动四卡续训" in module.HTML
+    assert "从 BASE 训练 2 Epoch" in module.HTML
+    assert "Epoch 1 早停" in module.HTML
+    assert "续训 1 Epoch" in module.HTML
     assert "随机种子" in module.HTML
     assert "保存成绩" in module.HTML
     assert "X-Stable553-Action" in module.HTML
     assert "command" not in module.HTML.lower()
+
+
+def test_seed_status_exposes_resumable_epoch1(tmp_path):
+    module = load()
+    run_id = "SEED-S42-20260903-120000"
+    run_dir = tmp_path / "seed_runs" / run_id
+    (run_dir / "evidence_initial").mkdir(parents=True)
+    (run_dir / "evidence_resume").mkdir()
+    (run_dir / "manifest.json").write_text(
+        json.dumps({"seed": 42, "early_stop_epoch1": True, "requested_epochs": 1}), encoding="utf-8"
+    )
+    for rank in range(4):
+        (run_dir / "evidence_initial" / f"runtime_rank{rank}.json").write_text(
+            json.dumps({"status": "PASS"}), encoding="utf-8"
+        )
+    checkpoint = run_dir / "output/checkpoint-553"
+    checkpoint.mkdir(parents=True)
+    for name in (
+        "adapter_model.safetensors", "adapter_config.json", "optimizer.pt", "scheduler.pt",
+        "trainer_state.json", "training_args.bin", "rng_state_0.pth", "rng_state_1.pth",
+        "rng_state_2.pth", "rng_state_3.pth",
+    ):
+        (checkpoint / name).write_bytes(b"x")
+    row = module.seed_run_status(tmp_path, run_dir, {})
+    assert row["status"] == "EPOCH1_PASS"
+    assert row["can_resume"] is True
+    assert row["source_label"] == "BASE"
 
 
 def test_dashboard_has_distinct_repeatability_and_seed_pages():
