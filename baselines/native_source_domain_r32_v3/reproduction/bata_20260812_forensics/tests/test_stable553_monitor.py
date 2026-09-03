@@ -157,8 +157,23 @@ def test_manual_scores_are_atomic_and_run_allowlisted(tmp_path):
     run_id = "EPOCH2-S42-20260903-120000"
     (tmp_path / "epoch2_runs" / run_id).mkdir(parents=True)
     record = module.save_manual_score(tmp_path, run_id, 1.2345, "external run")
-    assert record == {"score": 1.2345, "notes": "external run"}
+    assert record == {
+        "epoch1_score": None,
+        "epoch2_score": 1.2345,
+        "score": 1.2345,
+        "notes": "external run",
+    }
     assert module.manual_scores(tmp_path)[run_id] == record
+    two_epoch = module.save_manual_score(
+        tmp_path,
+        run_id,
+        None,
+        "paired",
+        epoch1_score=1.2,
+        epoch2_score=1.3,
+    )
+    assert two_epoch["epoch1_score"] == 1.2
+    assert two_epoch["epoch2_score"] == 1.3
     with pytest.raises(ValueError):
         module.save_manual_score(tmp_path, "../bad", 1.0, "")
 
@@ -193,3 +208,5 @@ def test_dashboard_has_distinct_repeatability_and_seed_pages():
     assert 'id="seedRunSelect"' in module.HTML
     assert 'id="seedStats"' in module.HTML
     assert 'location.pathname===\'/seeds\'' in module.HTML
+    assert "Epoch 1 成绩" in module.HTML
+    assert "Epoch 2 成绩" in module.HTML

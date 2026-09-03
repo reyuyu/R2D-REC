@@ -251,7 +251,7 @@ The 8892 monitor exposes the same fixed workflow through a local-only button.
 Its API accepts only an integer seed and cannot accept a path or shell command.
 The dashboard keeps the A/B repeatability view at `/` and provides a dedicated
 random-seed experiment view at `/seeds`. The seed view shows per-run progress,
-loss/gradient statistics and curves, provides adapter-only downloads after
-checkpoint-1106, and stores optional manually entered external
-scores and notes in `manual_scores.json`. Changing the seed is an explicit
+loss/gradient statistics and curves, records separate Epoch 1/Epoch 2 scores,
+provides adapter-only downloads for both epoch checkpoints, and stores optional
+manually entered external scores and notes in `manual_scores.json`. Changing the seed is an explicit
 random-seed ablation; the original continuation uses seed `20260806`.
