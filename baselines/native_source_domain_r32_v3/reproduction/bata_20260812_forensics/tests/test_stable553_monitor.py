@@ -81,3 +81,47 @@ def test_checkpoint_download_path_is_allowlisted(tmp_path):
     assert module.checkpoint_download_path(tmp_path, "STABLE553-C", adapter.name) is None
     assert module.checkpoint_download_path(tmp_path, "STABLE553-A", "optimizer.pt") is None
     assert module.checkpoint_download_path(tmp_path, "STABLE553-A", "../adapter_model.safetensors") is None
+
+
+def test_comparison_status_waits_for_public_result(tmp_path):
+    module = load()
+    assert module.comparison_status(tmp_path) == {"status": "WAITING"}
+
+
+def test_comparison_status_exposes_dashboard_subset(tmp_path):
+    module = load()
+    public = tmp_path / "public"
+    public.mkdir()
+    metric = {"cosine": 1.0, "relative_l2": 0.0}
+    result = {
+        "verdict": "STABLE553_EXACT",
+        "first_epoch_repeatability": "CONFIRMED",
+        "pairwise_repeatability": {
+            "adapter_file_sha_exact": True,
+            "adapter_canonical_sha_exact": True,
+            "optimizer_exact": True,
+            "scheduler_exact": True,
+            "rng_exact": True,
+            "raw_lora": metric,
+            "effective_ba": metric,
+        },
+        "historical553_comparison": {
+            "raw_lora": {"cosine": 0.88, "relative_l2": 0.48},
+            "effective_ba": {"cosine": 0.66, "relative_l2": 0.83},
+            "layer_summary": {"cosine": {"min": 0.2, "mean": 0.6, "max": 0.9}},
+            "projections": {"q": {"cosine": 0.5, "relative_l2": 1.0}},
+        },
+        "external_evaluation": {"status": "NOT_EXECUTED"},
+        "private_path": "/must/not/be/exposed",
+    }
+    (public / "stable553_result.json").write_text(json.dumps(result), encoding="utf-8")
+
+    comparison = module.comparison_status(tmp_path)
+    assert comparison["status"] == "READY"
+    assert comparison["verdict"] == "STABLE553_EXACT"
+    assert comparison["pairwise"]["adapter_file_sha_exact"] is True
+    assert comparison["historical"]["effective_ba"]["cosine"] == 0.66
+    assert "private_path" not in comparison
+    assert module.snapshot(tmp_path)["comparison"] == comparison
+    assert "Checkpoint-553 权重比较" in module.HTML
+    assert "Effective B@A" in module.HTML
