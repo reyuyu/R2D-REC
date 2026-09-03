@@ -47,6 +47,22 @@ def test_scalar_rows_can_continue_inferred_steps_after_553():
     assert [row["step"] for row in rows] == [558, 563]
 
 
+def test_series_statistics_report_seed_run_health_summary():
+    module = load()
+    rows = [
+        {"step": 558, "loss": 2.0, "grad_norm": 1.0},
+        {"step": 563, "loss": 1.0, "grad_norm": 3.0},
+    ]
+    assert module.series_statistics(rows) == {
+        "logged_point_count": 2,
+        "loss_mean": 1.5,
+        "loss_min": 1.0,
+        "loss_max": 2.0,
+        "grad_norm_mean": 2.0,
+        "grad_norm_max": 3.0,
+    }
+
+
 def test_split_training_logs_preserves_independent_a_b_series():
     module = load()
     log = "setup\n***** Running training *****\n{'loss': 2.0, 'step': 5}\n"
@@ -166,3 +182,14 @@ def test_epoch2_controls_are_present_without_arbitrary_command_input():
     assert "保存成绩" in module.HTML
     assert "X-Stable553-Action" in module.HTML
     assert "command" not in module.HTML.lower()
+
+
+def test_dashboard_has_distinct_repeatability_and_seed_pages():
+    module = load()
+    assert 'href="/"' in module.HTML
+    assert 'href="/seeds"' in module.HTML
+    assert "page-repeatability" in module.HTML
+    assert "page-seeds" in module.HTML
+    assert 'id="seedRunSelect"' in module.HTML
+    assert 'id="seedStats"' in module.HTML
+    assert 'location.pathname===\'/seeds\'' in module.HTML
