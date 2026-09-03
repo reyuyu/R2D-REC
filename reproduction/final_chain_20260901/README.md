@@ -11,6 +11,8 @@ BETA SFT checkpoint-1106
 
 The default data registry is `/root/reproduce_datasets/onereason_final_chain_20260901`. No training stage reads the historical `/data/lf_data_versions`, `/data/GRPO/data`, or `/data/GRPO_USER/data` dataset locations. No teacher model is used; `/root/teacher_expert_ckpt/README.md` records that contract.
 
+数据来源、Recommendation SFT 多正样本元数据以及懂推荐 GRPO 域特定 prompt 的处理说明见 [docs/DATASET_PROVENANCE.md](docs/DATASET_PROVENANCE.md)。
+
 ## Commands
 
 Static and data preflight only:
