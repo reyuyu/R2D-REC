@@ -237,3 +237,19 @@ effective B@A, optimizer, scheduler, four-rank RNG, and shared scalar logs. It
 also compares STABLE553-A with historical checkpoint-553 by projection and
 layer, but historical similarity is excluded from the repeatability verdict.
 `publish_stable553.py` emits only path-free JSON and Markdown evidence.
+
+## Controlled epoch-2 continuations
+
+`prepare_stable_epoch2.py`, `stable_epoch2_runtime.py`, and
+`launch_stable_epoch2.sh` provide an isolated checkpoint-553 to
+checkpoint-1106 continuation. The source checkpoint is always STABLE553-A;
+its adapter, optimizer, scheduler, trainer state, and four rank RNG files are
+SHA-pinned before launch. Every run has a new seed-labelled directory and the
+launcher refuses occupied GPUs or reused output.
+
+The 8892 monitor exposes the same fixed workflow through a local-only button.
+Its API accepts only an integer seed and cannot accept a path or shell command.
+The dashboard shows continuation progress and curves, provides adapter-only
+downloads after checkpoint-1106, and stores optional manually entered external
+scores and notes in `manual_scores.json`. Changing the seed is an explicit
+random-seed ablation; the original continuation uses seed `20260806`.
