@@ -1,0 +1,7 @@
+{
+  "config_sha256": "78451878177a5443d87440940c54177da6e833e8ab4c97dab0e263a4c97162e2",
+  "immutable": true,
+  "model_role": "rec_fdr_v43_full_sft_grpo_base",
+  "model_sha256": "8be8b4d08f2eaa295159f2333e20949aa71ed552c3646a80380485c2efa2eb59",
+  "parent_mode": "full_model"
+}
