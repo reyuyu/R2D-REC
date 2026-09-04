@@ -16,6 +16,7 @@ from modeling import (
     sample_positions,
 )
 from parent_contract import ParentSpec, file_sha256, validate_parent_files
+from run_conservative_grpo import _assert_formal_startup_audit, _validate_formal_contract
 
 
 def _base(tmp_path: Path) -> tuple[Path, str, str]:
@@ -203,3 +204,48 @@ def test_legacy_grpo_loader_regression():
     assert "NCCL_SOCKET_IFNAME=lo" in launcher
     assert "GLOO_SOCKET_IFNAME=lo" in launcher
     assert "NCCL_IB_DISABLE=1" in launcher
+
+
+# 12. Formal training remains continuous and retains every 100-step checkpoint.
+def test_formal_500_contract():
+    package = Path(__file__).resolve().parents[1]
+    config = json.loads((package / "config" / "formal_500.json").read_text(encoding="utf-8"))
+    audit = _validate_formal_contract(config)
+    assert audit == {
+        "formal_run": True,
+        "checkpoint_mode": "ADAPTER_ONLY_MODEL_WITH_FULL_RESUME_STATE",
+        "midrun_retention_probe": "DISABLED",
+        "midrun_resume_audit": "DISABLED",
+        "save_steps": 100,
+        "save_total_limit": 5,
+    }
+    assert config["retention_probe"]["group_ids"]
+    assert config["retention_probe"]["excluded_from_training"] is True
+
+
+# 13. Formal preflight fails closed if checkpoint retention or probes drift.
+def test_formal_500_contract_rejects_midrun_work():
+    package = Path(__file__).resolve().parents[1]
+    config = json.loads((package / "config" / "formal_500.json").read_text(encoding="utf-8"))
+    config["checkpoint"]["save_total_limit"] = 4
+    config["retention_probe"]["enabled"] = True
+    with pytest.raises(RuntimeError, match="formal GRPO-1 contract mismatch"):
+        _validate_formal_contract(config)
+
+
+# 14. Formal training cannot enter trainer.train with a non-LoRA optimizer.
+def test_formal_startup_audit():
+    contract = {"formal_run": True}
+    trainable = {
+        "base_trainable_parameter_count": 0,
+        "lora_trainable_parameter_count": 87_293_952,
+        "lora_trainable_tensor_count": 504,
+    }
+    optimizer = {
+        "optimizer_lora_only": True,
+        "optimizer_parameter_tensor_count": 504,
+    }
+    assert _assert_formal_startup_audit(contract, trainable, optimizer)["ready_to_train"]
+    optimizer["optimizer_parameter_tensor_count"] = 505
+    with pytest.raises(RuntimeError, match="startup audit failed"):
+        _assert_formal_startup_audit(contract, trainable, optimizer)
