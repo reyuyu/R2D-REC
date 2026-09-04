@@ -107,9 +107,40 @@ is scoped to the selected `run_id`, so metrics and rollout traces cannot mix
 between experiments. The older `--run-dir <one-run>` mode remains supported.
 The selected run is also stored in the page URL for refresh/share continuity.
 When `--outputs-dir` is configured, the dashboard lists that experiment's
-checkpoints and exposes downloads only for `adapter_config.json` and
-`adapter_model.safetensors`; optimizer and other training-state files are not
-served.
+checkpoints. The compatibility download API exposes only `adapter_config.json`
+and `adapter_model.safetensors`; optimizer and other training-state files are
+not served. The main toolbar uses the validated full-model publish flow below.
+
+## Full-model publish
+
+The checkpoint toolbar can launch a server-side CPU job that validates an
+adapter-only checkpoint, merges it into its exact full-SFT parent, and uploads
+the resulting full model to ModelScope. The parent is selected only through a
+SHA256-to-path allowlist. The adapter SHA256 and `lineage.json` must agree with
+that parent before the worker starts. New repositories default to private.
+
+Configure the server with explicit roots and a root-only token file:
+
+```bash
+install -d -m 700 /root/.config/grpo-monitor /root/grpo-modelscope-publish
+install -m 600 /dev/null /root/.config/grpo-monitor/modelscope.token
+
+python monitor/server.py \
+  --runs-dir /data/GRPO/runs \
+  --additional-runs-dir /path/to/new/monitor-runs \
+  --checkpoint-outputs-dir /path/to/new/checkpoint-outputs \
+  --modelscope-publish-root /root/grpo-modelscope-publish \
+  --modelscope-publish-python /path/to/python-with-modelscope \
+  --modelscope-token-file /root/.config/grpo-monitor/modelscope.token \
+  --publish-base-model <MODEL_SAFETENSORS_SHA256>=/path/to/full-sft-parent
+```
+
+The token is read by the worker from the protected file. It is never accepted
+from the browser, included in process arguments, returned by the API, or
+written to job metadata. The UI requires the exact `owner/model-name`, an
+explicit visibility choice, and a confirmation checkbox. Successful uploads
+retain SHA256/status evidence and remove the temporary merged weight files.
+Failed jobs preserve their working directory for diagnosis.
 
 The dashboard polls append-only data every three seconds. Clicking a
 chart opens an enlarged view with 20/50/all-point ranges. Think traces retain
@@ -135,6 +166,7 @@ the dashboard hides DSR-only controls for legacy runs.
 ```bash
 cd /data/GRPO/scripts
 python -m monitor.test_monitor
+python monitor/test_publish_merged_model.py
 python test_fixed_probe.py
 python test_formal_runner.py
 python test_beam_prompt_cache.py

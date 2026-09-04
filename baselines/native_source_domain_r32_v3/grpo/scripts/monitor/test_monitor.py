@@ -6,7 +6,7 @@ import hashlib
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 
@@ -255,6 +255,78 @@ with tempfile.TemporaryDirectory() as temporary:
         "/api/checkpoints/full-epoch-final/download?run_id=isolated-run&file=adapter_model.safetensors"
     )
     assert final_download.status_code == 200 and final_download.content == b"final-safe-adapter"
+
+    additional_runs = root / "_additional_runs"
+    publish_run = additional_runs / "formal-publish-run"
+    publish_run.mkdir(parents=True)
+    parent = root / "_full_sft_parent"
+    parent.mkdir()
+    (parent / "model.safetensors").write_bytes(b"verified-full-sft-parent")
+    parent_sha = hashlib.sha256((parent / "model.safetensors").read_bytes()).hexdigest()
+    (publish_run / "manifest.json").write_text(json.dumps({
+        "run_id": publish_run.name,
+        "schema": "grpo_fullbase_conservative_v1",
+        "parent": {
+            "parent_mode": "full_model",
+            "base_model_sha256": parent_sha,
+        },
+    }), encoding="utf-8")
+    publish_checkpoint = extra_outputs / publish_run.name / "checkpoint-100"
+    publish_checkpoint.mkdir(parents=True)
+    (publish_checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (publish_checkpoint / "adapter_model.safetensors").write_bytes(b"verified-adapter")
+    adapter_sha = hashlib.sha256((publish_checkpoint / "adapter_model.safetensors").read_bytes()).hexdigest()
+    (publish_checkpoint / "lineage.json").write_text(json.dumps({
+        "schema": "grpo_adapter_lineage_v1",
+        "parent_mode": "full_model",
+        "parent_base_sha256": parent_sha,
+        "adapter_sha256": adapter_sha,
+    }), encoding="utf-8")
+    token_file = root / "modelscope.token"
+    token_file.write_text("test-token-must-not-leak", encoding="utf-8")
+    if os.name != "nt":
+        token_file.chmod(0o600)
+    publish_root = root / "_publish_jobs"
+    publish_app = create_app(
+        runs_dir=root,
+        additional_runs_dirs=[additional_runs],
+        checkpoint_outputs_dirs=[extra_outputs],
+        publish_root=publish_root,
+        publish_python=Path(os.sys.executable),
+        publish_base_models={parent_sha: parent},
+        publish_token_file=token_file,
+    )
+    publish_client = TestClient(publish_app)
+    assert publish_run.name in {item["run_id"] for item in publish_client.get("/api/runs").json()}
+    capability = publish_client.get(f"/api/model-publish/capabilities?run_id={publish_run.name}").json()
+    assert capability["enabled"] is True
+    assert capability["parent_sha256"] == parent_sha
+    assert "test-token" not in json.dumps(capability)
+    request = {
+        "checkpoint": "checkpoint-100",
+        "model_id": "owner/full-sft-grpo-step100",
+        "visibility": "private",
+        "confirmation": f"PUBLISH {publish_run.name} checkpoint-100 owner/full-sft-grpo-step100",
+    }
+    with patch("monitor.server.subprocess.Popen", return_value=Mock(pid=os.getpid())) as launch:
+        response = publish_client.post(
+            f"/api/model-publish/jobs?run_id={publish_run.name}", json=request,
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"]["state"] == "starting"
+    assert payload["adapter_sha256"] == adapter_sha
+    command = launch.call_args.args[0]
+    assert str(parent) in command and str(publish_checkpoint) in command
+    assert "test-token-must-not-leak" not in " ".join(command)
+    job_record = next(publish_root.rglob("job.json")).read_text(encoding="utf-8")
+    assert "test-token-must-not-leak" not in job_record
+    rejected = publish_client.post(
+        f"/api/model-publish/jobs?run_id={publish_run.name}",
+        json={**request, "confirmation": "wrong"},
+    )
+    assert rejected.status_code == 400
+    print("[PASS] additional run roots and fail-closed ModelScope publish launch")
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 
     demo_dir = Path(generate(str(root), "demo"))
@@ -281,7 +353,11 @@ with tempfile.TemporaryDirectory() as temporary:
         "Raw N", "Grounding Coverage"
     ))
     assert all(label in html for label in (
-        "实验名称", "选择 D:\\model\\GRPO", "下载两个文件", "刷新列表", "删除检查点"
+        "融合并上传 ModelScope", "ModelScope 目标仓库", "CPU 融合", "刷新列表", "删除检查点"
+    ))
+    assert all(label in html for label in (
+        "/api/model-publish/capabilities", "/api/model-publish/jobs",
+        "上传是外部写操作", "访问令牌只由开发机受限凭据文件读取",
     ))
     assert all(label in html for label in (
         "renderRolloutCredit", "ensureExplorerAdvantages", "Sequence Advantage",

@@ -107,6 +107,10 @@ CHECKPOINT_NAME_RE = re.compile(r"checkpoint-(?:step)?(\d+)")
 PROMPT_CHECKPOINT_NAME_RE = re.compile(r"prompt-step-(\d+)")
 FINAL_CHECKPOINT_NAME = "full-epoch-final"
 EVAL_JOB_RE = re.compile(r"eval-[0-9]{8}T[0-9]{6}-[0-9a-f]{8}")
+PUBLISH_JOB_RE = re.compile(r"publish-[0-9]{8}T[0-9]{6}-[0-9a-f]{8}")
+MODELSCOPE_REPO_RE = re.compile(
+    r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}/[A-Za-z0-9][A-Za-z0-9_.-]{0,127}"
+)
 EVAL_DATASET = Path("/data/lf_data_versions/alltrain/alpha_mini_v1_validation_filtered_v1/dev.jsonl")
 EVAL_LEAKAGE_AUDIT = EVAL_DATASET.parent / "leakage_audit.json"
 EVAL_TRAIN_DATASET = Path("/data/GRPO/data/rec_mp_grpo_v2/train.jsonl")
@@ -116,6 +120,13 @@ class CheckpointEvalRequest(BaseModel):
     checkpoints: list[str] = Field(min_length=1, max_length=20)
     sample_size: int = Field(default=128)
     seed: int = Field(default=20260822, ge=0, le=2_147_483_647)
+
+
+class ModelPublishRequest(BaseModel):
+    checkpoint: str = Field(min_length=1, max_length=128)
+    model_id: str = Field(min_length=3, max_length=192)
+    visibility: str = Field(default="private", pattern="^(private|public)$")
+    confirmation: str = Field(min_length=1, max_length=512)
 
 
 def checkpoint_eval_launch_command(script: Path, master_port: int) -> list[str]:
@@ -324,14 +335,22 @@ def create_app(
     runs_dir: str | Path | None = None,
     outputs_dir: str | Path | None = None,
     checkpoint_outputs_dirs: Iterable[str | Path] | None = None,
+    additional_runs_dirs: Iterable[str | Path] | None = None,
     user_runs_dir: str | Path | None = None,
     truerec_runs_dir: str | Path | Iterable[str | Path] | None = None,
     eval_dir: str | Path | None = None,
+    publish_root: str | Path | None = None,
+    publish_python: str | Path | None = None,
+    publish_base_models: dict[str, str | Path] | None = None,
+    publish_token_file: str | Path | None = None,
 ) -> FastAPI:
     if (run_dir is None) == (runs_dir is None):
         raise ValueError("exactly one of run_dir or runs_dir is required")
     single_run = Path(run_dir).expanduser().resolve() if run_dir is not None else None
     root = single_run.parent if single_run is not None else Path(runs_dir).expanduser().resolve()
+    additional_runs_roots = tuple(
+        dict.fromkeys(Path(path).expanduser().resolve() for path in additional_runs_dirs or ())
+    )
     outputs_root = Path(outputs_dir).expanduser().resolve() if outputs_dir is not None else None
     checkpoint_outputs_roots = tuple(
         dict.fromkeys(
@@ -347,13 +366,22 @@ def create_app(
     )
     user_runs_root = Path(user_runs_dir).expanduser().resolve() if user_runs_dir is not None else None
     eval_root = Path(eval_dir).expanduser().resolve() if eval_dir is not None else (root.parent / "evaluations").resolve()
+    model_publish_root = Path(publish_root).expanduser().resolve() if publish_root is not None else None
+    model_publish_python = Path(publish_python).expanduser().resolve() if publish_python is not None else None
+    model_publish_token = Path(publish_token_file).expanduser().resolve() if publish_token_file is not None else None
+    model_publish_bases = {
+        str(digest): Path(path).expanduser().resolve()
+        for digest, path in (publish_base_models or {}).items()
+    }
     app = FastAPI(title="GRPO Monitor", docs_url="/api/docs", redoc_url=None)
     app.state.run_dir = single_run
     app.state.runs_dir = root
     app.state.outputs_dir = outputs_root
     app.state.checkpoint_outputs_dirs = checkpoint_outputs_roots
+    app.state.additional_runs_dirs = additional_runs_roots
     app.state.user_runs_dir = user_runs_root
     app.state.eval_dir = eval_root
+    app.state.publish_root = model_publish_root
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     install_truerec_routes(app, truerec_runs_dir, STATIC_DIR)
     source_cache: dict[tuple[str, int, int, str], dict[str, dict[str, Any]]] = {}
@@ -365,7 +393,13 @@ def create_app(
         """Return monitor runs plus direct and one-level categorized User runs."""
         if single_run is not None:
             return [single_run]
-        candidates = [path for path in root.iterdir() if path.is_dir()] if root.exists() else []
+        candidates = []
+        for runs_root in (root, *additional_runs_roots):
+            if runs_root.is_dir():
+                try:
+                    candidates.extend(path for path in runs_root.iterdir() if path.is_dir())
+                except OSError:
+                    continue
         if user_runs_root is not None and user_runs_root.is_dir():
             try:
                 user_children = [path for path in user_runs_root.iterdir() if path.is_dir()]
@@ -414,10 +448,14 @@ def create_app(
                 "algorithm": normalized_algorithm(manifest),
                 "display_name": manifest.get("display_name", "MC_USER_v1" if mc_user else None),
                 "demo": bool(manifest.get("demo", False)),
-                "start_time": manifest.get("start_time"),
+                "start_time": manifest.get("start_time", manifest.get("started_at")),
                 "max_steps": manifest.get(
                     "effective_max_steps",
-                    manifest.get("max_steps", manifest.get("config", {}).get("prompt_count") if mc_user else None),
+                    manifest.get(
+                        "max_steps",
+                        manifest.get("config", {}).get("prompt_count") if mc_user
+                        else manifest.get("optimization", {}).get("max_steps"),
+                    ),
                 ),
                 "latest_step": latest.get("step", 0),
                 "latest_route": latest.get("route"),
@@ -699,6 +737,82 @@ def create_app(
                 return candidate
         return None
 
+    def model_publish_run_dir(selected: Path) -> Path:
+        if model_publish_root is None:
+            raise HTTPException(status_code=503, detail="ModelScope publish is not configured")
+        candidate = (model_publish_root / selected.name).resolve()
+        if candidate.parent != model_publish_root:
+            raise HTTPException(status_code=400, detail="invalid publish run")
+        return candidate
+
+    def model_publish_capability(selected: Path) -> dict[str, Any]:
+        manifest_data = read_json(selected / "manifest.json", {})
+        parent = manifest_data.get("parent") if isinstance(manifest_data.get("parent"), dict) else {}
+        parent_sha = parent.get("base_model_sha256")
+        base_path = model_publish_bases.get(str(parent_sha))
+        reasons = []
+        if model_publish_root is None:
+            reasons.append("发布目录未配置")
+        if model_publish_python is None or not model_publish_python.is_file():
+            reasons.append("融合运行环境未配置")
+        if model_publish_token is None or not model_publish_token.is_file():
+            reasons.append("ModelScope 凭据未配置")
+        elif os.name != "nt" and model_publish_token.stat().st_mode & 0o077:
+            reasons.append("ModelScope 凭据权限不安全")
+        if not isinstance(parent_sha, str) or re.fullmatch(r"[0-9a-f]{64}", parent_sha) is None:
+            reasons.append("实验未声明完整父模型 SHA256")
+        if base_path is None or not (base_path / "model.safetensors").is_file():
+            reasons.append("父模型未注册到发布服务")
+        return {
+            "enabled": not reasons,
+            "reason": "可以融合并上传" if not reasons else "；".join(reasons),
+            "parent_mode": parent.get("parent_mode"),
+            "parent_sha256": parent_sha,
+            "credential_configured": model_publish_token is not None and model_publish_token.is_file(),
+            "default_visibility": "private",
+        }
+
+    def validate_publish_checkpoint(selected: Path, checkpoint: str) -> tuple[Path, dict[str, Any]]:
+        checkpoint_dir = checkpoint_directory(selected, checkpoint)
+        if checkpoint_dir is None:
+            raise HTTPException(status_code=404, detail="complete adapter checkpoint not found")
+        forbidden = [
+            name for name in ("model.safetensors", "pytorch_model.bin")
+            if (checkpoint_dir / name).exists()
+        ]
+        forbidden.extend(path.name for path in checkpoint_dir.glob("model-*.safetensors"))
+        if forbidden:
+            raise HTTPException(status_code=409, detail="checkpoint contains unexpected base weights")
+        lineage = read_json(checkpoint_dir / "lineage.json", {})
+        manifest_data = read_json(selected / "manifest.json", {})
+        parent = manifest_data.get("parent") if isinstance(manifest_data.get("parent"), dict) else {}
+        parent_sha = parent.get("base_model_sha256")
+        adapter_sha = hashlib.sha256((checkpoint_dir / "adapter_model.safetensors").read_bytes()).hexdigest()
+        if lineage.get("schema") != "grpo_adapter_lineage_v1":
+            raise HTTPException(status_code=409, detail="checkpoint lineage is missing or unsupported")
+        if lineage.get("parent_mode") != "full_model" or lineage.get("parent_base_sha256") != parent_sha:
+            raise HTTPException(status_code=409, detail="checkpoint parent lineage does not match this run")
+        if lineage.get("adapter_sha256") != adapter_sha:
+            raise HTTPException(status_code=409, detail="checkpoint adapter SHA256 does not match lineage")
+        return checkpoint_dir, {**lineage, "adapter_sha256": adapter_sha}
+
+    def model_publish_job_payload(job_dir: Path) -> dict[str, Any]:
+        job = read_json(job_dir / "job.json", {})
+        status = read_json(job_dir / "status.json", {"state": "starting", "phase": "queued", "progress": 0})
+        pid = job.get("pid")
+        if status.get("state") in {"starting", "running"} and not process_alive(pid):
+            status = {**status, "state": "failed", "message": "融合上传进程已退出，请检查服务端日志"}
+        return {
+            "job_id": job_dir.name,
+            "run_id": job.get("run_id"),
+            "checkpoint": job.get("checkpoint"),
+            "model_id": job.get("model_id"),
+            "visibility": job.get("visibility"),
+            "adapter_sha256": job.get("adapter_sha256"),
+            "parent_sha256": job.get("parent_sha256"),
+            "status": status,
+        }
+
     def eval_run_dir(selected: Path) -> Path:
         candidate = (eval_root / selected.name).resolve()
         if candidate.parent != eval_root:
@@ -919,6 +1033,107 @@ def create_app(
             "released_bytes": released_bytes,
         }
 
+    @app.get("/api/model-publish/capabilities")
+    def model_publish_capabilities(run_id: str | None = None):
+        return model_publish_capability(selected_run(run_id))
+
+    @app.get("/api/model-publish/jobs")
+    def model_publish_jobs(run_id: str | None = None):
+        selected = selected_run(run_id)
+        if model_publish_root is None:
+            return []
+        root_dir = model_publish_run_dir(selected)
+        if not root_dir.is_dir():
+            return []
+        return [
+            model_publish_job_payload(path)
+            for path in sorted(root_dir.iterdir(), reverse=True)
+            if path.is_dir() and PUBLISH_JOB_RE.fullmatch(path.name)
+        ]
+
+    @app.post("/api/model-publish/jobs")
+    def start_model_publish(request: ModelPublishRequest, run_id: str | None = None):
+        selected = selected_run(run_id)
+        capability = model_publish_capability(selected)
+        if not capability["enabled"]:
+            raise HTTPException(status_code=503, detail=capability["reason"])
+        if not checkpoint_name_allowed(request.checkpoint):
+            raise HTTPException(status_code=404, detail="checkpoint not found")
+        if MODELSCOPE_REPO_RE.fullmatch(request.model_id) is None:
+            raise HTTPException(status_code=400, detail="ModelScope 仓库必须是 owner/model-name")
+        expected_confirmation = f"PUBLISH {selected.name} {request.checkpoint} {request.model_id}"
+        if request.confirmation != expected_confirmation:
+            raise HTTPException(status_code=400, detail="publish confirmation does not match")
+        checkpoint_dir, lineage = validate_publish_checkpoint(selected, request.checkpoint)
+        root_dir = model_publish_run_dir(selected)
+        root_dir.mkdir(parents=True, exist_ok=True)
+        active = [
+            model_publish_job_payload(path)
+            for path in root_dir.iterdir()
+            if path.is_dir() and PUBLISH_JOB_RE.fullmatch(path.name)
+        ]
+        if any(item.get("status", {}).get("state") in {"starting", "running"} for item in active):
+            raise HTTPException(status_code=409, detail="该实验已有融合上传任务正在运行")
+        stamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+        suffix = hashlib.sha256(
+            f"{selected.name}:{request.checkpoint}:{request.model_id}:{time.time_ns()}".encode()
+        ).hexdigest()[:8]
+        job_id = f"publish-{stamp}-{suffix}"
+        job_dir = root_dir / job_id
+        job_dir.mkdir(parents=True, exist_ok=False)
+        status_path = job_dir / "status.json"
+        write_json_atomic(status_path, {
+            "state": "starting", "phase": "queued", "progress": 0,
+            "message": "等待融合进程启动",
+        })
+        parent_sha = str(lineage["parent_base_sha256"])
+        base_path = model_publish_bases[parent_sha]
+        script = Path(__file__).resolve().parent / "publish_merged_model.py"
+        command = [
+            str(model_publish_python), str(script),
+            "--base-model", str(base_path),
+            "--adapter", str(checkpoint_dir),
+            "--expected-base-sha256", parent_sha,
+            "--expected-adapter-sha256", str(lineage["adapter_sha256"]),
+            "--run-id", selected.name,
+            "--checkpoint", request.checkpoint,
+            "--model-id", request.model_id,
+            "--visibility", request.visibility,
+            "--token-file", str(model_publish_token),
+            "--work-dir", str(job_dir / "work"),
+            "--status-file", str(status_path),
+        ]
+        log_handle = (job_dir / "publish.log").open("ab")
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=str(script.parent),
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            )
+        except Exception as exc:
+            log_handle.close()
+            write_json_atomic(status_path, {
+                "state": "failed", "phase": "launch", "progress": 0,
+                "message": f"融合上传进程启动失败: {exc}",
+            })
+            raise HTTPException(status_code=500, detail="融合上传进程启动失败") from exc
+        log_handle.close()
+        write_json_atomic(job_dir / "job.json", {
+            "job_id": job_id,
+            "run_id": selected.name,
+            "checkpoint": request.checkpoint,
+            "model_id": request.model_id,
+            "visibility": request.visibility,
+            "parent_sha256": parent_sha,
+            "adapter_sha256": lineage["adapter_sha256"],
+            "pid": process.pid,
+            "created_at": stamp,
+        })
+        return model_publish_job_payload(job_dir)
+
     @app.get("/api/checkpoint-eval/catalog")
     def checkpoint_eval_catalog(run_id: str | None = None):
         selected = selected_run(run_id)
@@ -1068,6 +1283,10 @@ def create_app(
             if algorithm in MC_USER_ALGORITHMS:
                 data.setdefault("display_name", "MC_USER Hybrid" if algorithm == MC_USER_HYBRID_ALGORITHM else "MC_USER_v1")
                 data.setdefault("max_steps", data.get("config", {}).get("prompt_count"))
+            if data.get("schema") == "grpo_fullbase_conservative_v1":
+                data.setdefault("display_name", "GRPO-1 推荐双侧")
+                data.setdefault("max_steps", data.get("optimization", {}).get("max_steps"))
+                data.setdefault("start_time", data.get("started_at"))
             if "effective_max_steps" in data:
                 data["max_steps"] = data["effective_max_steps"]
             return data
@@ -1597,7 +1816,11 @@ def create_app(
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "mode": "single" if single_run is not None else "multi", "runs_dir": str(root)}
+        return {
+            "ok": True,
+            "mode": "single" if single_run is not None else "multi",
+            "runs_dir": [str(path) for path in (root, *additional_runs_roots)],
+        }
 
     return app
 
@@ -1614,6 +1837,12 @@ def main() -> None:
         default=[],
         help="Additional approved checkpoint output root (repeatable)",
     )
+    parser.add_argument(
+        "--additional-runs-dir",
+        action="append",
+        default=[],
+        help="Additional read-only monitor run root (repeatable)",
+    )
     parser.add_argument("--user-runs-dir", help="Approved User-GRPO run root declared by monitor manifests")
     parser.add_argument(
         "--truerec-runs-dir",
@@ -1622,9 +1851,25 @@ def main() -> None:
         help="Read-only TrueRec-GRPO run root (repeatable)",
     )
     parser.add_argument("--eval-dir", help="Checkpoint evaluation job root (defaults beside runs-dir)")
+    parser.add_argument("--modelscope-publish-root", help="Server-side merge/upload job root")
+    parser.add_argument("--modelscope-publish-python", help="Python environment with torch/transformers/peft/modelscope")
+    parser.add_argument("--modelscope-token-file", help="Root-only file containing the ModelScope token")
+    parser.add_argument(
+        "--publish-base-model",
+        action="append",
+        default=[],
+        metavar="SHA256=PATH",
+        help="Approved full-model parent keyed by its model.safetensors SHA256",
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
+    publish_base_models = {}
+    for declaration in args.publish_base_model:
+        digest, separator, path = declaration.partition("=")
+        if not separator or re.fullmatch(r"[0-9a-f]{64}", digest) is None or not path:
+            parser.error("--publish-base-model must be SHA256=PATH")
+        publish_base_models[digest] = path
     import uvicorn
 
     print(f"GRPO Monitor: http://{args.host}:{args.port}", flush=True)
@@ -1632,8 +1877,13 @@ def main() -> None:
         create_app(
             args.run_dir, runs_dir=args.runs_dir, outputs_dir=args.outputs_dir,
             checkpoint_outputs_dirs=args.checkpoint_outputs_dir,
+            additional_runs_dirs=args.additional_runs_dir,
             user_runs_dir=args.user_runs_dir, eval_dir=args.eval_dir,
             truerec_runs_dir=args.truerec_runs_dir,
+            publish_root=args.modelscope_publish_root,
+            publish_python=args.modelscope_publish_python,
+            publish_base_models=publish_base_models,
+            publish_token_file=args.modelscope_token_file,
         ),
         host=args.host, port=args.port, log_level="warning",
     )
