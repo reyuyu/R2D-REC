@@ -1,0 +1,19 @@
+# The GitHub mirror intentionally contains code and contracts only.
+/data/
+/cache/
+/work/
+/output/
+/outputs/
+/logs/
+*.log
+*.parquet
+*.jsonl
+*.safetensors
+*.bin
+*.pt
+*.pth
+__pycache__/
+*.py[cod]
+/._____temp/
+/.msc
+/.mv

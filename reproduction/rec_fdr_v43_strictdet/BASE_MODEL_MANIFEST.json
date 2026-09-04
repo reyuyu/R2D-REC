@@ -1,0 +1,79 @@
+{
+  "files": {
+    ".gitattributes": {
+      "bytes": 1675,
+      "sha256": "a5e36d5e68449b77c4b6693aab13c4b264907536203af2205f37b52fa00346c4"
+    },
+    "Modelfile": {
+      "bytes": 2561,
+      "sha256": "fa70a865283a98fd578564269d038dbc087080f8e2900879db262c210d1f2d6a"
+    },
+    "README.md": {
+      "bytes": 17210,
+      "sha256": "133ab3c62a70544db75490a98f1c61a319b1f6856faaede0acb7361089a7f015"
+    },
+    "added_tokens.json": {
+      "bytes": 587470,
+      "sha256": "ef84f6a200be4d051b58efd0112c6ae967befb2a7b07f88a38d61decd3ceab36"
+    },
+    "assert/main.png": {
+      "bytes": 2141077,
+      "sha256": "5fc61b77a6d8be42765878530776201090dd1c8a8024c0889f026900b24f0b16"
+    },
+    "assert/rader.png": {
+      "bytes": 3112788,
+      "sha256": "a7fb61075086f2c4b25b67cc7fe8b9dcb5ecb6170b678993620baf7a45e3b438"
+    },
+    "config.json": {
+      "bytes": 1544,
+      "sha256": "1788f05b25f00d9b02610c2f5a922c50d2611ca918e036acdfed94cd0d51392a"
+    },
+    "generation_config.json": {
+      "bytes": 214,
+      "sha256": "427565fe9c01ac08f4a0baaeb536322779193d8d28ba723831b49ed5ae778587"
+    },
+    "merges.txt": {
+      "bytes": 1671853,
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    "model-00001-of-00004.safetensors": {
+      "bytes": 4916919944,
+      "sha256": "6d041c9244bd1f2221a3d89c9b75274d197dbe61f9333844032d129a9e0ec6c3"
+    },
+    "model-00002-of-00004.safetensors": {
+      "bytes": 4974688752,
+      "sha256": "f463b87721fdd488dc9d0e2d1027d426c4b00eb47bc9dedb53b6e763832e94d8"
+    },
+    "model-00003-of-00004.safetensors": {
+      "bytes": 4958879888,
+      "sha256": "380878c8c7269ec922fd24e55fc92b2ea62a0a6536a2748d20bdbcc2a8272571"
+    },
+    "model-00004-of-00004.safetensors": {
+      "bytes": 1929470632,
+      "sha256": "8e1a537c8e965de9a31334113c8254e6a8d4e3a60096f4de3d8fe6803d97c52f"
+    },
+    "model.safetensors.index.json": {
+      "bytes": 32877,
+      "sha256": "3a554d5309dc8dac8bf18255dc1017075354a52e99a9fc059b77d49e43661ce0"
+    },
+    "special_tokens_map.json": {
+      "bytes": 613,
+      "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+    },
+    "tokenizer.json": {
+      "bytes": 11626713,
+      "sha256": "e68ed2927d899c8592126ec1e8e463983ff878e9763dac94109e0b7cba7e3859"
+    },
+    "tokenizer_config.json": {
+      "bytes": 4358183,
+      "sha256": "5059344eb9660ec6fc8d8bc704f326b9c033318d6bd5131c26c2c77d5057863a"
+    },
+    "vocab.json": {
+      "bytes": 3383406,
+      "sha256": "a5cdac1b456c85d1937cdcfc07b94469f390f1e6f4849d986ce47774d84d7db0"
+    }
+  },
+  "local_reference_only": "/data/LLm-8B/code/OneReason-8B-pretrain-competition",
+  "modelscope_url": "https://modelscope.cn/models/OpenOneRec/OneReason-8B-pretrain-competition",
+  "source": "OpenOneRec/OneReason-8B-pretrain-competition"
+}

@@ -1,0 +1,162 @@
+{
+  "strategy": "max_normalized_actual_token_deficit",
+  "target_tokens": 242367498,
+  "planned_actual_tokens": 242814261,
+  "tolerance_ratio": 0.0018433288443650971,
+  "stages": [
+    {
+      "name": "stage_a",
+      "plan_start": 0,
+      "plan_end": 1512,
+      "target_tokens": 48473500,
+      "actual_tokens": 48519428,
+      "task_tokens": {
+        "base": 34795704,
+        "full": 6871889,
+        "r1": 4787168,
+        "r2": 2064667
+      },
+      "bucket_tokens": {
+        "base": 34795704,
+        "full_k1": 1406447,
+        "full_k2": 2353450,
+        "full_k3": 3111992,
+        "r2_k1": 65268,
+        "r2_k2": 1232436,
+        "r2_k3": 766963
+      },
+      "expanded_examples": 1512,
+      "requested_r2_k1_tokens": 308272,
+      "feasible_r2_k1_tokens": 65528,
+      "actual_r2_k1_tokens": 65268,
+      "r2_k1_reserved_pack_cap": 2,
+      "r2_k1_overflow_to_k2_packs": 38,
+      "r2_k1_overflow_to_k3_packs": 16
+    },
+    {
+      "name": "stage_b",
+      "plan_start": 1512,
+      "plan_end": 3032,
+      "target_tokens": 48473500,
+      "actual_tokens": 48514861,
+      "task_tokens": {
+        "base": 34668860,
+        "full": 6833353,
+        "r1": 2142910,
+        "r2": 4869738
+      },
+      "bucket_tokens": {
+        "base": 34668860,
+        "full_k1": 2434490,
+        "full_k2": 2317883,
+        "full_k3": 2080980,
+        "r2_k1": 65392,
+        "r2_k2": 3298733,
+        "r2_k3": 1505613
+      },
+      "expanded_examples": 1520,
+      "requested_r2_k1_tokens": 959070,
+      "feasible_r2_k1_tokens": 65528,
+      "actual_r2_k1_tokens": 65392,
+      "r2_k1_reserved_pack_cap": 2,
+      "r2_k1_overflow_to_k2_packs": 99,
+      "r2_k1_overflow_to_k3_packs": 43
+    },
+    {
+      "name": "stage_c1",
+      "plan_start": 3032,
+      "plan_end": 6072,
+      "target_tokens": 96946999,
+      "actual_tokens": 96989533,
+      "task_tokens": {
+        "base": 69516728,
+        "full": 21923246,
+        "r1": 2749226,
+        "r2": 2800333
+      },
+      "bucket_tokens": {
+        "base": 69516728,
+        "full_k1": 12015453,
+        "full_k2": 6593683,
+        "full_k3": 3314110,
+        "r2_k1": 139271,
+        "r2_k2": 1746695,
+        "r2_k3": 914367
+      },
+      "expanded_examples": 3040,
+      "requested_r2_k1_tokens": 959070,
+      "feasible_r2_k1_tokens": 163696,
+      "actual_r2_k1_tokens": 139271,
+      "r2_k1_reserved_pack_cap": 5,
+      "r2_k1_overflow_to_k2_packs": 55,
+      "r2_k1_overflow_to_k3_packs": 24
+    },
+    {
+      "name": "stage_c2",
+      "plan_start": 6072,
+      "plan_end": 7592,
+      "target_tokens": 48473500,
+      "actual_tokens": 48528935,
+      "task_tokens": {
+        "base": 34750190,
+        "full": 10262658,
+        "r1": 785006,
+        "r2": 2731081
+      },
+      "bucket_tokens": {
+        "base": 34750190,
+        "full_k1": 7578259,
+        "full_k2": 2052083,
+        "full_k3": 632316,
+        "r2_k1": 40991,
+        "r2_k2": 1874318,
+        "r2_k3": 815772
+      },
+      "expanded_examples": 1520,
+      "requested_r2_k1_tokens": 1370100,
+      "feasible_r2_k1_tokens": 228976,
+      "actual_r2_k1_tokens": 40991,
+      "r2_k1_reserved_pack_cap": 7,
+      "r2_k1_overflow_to_k2_packs": 60,
+      "r2_k1_overflow_to_k3_packs": 26
+    }
+  ],
+  "pool_pack_counts": {
+    "base": 5448,
+    "full_k1": 289,
+    "full_k2": 691,
+    "full_k3": 1141,
+    "r1": 520,
+    "r2_k1": 16,
+    "r2_k2": 200,
+    "r2_k3": 288
+  },
+  "pool_reuse_counts": {
+    "base": 5444,
+    "full_k1": 736,
+    "r1": 324,
+    "r2_k1": 11,
+    "r2_k2": 264,
+    "r2_k3": 125,
+    "full_k2": 412,
+    "full_k3": 284
+  },
+  "base_token_fraction": 0.7173508099671021,
+  "r2_k1_reuse_unit": "prompt_group_id",
+  "r2_k1_max_total_exposure_factor": 4.0,
+  "r2_k1_unique_groups_seen": 208,
+  "r2_k1_group_exposure_mean": 2.8990384615384617,
+  "r2_k1_group_exposure_max": 4,
+  "r2_k1_group_exposure_cap_max": 4,
+  "r2_k1_group_exposure_violations": 0,
+  "r2_k1_repack_round": 4,
+  "world_size": 4,
+  "gradient_accumulation_steps": 4,
+  "optimizer_steps": 475,
+  "baseline_definition": "95% V2 material + 95% V2 user_clean + prompt-group 95% recommendation Full, packed separately at 32K",
+  "baseline_actual_nonpad_tokens": 242367498,
+  "observed_filtered_baseline_nonpad_tokens": 242367498,
+  "base_actual_nonpad_tokens": 173862521,
+  "recommendation_full_actual_nonpad_tokens": 68504977,
+  "training_optimizer_steps": 475
+}

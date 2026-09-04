@@ -1,0 +1,10 @@
+_base_: rec_fdr_v43_s1_topk_from0_fullft_32k_4gpu.yaml
+v43_experiment:
+  family: hcr
+  stage: hcr_off_regression
+  role: regression_control
+  initialization: from_pretrain
+  gold_sid_cot_leak_policy: preserve_audit_only
+hcr:
+  enabled: false
+output_dir: /mnt/wanqing-training-runs/lora_sft/rec_fdr_v43_hcr_off_regression_from0_fullft_32k_4gpu

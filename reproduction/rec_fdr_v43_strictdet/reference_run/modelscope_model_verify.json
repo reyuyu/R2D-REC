@@ -1,0 +1,28 @@
+{
+  "status": "valid",
+  "repo_id": "yuanchu0126/rec_fdr_v43_s1_topk_strictdet_fullft_32k_4gpu_20260903",
+  "private": true,
+  "checkpoint": "/mnt/wanqing-training-runs/lora_sft/rec_fdr_v43_s1_topk_strictdet_fullft_32k_4gpu_20260903",
+  "expected_files": {
+    "chat_template.jinja": 4168,
+    "config.json": 1595,
+    "generation_config.json": 187,
+    "model.safetensors": 16779959728,
+    "tokenizer.json": 16016932,
+    "tokenizer_config.json": 375
+  },
+  "remote_files": {
+    ".gitattributes": 2129,
+    "chat_template.jinja": 4168,
+    "config.json": 1595,
+    "configuration.json": 74,
+    "generation_config.json": 187,
+    "model.safetensors": 16779959728,
+    "README.md": 1457,
+    "tokenizer.json": 16016932,
+    "tokenizer_config.json": 375
+  },
+  "missing": [],
+  "size_mismatches": {},
+  "url": "https://modelscope.cn/models/yuanchu0126/rec_fdr_v43_s1_topk_strictdet_fullft_32k_4gpu_20260903"
+}

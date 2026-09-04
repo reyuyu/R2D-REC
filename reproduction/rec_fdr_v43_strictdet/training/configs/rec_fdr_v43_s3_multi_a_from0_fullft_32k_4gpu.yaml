@@ -1,0 +1,14 @@
+# S3 is a standalone S1 + Video Multi-A ablation. S2 History-FDR is excluded.
+_base_: rec_fdr_v43_s1_topk_from0_fullft_32k_4gpu.yaml
+v43_experiment:
+  family: hcr
+  stage: s3
+  role: formal
+  initialization: from_pretrain
+  gold_sid_cot_leak_policy: preserve_audit_only
+hcr:
+  history_fdr:
+    enabled: false
+  multi_a:
+    enabled: true
+output_dir: /mnt/wanqing-training-runs/lora_sft/rec_fdr_v43_s3_multi_a_from0_fullft_32k_4gpu

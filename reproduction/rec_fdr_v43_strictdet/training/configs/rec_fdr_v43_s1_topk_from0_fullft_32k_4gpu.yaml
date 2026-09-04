@@ -1,0 +1,113 @@
+model_name_or_path: /data/LLm-8B/code/OneReason-8B-pretrain-competition
+trust_remote_code: true
+flash_attn: fa2
+stage: sft
+do_train: true
+do_eval: true
+finetuning_type: full
+enable_liger_kernel: true
+dataset_dir: /mnt/wanqing-training-runs/datasets/rec_fdr_v43_hcr_frozen_v42a
+dataset: rec_full_k1_train
+eval_dataset: rec_full_val
+template: qwen3_nothink
+cutoff_len: 32768
+packing: true
+neat_packing: true
+preprocessing_num_workers: 4
+preprocessing_batch_size: 1000
+overwrite_cache: false
+curriculum_tokenized_pool_root: /mnt/wanqing-training-runs/cache/tokenized/rec_fdr_v43_hcr_frozen_v42a_32k
+base_tokenized_pool_root: /data/LLm-8B/code/train/data/tokenized/material140k_userclean_rec_curriculum_fullft_v3_32k
+rec_group_catalog_path: /mnt/wanqing-training-runs/datasets/rec_fdr_v43_hcr_frozen_v42a/rec_group_catalog.json
+output_dir: /mnt/wanqing-training-runs/lora_sft/rec_fdr_v43_s1_topk_from0_fullft_32k_4gpu
+logging_steps: 1
+logging_first_step: true
+eval_strategy: 'no'
+per_device_eval_batch_size: 1
+prediction_loss_only: true
+save_strategy: 'no'
+save_total_limit: 5
+save_only_model: false
+plot_loss: true
+overwrite_output_dir: false
+report_to: none
+num_train_epochs: 1.0
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+learning_rate: 2.0e-5
+lr_scheduler_type: cosine
+warmup_steps: 0.03
+weight_decay: 0.0
+bf16: true
+gradient_checkpointing: true
+seed: 19260817
+data_seed: 19260817
+dataloader_num_workers: 0
+remove_unused_columns: false
+disable_shuffling: true
+v42_experiment:
+  variant: interest_only
+  static_metrics: {}
+v43_experiment:
+  family: hcr
+  stage: s1
+  role: formal
+  initialization: from_pretrain
+  gold_sid_cot_leak_policy: preserve_audit_only
+hcr:
+  enabled: true
+  metadata_path: /mnt/wanqing-training-runs/datasets/rec_fdr_v43_hcr_frozen_v42a/hcr_group_metadata.json
+  novelty_topk:
+    enabled: true
+    positive_mode: anchor_only
+    known_positive_negative_policy: exclude_entire_group
+    lambda: 0.10
+    alpha_16: 0.35
+    alpha_32: 0.65
+    margin: {a: 0.10, b: 0.10, c: 0.10}
+    temperature: {a: 1.0, b: 1.0, c: 1.0}
+    novelty_weights:
+      T0: {a: 0.50, b: 0.30, c: 0.20}
+      T1: {a: 0.20, b: 0.50, c: 0.30}
+      T2: {a: 0.15, b: 0.25, c: 0.60}
+      T3: {a: 0.15, b: 0.25, c: 0.60}
+  history_fdr:
+    enabled: false
+    lambda: 0.05
+    behavior_conditioned: true
+    hierarchy_specific: true
+    plausible_negative_protection: true
+    history_hard_fraction: 0.50
+    max_history_hard_pairs_per_level: 8
+    eta_frequency: 0.35
+    eta_evidence: 0.45
+    eta_logit: 0.20
+    gamma_pos: 0.05
+    gamma_neg: 0.05
+    margin: 0.10
+    margin_min: 0.02
+    margin_max: 0.20
+    temperature: 1.0
+  multi_a:
+    enabled: false
+    lambda: 0.05
+    margin: 0.10
+    temperature: 1.0
+rec_joint_loss:
+  enabled: true
+  normalize_active_weights: true
+  sid_set: {enabled: true, weight: 0.70}
+  a_set: {enabled: true, weight: 0.10}
+  ab_set: {enabled: true, weight: 0.20}
+  first_divergence_rank:
+    enabled: true
+    weight: 0.30
+    candidate_pool_size: 128
+    max_pairs_per_sample: 64
+    pair_quota: {a: 16, b: 16, c: 32}
+    level_weight: {a: 0.25, b: 0.25, c: 0.50}
+    margin: {a: 0.20, b: 0.20, c: 0.20}
+    temperature: {a: 1.0, b: 1.0, c: 1.0}
+  factorized_sid_hit32: {enabled: false, diagnostic_only: true}
+  semantic_rank: {enabled: false, diagnostic_only: true}
+  r2_group_normalization: {enabled: true}

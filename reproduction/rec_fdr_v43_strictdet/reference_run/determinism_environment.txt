@@ -1,0 +1,24 @@
+mode=strict_deterministic_full_sft
+master_port=29749
+CUBLAS_WORKSPACE_CONFIG=:4096:8
+CUDA_DEVICE_MAX_CONNECTIONS=1
+CUDA_VISIBLE_DEVICES=0,1,2,3
+FLASH_ATTENTION_DETERMINISTIC=1
+GLOO_SOCKET_IFNAME=lo
+MKL_NUM_THREADS=1
+NCCL_ALGO=Ring
+NCCL_IB_DISABLE=1
+NCCL_PROTO=Simple
+NCCL_SOCKET_IFNAME=lo
+NVIDIA_TF32_OVERRIDE=0
+OMP_NUM_THREADS=1
+PYTHONHASHSEED=19260817
+REC_DISABLE_INTERMEDIATE_CHECKPOINTS=1
+torch=2.5.1+cu124 cuda=12.4 transformers=5.3.0 accelerate=1.11.0 flash_attn=2.8.3.post1
+080a0bd290ac7f829f6df9f3c5da1d8f87a04ca37fee820ee5bb4286c758bd73  /data/lkrec_product_rl_results_20260830/training_code/recommendation/rec_fdr_v43_hcr_fullft_sft.py
+455d80a08319df8ca3a915df915a3dba83ae18cb4728db4df46b40168568d586  /data/lkrec_product_rl_results_20260830/training_code/recommendation/hcr_v43.py
+a0f6ede7323c543e035e60f2d915fe71fe304dee95e34072e2fc92b7488ae53d  /mnt/wanqing-training-runs/lora_sft/rec_fdr_v43_s1_topk_strictdet_fullft_32k_4gpu_20260903/training_config.yaml
+0, NVIDIA A800-SXM4-80GB, GPU-88bdba58-9820-efb9-24aa-087cd8c66dd0, 535.129.03
+1, NVIDIA A800-SXM4-80GB, GPU-2fa1c744-1bb3-f17b-5eb6-37e589c21d40, 535.129.03
+2, NVIDIA A800-SXM4-80GB, GPU-c8b7c4c6-fec7-b713-2408-2c94086b2cea, 535.129.03
+3, NVIDIA A800-SXM4-80GB, GPU-eec4a1b7-9f7e-2e22-70a3-4eadd58c338e, 535.129.03

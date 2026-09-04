@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "files": {
+    "base/material_no_think_semantic_to_sid_train.parquet": {
+      "rows": 33250,
+      "parquet_bytes": 5663668,
+      "parquet_sha256": "370b070890718b43df766588dcd34bf09cf5eae24f2a5b392b535e62bd76698b",
+      "source_jsonl": "material_no_think_semantic_to_sid_train.jsonl",
+      "source_jsonl_bytes": 25756144,
+      "source_jsonl_sha256": "4f44ea303fcd116135a1910f6b6ab4f2d20d7520f0327f79fd924aeef9d2dd97"
+    },
+    "base/material_no_think_semantic_to_sid_val.parquet": {
+      "rows": 1750,
+      "parquet_bytes": 328113,
+      "parquet_sha256": "e57eac37e975b9dc1e28ae4c567ca1a158cebb07fae74abb8d552e6e0518a9fc",
+      "source_jsonl": "material_no_think_semantic_to_sid_val.jsonl",
+      "source_jsonl_bytes": 1355931,
+      "source_jsonl_sha256": "3cc79b04b27c3c3938454b193304a0c0f701f1817cf4c319a25f2b303796eedc"
+    },
+    "base/material_no_think_sid_to_semantic_train.parquet": {
+      "rows": 33250,
+      "parquet_bytes": 5719146,
+      "parquet_sha256": "ab287f112b01d7a66afd68f776bfc0c76991513d0ae26cdd06f4f1bc5e47b07f",
+      "source_jsonl": "material_no_think_sid_to_semantic_train.jsonl",
+      "source_jsonl_bytes": 25539755,
+      "source_jsonl_sha256": "99d4d87a120b20b7abfd12de4171cae20f27fe908fbe1ac6e961083d47028977"
+    },
+    "base/material_no_think_sid_to_semantic_val.parquet": {
+      "rows": 1750,
+      "parquet_bytes": 335647,
+      "parquet_sha256": "adb2ac635bfb367061479e9378fe16264b575fe1c068b4968ab84b20e98278a3",
+      "source_jsonl": "material_no_think_sid_to_semantic_val.jsonl",
+      "source_jsonl_bytes": 1340246,
+      "source_jsonl_sha256": "cedcfdd9a7730c426aa895fd2bb22d40a9d3590b8ee7384367c0201ae2e3774d"
+    },
+    "base/material_think_semantic_to_sid_train.parquet": {
+      "rows": 33250,
+      "parquet_bytes": 6843682,
+      "parquet_sha256": "be9b45685b2b01d026dea10d5fbd8181ce858563b39069e97896b46c88f0baa2",
+      "source_jsonl": "material_think_semantic_to_sid_train.jsonl",
+      "source_jsonl_bytes": 28751573,
+      "source_jsonl_sha256": "94c0b6639cb3babb1f3e040b75a31a2a3f30d8f3b062d97f90f5423e108d8b09"
+    },
+    "base/material_think_semantic_to_sid_val.parquet": {
+      "rows": 1750,
+      "parquet_bytes": 407016,
+      "parquet_sha256": "aa30b79966757fbd56650331e40a1d1e25651f4744fd883c472038dc5b7e2b94",
+      "source_jsonl": "material_think_semantic_to_sid_val.jsonl",
+      "source_jsonl_bytes": 1518462,
+      "source_jsonl_sha256": "92d06fd816a449347245d671e87d7bf539a93cf7078d087912c8e2f098ea190d"
+    },
+    "base/material_think_sid_to_semantic_train.parquet": {
+      "rows": 33250,
+      "parquet_bytes": 7752406,
+      "parquet_sha256": "cdd6c25bcf01a94052eebca19a4a47cb09c89f3eea3aece742183f6a86bb1ee4",
+      "source_jsonl": "material_think_sid_to_semantic_train.jsonl",
+      "source_jsonl_bytes": 32203079,
+      "source_jsonl_sha256": "f578ab5bc1669197267e9b9548ff8c37ee99d76568b7f1c9fe1b7c448a2b9934"
+    },
+    "base/material_think_sid_to_semantic_val.parquet": {
+      "rows": 1750,
+      "parquet_bytes": 445289,
+      "parquet_sha256": "3dfe1dd61d95c1804dd5511666295c0bc5443fdffdaec7bf7dbb0932e0c6059a",
+      "source_jsonl": "material_think_sid_to_semantic_val.jsonl",
+      "source_jsonl_bytes": 1695560,
+      "source_jsonl_sha256": "043d6c9e7cfdd220b29f65ada847178906ffc6549cdde70b8b59c3cc5144dc9b"
+    },
+    "base/user_clean_train.parquet": {
+      "rows": 30930,
+      "parquet_bytes": 73105290,
+      "parquet_sha256": "d1afae4514f6f78384f1535ee86411d0a505531a4ce7f62087b7084f6f41cae3",
+      "source_jsonl": "user_clean_train.jsonl",
+      "source_jsonl_bytes": 563421699,
+      "source_jsonl_sha256": "e774816aebe6832681e6752d0c2a0540d331e8a59c2f749b00999a71e825705d"
+    },
+    "base/user_clean_val.parquet": {
+      "rows": 1628,
+      "parquet_bytes": 4050697,
+      "parquet_sha256": "fba79e8b34915016c266a4cf25107ca802077ccc6a7edef7c8eecfe13272cb52",
+      "source_jsonl": "user_clean_val.jsonl",
+      "source_jsonl_bytes": 29660650,
+      "source_jsonl_sha256": "0cd9573117bad40491edcf39fc9bedef2356c4c9cc281fcdb2901f7c3bd8f5d3"
+    },
+    "recommendation/rec_full_k1_train.parquet": {
+      "rows": 7430,
+      "parquet_bytes": 10304604,
+      "parquet_sha256": "90b8f0c9058e096fd2005ad9636fb18ed6d50a761bea2fadc2339c69b97565f3",
+      "source_jsonl": "rec_full_k1_train.jsonl",
+      "source_jsonl_bytes": 64082361,
+      "source_jsonl_sha256": "d3d0cf60096114621387ea0f2b832ebdfbd3ce89a989c1238a08411cd4f2c364"
+    },
+    "recommendation/rec_full_k2_train.parquet": {
+      "rows": 15607,
+      "parquet_bytes": 11319594,
+      "parquet_sha256": "4a899e43862b05f5450d31f222f3cf27f07515b0dcfa17cd4a26af20446b9377",
+      "source_jsonl": "rec_full_k2_train.jsonl",
+      "source_jsonl_bytes": 156854889,
+      "source_jsonl_sha256": "4f2214369e2b404b16978cd024f44278f2dc8f9e326f871f005dba6421dc2288"
+    },
+    "recommendation/rec_full_k3_train.parquet": {
+      "rows": 22743,
+      "parquet_bytes": 8053777,
+      "parquet_sha256": "b1adeed1d07f8a9f932151929cc69c29e3265d19689e57e9b01259d4c3a85525",
+      "source_jsonl": "rec_full_k3_train.jsonl",
+      "source_jsonl_bytes": 268349801,
+      "source_jsonl_sha256": "5a79bc7d84625eef4bd03618c1051be7a6dca59c322a4bcf69459d6592e8b533"
+    },
+    "recommendation/rec_full_val.parquet": {
+      "rows": 2489,
+      "parquet_bytes": 1486563,
+      "parquet_sha256": "4cc22924a85d7a4595968a241dca06756e7416f478afac71d8ec0bdf5d88a379",
+      "source_jsonl": "rec_full_val.jsonl",
+      "source_jsonl_bytes": 27447940,
+      "source_jsonl_sha256": "ed1bb6d4c4417e00d1968bc1a007e709abdd2124fced26c9e8ae5b3a7ecf2534"
+    },
+    "recommendation/rec_r1_train.parquet": {
+      "rows": 11468,
+      "parquet_bytes": 12609741,
+      "parquet_sha256": "4fc0c719af6499c681921e746ac3dec402300c5aaedfe6a21a566666b64df280",
+      "source_jsonl": "rec_r1_train.jsonl",
+      "source_jsonl_bytes": 110895512,
+      "source_jsonl_sha256": "5d603ac120438b93d29565bc19681a3284946df20d6ddbc1679dc55fd8d4e75b"
+    },
+    "recommendation/rec_r1_val.parquet": {
+      "rows": 579,
+      "parquet_bytes": 648427,
+      "parquet_sha256": "c2ba15ec49b79e23607a830bce3e127d052192374d7cb0c3b47e31c580d33902",
+      "source_jsonl": "rec_r1_val.jsonl",
+      "source_jsonl_bytes": 5721091,
+      "source_jsonl_sha256": "339d41f4a6fd35b3d8c4d5ffd7e1531fa884d15ae283eaf1eb1a9a246b6b9fdb"
+    },
+    "recommendation/rec_r2_k1_pack_seed_0_train.parquet": {
+      "rows": 248,
+      "parquet_bytes": 225109,
+      "parquet_sha256": "83482b6ddb4577624c35d3625f86326331e5f358233d639514340cbb154fecf2",
+      "source_jsonl": "rec_r2_k1_pack_seed_0_train.jsonl",
+      "source_jsonl_bytes": 997314,
+      "source_jsonl_sha256": "d62fde5a2395a420059136ca766d01a5cb217be315d07502320739557e800e8b"
+    },
+    "recommendation/rec_r2_k1_pack_seed_1_train.parquet": {
+      "rows": 248,
+      "parquet_bytes": 224962,
+      "parquet_sha256": "fea32c83c6bd9d7f8f7134d5dd3aed36196546d839a0013b6295028eee4197fb",
+      "source_jsonl": "rec_r2_k1_pack_seed_1_train.jsonl",
+      "source_jsonl_bytes": 997314,
+      "source_jsonl_sha256": "033c9aa64c3714ff1509b5445afce0cd32cdfcf9e65b699bc5172427752bc0e8"
+    },
+    "recommendation/rec_r2_k1_pack_seed_2_train.parquet": {
+      "rows": 248,
+      "parquet_bytes": 224855,
+      "parquet_sha256": "97a2560b1fadc0f02f54461999ed1dc846ea18a3f2a6f50f2b15251882bb847e",
+      "source_jsonl": "rec_r2_k1_pack_seed_2_train.jsonl",
+      "source_jsonl_bytes": 997314,
+      "source_jsonl_sha256": "b49caacd7db9c0c6099238a55c9d16d5f67064fac1e3a53ca3b474a5b4943a21"
+    },
+    "recommendation/rec_r2_k1_pack_seed_3_train.parquet": {
+      "rows": 248,
+      "parquet_bytes": 225289,
+      "parquet_sha256": "1cf4f288119e0200ecc76291b52930aee0d771a69386d5eccfb0ce273a5f16da",
+      "source_jsonl": "rec_r2_k1_pack_seed_3_train.jsonl",
+      "source_jsonl_bytes": 997314,
+      "source_jsonl_sha256": "df405ccabe2f28a379fdd420943e798f6f2afba6b0ae164ea897d3a69f1b3d14"
+    },
+    "recommendation/rec_r2_k1_train.parquet": {
+      "rows": 248,
+      "parquet_bytes": 225004,
+      "parquet_sha256": "2acf2a78bced56ec83f4d2fe5a26d614cc7861df3887775b6c71282c40b39979",
+      "source_jsonl": "rec_r2_k1_train.jsonl",
+      "source_jsonl_bytes": 997314,
+      "source_jsonl_sha256": "4dd6f76ff06d1fa1811ecd073d9563dc4310a72fe9f244548bcc1bfa7ad6f85f"
+    },
+    "recommendation/rec_r2_k2_train.parquet": {
+      "rows": 14324,
+      "parquet_bytes": 5908993,
+      "parquet_sha256": "ce9ea7fbf1d1eb08a5494d2eb048644b059d5b24ae01036cd6e36ed559a270ef",
+      "source_jsonl": "rec_r2_k2_train.jsonl",
+      "source_jsonl_bytes": 59388896,
+      "source_jsonl_sha256": "3e7c5238e021c49ae17f761c2014847e6392a65173872159624aa73b01b41f9e"
+    },
+    "recommendation/rec_r2_k3_train.parquet": {
+      "rows": 20583,
+      "parquet_bytes": 3733874,
+      "parquet_sha256": "a6d9f4bfa5235619acba859ee9a17284234479d2db08b03ea107d9fad079e120",
+      "source_jsonl": "rec_r2_k3_train.jsonl",
+      "source_jsonl_bytes": 94474473,
+      "source_jsonl_sha256": "3b7775f4d2aafbdfc6e00e38c575c171d0c0d18b2b34671ac5636acfed57b2f9"
+    },
+    "recommendation/rec_r2_val.parquet": {
+      "rows": 1949,
+      "parquet_bytes": 457242,
+      "parquet_sha256": "afd82ff7bcf4a14b4a6e974dd08a170300d0a2d994cafd07957ff9f8f2d20871",
+      "source_jsonl": "rec_r2_val.jsonl",
+      "source_jsonl_bytes": 8695842,
+      "source_jsonl_sha256": "0201ab541976564ec4e2592c3ddd3932e7e47643eccc22aa8dd769cba04d7cdd"
+    }
+  }
+}
