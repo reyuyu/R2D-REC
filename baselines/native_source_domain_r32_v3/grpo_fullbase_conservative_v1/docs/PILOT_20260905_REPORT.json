@@ -1,0 +1,57 @@
+{
+  "base": {
+    "config_sha256": "78451878177a5443d87440940c54177da6e833e8ab4c97dab0e263a4c97162e2",
+    "model_sha256_after": "8be8b4d08f2eaa295159f2333e20949aa71ed552c3646a80380485c2efa2eb59",
+    "model_sha256_before": "8be8b4d08f2eaa295159f2333e20949aa71ed552c3646a80380485c2efa2eb59",
+    "unchanged": true
+  },
+  "code_commit_executed": "e29d51d4738211453528c4d7f79bd97e7b614c7a",
+  "cpu_tests": {
+    "legacy_direct_suites_passed": 6,
+    "new_passed": 11,
+    "status": "PASS"
+  },
+  "dataset_sha256": "791d5696b87d18720fccfff5b4dbbb3c72d996095b8e2bc9d7c7f7c57fdcf3dc",
+  "optimizer": {
+    "lora_only": true,
+    "parameter_tensor_count": 504
+  },
+  "outcome": "READY_FOR_CONSERVATIVE_GR_REC_REVIEW",
+  "pilot": {
+    "adapter_sha256": "c2ed3556f0d653dff3d538894900f3b33129bc33cf888fcdb30964851f2b4051",
+    "checkpoints": [10, 20],
+    "learning_rate": 5e-7,
+    "steps": 20,
+    "status": "PASS",
+    "world_size": 4
+  },
+  "retention": {
+    "assessment": "mixed_review_required",
+    "step0": {
+      "nothink_mean_reward": 0.0625,
+      "nothink_success_at_k": 0.5,
+      "think_mean_reward": 3.1591796875,
+      "think_success_at_32": 0.625,
+      "think_success_at_k": 0.75
+    },
+    "step20": {
+      "nothink_mean_reward": 0.1328125,
+      "nothink_success_at_k": 0.25,
+      "think_mean_reward": 2.828125,
+      "think_success_at_32": 0.6875,
+      "think_success_at_k": 0.75
+    }
+  },
+  "smoke_repeatability": {
+    "first_divergence": null,
+    "final_adapter_sha256": "65c344435e4c9f683345448c6c9ab635538a6498cd2000c49c415ea8d51ea833",
+    "status": "PASS"
+  },
+  "step0_parity": true,
+  "trainable": {
+    "base_parameter_count": 0,
+    "lora_parameter_count": 87293952,
+    "lora_tensor_count": 504,
+    "total_parameter_count": 8477250560
+  }
+}
