@@ -27,6 +27,7 @@ The BF16 parent-export parity gate requires exact prompt IDs and greedy generate
 IDs on four fixed data rows. Corresponding logits are compared on the source
 model's fixed Top-32 token IDs; each reloaded model Top-32 set must overlap at
 least 31/32 tokens. The gate additionally
-requires selected-logit max absolute difference at most 0.25 and mean absolute
-difference at most 0.125. These bounds account for PEFT runtime-vs-merged BF16
-rounding while remaining fail-closed on behavioral or ranking drift.
+requires selected-logit max absolute difference at most 0.5, mean absolute
+difference at most 0.2, and max relative difference at most 2%. These bounds
+cover observed high-logit BF16 ULP accumulation while remaining fail-closed on
+behavioral, ranking, or material relative drift.

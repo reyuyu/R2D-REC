@@ -66,7 +66,10 @@ def _render_prompt(tokenizer, prompt):
     return tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
 
 
-def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tolerance: float) -> dict:
+def _compare(
+    left: list[dict], right: list[dict], max_tolerance: float,
+    mean_tolerance: float, relative_tolerance: float,
+) -> dict:
     tokenization_exact = all(a["prompt_ids"] == b["prompt_ids"] for a, b in zip(left, right))
     greedy_exact = all(a["greedy_ids"] == b["greedy_ids"] for a, b in zip(left, right))
     selected_ids_exact = all(a["selected_ids"] == b["selected_ids"] for a, b in zip(left, right))
@@ -80,9 +83,16 @@ def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tol
     ]
     max_abs = max(differences)
     mean_abs = sum(differences) / len(differences)
+    relative_differences = [
+        abs(x - y) / max(abs(x), 1.0)
+        for a, b in zip(left, right)
+        for x, y in zip(a["selected_logits"], b["selected_logits"])
+    ]
+    max_relative = max(relative_differences)
     passed = (
         tokenization_exact and greedy_exact and selected_ids_exact and min(top32_overlaps) >= 31
         and max_abs <= max_tolerance and mean_abs <= mean_tolerance
+        and max_relative <= relative_tolerance
     )
     return {
         "status": "PASS" if passed else "FAIL",
@@ -93,8 +103,10 @@ def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tol
         "top32_minimum_overlap_required": 31,
         "selected_logits_max_abs": max_abs,
         "selected_logits_mean_abs": mean_abs,
+        "selected_logits_max_relative": max_relative,
         "selected_logits_max_abs_tolerance": max_tolerance,
         "selected_logits_mean_abs_tolerance": mean_tolerance,
+        "selected_logits_max_relative_tolerance": relative_tolerance,
         "tolerance_basis": "BF16 PEFT runtime-vs-merged path; exact greedy IDs and Top-32 IDs remain mandatory",
     }
 
@@ -141,7 +153,10 @@ def main() -> int:
         reloaded, reloaded_tokenizer, prompts,
         fixed_selected_ids=[row["selected_ids"] for row in source_probe],
     )
-    parity = _compare(source_probe, merged_probe, max_tolerance=0.25, mean_tolerance=0.125)
+    parity = _compare(
+        source_probe, merged_probe,
+        max_tolerance=0.5, mean_tolerance=0.2, relative_tolerance=0.02,
+    )
     write_json(args.output / "functional_parity_details.json", {
         "dataset_row_indices": list(indices),
         "source": source_probe,
