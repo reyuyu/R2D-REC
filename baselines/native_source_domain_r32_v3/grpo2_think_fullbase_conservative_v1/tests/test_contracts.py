@@ -137,6 +137,7 @@ def test_launcher_deterministic_environment():
         "CUBLAS_WORKSPACE_CONFIG=:4096:8", "CUDA_DEVICE_MAX_CONNECTIONS=1",
         "FLASH_ATTENTION_DETERMINISTIC=1", "NVIDIA_TF32_OVERRIDE=0",
         "NCCL_SOCKET_IFNAME=lo", "GLOO_SOCKET_IFNAME=lo", "NCCL_IB_DISABLE=1",
+        "GRPO_GIT_COMMIT",
     ):
         assert phrase in source
 

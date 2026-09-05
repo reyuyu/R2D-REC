@@ -26,6 +26,7 @@ export GLOO_SOCKET_IFNAME=lo
 export NCCL_IB_DISABLE=1
 export TOKENIZERS_PARALLELISM=false
 export GRPO_MONITOR_DIR="${GRPO2_MONITOR_ROOT}"
+export GRPO_GIT_COMMIT="${GRPO_GIT_COMMIT:-$(git -C "${PACKAGE_DIR}" rev-parse HEAD)}"
 
 run_one() {
   local run_id="$1"
