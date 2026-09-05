@@ -12,6 +12,7 @@ COMPARE="$SOURCE/baselines/native_source_domain_r32_v3/grpo/user/scripts/compare
 CONFIG="$SOURCE/baselines/native_source_domain_r32_v3/grpo/user/configs/grpo3_user_from_grpo2_step300_determinism_v1.json"
 RUN_A="GRPO3-USER-DETERMINISM-SMOKE-A"
 RUN_B="GRPO3-USER-DETERMINISM-SMOKE-B"
+UPSTREAM_PID_FILE="/root/grpo2_think_continued_adapter_formal300_20260905/state/launcher.pid"
 
 mkdir -p "$RUNS" "$CHECKPOINTS" "$STATE" "$LOGS"
 
@@ -45,8 +46,12 @@ gpus_busy() {
     2>/dev/null | grep -Eq '[0-9]'
 }
 
+upstream_active() {
+  [ -f "$UPSTREAM_PID_FILE" ] && kill -0 "$(cat "$UPSTREAM_PID_FILE")" 2>/dev/null
+}
+
 write_state WAITING_FOR_GPUS "waiting for existing work to release GPU0-3"
-while gpus_busy; do
+while upstream_active || gpus_busy; do
   sleep 60
 done
 
