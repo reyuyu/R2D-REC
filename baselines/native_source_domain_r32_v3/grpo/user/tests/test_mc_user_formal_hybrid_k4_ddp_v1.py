@@ -14,6 +14,7 @@ from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     FROZEN_CONFIG,
     GRPO3_DETERMINISM_CONFIG,
     GRPO3_FORMAL_CONFIG,
+    GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG,
     STRONG_PARENT_CONFIG,
     append_rank0_prompt_artifacts,
     build_manifest,
@@ -31,6 +32,7 @@ CONFIG = USER_DIR / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
 STRONG_CONFIG = USER_DIR / "configs" / "mc_user_hybrid_strongparent_lr3e7_200.json"
 GRPO3_CONFIG = USER_DIR / "configs" / "grpo3_user_from_grpo2_step300_determinism_v1.json"
 GRPO3_FORMAL_CONFIG_PATH = USER_DIR / "configs" / "grpo3_user_from_grpo2_step250_formal_v1.json"
+GRPO3_FROM_GRPO1_CONFIG_PATH = USER_DIR / "configs" / "grpo3_user_from_grpo1_step300_formal_v1.json"
 
 
 class HybridFormalRunnerTests(unittest.TestCase):
@@ -117,6 +119,37 @@ class HybridFormalRunnerTests(unittest.TestCase):
             self.assertEqual(result["status"], "PASS")
             with self.assertRaisesRegex(RuntimeError, "BLOCKED_PARENT_LINEAGE"):
                 validate_grpo3_parent_lineage(root, expected_step=300, expected_sha256=sha)
+
+    def test_grpo3_from_grpo1_step300_config_and_lineage(self):
+        config = load_k4_config(GRPO3_FROM_GRPO1_CONFIG_PATH)
+        self.assertEqual(config, GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG)
+        self.assertEqual(config["parent_stage"], "GRPO1")
+        self.assertEqual(config["parent_checkpoint_step"], 300)
+        self.assertEqual(config["checkpoint_steps"], [25, 50, 75, 100, 150, 200])
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sha = "b" * 64
+            (root / "lineage.json").write_text(json.dumps({
+                "recipe": "grpo_fullbase_conservative_v1",
+                "adapter_stage": "GR_REC",
+                "parent_mode": "full_model",
+                "step": 300,
+                "adapter_sha256": sha,
+            }), encoding="utf-8")
+            result = validate_grpo3_parent_lineage(
+                root,
+                expected_step=300,
+                expected_sha256=sha,
+                expected_parent_stage="GRPO1",
+            )
+            self.assertEqual(result["parent_stage"], "GRPO1")
+            with self.assertRaisesRegex(RuntimeError, "BLOCKED_PARENT_LINEAGE"):
+                validate_grpo3_parent_lineage(
+                    root,
+                    expected_step=500,
+                    expected_sha256=sha,
+                    expected_parent_stage="GRPO1",
+                )
 
     def test_grpo3_comparator_requires_exact_step_evidence_and_adapter(self):
         with tempfile.TemporaryDirectory() as temporary:

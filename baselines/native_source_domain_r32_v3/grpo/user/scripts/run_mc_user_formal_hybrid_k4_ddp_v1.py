@@ -260,12 +260,27 @@ GRPO3_FORMAL_CONFIG = {
     "resume_supported": True,
     "resume_policy": "complete_checkpoint_state",
 }
+GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG = {
+    **GRPO3_FORMAL_CONFIG,
+    "stage": "grpo3_user_from_grpo1_step300_formal_v1",
+    "adapter": (
+        "/root/grpo1_formal_500_20260905/outputs/"
+        "GRPO1-REC-BILATERAL-FULLBASE-CONSERVATIVE-R32-LR5E7-500/"
+        "checkpoint-300"
+    ),
+    "parent_adapter_sha256": "fbae37f3892c414a7c86f2285a4568f2a5bb526c8d249616f0445bd9b90f6c19",
+    "parent_experiment": "GRPO1_REC_BILATERAL_FULLBASE_CONSERVATIVE",
+    "parent_checkpoint_step": 300,
+    "probe_parent_label": "GRPO1-step300",
+    "parent_stage": "GRPO1",
+}
 SUPPORTED_FROZEN_CONFIGS = {
     FROZEN_CONFIG["stage"]: FROZEN_CONFIG,
     STRONG_PARENT_CONFIG["stage"]: STRONG_PARENT_CONFIG,
     REPRO_STEP100_CONFIG["stage"]: REPRO_STEP100_CONFIG,
     GRPO3_DETERMINISM_CONFIG["stage"]: GRPO3_DETERMINISM_CONFIG,
     GRPO3_FORMAL_CONFIG["stage"]: GRPO3_FORMAL_CONFIG,
+    GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG["stage"]: GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG,
 }
 
 
@@ -311,29 +326,41 @@ def validate_parent_adapter_contract(path: Path) -> dict[str, Any]:
 
 
 def validate_grpo3_parent_lineage(
-    path: Path, *, expected_step: int, expected_sha256: str
+    path: Path, *, expected_step: int, expected_sha256: str, expected_parent_stage: str = "GRPO2"
 ) -> dict[str, Any]:
     lineage_path = path / "lineage.json"
     if not lineage_path.is_file():
         raise MCK4Error("BLOCKED_PARENT_LINEAGE: lineage.json missing")
     lineage = json.loads(lineage_path.read_text(encoding="utf-8"))
-    checks = {
-        "adapter_semantics": lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER",
-        "adapter_continuation": lineage.get("adapter_continuation") is True,
-        "adapter_only": lineage.get("adapter_only") is True,
-        "contains_grpo1_and_grpo2_effect": lineage.get("contains_grpo1_and_grpo2_effect") is True,
-        "grpo2_step": int(lineage.get("grpo2_step", -1)) == expected_step,
-        "adapter_sha256": lineage.get("adapter_sha256") == expected_sha256,
-        "training_resume": lineage.get("training_resume") is False,
-    }
+    if expected_parent_stage == "GRPO1":
+        checks = {
+            "recipe": lineage.get("recipe") == "grpo_fullbase_conservative_v1",
+            "adapter_stage": lineage.get("adapter_stage") == "GR_REC",
+            "parent_mode": lineage.get("parent_mode") == "full_model",
+            "step": int(lineage.get("step", -1)) == expected_step,
+            "adapter_sha256": lineage.get("adapter_sha256") == expected_sha256,
+        }
+    elif expected_parent_stage == "GRPO2":
+        checks = {
+            "adapter_semantics": lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER",
+            "adapter_continuation": lineage.get("adapter_continuation") is True,
+            "adapter_only": lineage.get("adapter_only") is True,
+            "contains_grpo1_and_grpo2_effect": lineage.get("contains_grpo1_and_grpo2_effect") is True,
+            "grpo2_step": int(lineage.get("grpo2_step", -1)) == expected_step,
+            "adapter_sha256": lineage.get("adapter_sha256") == expected_sha256,
+            "training_resume": lineage.get("training_resume") is False,
+        }
+    else:
+        raise MCK4Error(f"BLOCKED_PARENT_LINEAGE: unsupported parent stage {expected_parent_stage}")
     if not all(checks.values()):
         raise MCK4Error(f"BLOCKED_PARENT_LINEAGE: {checks}")
     return {
         "status": "PASS",
         "schema": lineage.get("schema"),
-        "grpo2_step": expected_step,
+        "parent_stage": expected_parent_stage,
+        "parent_step": expected_step,
         "adapter_sha256": expected_sha256,
-        "contains_grpo1_and_grpo2_effect": True,
+        "contains_grpo1_and_grpo2_effect": expected_parent_stage == "GRPO2",
         "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
     }
 
@@ -622,11 +649,15 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
         if row_count != int(config["registered_dataset_rows"]):
             raise MCK4Error("registered dataset row count mismatch")
     parent_lineage = None
-    if config["stage"] == GRPO3_FORMAL_CONFIG["stage"]:
+    if config["stage"] in {
+        GRPO3_FORMAL_CONFIG["stage"],
+        GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG["stage"],
+    }:
         parent_lineage = validate_grpo3_parent_lineage(
             Path(config["adapter"]),
             expected_step=int(config["parent_checkpoint_step"]),
             expected_sha256=parent_sha256,
+            expected_parent_stage=str(config.get("parent_stage", "GRPO2")),
         )
     manifest = build_manifest(args.run_id, config_path, config_sha256, config, rows, str(git_state["git_commit"]), smoke_prompts=args.smoke_prompts)
     manifest["parent_adapter_sha256"] = parent_sha256
@@ -916,18 +947,24 @@ def save_resumable_formal_checkpoint(
     dist.barrier()
     if rank == 0:
         adapter_sha256 = file_sha256(checkpoint_dir / "adapter_model.safetensors")
+        parent_stage = str(config.get("parent_stage", "GRPO2"))
+        parent_step = int(config["parent_checkpoint_step"])
         lineage = {
             "schema": "grpo3_user_continued_adapter_lineage_v1",
             "stage": "GRPO3_USER",
             "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
-            "adapter_weight_parent": "GRPO2 checkpoint-250",
+            "adapter_weight_parent": f"{parent_stage} checkpoint-{parent_step}",
+            "parent_stage": parent_stage,
+            "parent_checkpoint_step": parent_step,
             "parent_adapter_sha256": config["parent_adapter_sha256"],
             "parent_selection_basis": config["parent_selection_basis"],
             "external_best_confirmed": config["external_best_confirmed"],
-            "contains_grpo1_grpo2_and_grpo3_effect": True,
+            "contains_grpo1_and_grpo3_effect": parent_stage == "GRPO1",
+            "contains_grpo1_grpo2_and_grpo3_effect": parent_stage == "GRPO2",
             "fresh_lora": False,
             "fresh_optimizer": True,
             "training_resume_from_grpo2": False,
+            "training_resume_from_parent": False,
             "adapter_only": True,
             "resume_supported": True,
             "grpo3_prompt_step": prompt_step,
