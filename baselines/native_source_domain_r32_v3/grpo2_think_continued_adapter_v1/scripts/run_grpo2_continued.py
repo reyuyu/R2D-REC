@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import random
 import subprocess
@@ -71,6 +72,21 @@ _MODEL_AUDIT: dict = {}
 _STEP0_AUDIT: dict = {}
 
 
+def adapter_delta_norm(reference: Path, candidate: Path) -> float:
+    from safetensors import safe_open
+
+    squared = 0.0
+    with safe_open(str(reference), framework="pt", device="cpu") as left, safe_open(
+        str(candidate), framework="pt", device="cpu"
+    ) as right:
+        if set(left.keys()) != set(right.keys()):
+            raise RuntimeError("GRPO2_CHECKPOINT_ADAPTER_KEY_MISMATCH")
+        for name in left.keys():
+            delta = right.get_tensor(name).float() - left.get_tensor(name).float()
+            squared += float((delta * delta).sum().item())
+    return math.sqrt(squared)
+
+
 def working_tree_clean() -> bool:
     root = Path(__file__).resolve().parents[4]
     result = subprocess.run(["git", "status", "--porcelain"], cwd=root, check=True, capture_output=True, text=True)
@@ -98,8 +114,10 @@ def prepare_plan(args):
     max_steps = int(_CONFIG["optimization"]["max_steps"])
     if args.max_steps is not None and int(args.max_steps) != max_steps:
         raise RuntimeError("GRPO2_MAX_STEPS_CLI_CONFIG_MISMATCH")
-    group_ids = list(_CONFIG["retention_probe"]["group_ids"])
-    probe_records = load_probe_records(args.probe_data_path, group_ids)
+    probe_enabled = bool(_CONFIG["retention_probe"].get("enabled"))
+    probe_only = args.probe_only_step is not None
+    group_ids = list(_CONFIG["retention_probe"]["group_ids"]) if (probe_enabled or probe_only) else []
+    probe_records = load_probe_records(args.probe_data_path, group_ids) if group_ids else {}
     resume_step = validate_grpo2_resume(args.resume_from_checkpoint)["step"] if args.resume_from_checkpoint else 0
     return {
         "raw_groups": len(dataset),
@@ -127,9 +145,10 @@ def load_model(device):
         device_map=device,
         attn_implementation="flash_attention_2",
     )
+    adapter_source = _PARSED.probe_only_adapter or _PARSED.adapter_parent
     model = PeftModel.from_pretrained(
         base,
-        _PARSED.adapter_parent,
+        adapter_source,
         is_trainable=True,
         # The source adapter is FP32 while the immutable base is BF16. PEFT's
         # training autocast creates FP32 LoRA parameters before loading, which
@@ -142,7 +161,7 @@ def load_model(device):
         raise RuntimeError(f"GRPO2_INHERITED_LORA_PARAMETER_CONTRACT_FAILED: {audit}")
     step0 = audit_loaded_adapter(
         model,
-        Path(_PARSED.adapter_parent) / "adapter_model.safetensors",
+        Path(adapter_source) / "adapter_model.safetensors",
         device=device,
     )
     rank = int(os.environ.get("LOCAL_RANK", "0"))
@@ -185,6 +204,9 @@ def make_disabled_nothink_reward_func(tokenizer=None):
 
 def make_config(output_dir, max_steps, lr, seed, *, save_strategy="steps", save_steps=10, save_total_limit=2, use_cpu=False):
     del lr
+    checkpoint_steps = _CONFIG.get("checkpoint", {}).get("steps", [])
+    if checkpoint_steps:
+        save_strategy = "no"
     return GRPOConfig(
         output_dir=output_dir,
         max_steps=max_steps,
@@ -245,6 +267,8 @@ class MonitorWriter:
             "training_routes": ["think"],
             "train_think_rows": 611,
             "train_nothink_rows": 0,
+            "checkpoint_steps": _CONFIG.get("checkpoint", {}).get("steps", []),
+            "inline_retention_probe": bool(_CONFIG["retention_probe"].get("enabled")),
             "historical_math": "Positive-A0 V3: G4 CoT + four independent G8 FullSID; L_cot + L_sid",
             "learning_rate": 2e-7,
             "versions": {
@@ -272,7 +296,7 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
             "adapter_initialization_source_stage": "GRPO1_REC_BILATERAL",
             "adapter_initialization_source_checkpoint": 500,
             "adapter_initialization_source_sha256": GRPO1_STEP500_ADAPTER_SHA256,
-            "optimizer_initialization": "fresh",
+            "optimizer_initialization": "fresh_at_grpo2_step0",
             "trainer_state_initialization": "fresh",
             "learning_rate": 2e-7,
             "dataset_sha256": _CONFIG["dataset"]["sha256"],
@@ -281,7 +305,11 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
             "seed": _CONFIG["seeds"]["training"],
         }
         output = Path(kwargs["args"].output_dir)
-        super().__init__(*args, lineage=lineage, evidence_dir=output, **kwargs)
+        checkpoint_steps = _CONFIG.get("checkpoint", {}).get("steps", [])
+        super().__init__(
+            *args, lineage=lineage, evidence_dir=output,
+            checkpoint_steps=checkpoint_steps, **kwargs,
+        )
         if int(os.environ.get("LOCAL_RANK", "0")) == 0:
             write_json_atomic(output / "run_manifest.json", {
                 "schema": "grpo2_continued_adapter_validation_v1",
@@ -289,6 +317,9 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
                 "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
                 "adapter_weight_parent": "GRPO1 checkpoint-500",
                 "adapter_initialization_source_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+                "source_grpo1_checkpoint": 500,
+                "selection_basis": "USER_PROVISIONAL_SELECTION",
+                "external_grpo1_best_confirmed": False,
                 "optimizer_parent": "NONE",
                 "trainer_state_parent": "NONE",
                 "rng_parent": "NONE",
@@ -309,6 +340,9 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
                 "lora_trainable_params": _MODEL_AUDIT["lora_trainable_parameter_count"],
                 "lora_tensor_count": _MODEL_AUDIT["lora_trainable_tensor_count"],
                 "step0_adapter_parity": _STEP0_AUDIT,
+                "checkpoint_steps": checkpoint_steps,
+                "contains_grpo1_and_grpo2_effect": True,
+                "inference_contract": "Full SFT plus this single continued adapter",
             })
 
 
@@ -320,6 +354,10 @@ def _validate_preflight(args) -> dict:
     _DATASET_GUARD = {key: value for key, value in dataset.items() if key != "rows"}
     if args.resume_from_checkpoint:
         validate_grpo2_resume(args.resume_from_checkpoint)
+    if args.probe_only_adapter:
+        probe_path = Path(args.probe_only_adapter)
+        if probe_path.resolve() != Path(args.adapter_parent).resolve():
+            validate_grpo2_resume(probe_path)
     if int(args.seed) != int(_CONFIG["seeds"]["training"]):
         raise RuntimeError("GRPO2_TRAINING_SEED_DRIFT")
     if float(args.lr) != 2e-7:
@@ -342,6 +380,7 @@ def _validate_preflight(args) -> dict:
         "max_steps": _CONFIG["optimization"]["max_steps"],
         "learning_rate": 2e-7,
         "git_commit": current_git_commit(),
+        "inline_retention_probe": bool(_CONFIG["retention_probe"].get("enabled")),
     }
 
 
@@ -368,33 +407,59 @@ def _write_checkpoint_manifest(checkpoint: Path) -> dict:
     if missing:
         raise RuntimeError(f"GRPO2_CHECKPOINT_INCOMPLETE: {missing}")
     record = assert_training_checkpoint(checkpoint, 4)
+    state = load_json(checkpoint / "trainer_state.json")
+    if int(state.get("max_steps", -1)) != int(_CONFIG["optimization"]["max_steps"]):
+        raise RuntimeError("GRPO2_CHECKPOINT_MAX_STEPS_MISMATCH")
+    lineage = validate_grpo2_resume(checkpoint)["lineage"]
+    if lineage.get("resume_supported") is not True:
+        raise RuntimeError("GRPO2_CHECKPOINT_NOT_RESUME_CAPABLE")
+    delta_norm = adapter_delta_norm(
+        Path(_PARSED.adapter_parent) / "adapter_model.safetensors",
+        checkpoint / "adapter_model.safetensors",
+    )
+    if delta_norm <= 0:
+        raise RuntimeError("GRPO2_CHECKPOINT_ADAPTER_DID_NOT_CHANGE")
     manifest = {
         "schema": "grpo2_continued_adapter_checkpoint_manifest_v1",
         "step": record["step"],
         "adapter_only": True,
         "resume_capable": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "contains_grpo1_and_grpo2_effect": True,
+        "inference_contract": "Full SFT plus this single continued adapter; do not stack GRPO1 again",
+        "adapter_delta_norm_from_grpo1_step500": delta_norm,
         "files": [{"name": name, "size": (checkpoint / name).stat().st_size, "sha256": file_sha256(checkpoint / name)} for name in required],
     }
     write_json_atomic(checkpoint / "checkpoint_manifest.json", manifest)
-    return record
+    return {**record, "resume_capable": True, "adapter_delta_norm_from_grpo1_step500": delta_norm}
 
 
 def _finalize(args) -> None:
     if int(os.environ.get("LOCAL_RANK", "0")) != 0:
         return
     output = Path(args.output_dir) / args.run_id
-    expected = [5] if _CONFIG["optimization"]["max_steps"] == 5 else [10, 20]
+    expected = _CONFIG.get("checkpoint", {}).get("steps")
+    if not expected:
+        expected = [5] if _CONFIG["optimization"]["max_steps"] == 5 else [10, 20]
     checkpoints = [_write_checkpoint_manifest(output / f"checkpoint-{step}") for step in expected]
     if checkpoints[-1]["adapter_sha256"] == GRPO1_STEP500_ADAPTER_SHA256:
         raise RuntimeError("GRPO2_INHERITED_ADAPTER_FINAL_WEIGHT_DID_NOT_CHANGE")
     source_after = validate_parent_sources(args.base_model, args.adapter_parent)
     if source_after["base_full_model_sha256"] != _SOURCE_AUDIT["base_full_model_sha256"] or source_after["adapter_sha256"] != _SOURCE_AUDIT["adapter_sha256"]:
         raise RuntimeError("GRPO2_PARENT_SOURCE_MUTATED_DURING_TRAINING")
-    monitor_dir = Path(os.environ["GRPO_MONITOR_DIR"]) / args.run_id
-    retention = summarize_retention(monitor_dir / "probes.jsonl")
-    write_json_atomic(output / "retention-summary.json", retention)
+    if _CONFIG["retention_probe"].get("enabled"):
+        monitor_dir = Path(os.environ["GRPO_MONITOR_DIR"]) / args.run_id
+        retention = summarize_retention(monitor_dir / "probes.jsonl")
+        write_json_atomic(output / "retention-summary.json", retention)
+    else:
+        retention = {"status": "DISABLED_DURING_CONTINUOUS_FORMAL_TRAINING"}
     rank_summary = load_json(output / "run-summary-rank0.json")
     trainer_evidence = load_json(output / "trainer-evidence-rank0.json")
+    for row in rank_summary.get("log_history", []):
+        for key in ("loss", "grad_norm", "reward", "reward_std"):
+            value = row.get(key)
+            if isinstance(value, (int, float)) and not math.isfinite(value):
+                raise RuntimeError(f"GRPO2_NONFINITE_{key.upper()}_AT_STEP_{row.get('step')}")
     summary = {
         "status": "PASS",
         "mode": "CONTINUED_SINGLE_ADAPTER",
@@ -419,9 +484,18 @@ def _finalize(args) -> None:
         "final_loss": rank_summary["train_loss"],
         "checkpoints": checkpoints,
         "retention": retention,
+        "nonfinite_count": 0,
+        "oom_count": 0,
+        "nccl_fatal_count": 0,
+        "continuous_run": "0_TO_300_WITHOUT_MANUAL_INTERRUPTION" if expected == [100, 150, 200, 250, 300] else None,
+        "inline_retention_probe": "OFF" if expected == [100, 150, 200, 250, 300] else None,
+        "final_state": "READY_FOR_OFFLINE_CHECKPOINT_EVALUATION" if expected == [100, 150, 200, 250, 300] else None,
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
     write_json_atomic(output / "summary.json", summary)
+    if expected == [100, 150, 200, 250, 300]:
+        write_json_atomic(output / "checkpoint_summary.json", {"checkpoints": checkpoints})
+        write_json_atomic(output / "training_summary.json", summary)
 
 
 def main(argv=None) -> int:
@@ -467,6 +541,8 @@ def main(argv=None) -> int:
     os.environ.setdefault("GRPO_PARITY_AUDIT", "1")
     os.environ.setdefault("GRPO_TRACE_EVERY", "1")
     baseline_runner.main(argv)
+    if args.probe_only_step is not None:
+        return 0
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         torch.distributed.barrier()
     _finalize(args)

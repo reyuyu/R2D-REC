@@ -233,6 +233,43 @@ def test_formal_500_contract_rejects_midrun_work():
         _validate_formal_contract(config)
 
 
+def test_original_formal_contract_still_allows_larger_retention_limit():
+    package = Path(__file__).resolve().parents[1]
+    config = json.loads((package / "config" / "formal_500.json").read_text(encoding="utf-8"))
+    config["checkpoint"]["save_total_limit"] = 6
+    assert _validate_formal_contract(config)["save_total_limit"] == 6
+
+
+def test_formal_500_final_only_contract():
+    package = Path(__file__).resolve().parents[1]
+    config = json.loads(
+        (package / "config" / "formal_500_final_only.json").read_text(encoding="utf-8")
+    )
+    audit = _validate_formal_contract(config)
+    assert audit == {
+        "formal_run": True,
+        "checkpoint_mode": "ADAPTER_ONLY_MODEL_WITH_FULL_RESUME_STATE",
+        "midrun_retention_probe": "DISABLED",
+        "midrun_resume_audit": "DISABLED",
+        "save_steps": 500,
+        "save_total_limit": 1,
+    }
+    assert config["optimization"] == json.loads(
+        (package / "config" / "formal_500.json").read_text(encoding="utf-8")
+    )["optimization"]
+
+
+def test_formal_500_final_only_rejects_extra_checkpoints():
+    package = Path(__file__).resolve().parents[1]
+    config = json.loads(
+        (package / "config" / "formal_500_final_only.json").read_text(encoding="utf-8")
+    )
+    config["checkpoint"]["save_steps"] = 250
+    config["checkpoint"]["save_total_limit"] = 2
+    with pytest.raises(RuntimeError, match="formal GRPO-1 contract mismatch"):
+        _validate_formal_contract(config)
+
+
 # 14. Formal training cannot enter trainer.train with a non-LoRA optimizer.
 def test_formal_startup_audit():
     contract = {"formal_run": True}

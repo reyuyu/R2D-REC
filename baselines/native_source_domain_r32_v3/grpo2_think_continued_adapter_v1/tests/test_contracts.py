@@ -108,10 +108,15 @@ def test_grpo2_checkpoint_resume_remains_supported(tmp_path):
     for rank in range(4):
         (checkpoint / f"rng_state_{rank}.pth").write_bytes(b"x")
     (checkpoint / "trainer_state.json").write_text('{"global_step": 10}', encoding="utf-8")
+    from hashlib import sha256
+    adapter_sha = sha256(b"x").hexdigest()
     (checkpoint / "lineage.json").write_text(json.dumps({
         "stage": "GRPO2_REC_THINK",
         "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
         "adapter_initialization_source_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+        "grpo2_optimizer_step": 10,
+        "resume_supported": True,
+        "adapter_sha256": adapter_sha,
     }), encoding="utf-8")
     assert validate_grpo2_resume(checkpoint)["step"] == 10
 
@@ -122,6 +127,39 @@ def test_invalid_resume_lineage_fails_closed(tmp_path):
     (checkpoint / "lineage.json").write_text("{}", encoding="utf-8")
     with pytest.raises(RuntimeError, match="RESUME_LINEAGE_INVALID"):
         validate_grpo2_resume(checkpoint)
+
+
+def test_formal_contract_is_exact_and_probe_free():
+    value = validate_config(config("formal_300.json"))
+    assert value["optimization"]["max_steps"] == 300
+    assert value["checkpoint"]["steps"] == [100, 150, 200, 250, 300]
+    assert value["checkpoint"]["save_total_limit"] == 5
+    assert value["retention_probe"]["enabled"] is False
+
+
+def test_formal_runner_uses_exact_schedule_and_no_merge():
+    trainer = (PACKAGE / "scripts" / "trainer.py").read_text(encoding="utf-8")
+    runner = (PACKAGE / "scripts" / "run_grpo2_continued.py").read_text(encoding="utf-8")
+    launcher = (PACKAGE / "scripts" / "run_formal_300.sh").read_text(encoding="utf-8")
+    assert "class ExactCheckpointScheduleCallback" in trainer
+    assert 'save_strategy = "no"' in runner
+    assert "100 150 200 250 300" in launcher
+    assert "merge_and_unload" not in launcher
+    assert "run_smokes_and_pilot" not in launcher
+    assert "GRPO3" not in launcher
+
+
+def test_formal_lineage_states_single_adapter_inference():
+    sources = "\n".join(
+        (PACKAGE / "scripts" / name).read_text(encoding="utf-8")
+        for name in ("trainer.py", "run_grpo2_continued.py")
+    )
+    for phrase in (
+        "contains_grpo1_and_grpo2_effect",
+        "external_grpo1_best_confirmed",
+        "training_resume_from_grpo1",
+    ):
+        assert phrase in sources
 
 
 def test_checkpoint_lineage_marks_continued_single_adapter():

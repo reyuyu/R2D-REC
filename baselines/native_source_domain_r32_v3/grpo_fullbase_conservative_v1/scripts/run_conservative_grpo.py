@@ -71,8 +71,18 @@ def _load_json(path: str | Path) -> dict:
 
 
 def _validate_formal_contract(config: dict) -> dict:
-    if config.get("run_kind") != "formal_grpo1_500":
+    run_kind = config.get("run_kind")
+    checkpoint_contracts = {
+        "formal_grpo1_500": {
+            "save_steps": 100, "save_total_limit": 5, "limit_is_minimum": True
+        },
+        "formal_grpo1_500_final_only": {
+            "save_steps": 500, "save_total_limit": 1, "limit_is_minimum": False
+        },
+    }
+    if run_kind not in checkpoint_contracts:
         return {"formal_run": False}
+    checkpoint_contract = checkpoint_contracts[run_kind]
     optimization = config["optimization"]
     checkpoint = config["checkpoint"]
     legacy = config["frozen_legacy_contract"]
@@ -93,7 +103,9 @@ def _validate_formal_contract(config: dict) -> dict:
             optimization.get("gradient_accumulation_steps"), 1
         ),
         "max_grad_norm": (optimization.get("max_grad_norm"), 1.0),
-        "save_steps": (checkpoint.get("save_steps"), 100),
+        "save_steps": (
+            checkpoint.get("save_steps"), checkpoint_contract["save_steps"]
+        ),
         "adapter_only": (checkpoint.get("adapter_only"), True),
         "full_resume_state": (checkpoint.get("full_resume_state"), True),
         "think_g": (legacy.get("think_g"), 4),
@@ -136,9 +148,19 @@ def _validate_formal_contract(config: dict) -> dict:
         for key, (actual, wanted) in expected.items()
         if actual != wanted
     }
-    if int(checkpoint.get("save_total_limit", 0)) < 5:
+    actual_limit = int(checkpoint.get("save_total_limit", 0))
+    expected_limit = checkpoint_contract["save_total_limit"]
+    invalid_limit = (
+        actual_limit < expected_limit
+        if checkpoint_contract["limit_is_minimum"]
+        else actual_limit != expected_limit
+    )
+    if invalid_limit:
         mismatches["save_total_limit"] = {
-            "actual": checkpoint.get("save_total_limit"), "expected": ">=5"
+            "actual": checkpoint.get("save_total_limit"),
+            "expected": f">={expected_limit}"
+            if checkpoint_contract["limit_is_minimum"]
+            else expected_limit,
         }
     if config["retention_probe"].get("enabled", True):
         mismatches["midrun_retention_probe"] = {"actual": True, "expected": False}
@@ -168,7 +190,7 @@ def _validate_formal_contract(config: dict) -> dict:
         "checkpoint_mode": "ADAPTER_ONLY_MODEL_WITH_FULL_RESUME_STATE",
         "midrun_retention_probe": "DISABLED",
         "midrun_resume_audit": "DISABLED",
-        "save_steps": 100,
+        "save_steps": checkpoint_contract["save_steps"],
         "save_total_limit": int(checkpoint["save_total_limit"]),
     }
 

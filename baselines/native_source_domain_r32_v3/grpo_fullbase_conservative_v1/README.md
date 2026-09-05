@@ -63,3 +63,5 @@ Probe RNG is restored after every evaluation and probe records never enter rewar
 ## Checkpoints
 
 Checkpoints are adapter-only and include adapter config/weights, optimizer, scheduler, trainer state, all four rank RNG states, and `lineage.json`. Reload fails unless the full-SFT parent SHA and lineage match exactly. Odd smoke checkpoint 5 is evidence-only and explicitly non-resumable because `num_iterations=2`; pilot checkpoints 10 and 20 are resumable.
+
+The original `formal_500.json` retains steps 100/200/300/400/500. The chain-oriented `formal_500_final_only.json` changes checkpoint cadence only: it writes step 500 and retains one checkpoint. Optimization, model, data, random seeds, sampling, generation, reward, loss and LoRA contracts are identical. Use `scripts/run_formal_500_final_only.sh` only when the SFT final model is retained as the preceding chain boundary.

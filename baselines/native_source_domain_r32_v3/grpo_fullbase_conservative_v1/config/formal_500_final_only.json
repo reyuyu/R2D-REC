@@ -1,0 +1,90 @@
+{
+  "run_kind": "formal_grpo1_500_final_only",
+  "parent": {
+    "parent_mode": "full_model",
+    "model_role": "rec_fdr_v43_full_sft_grpo_base",
+    "model_sha256": "8be8b4d08f2eaa295159f2333e20949aa71ed552c3646a80380485c2efa2eb59",
+    "config_sha256": "78451878177a5443d87440940c54177da6e833e8ab4c97dab0e263a4c97162e2",
+    "immutable": true
+  },
+  "dataset": {
+    "name": "rec_mp_grpo_v2",
+    "sha256": "791d5696b87d18720fccfff5b4dbbb3c72d996095b8e2bc9d7c7f7c57fdcf3dc",
+    "selection": "all_groups_except_fixed_probe"
+  },
+  "runtime": {
+    "world_size": 4,
+    "gpu_type": "NVIDIA A800 80GB PCIe",
+    "deterministic_environment": {
+      "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+      "CUDA_DEVICE_MAX_CONNECTIONS": "1",
+      "FLASH_ATTENTION_DETERMINISTIC": "1",
+      "GLOO_SOCKET_IFNAME": "lo",
+      "NCCL_IB_DISABLE": "1",
+      "NCCL_SOCKET_IFNAME": "lo",
+      "NVIDIA_TF32_OVERRIDE": "0"
+    }
+  },
+  "seeds": {
+    "training": 20260816,
+    "dataset": 20260816,
+    "sampler": 20260816,
+    "lora_initialization": 20260905,
+    "generation": 20260816,
+    "probe": 20260818
+  },
+  "optimization": {
+    "learning_rate": 5e-7,
+    "max_steps": 500,
+    "weight_decay": 0.0,
+    "lr_scheduler_type": "constant",
+    "max_grad_norm": 1.0,
+    "gradient_accumulation_steps": 1
+  },
+  "checkpoint": {
+    "save_steps": 500,
+    "save_total_limit": 1,
+    "adapter_only": true,
+    "full_resume_state": true
+  },
+  "retention_probe": {
+    "enabled": false,
+    "group_ids": [
+      "fc6e5676c19873ebadd3deed3ed25679d986fe7a7201d02aff860e58a508e82e",
+      "6068defdb009836ada15a9f22c47d97934801e795cf8c33b10587491b824ba6f",
+      "281f3fe03e1ad3b8919df9660a89360561987a44118ba6f0355b78fe7c172700",
+      "2cb88d8ec6d6fcce66385b20be6885b57a84a607cc0984d99efb1561f8de86c8"
+    ],
+    "milestones": [],
+    "excluded_from_training": true
+  },
+  "resume_audit": {
+    "enabled": false
+  },
+  "frozen_legacy_contract": {
+    "think_g": 4,
+    "nothink_g": 8,
+    "temperature": {"think": 0.9, "no_think": 1.0},
+    "top_p": {"think": 0.95, "no_think": 1.0},
+    "num_iterations": 2,
+    "beta": 0.0,
+    "epsilon": 0.2,
+    "loss_type": "grpo",
+    "scale_rewards": "group",
+    "disable_dropout": true,
+    "importance_sampling_level": "token",
+    "top_entropy_quantile": 1.0,
+    "mask_truncated_completions": false,
+    "use_vllm": false,
+    "max_prompt_length": 8192,
+    "max_completion_length": 2048,
+    "route_loss_weight": {"think": 1.0, "no_think": 0.5},
+    "lora": {
+      "r": 32,
+      "alpha": 64,
+      "dropout": 0.05,
+      "bias": "none",
+      "target_modules": ["down_proj", "o_proj", "v_proj", "k_proj", "q_proj", "up_proj", "gate_proj"]
+    }
+  }
+}

@@ -20,6 +20,17 @@ def _write_json(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+class ExactCheckpointScheduleCallback(TrainerCallback):
+    """Request saves only at the formal, rollout-boundary checkpoint steps."""
+
+    def __init__(self, steps):
+        self.steps = frozenset(int(step) for step in steps)
+
+    def on_step_end(self, args, state, control, **kwargs):
+        control.should_save = int(state.global_step) in self.steps
+        return control
+
+
 class ContinuedAdapterLineageCallback(TrainerCallback):
     def __init__(self, payload: dict):
         self.payload = dict(payload)
@@ -40,9 +51,13 @@ class ContinuedAdapterLineageCallback(TrainerCallback):
             "trainer_state_parent": "NONE",
             "rng_parent": "NONE",
             "training_resume": False,
+            "training_resume_from_grpo1": False,
             "stage_fresh_start": True,
             "adapter_continuation": True,
             "grpo2_step": int(state.global_step),
+            "grpo2_optimizer_step": int(state.global_step),
+            "external_grpo1_best_confirmed": False,
+            "contains_grpo1_and_grpo2_effect": True,
             "adapter_only": True,
             "resume_supported": True,
             "adapter_sha256": file_sha256(adapter),
@@ -51,7 +66,7 @@ class ContinuedAdapterLineageCallback(TrainerCallback):
 
 
 class GRPO2ContinuedAdapterTrainer(EvidenceRecGRPOTrainerMixin, ThinkSample8FullSIDTrainer):
-    def __init__(self, *args, lineage: dict, evidence_dir: Path, **kwargs):
+    def __init__(self, *args, lineage: dict, evidence_dir: Path, checkpoint_steps=(), **kwargs):
         self._continued_lineage = dict(lineage)
         self._continued_evidence_dir = Path(evidence_dir)
         super().__init__(*args, **kwargs)
@@ -62,10 +77,28 @@ class GRPO2ContinuedAdapterTrainer(EvidenceRecGRPOTrainerMixin, ThinkSample8Full
         }
         self.add_callback(StepEvidenceCallback(self._continued_evidence_dir, int(os.environ.get("LOCAL_RANK", "0"))))
         self.add_callback(ContinuedAdapterLineageCallback(self._continued_lineage))
+        if checkpoint_steps:
+            self.add_callback(ExactCheckpointScheduleCallback(checkpoint_steps))
 
     def create_optimizer(self):
         result = super().create_optimizer()
         self._optimizer_audit = assert_optimizer_lora_only(self.model, self.optimizer)
+        rank = int(os.environ.get("LOCAL_RANK", "0"))
+        startup = {
+            "status": "PASS",
+            "rank": rank,
+            "grpo2_global_step": int(self.state.global_step),
+            "optimizer_initialization": "fresh_at_grpo2_step0",
+            "grpo1_optimizer_loaded": False,
+            "optimizer_audit": self._optimizer_audit,
+        }
+        _write_json(self._continued_evidence_dir / f"startup-audit-rank{rank}.json", startup)
+        if rank == 0:
+            print(json.dumps({
+                "GRPO2_GLOBAL_STEP": startup["grpo2_global_step"],
+                "GRPO1_OPTIMIZER_LOADED": False,
+                "OPTIMIZER_LORA_ONLY": True,
+            }, sort_keys=True), flush=True)
         return result
 
     def train(self, *args, **kwargs):

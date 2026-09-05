@@ -123,8 +123,20 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     for key, expected in required_optimization.items():
         if optimization.get(key) != expected:
             raise RuntimeError(f"GRPO2_OPTIMIZATION_CONTRACT_DRIFT key={key}")
-    if optimization.get("max_steps") not in (5, 20):
-        raise RuntimeError("GRPO2_VALIDATION_STEPS_MUST_BE_5_OR_20")
+    max_steps = optimization.get("max_steps")
+    if max_steps not in (5, 20, 300):
+        raise RuntimeError("GRPO2_STEPS_MUST_BE_5_20_OR_300")
+    formal = config.get("run_kind") == "grpo2_continued_adapter_formal_300"
+    if formal != (max_steps == 300):
+        raise RuntimeError("GRPO2_FORMAL_RUN_KIND_STEPS_MISMATCH")
+    if formal:
+        checkpoint = config.get("checkpoint", {})
+        if checkpoint.get("steps") != [100, 150, 200, 250, 300]:
+            raise RuntimeError("GRPO2_FORMAL_CHECKPOINT_SCHEDULE_DRIFT")
+        if checkpoint.get("save_total_limit") != 5 or checkpoint.get("adapter_only") is not True:
+            raise RuntimeError("GRPO2_FORMAL_CHECKPOINT_CONTRACT_DRIFT")
+        if config.get("retention_probe", {}).get("enabled") is not False:
+            raise RuntimeError("GRPO2_FORMAL_INLINE_PROBE_FORBIDDEN")
     lora = config.get("lora", {})
     if (lora.get("r"), lora.get("alpha"), lora.get("bias"), lora.get("disable_dropout")) != (32, 64, "none", True):
         raise RuntimeError("GRPO2_LORA_CONTRACT_DRIFT")
@@ -140,10 +152,16 @@ def validate_grpo2_resume(checkpoint: str | Path) -> dict[str, Any]:
         raise RuntimeError("GRPO2_RESUME_LINEAGE_INVALID")
     if lineage.get("adapter_initialization_source_sha256") != GRPO1_STEP500_ADAPTER_SHA256:
         raise RuntimeError("GRPO2_RESUME_PARENT_ADAPTER_MISMATCH")
+    if lineage.get("resume_supported") is not True:
+        raise RuntimeError("GRPO2_RESUME_NOT_SUPPORTED")
     required = ["adapter_model.safetensors", "adapter_config.json", "optimizer.pt", "scheduler.pt", "trainer_state.json", "training_args.bin"]
     required.extend(f"rng_state_{rank}.pth" for rank in range(4))
     missing = [name for name in required if not (checkpoint / name).is_file()]
     if missing:
         raise RuntimeError(f"GRPO2_RESUME_CHECKPOINT_INCOMPLETE: {missing}")
     state = load_json(checkpoint / "trainer_state.json")
+    if int(state["global_step"]) != int(lineage.get("grpo2_optimizer_step", -1)):
+        raise RuntimeError("GRPO2_RESUME_STEP_MISMATCH")
+    if lineage.get("adapter_sha256") != file_sha256(checkpoint / "adapter_model.safetensors"):
+        raise RuntimeError("GRPO2_RESUME_ADAPTER_SHA_MISMATCH")
     return {"step": int(state["global_step"]), "lineage": lineage}
