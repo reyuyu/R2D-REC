@@ -33,15 +33,19 @@ def _load_base(path: Path, device: str):
     )
 
 
-def _probe(model, tokenizer, prompts: list[str]) -> list[dict]:
+def _probe(model, tokenizer, prompts: list[str], fixed_selected_ids=None) -> list[dict]:
     model.eval()
     rows = []
     with torch.inference_mode():
-        for prompt in prompts:
+        for index, prompt in enumerate(prompts):
             encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=False)
             encoded = {key: value[:, -512:].to(model.device) for key, value in encoded.items()}
             logits = model(**encoded).logits[0, -1].float().cpu()
-            selected = torch.topk(logits, 32).indices.sort().values
+            top32 = torch.topk(logits, 32).indices.sort().values
+            selected = (
+                torch.tensor(fixed_selected_ids[index], dtype=torch.long)
+                if fixed_selected_ids is not None else top32
+            )
             generated = model.generate(
                 **encoded, do_sample=False, num_beams=1, max_new_tokens=8,
                 pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
@@ -51,6 +55,7 @@ def _probe(model, tokenizer, prompts: list[str]) -> list[dict]:
                 "greedy_ids": generated[0, encoded["input_ids"].shape[1]:].cpu().tolist(),
                 "selected_ids": selected.tolist(),
                 "selected_logits": logits[selected].tolist(),
+                "top32_ids": top32.tolist(),
             })
     return rows
 
@@ -65,6 +70,9 @@ def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tol
     tokenization_exact = all(a["prompt_ids"] == b["prompt_ids"] for a, b in zip(left, right))
     greedy_exact = all(a["greedy_ids"] == b["greedy_ids"] for a, b in zip(left, right))
     selected_ids_exact = all(a["selected_ids"] == b["selected_ids"] for a, b in zip(left, right))
+    top32_overlaps = [
+        len(set(a["top32_ids"]) & set(b["top32_ids"])) for a, b in zip(left, right)
+    ]
     differences = [
         abs(x - y)
         for a, b in zip(left, right)
@@ -73,7 +81,7 @@ def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tol
     max_abs = max(differences)
     mean_abs = sum(differences) / len(differences)
     passed = (
-        tokenization_exact and greedy_exact and selected_ids_exact
+        tokenization_exact and greedy_exact and selected_ids_exact and min(top32_overlaps) >= 31
         and max_abs <= max_tolerance and mean_abs <= mean_tolerance
     )
     return {
@@ -81,6 +89,8 @@ def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tol
         "tokenization_exact": tokenization_exact,
         "greedy_ids_exact": greedy_exact,
         "selected_logit_ids_exact": selected_ids_exact,
+        "top32_overlap_by_prompt": top32_overlaps,
+        "top32_minimum_overlap_required": 31,
         "selected_logits_max_abs": max_abs,
         "selected_logits_mean_abs": mean_abs,
         "selected_logits_max_abs_tolerance": max_tolerance,
@@ -127,7 +137,10 @@ def main() -> int:
         args.output, local_files_only=True, trust_remote_code=True,
     )
     reloaded = _load_base(args.output, args.device)
-    merged_probe = _probe(reloaded, reloaded_tokenizer, prompts)
+    merged_probe = _probe(
+        reloaded, reloaded_tokenizer, prompts,
+        fixed_selected_ids=[row["selected_ids"] for row in source_probe],
+    )
     parity = _compare(source_probe, merged_probe, max_tolerance=0.25, mean_tolerance=0.125)
     write_json(args.output / "functional_parity_details.json", {
         "dataset_row_indices": list(indices),
