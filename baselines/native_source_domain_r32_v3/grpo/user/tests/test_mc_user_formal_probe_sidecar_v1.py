@@ -144,6 +144,7 @@ class SelectionAndPreflightTests(unittest.TestCase):
                 formal_run_dir=run_dir,
                 gpu_id=1,
                 memory_threshold_mib=1024,
+                stop_after_step=None,
             )
             with patch(
                 "run_mc_user_formal_probe_sidecar_v1.validate_adapter_only"
@@ -186,6 +187,7 @@ class SelectionAndPreflightTests(unittest.TestCase):
                 formal_run_dir=run_dir,
                 gpu_id=1,
                 memory_threshold_mib=1024,
+                stop_after_step=None,
             )
             with patch("run_mc_user_formal_probe_sidecar_v1.validate_adapter_only"), patch(
                 "run_mc_user_formal_probe_sidecar_v1.load_probe",
@@ -196,6 +198,38 @@ class SelectionAndPreflightTests(unittest.TestCase):
             self.assertEqual(result["parent_label"], "Parent")
             self.assertEqual(result["checkpoints"][0]["name"], "Parent")
             self.assertEqual(Path(result["checkpoints"][0]["path"]), parent)
+
+    def test_step0_only_preflight_does_not_wait_for_training_checkpoints(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run_dir, parent, base = root / "run", root / "parent", root / "base"
+            run_dir.mkdir()
+            parent.mkdir()
+            base.mkdir()
+            probe = root / "probe.jsonl"
+            probe.write_text("{}\n", encoding="utf-8")
+            (run_dir / "manifest.json").write_text(json.dumps({
+                "checkpoint_steps": [25, 50, 75, 100, 150, 200],
+                "probe_parent_label": "GRPO2-step250",
+                "probe_parent_adapter": str(parent),
+                "prompts": formal_prompts()[:200],
+            }), encoding="utf-8")
+            args = SimpleNamespace(
+                base_model=base,
+                parent_adapter=None,
+                probe=probe,
+                formal_run_dir=run_dir,
+                gpu_id=1,
+                memory_threshold_mib=1024,
+                stop_after_step=0,
+            )
+            with patch("run_mc_user_formal_probe_sidecar_v1.validate_adapter_only"), patch(
+                "run_mc_user_formal_probe_sidecar_v1.load_probe",
+                return_value=(probe_rows(), {"sha256": PROBE_SHA256, "selection_audit": {}}),
+            ):
+                result = run_preflight(args, gpu_checker=Mock(return_value={"index": 1}))
+            self.assertEqual(result["checkpoint_steps"], [0])
+            self.assertEqual(len(result["checkpoints"]), 1)
 
 
 class WatcherTests(unittest.TestCase):

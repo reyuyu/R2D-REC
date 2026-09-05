@@ -13,12 +13,14 @@ from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     ALGORITHM,
     FROZEN_CONFIG,
     GRPO3_DETERMINISM_CONFIG,
+    GRPO3_FORMAL_CONFIG,
     STRONG_PARENT_CONFIG,
     append_rank0_prompt_artifacts,
     build_manifest,
     load_k4_config,
     probe_queue_value,
     validate_parent_adapter_contract,
+    validate_grpo3_parent_lineage,
     validate_checkpoint_root,
 )
 from compare_grpo3_user_determinism import compare  # noqa: E402
@@ -28,6 +30,7 @@ from run_mc_user_formal_probe_sidecar_v1 import checkpoint_spec  # noqa: E402
 CONFIG = USER_DIR / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
 STRONG_CONFIG = USER_DIR / "configs" / "mc_user_hybrid_strongparent_lr3e7_200.json"
 GRPO3_CONFIG = USER_DIR / "configs" / "grpo3_user_from_grpo2_step300_determinism_v1.json"
+GRPO3_FORMAL_CONFIG_PATH = USER_DIR / "configs" / "grpo3_user_from_grpo2_step250_formal_v1.json"
 
 
 class HybridFormalRunnerTests(unittest.TestCase):
@@ -85,6 +88,35 @@ class HybridFormalRunnerTests(unittest.TestCase):
         self.assertEqual(manifest["prompt_count"], 5)
         self.assertEqual((manifest["action_count"], manifest["chain_count"]), (3, 2))
         self.assertEqual(manifest["checkpoint_steps"], [])
+
+    def test_grpo3_formal_config_keeps_historical_200_step_contract(self):
+        config = load_k4_config(GRPO3_FORMAL_CONFIG_PATH)
+        self.assertEqual(config, GRPO3_FORMAL_CONFIG)
+        self.assertEqual(config["parent_checkpoint_step"], 250)
+        self.assertEqual(config["parent_selection_basis"], "USER_SELECTED")
+        self.assertFalse(config["external_best_confirmed"])
+        self.assertEqual(config["learning_rate"], 3e-7)
+        self.assertEqual(config["prompt_count"], 200)
+        self.assertEqual(config["checkpoint_steps"], [25, 50, 75, 100, 150, 200])
+        self.assertTrue(config["resume_supported"])
+
+    def test_grpo3_parent_lineage_requires_cumulative_step250(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sha = "a" * 64
+            (root / "lineage.json").write_text(json.dumps({
+                "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+                "adapter_continuation": True,
+                "adapter_only": True,
+                "contains_grpo1_and_grpo2_effect": True,
+                "grpo2_step": 250,
+                "adapter_sha256": sha,
+                "training_resume": False,
+            }), encoding="utf-8")
+            result = validate_grpo3_parent_lineage(root, expected_step=250, expected_sha256=sha)
+            self.assertEqual(result["status"], "PASS")
+            with self.assertRaisesRegex(RuntimeError, "BLOCKED_PARENT_LINEAGE"):
+                validate_grpo3_parent_lineage(root, expected_step=300, expected_sha256=sha)
 
     def test_grpo3_comparator_requires_exact_step_evidence_and_adapter(self):
         with tempfile.TemporaryDirectory() as temporary:

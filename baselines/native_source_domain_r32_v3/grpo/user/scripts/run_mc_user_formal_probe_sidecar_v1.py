@@ -495,6 +495,11 @@ def run_preflight(
     parent_adapter = Path(requested_parent or manifest_parent or BETA_ADAPTER)
     parent_label = str(manifest.get("probe_parent_label") or "BETA")
     checkpoint_steps = [0, *[int(step) for step in manifest.get("checkpoint_steps", CHECKPOINT_STEPS[1:])]]
+    stop_after_step = getattr(args, "stop_after_step", None)
+    if stop_after_step is not None:
+        if int(stop_after_step) not in checkpoint_steps:
+            raise FormalProbeError("stop-after-step is not in the formal checkpoint schedule")
+        checkpoint_steps = [step for step in checkpoint_steps if step <= int(stop_after_step)]
     validate_adapter_only(parent_adapter, 0)
     validate_probe_disjoint(rows, manifest)
     gpu = dict(gpu_checker(args.gpu_id, args.memory_threshold_mib))
@@ -580,6 +585,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--probe", type=Path, default=PROBE_DATA)
     parser.add_argument("--memory-threshold-mib", type=int, default=MEMORY_THRESHOLD_MIB)
     parser.add_argument("--poll-seconds", type=float, default=10.0)
+    parser.add_argument("--stop-after-step", type=int)
     return parser
 
 

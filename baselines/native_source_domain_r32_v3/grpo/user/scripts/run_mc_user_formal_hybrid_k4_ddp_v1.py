@@ -215,11 +215,57 @@ GRPO3_DETERMINISM_CONFIG = {
     "resume_supported": False,
     "resume_policy": "continuous_run_only",
 }
+GRPO3_FORMAL_CONFIG = {
+    "experiment_type": "formal",
+    "stage": "grpo3_user_from_grpo2_step250_formal_v1",
+    "base_model": "/root/rec_fdr_v43_runs/REC-FDR-V43-STRICTDET-20260904-173024/work/output",
+    "adapter": (
+        "/root/grpo2_think_continued_adapter_formal300_20260905/"
+        "GRPO2-REC-THINK-CONTINUED-ADAPTER-FROM-GRPO1-STEP500-LR2E7-300/"
+        "checkpoint-250"
+    ),
+    "parent_adapter_sha256": "4cb382ad9a18de37c52787391ab3910166b22f99b89c7c6f69c4e3a52da4b45a",
+    "parent_experiment": "GRPO2_REC_THINK_CONTINUED_SINGLE_ADAPTER",
+    "parent_checkpoint_step": 250,
+    "probe_parent_label": "GRPO2-step250",
+    "parent_selection_basis": "USER_SELECTED",
+    "external_best_confirmed": False,
+    "parent_recorded_external_score": None,
+    "train_data": "/root/reproduce_datasets/onereason_final_chain_20260901/03_user_grpo/train_3000.jsonl",
+    "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "registered_dataset_name": "user_grpo",
+    "registered_dataset_split": "train",
+    "registered_dataset_rows": 3000,
+    "runtime_seed": 20260823,
+    "prompt_count": 200,
+    "action_count": 100,
+    "chain_count": 100,
+    "selection_seed": 20260823,
+    "route_schedule": "strict_alternating",
+    "K": K,
+    "world_size": WORLD_SIZE,
+    "parallelism": "candidate_parallel",
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "learning_rate": 3e-7,
+    "weight_decay": 0.0,
+    "optimizer": "AdamW",
+    "scheduler": "constant",
+    "forward_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3,
+    "checkpoint_steps": [25, 50, 75, 100, 150, 200],
+    "resume_supported": True,
+    "resume_policy": "complete_checkpoint_state",
+}
 SUPPORTED_FROZEN_CONFIGS = {
     FROZEN_CONFIG["stage"]: FROZEN_CONFIG,
     STRONG_PARENT_CONFIG["stage"]: STRONG_PARENT_CONFIG,
     REPRO_STEP100_CONFIG["stage"]: REPRO_STEP100_CONFIG,
     GRPO3_DETERMINISM_CONFIG["stage"]: GRPO3_DETERMINISM_CONFIG,
+    GRPO3_FORMAL_CONFIG["stage"]: GRPO3_FORMAL_CONFIG,
 }
 
 
@@ -261,6 +307,34 @@ def validate_parent_adapter_contract(path: Path) -> dict[str, Any]:
         "trainable_lora_tensor_count": len(lora_names),
         "lora_tensor_count": len(lora_names),
         "adapter_tensor_count": len(tensor_names),
+    }
+
+
+def validate_grpo3_parent_lineage(
+    path: Path, *, expected_step: int, expected_sha256: str
+) -> dict[str, Any]:
+    lineage_path = path / "lineage.json"
+    if not lineage_path.is_file():
+        raise MCK4Error("BLOCKED_PARENT_LINEAGE: lineage.json missing")
+    lineage = json.loads(lineage_path.read_text(encoding="utf-8"))
+    checks = {
+        "adapter_semantics": lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER",
+        "adapter_continuation": lineage.get("adapter_continuation") is True,
+        "adapter_only": lineage.get("adapter_only") is True,
+        "contains_grpo1_and_grpo2_effect": lineage.get("contains_grpo1_and_grpo2_effect") is True,
+        "grpo2_step": int(lineage.get("grpo2_step", -1)) == expected_step,
+        "adapter_sha256": lineage.get("adapter_sha256") == expected_sha256,
+        "training_resume": lineage.get("training_resume") is False,
+    }
+    if not all(checks.values()):
+        raise MCK4Error(f"BLOCKED_PARENT_LINEAGE: {checks}")
+    return {
+        "status": "PASS",
+        "schema": lineage.get("schema"),
+        "grpo2_step": expected_step,
+        "adapter_sha256": expected_sha256,
+        "contains_grpo1_and_grpo2_effect": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
     }
 
 
@@ -396,7 +470,11 @@ def candidate_seed(selection_seed: int, prompt_step: int, sample_id: str, candid
 
 def probe_queue_value(config: Mapping[str, Any] | None = None) -> dict[str, Any]:
     frozen = FROZEN_CONFIG if config is None else config
-    parent_label = "Parent" if frozen["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else "BETA"
+    parent_label = frozen.get("probe_parent_label") or (
+        "Parent"
+        if frozen["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3"
+        else "BETA"
+    )
     return {
         "status": "PENDING_TRAINING_CHECKPOINTS",
         "mode": "POST_TRAINING_INFERENCE_ONLY",
@@ -457,8 +535,14 @@ def build_manifest(
         "adapter": config["adapter"],
         "parent_experiment": config["parent_experiment"],
         "parent_checkpoint_step": config["parent_checkpoint_step"],
+        "parent_selection_basis": config.get("parent_selection_basis"),
+        "external_best_confirmed": config.get("external_best_confirmed"),
         "parent_recorded_external_score": config["parent_recorded_external_score"],
-        "probe_parent_label": "Parent" if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else "BETA",
+        "probe_parent_label": config.get("probe_parent_label") or (
+            "Parent"
+            if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3"
+            else "BETA"
+        ),
         "probe_parent_adapter": config["adapter"] if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else None,
         "train_data": config["train_data"],
         "train_sha256": config["train_sha256"],
@@ -483,15 +567,23 @@ def build_manifest(
         "max_new_tokens": config["max_new_tokens"],
         "learning_rate": config["learning_rate"],
         "weight_decay": config["weight_decay"],
+        "optimizer": config.get("optimizer", "AdamW"),
+        "scheduler": config.get("scheduler", "none"),
         "forward_batch_size": config["forward_batch_size"],
         "gradient_accumulation_steps": config.get("gradient_accumulation_steps", 1),
         "sequence_weight": config["sequence_weight"],
         "local_weight": config["local_weight"],
         "runtime_seed": config.get("runtime_seed"),
         "checkpoint_steps": [] if smoke_prompts else list(config["checkpoint_steps"]),
-        "resume_supported": False,
-        "resume_policy": "continuous_run_only",
-        "FORMAL_RESUME": FORMAL_RESUME,
+        "resume_supported": bool(config.get("resume_supported", False)),
+        "resume_policy": config.get("resume_policy", "continuous_run_only"),
+        "FORMAL_RESUME": (
+            "SUPPORTED" if config.get("resume_supported") else FORMAL_RESUME
+        ),
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "fresh_lora": False,
+        "fresh_optimizer": True,
+        "training_resume_from_grpo2": False,
         "prompts": [
             {"prompt_step": index, "route": row["route"], "sample_id": row["sample_id"]}
             for index, row in enumerate(selected, 1)
@@ -529,8 +621,16 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
         row_count = sum(1 for _ in Path(config["train_data"]).open("r", encoding="utf-8"))
         if row_count != int(config["registered_dataset_rows"]):
             raise MCK4Error("registered dataset row count mismatch")
+    parent_lineage = None
+    if config["stage"] == GRPO3_FORMAL_CONFIG["stage"]:
+        parent_lineage = validate_grpo3_parent_lineage(
+            Path(config["adapter"]),
+            expected_step=int(config["parent_checkpoint_step"]),
+            expected_sha256=parent_sha256,
+        )
     manifest = build_manifest(args.run_id, config_path, config_sha256, config, rows, str(git_state["git_commit"]), smoke_prompts=args.smoke_prompts)
     manifest["parent_adapter_sha256"] = parent_sha256
+    manifest["parent_lineage"] = parent_lineage
     manifest["determinism_evidence_enabled"] = bool(args.determinism_evidence)
     manifest["checkpoint_root"] = str(checkpoint_root)
     manifest["checkpoint_run_dir"] = str(checkpoint_root / args.run_id)
@@ -558,6 +658,7 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
         "checkpoint_root": str(checkpoint_root),
         "parent_contract": parent_contract,
         "parent_adapter_sha256": parent_sha256,
+        "parent_lineage": parent_lineage,
         "registered_dataset_used_by_trainer": bool(config.get("registered_dataset_name")),
         "execute_required": True,
     }
@@ -742,6 +843,149 @@ def _rank_hashes(model: torch.nn.Module) -> list[dict[str, Any]]:
     return gathered
 
 
+def _rng_checkpoint_state(
+    rank: int, prompt_step: int, optimizer_step: int, device: torch.device
+) -> dict[str, Any]:
+    import numpy as np
+
+    return {
+        "rank": rank,
+        "prompt_step": prompt_step,
+        "global_step": optimizer_step,
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch_cpu": torch.get_rng_state(),
+        "torch_cuda": torch.cuda.get_rng_state(device),
+    }
+
+
+def save_resumable_formal_checkpoint(
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler,
+    checkpoint_run_dir: Path,
+    prompt_step: int,
+    optimizer_step: int,
+    processed_rows: Sequence[Mapping[str, Any]],
+    records: Sequence[Mapping[str, Any]],
+    wall_seconds: float,
+    *,
+    rank: int,
+    device: torch.device,
+    config: Mapping[str, Any],
+    config_sha256: str,
+    train_sha256: str,
+    git_commit: str,
+) -> Path:
+    checkpoint_dir = checkpoint_run_dir / "checkpoints" / f"prompt-step-{prompt_step:04d}"
+    if rank == 0:
+        checkpoint_dir.mkdir(parents=True, exist_ok=False)
+        model.save_pretrained(checkpoint_dir, safe_serialization=True)
+        torch.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
+        torch.save(scheduler.state_dict(), checkpoint_dir / "scheduler.pt")
+        torch.save(dict(config), checkpoint_dir / "training_args.bin")
+        trainer_state = {
+            "global_step": optimizer_step,
+            "prompt_step": prompt_step,
+            "max_steps": int(config["prompt_count"]),
+            "optimizer_step": optimizer_step,
+            "log_history": list(records),
+        }
+        _write_json(checkpoint_dir / "trainer_state.json", trainer_state)
+        _write_json(
+            checkpoint_dir / "formal_state.json",
+            {
+                "prompt_step": prompt_step,
+                "optimizer_step": optimizer_step,
+                "processed_sample_ids": [row["sample_id"] for row in processed_rows],
+                "selection_seed": int(config["selection_seed"]),
+                "config_sha256": config_sha256,
+                "train_sha256": train_sha256,
+                "git_commit": git_commit,
+                "running_metrics": summarize_metrics(records, wall_seconds),
+                "resume_supported": True,
+                "resume_policy": "complete_checkpoint_state",
+                "FORMAL_RESUME": "SUPPORTED",
+            },
+        )
+    dist.barrier()
+    torch.save(
+        _rng_checkpoint_state(rank, prompt_step, optimizer_step, device),
+        checkpoint_dir / f"rng_state_{rank}.pth",
+    )
+    dist.barrier()
+    if rank == 0:
+        adapter_sha256 = file_sha256(checkpoint_dir / "adapter_model.safetensors")
+        lineage = {
+            "schema": "grpo3_user_continued_adapter_lineage_v1",
+            "stage": "GRPO3_USER",
+            "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+            "adapter_weight_parent": "GRPO2 checkpoint-250",
+            "parent_adapter_sha256": config["parent_adapter_sha256"],
+            "parent_selection_basis": config["parent_selection_basis"],
+            "external_best_confirmed": config["external_best_confirmed"],
+            "contains_grpo1_grpo2_and_grpo3_effect": True,
+            "fresh_lora": False,
+            "fresh_optimizer": True,
+            "training_resume_from_grpo2": False,
+            "adapter_only": True,
+            "resume_supported": True,
+            "grpo3_prompt_step": prompt_step,
+            "grpo3_optimizer_step": optimizer_step,
+            "adapter_sha256": adapter_sha256,
+            "base_model": config["base_model"],
+            "dataset_sha256": train_sha256,
+            "config_sha256": config_sha256,
+            "code_commit": git_commit,
+        }
+        _write_json(checkpoint_dir / "lineage.json", lineage)
+        required = [
+            "adapter_model.safetensors",
+            "adapter_config.json",
+            "optimizer.pt",
+            "scheduler.pt",
+            "trainer_state.json",
+            "training_args.bin",
+            *[f"rng_state_{value}.pth" for value in range(WORLD_SIZE)],
+            "formal_state.json",
+            "lineage.json",
+        ]
+        missing = [name for name in required if not (checkpoint_dir / name).is_file()]
+        if missing:
+            raise MCK4Error(f"resumable checkpoint missing files: {missing}")
+        forbidden = [
+            item.name
+            for item in checkpoint_dir.iterdir()
+            if item.name == "model.safetensors"
+            or item.name.startswith("model-")
+            or item.name.startswith("pytorch_model")
+        ]
+        if forbidden:
+            raise MCK4Error(f"formal checkpoint contains base weights: {forbidden}")
+        _write_json(
+            checkpoint_dir / "checkpoint_manifest.json",
+            {
+                "schema": "grpo3_user_resumable_checkpoint_v1",
+                "status": "PASS",
+                "prompt_step": prompt_step,
+                "global_step": optimizer_step,
+                "max_steps": int(config["prompt_count"]),
+                "adapter_only": True,
+                "resume_capable": True,
+                "files": [
+                    {
+                        "name": name,
+                        "size": (checkpoint_dir / name).stat().st_size,
+                        "sha256": file_sha256(checkpoint_dir / name),
+                    }
+                    for name in required
+                ],
+            },
+        )
+    dist.barrier()
+    return checkpoint_dir
+
+
 def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "0,1,2,3":
         raise MCK4Error("execute requires CUDA_VISIBLE_DEVICES=0,1,2,3")
@@ -773,6 +1017,9 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     ddp = DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank, broadcast_buffers=False, find_unused_parameters=False)
     _rank_hashes(ddp.module)
     optimizer = torch.optim.AdamW([parameter for _, parameter in trainable], lr=float(config["learning_rate"]), weight_decay=float(config["weight_decay"]))
+    scheduler = None
+    if config.get("scheduler") == "constant":
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _step: 1.0)
     records: list[dict[str, Any]] = []
     optimizer_step = 0
     started = time.perf_counter()
@@ -818,6 +1065,8 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
             training_peak = torch.cuda.max_memory_allocated(device) / (1024 * 1024)
             if update["optimizer_step_performed"]:
                 optimizer_step += 1
+                if scheduler is not None:
+                    scheduler.step()
             if args.determinism_evidence:
                 per_lora_gradients, measured_grad_norm = gradient_evidence(ddp.module)
                 step_evidence = {
@@ -959,8 +1208,41 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
             if prompt_step in set(config["checkpoint_steps"]) and not args.smoke_prompts:
                 dist.barrier()
                 _rank_hashes(ddp.module)
+                if config.get("resume_supported"):
+                    if scheduler is None:
+                        raise MCK4Error("formal resumable checkpoint requires constant scheduler")
+                    save_resumable_formal_checkpoint(
+                        ddp.module,
+                        optimizer,
+                        scheduler,
+                        checkpoint_run_dir,
+                        prompt_step,
+                        optimizer_step,
+                        rows[:prompt_step],
+                        records,
+                        time.perf_counter() - started,
+                        rank=rank,
+                        device=device,
+                        config=config,
+                        config_sha256=preflight["config_sha256"],
+                        train_sha256=config["train_sha256"],
+                        git_commit=preflight["git_commit"],
+                    )
+                elif rank == 0:
+                    save_formal_checkpoint(
+                        ddp.module,
+                        checkpoint_run_dir,
+                        prompt_step,
+                        optimizer_step,
+                        rows[:prompt_step],
+                        records,
+                        time.perf_counter() - started,
+                        selection_seed=int(config["selection_seed"]),
+                        config_sha256=preflight["config_sha256"],
+                        train_sha256=config["train_sha256"],
+                        git_commit=preflight["git_commit"],
+                    )
                 if rank == 0:
-                    save_formal_checkpoint(ddp.module, checkpoint_run_dir, prompt_step, optimizer_step, rows[:prompt_step], records, time.perf_counter() - started, selection_seed=int(config["selection_seed"]), config_sha256=preflight["config_sha256"], train_sha256=config["train_sha256"], git_commit=preflight["git_commit"])
                     queue = update_probe_queue(queue, prompt_step)
                     _write_json(queue_path, queue)
                 dist.barrier()
@@ -991,6 +1273,12 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                 "rank_lora_hashes_equal": True,
                 "base_hash_unchanged": initial_base_hash == final_base_hash,
                 "optimizer_state_lora_only": optimizer_state_is_lora_only(optimizer, trainable),
+                "optimizer": config.get("optimizer", "AdamW"),
+                "scheduler": config.get("scheduler", "none"),
+                "learning_rate": config["learning_rate"],
+                "max_steps": int(config["prompt_count"]),
+                "checkpoint_steps": list(config["checkpoint_steps"]),
+                "resume_supported": bool(config.get("resume_supported", False)),
                 "parallelism": "candidate_parallel",
                 "K": K,
                 "world_size": WORLD_SIZE,
