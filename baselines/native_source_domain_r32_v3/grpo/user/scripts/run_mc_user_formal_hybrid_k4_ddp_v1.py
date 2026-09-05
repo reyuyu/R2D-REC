@@ -175,10 +175,51 @@ REPRO_STEP100_CONFIG = {
     "resume_supported": False,
     "resume_policy": "continuous_run_only",
 }
+GRPO3_DETERMINISM_CONFIG = {
+    "experiment_type": "formal",
+    "stage": "grpo3_user_from_grpo2_step300_determinism_v1",
+    "base_model": "/root/rec_fdr_v43_runs/REC-FDR-V43-STRICTDET-20260904-173024/work/output",
+    "adapter": (
+        "/root/grpo2_think_continued_adapter_formal300_20260905/"
+        "GRPO2-REC-THINK-CONTINUED-ADAPTER-FROM-GRPO1-STEP500-LR2E7-300/"
+        "checkpoint-300"
+    ),
+    "parent_adapter_sha256": "1a9d441a8936dd8814c899193d60515143099b2824287aa87c0b6770bfd11c45",
+    "parent_experiment": "GRPO2_REC_THINK_CONTINUED_SINGLE_ADAPTER",
+    "parent_checkpoint_step": 300,
+    "parent_recorded_external_score": None,
+    "train_data": "/root/reproduce_datasets/onereason_final_chain_20260901/03_user_grpo/train_3000.jsonl",
+    "train_sha256": "5fc4f2ede241ca8049185d8a1e9303b92747d399806d4d939e4040793e9ed801",
+    "registered_dataset_name": "user_grpo",
+    "registered_dataset_split": "train",
+    "registered_dataset_rows": 3000,
+    "runtime_seed": 20260823,
+    "prompt_count": 100,
+    "action_count": 50,
+    "chain_count": 50,
+    "selection_seed": 20260823,
+    "route_schedule": "strict_alternating",
+    "K": K,
+    "world_size": WORLD_SIZE,
+    "parallelism": "candidate_parallel",
+    "temperature": 0.9,
+    "top_p": 0.95,
+    "max_new_tokens": 512,
+    "learning_rate": 3e-7,
+    "weight_decay": 0.0,
+    "forward_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "sequence_weight": 1.0,
+    "local_weight": 0.3,
+    "checkpoint_steps": [25, 50, 75, 100],
+    "resume_supported": False,
+    "resume_policy": "continuous_run_only",
+}
 SUPPORTED_FROZEN_CONFIGS = {
     FROZEN_CONFIG["stage"]: FROZEN_CONFIG,
     STRONG_PARENT_CONFIG["stage"]: STRONG_PARENT_CONFIG,
     REPRO_STEP100_CONFIG["stage"]: REPRO_STEP100_CONFIG,
+    GRPO3_DETERMINISM_CONFIG["stage"]: GRPO3_DETERMINISM_CONFIG,
 }
 
 
@@ -221,6 +262,115 @@ def validate_parent_adapter_contract(path: Path) -> dict[str, Any]:
         "lora_tensor_count": len(lora_names),
         "adapter_tensor_count": len(tensor_names),
     }
+
+
+def _canonical_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value, ensure_ascii=True, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _sample_tensor_bytes(value: torch.Tensor, count: int = 64) -> bytes:
+    flat = value.detach().reshape(-1)
+    if flat.numel() == 0:
+        return b""
+    count = min(count, flat.numel())
+    positions = (
+        torch.zeros(1, dtype=torch.long, device=flat.device)
+        if count == 1
+        else torch.arange(count, dtype=torch.long, device=flat.device)
+        * (flat.numel() - 1)
+        // (count - 1)
+    )
+    sample = flat.index_select(0, positions).contiguous().cpu()
+    return sample.view(torch.uint8).numpy().tobytes()
+
+
+def sampled_lora_fingerprint(model: torch.nn.Module) -> str:
+    digest = hashlib.sha256()
+    count = 0
+    for name, parameter in model.named_parameters():
+        if "lora_" not in name.lower():
+            continue
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tuple(parameter.shape)).encode("ascii"))
+        digest.update(_sample_tensor_bytes(parameter))
+        count += 1
+    if count != 504:
+        raise MCK4Error(f"expected 504 LoRA tensors for fingerprint, found {count}")
+    return digest.hexdigest()
+
+
+def gradient_evidence(model: torch.nn.Module) -> tuple[dict[str, dict[str, Any]], float]:
+    gradients: dict[str, dict[str, Any]] = {}
+    global_squared = 0.0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad or "lora_" not in name.lower():
+            continue
+        gradient = parameter.grad
+        if gradient is None:
+            gradients[name] = {"norm": 0.0, "fingerprint": "NONE"}
+            continue
+        norm = float(gradient.detach().float().norm().item())
+        if not math.isfinite(norm):
+            raise MCK4Error(f"non-finite gradient norm for {name}")
+        global_squared += norm * norm
+        gradients[name] = {
+            "norm": norm,
+            "fingerprint": hashlib.sha256(_sample_tensor_bytes(gradient)).hexdigest(),
+        }
+    if len(gradients) != 504:
+        raise MCK4Error(f"expected 504 LoRA gradients, found {len(gradients)}")
+    return gradients, math.sqrt(global_squared)
+
+
+def optimizer_fingerprint(optimizer: torch.optim.Optimizer) -> str:
+    digest = hashlib.sha256()
+    for group_index, group in enumerate(optimizer.param_groups):
+        digest.update(str(group_index).encode("ascii"))
+        for key in sorted(key for key in group if key != "params"):
+            digest.update(key.encode("utf-8"))
+            digest.update(str(group[key]).encode("utf-8"))
+        for parameter_index, parameter in enumerate(group["params"]):
+            digest.update(str(parameter_index).encode("ascii"))
+            for key in sorted(optimizer.state.get(parameter, {})):
+                value = optimizer.state[parameter][key]
+                digest.update(key.encode("utf-8"))
+                if torch.is_tensor(value):
+                    digest.update(_sample_tensor_bytes(value, count=32))
+                else:
+                    digest.update(str(value).encode("utf-8"))
+    return digest.hexdigest()
+
+
+def rng_fingerprint(device: torch.device) -> dict[str, str]:
+    import numpy as np
+
+    numpy_state = np.random.get_state()
+    numpy_digest = hashlib.sha256()
+    numpy_digest.update(str(numpy_state[0]).encode("ascii"))
+    numpy_digest.update(numpy_state[1].tobytes())
+    numpy_digest.update(str(numpy_state[2:]).encode("ascii"))
+    return {
+        "python": _canonical_sha256(random.getstate()),
+        "numpy": numpy_digest.hexdigest(),
+        "torch_cpu": hashlib.sha256(torch.get_rng_state().numpy().tobytes()).hexdigest(),
+        "torch_cuda": hashlib.sha256(
+            torch.cuda.get_rng_state(device).cpu().numpy().tobytes()
+        ).hexdigest(),
+    }
+
+
+def seed_deterministic_runtime(seed: int) -> None:
+    import numpy as np
+    from transformers import set_seed
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    set_seed(seed)
 
 
 def validate_checkpoint_root(path: Path, *, minimum_free_bytes: int = 2 * 1024**3) -> Path:
@@ -287,8 +437,8 @@ def build_manifest(
 ) -> dict[str, Any]:
     selected_count = smoke_prompts or int(config["prompt_count"])
     selected = list(rows[:selected_count])
-    expected_action = 1 if smoke_prompts else int(config["action_count"])
-    expected_chain = 1 if smoke_prompts else int(config["chain_count"])
+    expected_action = (selected_count + 1) // 2 if smoke_prompts else int(config["action_count"])
+    expected_chain = selected_count // 2 if smoke_prompts else int(config["chain_count"])
     if len(selected) != selected_count:
         raise MCK4Error("selected prompt count is smaller than frozen contract")
     if (
@@ -312,10 +462,14 @@ def build_manifest(
         "probe_parent_adapter": config["adapter"] if config["parent_experiment"] == "GR_REC_ThinkSample8_FullSID_v3" else None,
         "train_data": config["train_data"],
         "train_sha256": config["train_sha256"],
+        "registered_dataset_name": config.get("registered_dataset_name"),
+        "registered_dataset_split": config.get("registered_dataset_split"),
+        "registered_dataset_rows": config.get("registered_dataset_rows"),
         "config_path": str(config_path),
         "config_sha256": config_sha256,
         "git_commit": git_commit,
         "prompt_count": len(selected),
+        "smoke_prompts": smoke_prompts,
         "max_steps": len(selected),
         "action_count": sum(row["route"] == "action" for row in selected),
         "chain_count": sum(row["route"] == "chain" for row in selected),
@@ -333,6 +487,7 @@ def build_manifest(
         "gradient_accumulation_steps": config.get("gradient_accumulation_steps", 1),
         "sequence_weight": config["sequence_weight"],
         "local_weight": config["local_weight"],
+        "runtime_seed": config.get("runtime_seed"),
         "checkpoint_steps": [] if smoke_prompts else list(config["checkpoint_steps"]),
         "resume_supported": False,
         "resume_policy": "continuous_run_only",
@@ -354,8 +509,12 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
     repo_root = Path(__file__).resolve().parents[5]
     git_state = dict(git_checker(repo_root))
     rows = select_formal_rows(read_jsonl(Path(config["train_data"])), int(config["selection_seed"]))
-    if args.smoke_prompts not in (0, 2):
-        raise MCK4Error("smoke-prompts must be 0 or 2")
+    if args.smoke_prompts < 0 or args.smoke_prompts > int(config["prompt_count"]):
+        raise MCK4Error("smoke-prompts must be between 0 and prompt_count")
+    if config["stage"] == GRPO3_DETERMINISM_CONFIG["stage"] and (
+        args.smoke_prompts != 5 or not args.determinism_evidence
+    ):
+        raise MCK4Error("GRPO3 determinism stage only permits a five-step evidence smoke")
     gpus = _all_gpu_preflight(args.memory_threshold_mib, checker=gpu_checker)
     if not RUN_ID_RE.fullmatch(args.run_id):
         raise MCK4Error("run-id contains unsupported characters")
@@ -363,7 +522,16 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
     checkpoint_root = validate_checkpoint_root(args.checkpoint_root)
     assert_run_target_writable(run_dir)
     config_sha256 = file_sha256(config_path)
+    parent_sha256 = file_sha256(Path(config["adapter"]) / "adapter_model.safetensors")
+    if config.get("parent_adapter_sha256") and parent_sha256 != config["parent_adapter_sha256"]:
+        raise MCK4Error("parent adapter SHA256 mismatch")
+    if config.get("registered_dataset_rows"):
+        row_count = sum(1 for _ in Path(config["train_data"]).open("r", encoding="utf-8"))
+        if row_count != int(config["registered_dataset_rows"]):
+            raise MCK4Error("registered dataset row count mismatch")
     manifest = build_manifest(args.run_id, config_path, config_sha256, config, rows, str(git_state["git_commit"]), smoke_prompts=args.smoke_prompts)
+    manifest["parent_adapter_sha256"] = parent_sha256
+    manifest["determinism_evidence_enabled"] = bool(args.determinism_evidence)
     manifest["checkpoint_root"] = str(checkpoint_root)
     manifest["checkpoint_run_dir"] = str(checkpoint_root / args.run_id)
     existing = run_dir / "manifest.json"
@@ -389,6 +557,8 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
         "parallelism": "candidate_parallel",
         "checkpoint_root": str(checkpoint_root),
         "parent_contract": parent_contract,
+        "parent_adapter_sha256": parent_sha256,
+        "registered_dataset_used_by_trainer": bool(config.get("registered_dataset_name")),
         "execute_required": True,
     }
     _write_json(run_dir / "preflight.json", preflight)
@@ -407,6 +577,10 @@ def _load_execute_contract(args: argparse.Namespace) -> tuple[dict[str, Any], di
         raise MCK4Error("preflight contract mismatch")
     if manifest.get("K") != K or manifest.get("world_size") != WORLD_SIZE or manifest.get("parallelism") != "candidate_parallel":
         raise MCK4Error("execute manifest is not K4 candidate-parallel")
+    if manifest.get("smoke_prompts", 0) != args.smoke_prompts:
+        raise MCK4Error("execute smoke-prompts differs from preflight")
+    if bool(manifest.get("determinism_evidence_enabled")) != bool(args.determinism_evidence):
+        raise MCK4Error("execute determinism-evidence differs from preflight")
     checkpoint_root = validate_checkpoint_root(args.checkpoint_root)
     if str(checkpoint_root) != manifest.get("checkpoint_root"):
         raise MCK4Error("execute checkpoint-root differs from preflight")
@@ -414,6 +588,8 @@ def _load_execute_contract(args: argparse.Namespace) -> tuple[dict[str, Any], di
     config = load_k4_config(config_path)
     if validate_parent_adapter_contract(Path(config["adapter"])) != preflight.get("parent_contract"):
         raise MCK4Error("execute parent adapter contract differs from preflight")
+    if file_sha256(Path(config["adapter"]) / "adapter_model.safetensors") != preflight.get("parent_adapter_sha256"):
+        raise MCK4Error("execute parent adapter SHA differs from preflight")
     if file_sha256(config_path) != manifest.get("config_sha256"):
         raise MCK4Error("execute config SHA differs from preflight")
     if file_sha256(Path(config["train_data"])) != manifest.get("train_sha256"):
@@ -583,6 +759,8 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     rank = dist.get_rank()
     preflight, config, rows, run_dir = _load_execute_contract(args)
     checkpoint_run_dir = Path(preflight["checkpoint_root"]) / args.run_id
+    if config.get("runtime_seed") is not None:
+        seed_deterministic_runtime(int(config["runtime_seed"]))
     dist.barrier()
     tokenizer = load_tokenizer(config["base_model"])
     model = load_beta_for_rank(config, local_rank)
@@ -599,12 +777,18 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     optimizer_step = 0
     started = time.perf_counter()
     metrics_path, rollouts_path = run_dir / "metrics.jsonl", run_dir / "rollouts.jsonl"
+    evidence_path = run_dir / "determinism_evidence.jsonl"
+    initial_lora_fingerprint = sampled_lora_fingerprint(ddp.module)
     queue_path = run_dir / "evaluations" / "user_light_probe" / "probe_queue.json"
     queue = json.loads(queue_path.read_text(encoding="utf-8"))
     try:
         for prompt_step, row in enumerate(rows, 1):
             assert_ddp_gpu_process_owned(owner)
             seed = candidate_seed(int(config["selection_seed"]), prompt_step, str(row["sample_id"]), rank)
+            prompt = render_prompt(tokenizer, row)
+            prompt_token_ids = tokenizer.encode(prompt, add_special_tokens=False)
+            prompt_token_sha256 = _canonical_sha256(prompt_token_ids)
+            rng_before = rng_fingerprint(device) if args.determinism_evidence else None
             set_generation_mode(ddp.module)
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats(device)
@@ -634,6 +818,35 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
             training_peak = torch.cuda.max_memory_allocated(device) / (1024 * 1024)
             if update["optimizer_step_performed"]:
                 optimizer_step += 1
+            if args.determinism_evidence:
+                per_lora_gradients, measured_grad_norm = gradient_evidence(ddp.module)
+                step_evidence = {
+                    "rank": rank,
+                    "sample_id": str(row["sample_id"]),
+                    "user_id": row.get("user_id"),
+                    "route": str(row["route"]),
+                    "candidate_seed": seed,
+                    "prompt_token_sha256": prompt_token_sha256,
+                    "generation_token_ids": list(generated_ids),
+                    "generation_token_sha256": _canonical_sha256(list(generated_ids)),
+                    "reward": float(metric_candidate["reward"]),
+                    "group_rewards": list(update["group_rewards"]),
+                    "sequence_advantage": float(update["sequence_advantage"]),
+                    "policy_loss": float(update["total_loss"]),
+                    "sequence_loss": float(update["sequence_loss"]),
+                    "local_loss": float(update["local_loss"]),
+                    "learning_rate": float(optimizer.param_groups[0]["lr"]),
+                    "per_lora_gradients": per_lora_gradients,
+                    "global_grad_norm": float(update["grad_norm"]),
+                    "per_lora_norm_aggregate": measured_grad_norm,
+                    "optimizer_fingerprint": optimizer_fingerprint(optimizer),
+                    "rng_before": rng_before,
+                    "rng_after": rng_fingerprint(device),
+                    "lora_parameter_fingerprint": sampled_lora_fingerprint(ddp.module),
+                    "optimizer_step_performed": bool(update["optimizer_step_performed"]),
+                }
+            else:
+                step_evidence = None
             local = {
                 "rank": rank,
                 "candidate_seed": seed,
@@ -656,6 +869,7 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                 "training_peak_vram_mib": training_peak,
             }
             gathered = _gather(local)
+            gathered_evidence = _gather(step_evidence) if step_evidence is not None else []
             if rank == 0:
                 candidates = [item["candidate"] for item in sorted(gathered, key=lambda value: value["rank"])]
                 for candidate, item in zip(candidates, sorted(gathered, key=lambda value: value["rank"])):
@@ -721,6 +935,27 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                         display["logic_alignment"] = display["full_logic_alignment"]
                     display_rows.append(display)
                 append_rank0_prompt_artifacts(rank, metrics_path, rollouts_path, record, display_rows)
+                if gathered_evidence:
+                    ordered_evidence = sorted(gathered_evidence, key=lambda value: value["rank"])
+                    evidence_record = {
+                        "prompt_step": prompt_step,
+                        "optimizer_step": optimizer_step,
+                        "sample_id": str(row["sample_id"]),
+                        "user_id": row.get("user_id"),
+                        "route": str(row["route"]),
+                        "prompt_token_sha256": prompt_token_sha256,
+                        "batch_fingerprint": _canonical_sha256({
+                            "sample_id": str(row["sample_id"]),
+                            "route": str(row["route"]),
+                            "prompt_token_sha256": prompt_token_sha256,
+                            "candidate_seeds": [item["candidate_seed"] for item in ordered_evidence],
+                            "generation_token_sha256": [item["generation_token_sha256"] for item in ordered_evidence],
+                        }),
+                        "lora_init_fingerprint": initial_lora_fingerprint,
+                        "advantages": [item["sequence_advantage"] for item in ordered_evidence],
+                        "ranks": ordered_evidence,
+                    }
+                    _append_jsonl(evidence_path, evidence_record)
             if prompt_step in set(config["checkpoint_steps"]) and not args.smoke_prompts:
                 dist.barrier()
                 _rank_hashes(ddp.module)
@@ -731,6 +966,17 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                 dist.barrier()
         hashes = _rank_hashes(ddp.module)
         if rank == 0:
+            final_adapter_sha256 = None
+            if args.smoke_prompts:
+                if optimizer_step != args.smoke_prompts:
+                    raise MCK4Error(
+                        f"smoke required {args.smoke_prompts} optimizer steps, got {optimizer_step}"
+                    )
+                final_adapter_dir = run_dir / "final_adapter"
+                ddp.module.save_pretrained(final_adapter_dir, safe_serialization=True)
+                final_adapter_sha256 = file_sha256(
+                    final_adapter_dir / "adapter_model.safetensors"
+                )
             final_base_hash = parameter_sha256(ddp.module, lora=False)[0]
             summary = summarize_metrics(records, time.perf_counter() - started)
             summary.update({
@@ -752,6 +998,11 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                 "checkpoint_root": preflight["checkpoint_root"],
                 "sequence_weight": config["sequence_weight"],
                 "local_weight": config["local_weight"],
+                "registered_dataset_used_by_trainer": bool(config.get("registered_dataset_name")),
+                "training_semantics_changed": False,
+                "determinism_evidence_row_count": len(records) if args.determinism_evidence else 0,
+                "initial_lora_fingerprint": initial_lora_fingerprint,
+                "final_adapter_sha256": final_adapter_sha256,
             })
             if not summary["base_hash_unchanged"]:
                 raise MCK4Error("base parameters changed")
@@ -772,6 +1023,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--smoke-prompts", type=int, default=0)
+    parser.add_argument("--determinism-evidence", action="store_true")
     parser.add_argument("--output-root", type=Path, default=OUTPUT_ROOT)
     parser.add_argument("--checkpoint-root", type=Path, required=True)
     parser.add_argument("--memory-threshold-mib", type=int, default=MEMORY_THRESHOLD_MIB)

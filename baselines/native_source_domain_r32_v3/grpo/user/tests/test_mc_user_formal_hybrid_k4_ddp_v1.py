@@ -12,6 +12,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     ALGORITHM,
     FROZEN_CONFIG,
+    GRPO3_DETERMINISM_CONFIG,
     STRONG_PARENT_CONFIG,
     append_rank0_prompt_artifacts,
     build_manifest,
@@ -20,11 +21,13 @@ from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     validate_parent_adapter_contract,
     validate_checkpoint_root,
 )
+from compare_grpo3_user_determinism import compare  # noqa: E402
 from run_mc_user_formal_probe_sidecar_v1 import checkpoint_spec  # noqa: E402
 
 
 CONFIG = USER_DIR / "configs" / "mc_user_formal_stage1_512_hybrid_k4.json"
 STRONG_CONFIG = USER_DIR / "configs" / "mc_user_hybrid_strongparent_lr3e7_200.json"
+GRPO3_CONFIG = USER_DIR / "configs" / "grpo3_user_from_grpo2_step300_determinism_v1.json"
 
 
 class HybridFormalRunnerTests(unittest.TestCase):
@@ -65,6 +68,55 @@ class HybridFormalRunnerTests(unittest.TestCase):
         self.assertEqual((strong["prompt_count"], strong["action_count"], strong["chain_count"]), (200, 100, 100))
         self.assertEqual([item["step"] for item in probe_queue_value(config)["items"]], [0, 25, 50, 75, 100, 150, 200])
         self.assertEqual(probe_queue_value(config)["items"][0]["label"], "Parent")
+
+    def test_grpo3_config_and_five_prompt_smoke_contract(self):
+        config = load_k4_config(GRPO3_CONFIG)
+        self.assertEqual(config, GRPO3_DETERMINISM_CONFIG)
+        self.assertEqual(config["learning_rate"], 3e-7)
+        self.assertEqual(config["registered_dataset_name"], "user_grpo")
+        rows = [
+            {"sample_id": f"sample-{index}", "route": "action" if index % 2 else "chain"}
+            for index in range(1, 101)
+        ]
+        manifest = build_manifest(
+            "grpo3-smoke", GRPO3_CONFIG, "a" * 64, config, rows, "b" * 40,
+            smoke_prompts=5,
+        )
+        self.assertEqual(manifest["prompt_count"], 5)
+        self.assertEqual((manifest["action_count"], manifest["chain_count"]), (3, 2))
+        self.assertEqual(manifest["checkpoint_steps"], [])
+
+    def test_grpo3_comparator_requires_exact_step_evidence_and_adapter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runs = []
+            for name in ("a", "b"):
+                run = root / name
+                (run / "final_adapter").mkdir(parents=True)
+                (run / "summary.json").write_text(json.dumps({
+                    "status": "PASS",
+                    "optimizer_step": 5,
+                    "registered_dataset_used_by_trainer": True,
+                    "training_semantics_changed": False,
+                }), encoding="utf-8")
+                rows = [{"prompt_step": step, "fingerprint": f"step-{step}"} for step in range(1, 6)]
+                (run / "determinism_evidence.jsonl").write_text(
+                    "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+                )
+                (run / "final_adapter" / "adapter_model.safetensors").write_bytes(b"same")
+                runs.append(run)
+            result = compare(*runs)
+            self.assertEqual(result["DETERMINISM_LEVEL"], "BYTE_EXACT")
+            self.assertEqual(result["FIRST_DIVERGENCE"], "NONE")
+            self.assertEqual(result["READY_FOR_GRPO3_FORMAL_TRAINING"], "YES")
+            rows = [json.loads(line) for line in (runs[1] / "determinism_evidence.jsonl").read_text().splitlines()]
+            rows[2]["fingerprint"] = "different"
+            (runs[1] / "determinism_evidence.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+            )
+            result = compare(*runs)
+            self.assertEqual(result["FIRST_DIVERGENCE"]["step"], 3)
+            self.assertEqual(result["READY_FOR_GRPO3_FORMAL_TRAINING"], "NO")
 
     def test_parent_adapter_contract_requires_exact_504_lora_tensors(self):
         from safetensors.torch import save_file
