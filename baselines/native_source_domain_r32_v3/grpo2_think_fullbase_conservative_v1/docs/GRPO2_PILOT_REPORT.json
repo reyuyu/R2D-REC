@@ -1,0 +1,101 @@
+{
+  "canonical_grpo1_parent": false,
+  "final_state": "READY_FOR_GRPO2_PARENT_FINALIZATION",
+  "formal_training_started": false,
+  "grpo3_started": false,
+  "historical_learning_rate": 1e-06,
+  "historical_source": "Positive-A0 V3 Think G4 + four independent G8 FullSID",
+  "pilot": {
+    "canonical_grpo1_parent": false,
+    "checkpoints": [
+      {
+        "adapter_only": true,
+        "adapter_sha256": "4be2118b946fb1d954a85aa8278e44dd2bf14c173fdf7dbd248364ee85e3fadd",
+        "step": 10,
+        "training_state_complete": true,
+        "world_size": 4
+      },
+      {
+        "adapter_only": true,
+        "adapter_sha256": "4ba669ae2c8304355c570be799918cf83da78ca7f7436ff23acfce27a0ab93c6",
+        "step": 20,
+        "training_state_complete": true,
+        "world_size": 4
+      }
+    ],
+    "completed_at": "2026-09-05T09:38:31.942712+00:00",
+    "global_step": 20,
+    "parent_unchanged": true,
+    "retention": {
+      "0": {
+        "group_count": 4,
+        "nothink": {
+          "a_plus_rate": 0.125,
+          "ab_plus_rate": 0.0,
+          "exact_rate": 0.0,
+          "mean_reward": -0.078125,
+          "positive_candidate_rate": 0.125,
+          "success_at_k": 0.25
+        },
+        "think": {
+          "a_plus_beam_rate": 0.041015625,
+          "ab_plus_beam_rate": 0.0,
+          "closure_rate": 1.0,
+          "exact_beam_rate": 0.009765625,
+          "invalid_rate": 0.0,
+          "mean_reward": 2.861328125,
+          "success_at_32": 0.75,
+          "success_at_k": 0.75
+        }
+      },
+      "20": {
+        "group_count": 4,
+        "nothink": {
+          "a_plus_rate": 0.1875,
+          "ab_plus_rate": 0.0625,
+          "exact_rate": 0.0,
+          "mean_reward": 0.0078125,
+          "positive_candidate_rate": 0.1875,
+          "success_at_k": 0.25
+        },
+        "think": {
+          "a_plus_beam_rate": 0.041015625,
+          "ab_plus_beam_rate": 0.0,
+          "closure_rate": 1.0,
+          "exact_beam_rate": 0.009765625,
+          "invalid_rate": 0.0,
+          "mean_reward": 2.861328125,
+          "success_at_32": 0.75,
+          "success_at_k": 0.75
+        }
+      }
+    },
+    "run_id": "GRPO2-THINK-SAMPLE8-PILOT20-20260905-a2016fe",
+    "status": "PASS",
+    "test_parent_only": true
+  },
+  "pilot_learning_rate": 2e-07,
+  "smoke_repeatability": {
+    "adapter_sha256_a": "31da488c6b72c380e1e7913b032e48ceda06b2774588e0d50eea2e5efd9b8cac",
+    "adapter_sha256_b": "31da488c6b72c380e1e7913b032e48ceda06b2774588e0d50eea2e5efd9b8cac",
+    "checks": {
+      "adapter_byte_exact": true,
+      "probe4_beam32_events": true,
+      "rank0_step_evidence": true,
+      "rank0_trainer_evidence": true,
+      "rank1_step_evidence": true,
+      "rank1_trainer_evidence": true,
+      "rank2_step_evidence": true,
+      "rank2_trainer_evidence": true,
+      "rank3_step_evidence": true,
+      "rank3_trainer_evidence": true,
+      "sample8_fullsid_events": true
+    },
+    "determinism_level": "BYTE_EXACT",
+    "first_divergence": "NONE",
+    "pilot_allowed": true,
+    "status": "BYTE_EXACT"
+  },
+  "status": "PASS",
+  "test_parent_only": true
+}
