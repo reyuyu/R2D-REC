@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate GRPO-2 by continuing the trainable GRPO-1 checkpoint-500 adapter."""
+"""Validate GRPO-2 by continuing a contracted trainable GRPO-1 adapter."""
 from __future__ import annotations
 
 import json
@@ -72,6 +72,18 @@ _MODEL_AUDIT: dict = {}
 _STEP0_AUDIT: dict = {}
 
 
+def parent_adapter_sha256() -> str:
+    return str(_SOURCE_AUDIT.get("adapter_sha256", GRPO1_STEP500_ADAPTER_SHA256))
+
+
+def parent_checkpoint_step() -> int:
+    return int(_SOURCE_AUDIT.get("adapter_checkpoint", 500))
+
+
+def parent_base_sha256() -> str:
+    return str(_SOURCE_AUDIT.get("base_full_model_sha256", SFT_MODEL_SHA256))
+
+
 def adapter_delta_norm(reference: Path, candidate: Path) -> float:
     from safetensors import safe_open
 
@@ -118,7 +130,11 @@ def prepare_plan(args):
     probe_only = args.probe_only_step is not None
     group_ids = list(_CONFIG["retention_probe"]["group_ids"]) if (probe_enabled or probe_only) else []
     probe_records = load_probe_records(args.probe_data_path, group_ids) if group_ids else {}
-    resume_step = validate_grpo2_resume(args.resume_from_checkpoint)["step"] if args.resume_from_checkpoint else 0
+    resume_step = (
+        validate_grpo2_resume(args.resume_from_checkpoint, parent_adapter_sha256())["step"]
+        if args.resume_from_checkpoint
+        else 0
+    )
     return {
         "raw_groups": len(dataset),
         "selected_groups_arg": len(dataset),
@@ -260,9 +276,9 @@ class MonitorWriter:
             "fresh_lora": False,
             "fresh_optimizer": True,
             "training_resume_from_grpo1": False,
-            "base_full_model_sha256": SFT_MODEL_SHA256,
-            "grpo1_parent_checkpoint": 500,
-            "grpo1_parent_adapter_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+            "base_full_model_sha256": parent_base_sha256(),
+            "grpo1_parent_checkpoint": parent_checkpoint_step(),
+            "grpo1_parent_adapter_sha256": parent_adapter_sha256(),
             "dataset_guard": _DATASET_GUARD,
             "training_routes": ["think"],
             "train_think_rows": 611,
@@ -292,10 +308,11 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
     def __init__(self, *args, **kwargs):
         config_sha = file_sha256(_PARSED.config)
         lineage = {
-            "base_full_model_sha256": SFT_MODEL_SHA256,
+            "base_full_model_sha256": parent_base_sha256(),
             "adapter_initialization_source_stage": "GRPO1_REC_BILATERAL",
-            "adapter_initialization_source_checkpoint": 500,
-            "adapter_initialization_source_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+            "adapter_initialization_source_checkpoint": parent_checkpoint_step(),
+            "adapter_initialization_source_sha256": parent_adapter_sha256(),
+            "adapter_weight_parent": f"GRPO1 checkpoint-{parent_checkpoint_step()}",
             "optimizer_initialization": "fresh_at_grpo2_step0",
             "trainer_state_initialization": "fresh",
             "learning_rate": 2e-7,
@@ -315,9 +332,9 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
                 "schema": "grpo2_continued_adapter_validation_v1",
                 "stage": "GRPO2_REC_THINK",
                 "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
-                "adapter_weight_parent": "GRPO1 checkpoint-500",
-                "adapter_initialization_source_sha256": GRPO1_STEP500_ADAPTER_SHA256,
-                "source_grpo1_checkpoint": 500,
+                "adapter_weight_parent": f"GRPO1 checkpoint-{parent_checkpoint_step()}",
+                "adapter_initialization_source_sha256": parent_adapter_sha256(),
+                "source_grpo1_checkpoint": parent_checkpoint_step(),
                 "selection_basis": "USER_PROVISIONAL_SELECTION",
                 "external_grpo1_best_confirmed": False,
                 "optimizer_parent": "NONE",
@@ -328,7 +345,7 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
                 "adapter_continuation": True,
                 "fresh_lora": False,
                 "fresh_optimizer": not bool(_PARSED.resume_from_checkpoint),
-                "base_full_model_sha256": SFT_MODEL_SHA256,
+                "base_full_model_sha256": parent_base_sha256(),
                 "dataset_sha256": _CONFIG["dataset"]["sha256"],
                 "config_sha256": config_sha,
                 "code_commit": current_git_commit(),
@@ -349,15 +366,19 @@ class BoundTrainer(GRPO2ContinuedAdapterTrainer):
 def _validate_preflight(args) -> dict:
     global _CONFIG, _SOURCE_AUDIT, _DATASET_GUARD
     _CONFIG = validate_config(load_json(args.config))
-    _SOURCE_AUDIT = validate_parent_sources(args.base_model, args.adapter_parent)
+    _SOURCE_AUDIT = validate_parent_sources(
+        args.base_model,
+        args.adapter_parent,
+        _CONFIG.get("parent"),
+    )
     dataset = validate_dataset(args.data_path)
     _DATASET_GUARD = {key: value for key, value in dataset.items() if key != "rows"}
     if args.resume_from_checkpoint:
-        validate_grpo2_resume(args.resume_from_checkpoint)
+        validate_grpo2_resume(args.resume_from_checkpoint, parent_adapter_sha256())
     if args.probe_only_adapter:
         probe_path = Path(args.probe_only_adapter)
         if probe_path.resolve() != Path(args.adapter_parent).resolve():
-            validate_grpo2_resume(probe_path)
+            validate_grpo2_resume(probe_path, parent_adapter_sha256())
     if int(args.seed) != int(_CONFIG["seeds"]["training"]):
         raise RuntimeError("GRPO2_TRAINING_SEED_DRIFT")
     if float(args.lr) != 2e-7:
@@ -369,7 +390,7 @@ def _validate_preflight(args) -> dict:
         "mode": "CONTINUED_SINGLE_ADAPTER",
         "run_id": args.run_id,
         "base_full_sft_sha256": _SOURCE_AUDIT["base_full_model_sha256"],
-        "grpo1_parent_checkpoint": 500,
+        "grpo1_parent_checkpoint": parent_checkpoint_step(),
         "grpo1_parent_adapter_sha256": _SOURCE_AUDIT["adapter_sha256"],
         "adapter_initialization": "INHERITED_FROM_GRPO1",
         "fresh_lora": False,
@@ -410,7 +431,7 @@ def _write_checkpoint_manifest(checkpoint: Path) -> dict:
     state = load_json(checkpoint / "trainer_state.json")
     if int(state.get("max_steps", -1)) != int(_CONFIG["optimization"]["max_steps"]):
         raise RuntimeError("GRPO2_CHECKPOINT_MAX_STEPS_MISMATCH")
-    lineage = validate_grpo2_resume(checkpoint)["lineage"]
+    lineage = validate_grpo2_resume(checkpoint, parent_adapter_sha256())["lineage"]
     if lineage.get("resume_supported") is not True:
         raise RuntimeError("GRPO2_CHECKPOINT_NOT_RESUME_CAPABLE")
     delta_norm = adapter_delta_norm(
@@ -427,11 +448,20 @@ def _write_checkpoint_manifest(checkpoint: Path) -> dict:
         "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
         "contains_grpo1_and_grpo2_effect": True,
         "inference_contract": "Full SFT plus this single continued adapter; do not stack GRPO1 again",
-        "adapter_delta_norm_from_grpo1_step500": delta_norm,
+        "adapter_delta_norm_from_grpo1_parent": delta_norm,
         "files": [{"name": name, "size": (checkpoint / name).stat().st_size, "sha256": file_sha256(checkpoint / name)} for name in required],
     }
+    if parent_checkpoint_step() == 500:
+        manifest["adapter_delta_norm_from_grpo1_step500"] = delta_norm
     write_json_atomic(checkpoint / "checkpoint_manifest.json", manifest)
-    return {**record, "resume_capable": True, "adapter_delta_norm_from_grpo1_step500": delta_norm}
+    result = {
+        **record,
+        "resume_capable": True,
+        "adapter_delta_norm_from_grpo1_parent": delta_norm,
+    }
+    if parent_checkpoint_step() == 500:
+        result["adapter_delta_norm_from_grpo1_step500"] = delta_norm
+    return result
 
 
 def _finalize(args) -> None:
@@ -442,9 +472,13 @@ def _finalize(args) -> None:
     if not expected:
         expected = [5] if _CONFIG["optimization"]["max_steps"] == 5 else [10, 20]
     checkpoints = [_write_checkpoint_manifest(output / f"checkpoint-{step}") for step in expected]
-    if checkpoints[-1]["adapter_sha256"] == GRPO1_STEP500_ADAPTER_SHA256:
+    if checkpoints[-1]["adapter_sha256"] == parent_adapter_sha256():
         raise RuntimeError("GRPO2_INHERITED_ADAPTER_FINAL_WEIGHT_DID_NOT_CHANGE")
-    source_after = validate_parent_sources(args.base_model, args.adapter_parent)
+    source_after = validate_parent_sources(
+        args.base_model,
+        args.adapter_parent,
+        _CONFIG.get("parent"),
+    )
     if source_after["base_full_model_sha256"] != _SOURCE_AUDIT["base_full_model_sha256"] or source_after["adapter_sha256"] != _SOURCE_AUDIT["adapter_sha256"]:
         raise RuntimeError("GRPO2_PARENT_SOURCE_MUTATED_DURING_TRAINING")
     if _CONFIG["retention_probe"].get("enabled"):
@@ -465,9 +499,9 @@ def _finalize(args) -> None:
         "mode": "CONTINUED_SINGLE_ADAPTER",
         "run_id": args.run_id,
         "global_step": _CONFIG["optimization"]["max_steps"],
-        "base_full_sft_sha256": SFT_MODEL_SHA256,
-        "grpo1_parent_checkpoint": 500,
-        "grpo1_parent_adapter_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+        "base_full_sft_sha256": parent_base_sha256(),
+        "grpo1_parent_checkpoint": parent_checkpoint_step(),
+        "grpo1_parent_adapter_sha256": parent_adapter_sha256(),
         "adapter_initialization": "INHERITED_FROM_GRPO1",
         "fresh_lora": False,
         "fresh_optimizer": True,

@@ -72,12 +72,18 @@ def _load_json(path: str | Path) -> dict:
 
 def _validate_formal_contract(config: dict) -> dict:
     run_kind = config.get("run_kind")
+    pipeline_steps = int(config.get("optimization", {}).get("max_steps", 0))
     checkpoint_contracts = {
         "formal_grpo1_500": {
             "save_steps": 100, "save_total_limit": 5, "limit_is_minimum": True
         },
         "formal_grpo1_500_final_only": {
             "save_steps": 500, "save_total_limit": 1, "limit_is_minimum": False
+        },
+        "formal_grpo1_pipeline_final_only": {
+            "save_steps": pipeline_steps,
+            "save_total_limit": 1,
+            "limit_is_minimum": False,
         },
     }
     if run_kind not in checkpoint_contracts:
@@ -95,7 +101,10 @@ def _validate_formal_contract(config: dict) -> dict:
             config["dataset"].get("selection"), "all_groups_except_fixed_probe"
         ),
         "world_size": (config["runtime"].get("world_size"), 4),
-        "max_steps": (optimization.get("max_steps"), 500),
+        "max_steps": (
+            optimization.get("max_steps"),
+            pipeline_steps if run_kind == "formal_grpo1_pipeline_final_only" else 500,
+        ),
         "learning_rate": (optimization.get("learning_rate"), 5e-7),
         "weight_decay": (optimization.get("weight_decay"), 0.0),
         "lr_scheduler_type": (optimization.get("lr_scheduler_type"), "constant"),
@@ -183,6 +192,8 @@ def _validate_formal_contract(config: dict) -> dict:
     }
     if config.get("seeds") != expected_seeds:
         mismatches["seeds"] = {"actual": config.get("seeds"), "expected": expected_seeds}
+    if run_kind == "formal_grpo1_pipeline_final_only" and pipeline_steps <= 0:
+        mismatches["max_steps"] = {"actual": pipeline_steps, "expected": "positive integer"}
     if mismatches:
         raise RuntimeError(f"formal GRPO-1 contract mismatch: {mismatches}")
     return {
@@ -573,7 +584,10 @@ def execute(args: argparse.Namespace) -> dict | None:
             "checkpoint": checkpoint_audit,
             "step0_parity": step0,
             "retention": retention,
-            "continuous_run": "0_TO_500_WITHOUT_MANUAL_INTERRUPTION" if formal_contract.get("formal_run") else None,
+            "continuous_run": (
+                f"0_TO_{int(config['optimization']['max_steps'])}_WITHOUT_MANUAL_INTERRUPTION"
+                if formal_contract.get("formal_run") else None
+            ),
             "midrun_resume_tests": "NONE" if formal_contract.get("formal_run") else None,
             "midrun_retention_probes": "NONE" if formal_contract.get("formal_run") else None,
             "completed_at": _utc_now(),

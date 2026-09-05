@@ -46,7 +46,9 @@ class ContinuedAdapterLineageCallback(TrainerCallback):
             "recipe": "grpo2_think_continued_adapter_v1",
             "stage": "GRPO2_REC_THINK",
             "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
-            "adapter_weight_parent": "GRPO1 checkpoint-500",
+            "adapter_weight_parent": self.payload.get(
+                "adapter_weight_parent", "GRPO1 checkpoint-500"
+            ),
             "optimizer_parent": "NONE",
             "trainer_state_parent": "NONE",
             "rng_parent": "NONE",

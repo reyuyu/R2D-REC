@@ -137,6 +137,31 @@ def test_formal_contract_is_exact_and_probe_free():
     assert value["retention_probe"]["enabled"] is False
 
 
+def test_pipeline_contract_accepts_dynamic_parent_and_final_only_checkpoint():
+    value = config("formal_300.json")
+    value["run_kind"] = "grpo2_continued_adapter_pipeline_final_only"
+    value["optimization"]["max_steps"] = 250
+    value["checkpoint"] = {
+        "steps": [250],
+        "save_total_limit": 1,
+        "adapter_only": True,
+        "full_resume_state": True,
+    }
+    value["dataset"].update({
+        "registry_key": "recommendation_grpo_think_only",
+        "split": "train",
+        "registered_dataset_used_by_trainer": True,
+    })
+    value["parent"] = {
+        "base_model_sha256": "a" * 64,
+        "base_config_sha256": "b" * 64,
+        "adapter_sha256": "c" * 64,
+        "adapter_step": 300,
+        "adapter_dataset_sha256": "d" * 64,
+    }
+    assert validate_config(value)["parent"]["adapter_step"] == 300
+
+
 def test_formal_runner_uses_exact_schedule_and_no_merge():
     trainer = (PACKAGE / "scripts" / "trainer.py").read_text(encoding="utf-8")
     runner = (PACKAGE / "scripts" / "run_grpo2_continued.py").read_text(encoding="utf-8")

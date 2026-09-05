@@ -27,7 +27,11 @@ def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def validate_parent_sources(base_model: str | Path, adapter_parent: str | Path) -> dict[str, Any]:
+def validate_parent_sources(
+    base_model: str | Path,
+    adapter_parent: str | Path,
+    parent_contract: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     base_dir = Path(base_model)
     adapter_dir = Path(adapter_parent)
     base_weight = base_dir / "model.safetensors"
@@ -39,19 +43,29 @@ def validate_parent_sources(base_model: str | Path, adapter_parent: str | Path) 
         raise RuntimeError(f"GRPO2_PARENT_SOURCE_FILES_MISSING: {missing}")
     base_sha = file_sha256(base_weight)
     adapter_sha = file_sha256(adapter_weight)
-    if base_sha != SFT_MODEL_SHA256:
-        raise RuntimeError(f"GRPO2_SFT_SHA_MISMATCH expected={SFT_MODEL_SHA256} actual={base_sha}")
-    if adapter_sha != GRPO1_STEP500_ADAPTER_SHA256:
-        raise RuntimeError(f"GRPO2_GRPO1_ADAPTER_SHA_MISMATCH expected={GRPO1_STEP500_ADAPTER_SHA256} actual={adapter_sha}")
+    contract = parent_contract or {
+        "base_model_sha256": SFT_MODEL_SHA256,
+        "adapter_sha256": GRPO1_STEP500_ADAPTER_SHA256,
+        "adapter_step": 500,
+        "adapter_dataset_sha256": GRPO1_DATASET_SHA256,
+    }
+    expected_base_sha = str(contract["base_model_sha256"])
+    expected_adapter_sha = str(contract["adapter_sha256"])
+    expected_step = int(contract["adapter_step"])
+    expected_dataset_sha = str(contract["adapter_dataset_sha256"])
+    if base_sha != expected_base_sha:
+        raise RuntimeError(f"GRPO2_SFT_SHA_MISMATCH expected={expected_base_sha} actual={base_sha}")
+    if adapter_sha != expected_adapter_sha:
+        raise RuntimeError(f"GRPO2_GRPO1_ADAPTER_SHA_MISMATCH expected={expected_adapter_sha} actual={adapter_sha}")
     lineage = load_json(lineage_path)
     required_lineage = {
         "recipe": "grpo_fullbase_conservative_v1",
         "parent_mode": "full_model",
-        "parent_base_sha256": SFT_MODEL_SHA256,
+        "parent_base_sha256": expected_base_sha,
         "adapter_stage": "GR_REC",
-        "adapter_sha256": GRPO1_STEP500_ADAPTER_SHA256,
-        "step": 500,
-        "dataset_sha256": GRPO1_DATASET_SHA256,
+        "adapter_sha256": expected_adapter_sha,
+        "step": expected_step,
+        "dataset_sha256": expected_dataset_sha,
     }
     for key, expected in required_lineage.items():
         if lineage.get(key) != expected:
@@ -68,7 +82,7 @@ def validate_parent_sources(base_model: str | Path, adapter_parent: str | Path) 
     return {
         "base_full_model_sha256": base_sha,
         "adapter_sha256": adapter_sha,
-        "adapter_checkpoint": 500,
+        "adapter_checkpoint": expected_step,
         "lineage": lineage,
         "adapter_config": adapter_config,
     }
@@ -101,13 +115,23 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("GRPO2_INITIALIZATION_SEMANTICS_DRIFT")
     if config.get("training_resume") is not False:
         raise RuntimeError("GRPO1_TO_GRPO2_IS_NOT_TRAINER_RESUME")
-    if config.get("dataset") != {
+    dataset = config.get("dataset", {})
+    expected_dataset = {
         "name": "grpo_tk_positive_groups_1946_20260829",
         "sha256": DATASET_SHA256,
         "rows": EXPECTED_ROWS,
         "route": "think",
-    }:
+    }
+    if any(dataset.get(key) != value for key, value in expected_dataset.items()):
         raise RuntimeError("GRPO2_DATASET_CONFIG_DRIFT")
+    if config.get("run_kind") == "grpo2_continued_adapter_pipeline_final_only":
+        registry = {
+            "registry_key": "recommendation_grpo_think_only",
+            "split": "train",
+            "registered_dataset_used_by_trainer": True,
+        }
+        if any(dataset.get(key) != value for key, value in registry.items()):
+            raise RuntimeError("GRPO2_REGISTERED_DATASET_CONTRACT_DRIFT")
     if config.get("seeds") != {
         "training": 20260816, "dataset": 20260816, "sampler": 20260816,
         "generation": 20260816, "probe": 20260818,
@@ -124,10 +148,13 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         if optimization.get(key) != expected:
             raise RuntimeError(f"GRPO2_OPTIMIZATION_CONTRACT_DRIFT key={key}")
     max_steps = optimization.get("max_steps")
-    if max_steps not in (5, 20, 300):
+    pipeline = config.get("run_kind") == "grpo2_continued_adapter_pipeline_final_only"
+    if not pipeline and max_steps not in (5, 20, 300):
         raise RuntimeError("GRPO2_STEPS_MUST_BE_5_20_OR_300")
+    if pipeline and (not isinstance(max_steps, int) or max_steps <= 0):
+        raise RuntimeError("GRPO2_PIPELINE_STEPS_MUST_BE_POSITIVE")
     formal = config.get("run_kind") == "grpo2_continued_adapter_formal_300"
-    if formal != (max_steps == 300):
+    if not pipeline and formal != (max_steps == 300):
         raise RuntimeError("GRPO2_FORMAL_RUN_KIND_STEPS_MISMATCH")
     if formal:
         checkpoint = config.get("checkpoint", {})
@@ -137,6 +164,24 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
             raise RuntimeError("GRPO2_FORMAL_CHECKPOINT_CONTRACT_DRIFT")
         if config.get("retention_probe", {}).get("enabled") is not False:
             raise RuntimeError("GRPO2_FORMAL_INLINE_PROBE_FORBIDDEN")
+    if pipeline:
+        checkpoint = config.get("checkpoint", {})
+        if checkpoint.get("steps") != [max_steps]:
+            raise RuntimeError("GRPO2_PIPELINE_CHECKPOINT_SCHEDULE_DRIFT")
+        if checkpoint.get("save_total_limit") != 1 or checkpoint.get("adapter_only") is not True:
+            raise RuntimeError("GRPO2_PIPELINE_CHECKPOINT_CONTRACT_DRIFT")
+        if checkpoint.get("full_resume_state") is not True:
+            raise RuntimeError("GRPO2_PIPELINE_RESUME_STATE_REQUIRED")
+        parent = config.get("parent", {})
+        required_parent = {
+            "base_model_sha256",
+            "base_config_sha256",
+            "adapter_sha256",
+            "adapter_step",
+            "adapter_dataset_sha256",
+        }
+        if set(parent) != required_parent:
+            raise RuntimeError("GRPO2_PIPELINE_PARENT_CONTRACT_DRIFT")
     lora = config.get("lora", {})
     if (lora.get("r"), lora.get("alpha"), lora.get("bias"), lora.get("disable_dropout")) != (32, 64, "none", True):
         raise RuntimeError("GRPO2_LORA_CONTRACT_DRIFT")
@@ -145,12 +190,14 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
     return config
 
 
-def validate_grpo2_resume(checkpoint: str | Path) -> dict[str, Any]:
+def validate_grpo2_resume(
+    checkpoint: str | Path, expected_parent_sha256: str = GRPO1_STEP500_ADAPTER_SHA256
+) -> dict[str, Any]:
     checkpoint = Path(checkpoint)
     lineage = load_json(checkpoint / "lineage.json")
     if lineage.get("stage") != "GRPO2_REC_THINK" or lineage.get("adapter_semantics") != "CONTINUED_SINGLE_ADAPTER":
         raise RuntimeError("GRPO2_RESUME_LINEAGE_INVALID")
-    if lineage.get("adapter_initialization_source_sha256") != GRPO1_STEP500_ADAPTER_SHA256:
+    if lineage.get("adapter_initialization_source_sha256") != expected_parent_sha256:
         raise RuntimeError("GRPO2_RESUME_PARENT_ADAPTER_MISMATCH")
     if lineage.get("resume_supported") is not True:
         raise RuntimeError("GRPO2_RESUME_NOT_SUPPORTED")

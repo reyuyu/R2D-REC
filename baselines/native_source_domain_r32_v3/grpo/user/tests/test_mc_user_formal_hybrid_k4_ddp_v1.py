@@ -22,6 +22,7 @@ from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     probe_queue_value,
     validate_parent_adapter_contract,
     validate_grpo3_parent_lineage,
+    validate_pipeline_k4_config,
     validate_checkpoint_root,
 )
 from compare_grpo3_user_determinism import compare  # noqa: E402
@@ -150,6 +151,20 @@ class HybridFormalRunnerTests(unittest.TestCase):
                     expected_sha256=sha,
                     expected_parent_stage="GRPO1",
                 )
+
+    def test_pipeline_config_changes_only_routing_counts_and_checkpoint_schedule(self):
+        config = dict(GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG)
+        config.update({
+            "stage": "grpo3_user_pipeline_final_only_v1",
+            "adapter": "/runtime/grpo1/checkpoint-300",
+            "base_model": "/runtime/sft",
+            "train_data": "/runtime/registry/user.jsonl",
+            "checkpoint_steps": [200],
+        })
+        self.assertEqual(validate_pipeline_k4_config(config), config)
+        config["temperature"] = 0.8
+        with self.assertRaisesRegex(RuntimeError, "pipeline K4 config mismatch"):
+            validate_pipeline_k4_config(config)
 
     def test_grpo3_comparator_requires_exact_step_evidence_and_adapter(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -290,6 +290,8 @@ class MCK4Error(RuntimeError):
 
 def load_k4_config(path: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
+    if config.get("stage") == "grpo3_user_pipeline_final_only_v1":
+        return validate_pipeline_k4_config(config)
     expected_config = SUPPORTED_FROZEN_CONFIGS.get(config.get("stage"))
     if expected_config is None:
         raise MCK4Error(f"unsupported frozen K4 stage: {config.get('stage')}")
@@ -301,6 +303,65 @@ def load_k4_config(path: Path) -> dict[str, Any]:
     }
     if mismatches:
         raise MCK4Error(f"frozen K4 config mismatch: {mismatches}")
+    return config
+
+
+def validate_pipeline_k4_config(config: dict[str, Any]) -> dict[str, Any]:
+    prompt_count = int(config.get("prompt_count", 0))
+    expected = {
+        "experiment_type": "formal",
+        "runtime_seed": 20260823,
+        "selection_seed": 20260823,
+        "route_schedule": "strict_alternating",
+        "K": K,
+        "world_size": WORLD_SIZE,
+        "parallelism": "candidate_parallel",
+        "temperature": 0.9,
+        "top_p": 0.95,
+        "max_new_tokens": 512,
+        "learning_rate": 3e-7,
+        "weight_decay": 0.0,
+        "optimizer": "AdamW",
+        "scheduler": "constant",
+        "forward_batch_size": 1,
+        "gradient_accumulation_steps": 1,
+        "sequence_weight": 1.0,
+        "local_weight": 0.3,
+        "registered_dataset_name": "user_grpo",
+        "registered_dataset_split": "train",
+        "registered_dataset_rows": 3000,
+        "resume_supported": True,
+        "resume_policy": "complete_checkpoint_state",
+    }
+    mismatches = {
+        key: {"actual": config.get(key), "expected": value}
+        for key, value in expected.items()
+        if config.get(key) != value
+    }
+    if config.get("parent_stage") not in {"GRPO1", "GRPO2"}:
+        mismatches["parent_stage"] = {
+            "actual": config.get("parent_stage"),
+            "expected": "GRPO1 or GRPO2",
+        }
+    if prompt_count <= 0:
+        mismatches["prompt_count"] = {"actual": prompt_count, "expected": "positive"}
+    if config.get("action_count") != (prompt_count + 1) // 2:
+        mismatches["action_count"] = {
+            "actual": config.get("action_count"),
+            "expected": (prompt_count + 1) // 2,
+        }
+    if config.get("chain_count") != prompt_count // 2:
+        mismatches["chain_count"] = {
+            "actual": config.get("chain_count"),
+            "expected": prompt_count // 2,
+        }
+    if config.get("checkpoint_steps") != [prompt_count]:
+        mismatches["checkpoint_steps"] = {
+            "actual": config.get("checkpoint_steps"),
+            "expected": [prompt_count],
+        }
+    if mismatches:
+        raise MCK4Error(f"pipeline K4 config mismatch: {mismatches}")
     return config
 
 
@@ -652,6 +713,7 @@ def run_preflight(args: argparse.Namespace, *, gpu_checker: Callable[..., Mappin
     if config["stage"] in {
         GRPO3_FORMAL_CONFIG["stage"],
         GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG["stage"],
+        "grpo3_user_pipeline_final_only_v1",
     }:
         parent_lineage = validate_grpo3_parent_lineage(
             Path(config["adapter"]),
