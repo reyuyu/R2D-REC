@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -155,4 +156,63 @@ class HubApi:
     continued_uploaded = json.loads(continued_upload_record.read_text(encoding="utf-8"))
     assert continued_uploaded["repo_id"] == "owner/grpo2-continued"
     assert "secret-test-token" not in continued_status.read_text(encoding="utf-8")
+
+    grpo3_adapter = root / "grpo3-adapter"
+    grpo3_adapter.mkdir()
+    (grpo3_adapter / "adapter_model.safetensors").write_bytes(b"grpo1-plus-grpo3-adapter")
+    (grpo3_adapter / "adapter_config.json").write_text("{}", encoding="utf-8")
+    grpo3_sha = sha256(grpo3_adapter / "adapter_model.safetensors")
+    grpo3_lineage = {
+        "schema": "grpo3_user_continued_adapter_lineage_v1",
+        "adapter_only": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "fresh_lora": False,
+        "base_model": str(base),
+        "parent_stage": "GRPO1",
+        "parent_checkpoint_step": 300,
+        "parent_adapter_sha256": "a" * 64,
+        "adapter_weight_parent": "GRPO1 checkpoint-300",
+        "contains_grpo1_and_grpo3_effect": True,
+        "contains_grpo1_grpo2_and_grpo3_effect": False,
+    }
+    (grpo3_adapter / "lineage.json").write_text(json.dumps(grpo3_lineage), encoding="utf-8")
+    grpo3_status = root / "grpo3-status.json"
+    grpo3_upload_record = root / "grpo3-upload.json"
+    grpo3_command = [
+        sys.executable, str(HERE / "publish_merged_model.py"),
+        "--base-model", str(base),
+        "--adapter", str(grpo3_adapter),
+        "--expected-base-sha256", base_sha,
+        "--expected-adapter-sha256", grpo3_sha,
+        "--run-id", "grpo3-from-grpo1-run",
+        "--checkpoint", "prompt-step-0050",
+        "--model-id", "owner/grpo3-from-grpo1",
+        "--visibility", "private",
+        "--token-file", str(token_file),
+        "--work-dir", str(root / "grpo3-work"),
+        "--status-file", str(grpo3_status),
+    ]
+    grpo3_environment = {**environment, "FAKE_UPLOAD_RECORD": str(grpo3_upload_record)}
+    grpo3 = subprocess.run(grpo3_command, env=grpo3_environment, text=True, capture_output=True)
+    assert grpo3.returncode == 0, grpo3.stderr
+    grpo3_result = json.loads(grpo3_status.read_text(encoding="utf-8"))
+    assert grpo3_result["state"] == "completed"
+    assert json.loads(grpo3_upload_record.read_text(encoding="utf-8"))["repo_id"] == "owner/grpo3-from-grpo1"
+
+    invalid_grpo3 = root / "invalid-grpo3-adapter"
+    shutil.copytree(grpo3_adapter, invalid_grpo3)
+    invalid_lineage = {**grpo3_lineage, "adapter_weight_parent": "GRPO2 checkpoint-300"}
+    (invalid_grpo3 / "lineage.json").write_text(json.dumps(invalid_lineage), encoding="utf-8")
+    invalid_status = root / "invalid-grpo3-status.json"
+    invalid_command = [
+        value if value != str(grpo3_adapter) else str(invalid_grpo3)
+        for value in grpo3_command
+    ]
+    invalid_command[invalid_command.index(str(grpo3_status))] = str(invalid_status)
+    invalid_command[invalid_command.index(str(root / "grpo3-work"))] = str(root / "invalid-grpo3-work")
+    invalid = subprocess.run(invalid_command, env=grpo3_environment, text=True, capture_output=True)
+    assert invalid.returncode != 0
+    invalid_result = json.loads(invalid_status.read_text(encoding="utf-8"))
+    assert invalid_result["state"] == "failed"
+    assert invalid_result["message"] == "adapter lineage does not match the full-SFT parent"
     print("ALL MODEL PUBLISH WORKER CPU TESTS PASSED")

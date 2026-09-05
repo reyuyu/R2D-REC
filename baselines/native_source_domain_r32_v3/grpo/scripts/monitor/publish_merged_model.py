@@ -6,6 +6,7 @@ import gc
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import time
@@ -103,6 +104,37 @@ def main() -> int:
                 and lineage.get("contains_grpo1_and_grpo2_effect") is True
                 and lineage.get("base_full_model_sha256") == args.expected_base_sha256
                 and lineage.get("adapter_initialization_source_stage") == "GRPO1_REC_BILATERAL"
+            )
+        elif lineage_schema == "grpo3_user_continued_adapter_lineage_v1":
+            try:
+                lineage_base = Path(str(lineage.get("base_model"))).expanduser().resolve()
+            except (OSError, TypeError, ValueError):
+                lineage_base = None
+            parent_stage = lineage.get("parent_stage")
+            parent_step = lineage.get("parent_checkpoint_step")
+            if parent_stage == "GRPO1":
+                route_matches = (
+                    lineage.get("contains_grpo1_and_grpo3_effect") is True
+                    and lineage.get("contains_grpo1_grpo2_and_grpo3_effect") is False
+                    and lineage.get("adapter_weight_parent") == f"GRPO1 checkpoint-{parent_step}"
+                )
+            elif parent_stage == "GRPO2":
+                route_matches = (
+                    lineage.get("contains_grpo1_grpo2_and_grpo3_effect") is True
+                    and lineage.get("adapter_weight_parent") == f"GRPO2 checkpoint-{parent_step}"
+                )
+            else:
+                route_matches = False
+            lineage_matches = (
+                lineage.get("adapter_only") is True
+                and lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
+                and lineage.get("fresh_lora") is False
+                and isinstance(parent_step, int)
+                and parent_step > 0
+                and isinstance(lineage.get("parent_adapter_sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", lineage["parent_adapter_sha256"]) is not None
+                and lineage_base == base
+                and route_matches
             )
         else:
             lineage_matches = False
