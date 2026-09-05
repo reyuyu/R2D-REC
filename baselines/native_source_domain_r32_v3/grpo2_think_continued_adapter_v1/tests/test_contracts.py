@@ -134,7 +134,7 @@ def test_runner_loads_inherited_adapter_trainable():
     source = (PACKAGE / "scripts" / "run_grpo2_continued.py").read_text(encoding="utf-8")
     assert "PeftModel.from_pretrained" in source
     assert "is_trainable=True" in source
-    assert "autocast_adapter_dtype=False" in source
+    assert "autocast_adapter_dtype=True" in source
 
 
 def test_step0_gate_creates_no_optimizer_step():

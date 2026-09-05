@@ -30,6 +30,11 @@ construction. It requires zero trainable base parameters, 87,293,952 trainable
 LoRA parameters across 504 tensors, and optimizer parameter IDs exactly equal
 to those inherited trainable tensors.
 
+The frozen GRPO-1 adapter stores all 504 tensors as FP32 while the full SFT
+base runs in BF16. The loader keeps PEFT training autocast enabled so LoRA
+parameters are promoted to FP32 before checkpoint assignment; disabling that
+behavior would irreversibly round the inherited weights during Step0 loading.
+
 Two independent five-step runs must produce byte-identical rollout, reward,
 gradient, optimizer, RNG, probe, and final adapter evidence. Only then does a
 fresh 20-step pilot run from the original GRPO-1 adapter and save complete,

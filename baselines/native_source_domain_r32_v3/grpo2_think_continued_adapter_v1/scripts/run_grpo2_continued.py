@@ -131,7 +131,10 @@ def load_model(device):
         base,
         _PARSED.adapter_parent,
         is_trainable=True,
-        autocast_adapter_dtype=False,
+        # The source adapter is FP32 while the immutable base is BF16. PEFT's
+        # training autocast creates FP32 LoRA parameters before loading, which
+        # preserves every source value instead of downcasting on assignment.
+        autocast_adapter_dtype=True,
         local_files_only=True,
     )
     audit = enforce_lora_only_trainable(model)
