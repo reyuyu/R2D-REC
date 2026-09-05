@@ -1203,13 +1203,13 @@
     try {
       if (!state.activeRun && !(await loadRuns())) { setLiveState('stale', '等待实验数据'); return; }
       const requestedRun = state.activeRun;
-      const endpoints = ['/api/manifest', '/api/capabilities', '/api/metrics', '/api/rollouts', '/api/ranks', '/api/traces', '/api/checkpoints', '/api/probes', '/api/dsr/metrics', '/api/dsr/steps', '/api/dsr/traces', '/api/dsr/gate', '/api/mc-user/summary', '/api/user-light-probe', '/api/recommendation-guard'];
+      const endpoints = ['/api/manifest', '/api/capabilities', '/api/metrics', '/api/rollouts', '/api/ranks', '/api/traces', '/api/checkpoints', '/api/probes', '/api/dsr/metrics', '/api/dsr/steps', '/api/dsr/traces', '/api/dsr/gate', '/api/mc-user/summary', '/api/user-light-probe', '/api/recommendation-guard', '/api/model-publish/capabilities', '/api/model-publish/jobs'];
       const responses = await Promise.all(endpoints.map(url => fetch(apiUrl(url), {cache: 'no-store'})));
       if (responses.some(response => !response.ok)) throw new Error('接口返回异常状态');
-      const [manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard] = await Promise.all(responses.map(response => response.json()));
+      const [manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard, modelPublish, publishJobs] = await Promise.all(responses.map(response => response.json()));
       if (requestedRun !== state.activeRun) return;
       scrollState = captureMonitorScrollState();
-      Object.assign(state, {manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard});
+      Object.assign(state, {manifest, capabilities, metrics, rollouts, ranks, traces, checkpoints, probes, dsrMetrics, dsrSteps, dsrTraces, gate, mcSummary, userLightProbe, recommendationGuard, modelPublish, publishJobs});
       if (typeof mergeDsrCandidateTraces === 'function') mergeDsrCandidateTraces();
       state.activeKind = manifest.run_kind === USER ? USER : RECOMMENDATION;
       state.runs = state.allRuns.filter(run => run.run_kind === state.activeKind);

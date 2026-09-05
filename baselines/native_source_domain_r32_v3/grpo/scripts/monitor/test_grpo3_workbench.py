@@ -137,6 +137,10 @@ def test_grpo3_external_checkpoint_download_and_publish_contract(tmp_path: Path)
     assert "下载 Adapter" in html
     assert "downloadSelectedCheckpoint" in html
     assert "showDirectoryPicker" in html
+    user_dashboard = client.get("/static/user_dashboard.js").text
+    assert "'/api/model-publish/capabilities'" in user_dashboard
+    assert "'/api/model-publish/jobs'" in user_dashboard
+    assert "recommendationGuard, modelPublish, publishJobs" in user_dashboard
 
     lineage = json.loads((checkpoint / "lineage.json").read_text(encoding="utf-8"))
     lineage["contains_grpo1_grpo2_and_grpo3_effect"] = False
