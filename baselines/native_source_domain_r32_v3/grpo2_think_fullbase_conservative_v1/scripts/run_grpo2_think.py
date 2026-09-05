@@ -20,8 +20,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PACKAGE_DIR = SCRIPT_DIR.parent
 NATIVE_DIR = PACKAGE_DIR.parent
 FULLBASE_SCRIPTS = NATIVE_DIR / "grpo_fullbase_conservative_v1" / "scripts"
+GRPO_DIR = NATIVE_DIR / "grpo"
 GRPO_SCRIPTS = NATIVE_DIR / "grpo" / "scripts"
-for directory in (FULLBASE_SCRIPTS, GRPO_SCRIPTS):
+for directory in (FULLBASE_SCRIPTS, GRPO_SCRIPTS, GRPO_DIR):
     if str(directory) not in sys.path:
         sys.path.append(str(directory))
 

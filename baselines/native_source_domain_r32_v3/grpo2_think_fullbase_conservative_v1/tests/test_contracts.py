@@ -156,3 +156,10 @@ def test_no_formal_or_grpo3_launch():
     assert "READY_FOR_GRPO2_PARENT_FINALIZATION" in source
     assert "formal_500" not in source.lower()
     assert "grpo3" not in source.lower()
+
+
+# 18. Historical ablation imports resolve from the GRPO package root.
+def test_runner_adds_historical_ablation_import_root():
+    source = (PACKAGE / "scripts" / "run_grpo2_think.py").read_text(encoding="utf-8")
+    assert 'GRPO_DIR = NATIVE_DIR / "grpo"' in source
+    assert "(FULLBASE_SCRIPTS, GRPO_SCRIPTS, GRPO_DIR)" in source
