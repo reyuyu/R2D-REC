@@ -283,7 +283,7 @@ class MCUserMonitorTests(unittest.TestCase):
     def test_dashboard_uses_mc_dual_step_and_read_only_endpoints(self):
         html = self.client.get("/").text
         javascript = self.client.get("/static/user_dashboard.js").text
-        self.assertIn("user_dashboard.js?v=20260831-strong-parent-v1", html)
+        self.assertIn("user_dashboard.js?v=20260906-grpo3-publish-v2", html)
         self.assertIn("user_dashboard.css?v=20260822-hybrid-health-v4", html)
         self.assertIn("Prompt Step", javascript)
         self.assertIn("Optimizer Step", javascript)

@@ -147,3 +147,104 @@ def test_grpo3_external_checkpoint_download_and_publish_contract(tmp_path: Path)
     write_json(checkpoint / "lineage.json", lineage)
     invalid = client.post(f"/api/model-publish/jobs?run_id={run_id}", json=request)
     assert invalid.status_code == 409
+
+
+def test_grpo3_from_grpo1_checkpoint_publish_contract(tmp_path: Path) -> None:
+    runs = tmp_path / "runs"
+    checkpoints = tmp_path / "checkpoints"
+    run_id = "formal-grpo3-from-grpo1"
+    run = runs / run_id
+    run.mkdir(parents=True)
+    base = tmp_path / "full-sft"
+    base.mkdir()
+    (base / "model.safetensors").write_bytes(b"verified-full-sft-parent")
+    base_sha = hashlib.sha256((base / "model.safetensors").read_bytes()).hexdigest()
+    parent_adapter_sha = "a" * 64
+    config_sha = "c" * 64
+    dataset_sha = "d" * 64
+    commit = "e" * 40
+    write_json(run / "manifest.json", {
+        "run_id": run_id,
+        "stage": "grpo3_user_from_grpo1_step300_formal_v1",
+        "algorithm": "mc_user_hybrid_grpo_v1",
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "fresh_lora": False,
+        "parent_experiment": "GRPO1_REC_BILATERAL_FULLBASE_CONSERVATIVE",
+        "parent_stage": "GRPO1",
+        "parent_adapter_sha256": parent_adapter_sha,
+        "parent_checkpoint_step": 300,
+        "parent_lineage": {
+            "status": "PASS",
+            "parent_stage": "GRPO1",
+            "parent_step": 300,
+            "adapter_sha256": parent_adapter_sha,
+            "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+            "contains_grpo1_and_grpo2_effect": False,
+        },
+        "base_model": str(base),
+        "checkpoint_root": str(checkpoints),
+        "checkpoint_steps": [25, 200],
+        "config_sha256": config_sha,
+        "train_sha256": dataset_sha,
+        "git_commit": commit,
+        "prompt_count": 200,
+    })
+    checkpoint = checkpoints / run_id / "checkpoints" / "prompt-step-0025"
+    checkpoint.mkdir(parents=True)
+    adapter_bytes = b"cumulative-grpo1-grpo3-adapter"
+    (checkpoint / "adapter_model.safetensors").write_bytes(adapter_bytes)
+    (checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    adapter_sha = hashlib.sha256(adapter_bytes).hexdigest()
+    write_json(checkpoint / "lineage.json", {
+        "schema": "grpo3_user_continued_adapter_lineage_v1",
+        "adapter_only": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "contains_grpo1_and_grpo3_effect": True,
+        "contains_grpo1_grpo2_and_grpo3_effect": False,
+        "fresh_lora": False,
+        "parent_stage": "GRPO1",
+        "parent_checkpoint_step": 300,
+        "parent_adapter_sha256": parent_adapter_sha,
+        "adapter_weight_parent": "GRPO1 checkpoint-300",
+        "grpo3_prompt_step": 25,
+        "grpo3_optimizer_step": 25,
+        "dataset_sha256": dataset_sha,
+        "config_sha256": config_sha,
+        "code_commit": commit,
+        "base_model": str(base),
+        "adapter_sha256": adapter_sha,
+    })
+    token_file = tmp_path / "modelscope.token"
+    token_file.write_text("test-token-must-not-leak", encoding="utf-8")
+    if os.name != "nt":
+        token_file.chmod(0o600)
+    client = TestClient(create_app(
+        runs_dir=runs,
+        checkpoint_outputs_dirs=[checkpoints],
+        publish_root=tmp_path / "publish",
+        publish_python=Path(os.sys.executable),
+        publish_base_models={base_sha: base},
+        publish_token_file=token_file,
+    ))
+    capability = client.get(f"/api/model-publish/capabilities?run_id={run_id}").json()
+    assert capability["enabled"] is True
+    assert capability["parent_stage"] == "GRPO1"
+    assert capability["source_checkpoint"] == 300
+    request = {
+        "checkpoint": "prompt-step-0025",
+        "model_id": "owner/grpo3-from-grpo1-step25",
+        "visibility": "private",
+        "confirmation": f"PUBLISH {run_id} prompt-step-0025 owner/grpo3-from-grpo1-step25",
+    }
+    with patch("monitor.server.subprocess.Popen", return_value=Mock(pid=os.getpid())) as launch:
+        response = client.post(f"/api/model-publish/jobs?run_id={run_id}", json=request)
+    assert response.status_code == 200
+    command = launch.call_args.args[0]
+    assert str(base) in command and str(checkpoint) in command
+    assert "test-token-must-not-leak" not in " ".join(command)
+
+    lineage = json.loads((checkpoint / "lineage.json").read_text(encoding="utf-8"))
+    lineage["contains_grpo1_and_grpo3_effect"] = False
+    write_json(checkpoint / "lineage.json", lineage)
+    invalid = client.post(f"/api/model-publish/jobs?run_id={run_id}", json=request)
+    assert invalid.status_code == 409

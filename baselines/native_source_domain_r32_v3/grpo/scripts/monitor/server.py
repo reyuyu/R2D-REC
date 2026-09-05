@@ -104,7 +104,17 @@ MC_USER_ALGORITHM = "mc_user_v1"
 MC_USER_HYBRID_ALGORITHM = "mc_user_hybrid_grpo_v1"
 MC_USER_ALGORITHMS = {MC_USER_ALGORITHM, MC_USER_HYBRID_ALGORITHM}
 GRPO2_CONTINUED_SCHEMA = "grpo2_think_continued_adapter_v1"
-GRPO3_USER_FORMAL_STAGE = "grpo3_user_from_grpo2_step250_formal_v1"
+GRPO3_USER_FORMAL_STAGES = {
+    "grpo3_user_from_grpo2_step250_formal_v1": {
+        "parent_stage": "GRPO2",
+        "parent_experiment": "GRPO2_REC_THINK_CONTINUED_SINGLE_ADAPTER",
+    },
+    "grpo3_user_from_grpo1_step300_formal_v1": {
+        "parent_stage": "GRPO1",
+        "parent_experiment": "GRPO1_REC_BILATERAL_FULLBASE_CONSERVATIVE",
+    },
+}
+GRPO3_USER_PIPELINE_STAGE = "grpo3_user_pipeline_final_only_v1"
 GRPO3_USER_LINEAGE_SCHEMA = "grpo3_user_continued_adapter_lineage_v1"
 GRPO2_CHECKPOINT_FILES = (
     "adapter_model.safetensors",
@@ -214,14 +224,72 @@ def normalized_run_kind(manifest: dict[str, Any]) -> str:
 
 
 def is_grpo3_user_formal_manifest(manifest: dict[str, Any]) -> bool:
-    """Recognize the frozen formal GRPO3 run without accepting lookalike manifests."""
+    """Recognize validated GRPO3 parent routes without accepting lookalikes."""
+    stage = manifest.get("stage")
+    parent_stage = manifest.get("parent_stage")
+    expected = GRPO3_USER_FORMAL_STAGES.get(stage)
+    if expected is not None:
+        parent_stage = parent_stage or expected["parent_stage"]
+        route_matches = (
+            parent_stage == expected["parent_stage"]
+            and manifest.get("parent_experiment") == expected["parent_experiment"]
+        )
+    elif stage == GRPO3_USER_PIPELINE_STAGE and parent_stage in {"GRPO1", "GRPO2"}:
+        route_matches = manifest.get("parent_experiment") == (
+            f"{parent_stage}_CONTINUED_SINGLE_ADAPTER_PARENT"
+        )
+    else:
+        route_matches = False
     return bool(
-        manifest.get("stage") == GRPO3_USER_FORMAL_STAGE
+        route_matches
         and manifest.get("algorithm") == MC_USER_HYBRID_ALGORITHM
         and manifest.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
         and manifest.get("fresh_lora") is False
-        and manifest.get("parent_experiment") == "GRPO2_REC_THINK_CONTINUED_SINGLE_ADAPTER"
     )
+
+
+def grpo3_parent_stage(manifest: dict[str, Any]) -> str | None:
+    """Return the parent stage only for a recognized GRPO3 manifest."""
+    if not is_grpo3_user_formal_manifest(manifest):
+        return None
+    expected = GRPO3_USER_FORMAL_STAGES.get(manifest.get("stage"))
+    return str(manifest.get("parent_stage") or (expected or {}).get("parent_stage"))
+
+
+def grpo3_parent_lineage_matches(
+    manifest: dict[str, Any], *, source_sha: str, source_checkpoint: int
+) -> bool:
+    parent_stage = grpo3_parent_stage(manifest)
+    lineage = manifest.get("parent_lineage")
+    if not isinstance(lineage, dict):
+        return False
+    common = (
+        lineage.get("status") == "PASS"
+        and lineage.get("adapter_sha256") == source_sha
+        and lineage.get("adapter_semantics", "CONTINUED_SINGLE_ADAPTER")
+        == "CONTINUED_SINGLE_ADAPTER"
+    )
+    if parent_stage == "GRPO1":
+        return bool(
+            common
+            and lineage.get("parent_stage") == "GRPO1"
+            and lineage.get("parent_step") == source_checkpoint
+            and lineage.get("contains_grpo1_and_grpo2_effect") is False
+        )
+    if parent_stage == "GRPO2":
+        step_matches = (
+            lineage.get("grpo2_step") == source_checkpoint
+            or (
+                lineage.get("parent_stage") == "GRPO2"
+                and lineage.get("parent_step") == source_checkpoint
+            )
+        )
+        return bool(
+            common
+            and step_matches
+            and lineage.get("contains_grpo1_and_grpo2_effect") is True
+        )
+    return False
 
 
 def monitor_advantage_formula(manifest: dict[str, Any]) -> str | None:
@@ -810,6 +878,7 @@ def create_app(
             return {
                 "mode": "continued_single_adapter",
                 "stage": "grpo3_user",
+                "parent_stage": grpo3_parent_stage(manifest_data),
                 "base_sha256": registered_sha,
                 "base_path": declared_base,
                 "source_adapter_sha256": manifest_data.get("parent_adapter_sha256"),
@@ -846,15 +915,14 @@ def create_app(
             if not isinstance(source_checkpoint, int) or source_checkpoint < 1:
                 reasons.append("实验未声明 GRPO1 父 checkpoint")
             if contract.get("stage") == "grpo3_user":
-                parent_lineage = contract["manifest"].get("parent_lineage")
                 if not (
                     contract["manifest"].get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
                     and contract["manifest"].get("fresh_lora") is False
-                    and isinstance(parent_lineage, dict)
-                    and parent_lineage.get("status") == "PASS"
-                    and parent_lineage.get("contains_grpo1_and_grpo2_effect") is True
-                    and parent_lineage.get("adapter_sha256") == source_sha
-                    and parent_lineage.get("grpo2_step") == source_checkpoint
+                    and grpo3_parent_lineage_matches(
+                        contract["manifest"],
+                        source_sha=source_sha,
+                        source_checkpoint=source_checkpoint,
+                    )
                 ):
                     reasons.append("GRPO3 父 adapter 续接合同不完整")
             elif contract["manifest"].get("adapter_inheritance") != "CONTINUE_PARENT_ADAPTER":
@@ -865,6 +933,8 @@ def create_app(
             "enabled": not reasons,
             "reason": "可以融合并上传" if not reasons else "；".join(reasons),
             "parent_mode": contract.get("mode"),
+            "parent_stage": contract.get("parent_stage"),
+            "source_checkpoint": contract.get("source_checkpoint"),
             "parent_sha256": parent_sha,
             "credential_configured": model_publish_token is not None and model_publish_token.is_file(),
             "default_visibility": "private",
@@ -918,19 +988,38 @@ def create_app(
             expected_source_checkpoint = contract.get("source_checkpoint")
             expected_source_sha = contract.get("source_adapter_sha256")
             manifest_data = contract["manifest"]
+            parent_stage = contract.get("parent_stage")
             try:
                 lineage_base = Path(str(lineage.get("base_model"))).expanduser().resolve()
             except (OSError, TypeError, ValueError):
                 lineage_base = None
+            route_contract = False
+            if parent_stage == "GRPO1":
+                route_contract = (
+                    lineage.get("parent_stage") == "GRPO1"
+                    and lineage.get("parent_checkpoint_step") == expected_source_checkpoint
+                    and lineage.get("contains_grpo1_and_grpo3_effect") is True
+                    and lineage.get("contains_grpo1_grpo2_and_grpo3_effect") is False
+                    and lineage.get("adapter_weight_parent")
+                    == f"GRPO1 checkpoint-{expected_source_checkpoint}"
+                )
+            elif parent_stage == "GRPO2":
+                route_contract = (
+                    lineage.get("contains_grpo1_grpo2_and_grpo3_effect") is True
+                    and lineage.get("adapter_weight_parent")
+                    == f"GRPO2 checkpoint-{expected_source_checkpoint}"
+                    and lineage.get("parent_stage", "GRPO2") == "GRPO2"
+                    and lineage.get("parent_checkpoint_step", expected_source_checkpoint)
+                    == expected_source_checkpoint
+                )
             continued_contract = (
                 contract.get("mode") == "continued_single_adapter"
                 and contract.get("stage") == "grpo3_user"
+                and route_contract
                 and lineage.get("adapter_only") is True
                 and lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
-                and lineage.get("contains_grpo1_grpo2_and_grpo3_effect") is True
                 and lineage.get("fresh_lora") is False
                 and lineage.get("parent_adapter_sha256") == expected_source_sha
-                and lineage.get("adapter_weight_parent") == f"GRPO2 checkpoint-{expected_source_checkpoint}"
                 and lineage.get("grpo3_prompt_step") == checkpoint_step_value
                 and lineage.get("grpo3_optimizer_step") == checkpoint_step_value
                 and lineage.get("dataset_sha256") == manifest_data.get("train_sha256")
