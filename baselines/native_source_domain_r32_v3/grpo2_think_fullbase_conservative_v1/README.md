@@ -1,7 +1,7 @@
 # GRPO-2 Think-only full-parent conservative validation
 
-This package validates the historical recommendation Think-only second stage
-without starting formal training. Its training math is imported from
+This package validates and runs the historical recommendation Think-only second stage.
+Its training math is imported from
 `gr_rec_think_sample8_fullsid_positive_a0_v3`: one global G4 CoT group, four
 independent G8 FullSID groups, population normalization inside those groups,
 and `L_cot + L_sid`. The only historical reward change remains A-only
@@ -30,5 +30,15 @@ with an explicitly approved canonical GRPO-1 checkpoint.
    parent fingerprints, and Think/NoThink retention probes.
 7. Stop at `READY_FOR_GRPO2_PARENT_FINALIZATION`.
 
-This package does not start formal GRPO-2, GRPO-3, evaluation, merging for
-publication, or model upload.
+## Formal checkpoint-500 parent run
+
+`config/formal_300.json` freezes the validated pilot contract while selecting
+GRPO-1 checkpoint-500 as a user-provisional parent. The selection is explicitly
+not an externally confirmed best checkpoint. `scripts/run_formal_300.sh` exports
+that adapter into a standalone parent, runs merge/reload and fresh-LoRA Step0
+gates, then starts a fresh Think-only LoRA at `2e-7` for 300 optimizer steps.
+
+The exact adapter-only checkpoint schedule is 100, 150, 200, 250, and 300. No
+inline retention generation is run, so post-training probes cannot perturb the
+training RNG trajectory. The formal launcher never starts GRPO-3, evaluation,
+publication merging, or model upload.

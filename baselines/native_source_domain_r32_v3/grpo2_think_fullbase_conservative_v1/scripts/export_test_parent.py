@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge the GRPO-1 checkpoint-300 adapter into the full SFT test parent."""
+"""Merge a validated GRPO-1 adapter into an isolated standalone parent."""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +14,8 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from contracts import (
-    GRPO1_ADAPTER_SHA256,
+    GRPO1_STEP300_ADAPTER_SHA256,
+    GRPO1_STEP500_ADAPTER_SHA256,
     SFT_MODEL_SHA256,
     canonical_model_identity,
     file_sha256,
@@ -118,15 +119,23 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--data-path", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--source-grpo1-step", type=int, choices=(300, 500), default=300)
+    parser.add_argument("--canonical-for-this-run", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(f"output already exists: {args.output}")
     if file_sha256(args.sft_model / "model.safetensors") != SFT_MODEL_SHA256:
         raise RuntimeError("GRPO2_SOURCE_SFT_SHA_MISMATCH")
-    if file_sha256(args.grpo1_adapter / "adapter_model.safetensors") != GRPO1_ADAPTER_SHA256:
+    if args.canonical_for_this_run != (args.source_grpo1_step == 500):
+        raise RuntimeError("GRPO2_PARENT_MODE_STEP_MISMATCH")
+    expected_adapter_sha = (
+        GRPO1_STEP500_ADAPTER_SHA256 if args.source_grpo1_step == 500
+        else GRPO1_STEP300_ADAPTER_SHA256
+    )
+    if file_sha256(args.grpo1_adapter / "adapter_model.safetensors") != expected_adapter_sha:
         raise RuntimeError("GRPO2_SOURCE_GRPO1_ADAPTER_SHA_MISMATCH")
     lineage = json.loads((args.grpo1_adapter / "lineage.json").read_text(encoding="utf-8"))
-    if lineage.get("step") != 300 or lineage.get("parent_base_sha256") != SFT_MODEL_SHA256:
+    if lineage.get("step") != args.source_grpo1_step or lineage.get("parent_base_sha256") != SFT_MODEL_SHA256:
         raise RuntimeError("GRPO2_SOURCE_GRPO1_LINEAGE_MISMATCH")
     rows = [json.loads(line) for line in args.data_path.read_text(encoding="utf-8").splitlines() if line]
     tokenizer = AutoTokenizer.from_pretrained(
@@ -181,18 +190,21 @@ def main() -> int:
         for name in auxiliary_names if (args.output / name).is_file()
     ]
     manifest = {
-        "schema": "grpo2_test_parent_v1",
+        "schema": "grpo2_parent_v2",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "stage": "GRPO1_REC_BILATERAL",
-        "purpose": "GRPO2_DETERMINISM_TEST_PARENT",
-        "canonical": False,
-        "test_parent_only": True,
-        "canonical_grpo1_parent": False,
+        "purpose": "GRPO2_FORMAL_PARENT" if args.canonical_for_this_run else "GRPO2_DETERMINISM_TEST_PARENT",
+        "canonical": bool(args.canonical_for_this_run),
+        "canonical_for_this_run": bool(args.canonical_for_this_run),
+        "test_parent_only": not args.canonical_for_this_run,
+        "canonical_grpo1_parent": bool(args.canonical_for_this_run),
+        "selection_basis": "user_provisional_selection" if args.canonical_for_this_run else "determinism_test_selection",
+        "external_best_confirmed": False,
         "parent_sft_sha256": SFT_MODEL_SHA256,
-        "source_grpo1_step": 300,
-        "source_grpo1_checkpoint": 300,
+        "source_grpo1_step": args.source_grpo1_step,
+        "source_grpo1_checkpoint": args.source_grpo1_step,
         "source_sft_model_sha256": SFT_MODEL_SHA256,
-        "source_grpo1_adapter_sha256": GRPO1_ADAPTER_SHA256,
+        "source_grpo1_adapter_sha256": expected_adapter_sha,
         "merged_full_model_sha256": identity,
         "canonical_model_identity": identity,
         "weight_files": weight_files,

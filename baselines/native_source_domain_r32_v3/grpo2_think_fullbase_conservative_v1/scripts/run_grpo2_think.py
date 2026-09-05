@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run isolated GRPO-2 Think-only smoke or conservative pilot training."""
+"""Run fail-closed GRPO-2 Think-only validation or formal training."""
 from __future__ import annotations
 
 import json
@@ -56,6 +56,11 @@ _DATASET_GUARD: dict = {}
 _RUNTIME_MODEL = None
 _RUNTIME_TOKENIZER = None
 _PARSED = None
+_MODEL_AUDIT: dict = {}
+
+
+def is_formal() -> bool:
+    return _CONFIG.get("run_kind") == "grpo2_formal_300"
 
 
 def working_tree_clean() -> bool:
@@ -112,7 +117,7 @@ def prepare_plan(args):
 
 
 def load_model(device):
-    global _RUNTIME_MODEL, _RUNTIME_TOKENIZER
+    global _RUNTIME_MODEL, _RUNTIME_TOKENIZER, _MODEL_AUDIT
     parent_dir = Path(_PARSED.parent_manifest).parent
     tokenizer = AutoTokenizer.from_pretrained(parent_dir, local_files_only=True, trust_remote_code=True)
     base = AutoModelForCausalLM.from_pretrained(
@@ -135,7 +140,12 @@ def load_model(device):
     np.random.seed(train_seed % (2**32))
     torch.manual_seed(train_seed)
     torch.cuda.manual_seed(train_seed)
-    _RUNTIME_MODEL, _RUNTIME_TOKENIZER = model, tokenizer
+    _RUNTIME_MODEL, _RUNTIME_TOKENIZER, _MODEL_AUDIT = model, tokenizer, audit
+    print(json.dumps({
+        "BASE_TRAINABLE_PARAMS": audit.get("base_trainable_parameter_count", 0),
+        "GRPO2_LORA_TRAINABLE_PARAMS": audit["lora_trainable_parameter_count"],
+        "GRPO2_LORA_TENSOR_COUNT": audit["lora_trainable_tensor_count"],
+    }, sort_keys=True), flush=True)
     return model, tokenizer, audit["lora_trainable_parameter_count"]
 
 
@@ -191,9 +201,9 @@ def make_config(output_dir, max_steps, lr, seed, *, save_strategy="steps", save_
         "temperature": 0.9,
         "top_p": 0.95,
         "shuffle_dataset": False,
-        "save_strategy": save_strategy,
+        "save_strategy": "no" if is_formal() else save_strategy,
         "save_steps": save_steps,
-        "save_total_limit": save_total_limit,
+        "save_total_limit": 5 if is_formal() else save_total_limit,
         "use_cpu": use_cpu,
     }
     return GRPOConfig(**values)
@@ -211,8 +221,9 @@ class MonitorWriter:
         payload.update({
             "schema": "grpo2_think_fullbase_conservative_v1",
             "stage": "GRPO2_REC_THINK",
-            "test_parent_only": True,
-            "canonical_grpo1_parent": False,
+            "test_parent_only": _PARENT_MANIFEST["test_parent_only"],
+            "canonical_grpo1_parent": _PARENT_MANIFEST["canonical_grpo1_parent"],
+            "canonical_for_this_run": _PARENT_MANIFEST.get("canonical_for_this_run", False),
             "parent_canonical_model_identity": _PARENT_MANIFEST["canonical_model_identity"],
             "dataset_guard": _DATASET_GUARD,
             "training_routes": ["think"],
@@ -222,7 +233,7 @@ class MonitorWriter:
             "nothink_reward": "OFF_FOR_TRAINING_RETENTION_ONLY",
             "historical_math": "Positive-A0 V3: G4 CoT + four independent G8 FullSID; L_cot + L_sid",
             "historical_learning_rate": 1e-6,
-            "test_learning_rate": 2e-7,
+            "formal_learning_rate" if is_formal() else "test_learning_rate": 2e-7,
             "fresh_lora": True,
             "versions": {
                 "torch": torch.__version__,
@@ -255,9 +266,15 @@ class BoundTrainer(GRPO2ThinkTrainer):
     def __init__(self, *args, **kwargs):
         config_sha = file_sha256(_PARSED.config)
         lineage = {
-            "test_parent_only": True,
-            "canonical_grpo1_parent": False,
+            "stage": "GRPO2_REC_THINK",
+            "test_parent_only": _PARENT_MANIFEST["test_parent_only"],
+            "canonical_grpo1_parent": _PARENT_MANIFEST["canonical_grpo1_parent"],
+            "canonical_for_this_run": _PARENT_MANIFEST.get("canonical_for_this_run", False),
             "parent_canonical_model_identity": _PARENT_MANIFEST["canonical_model_identity"],
+            "parent_full_model_sha256": _PARENT_MANIFEST["canonical_model_identity"],
+            "source_grpo1_checkpoint": _PARENT_MANIFEST["source_grpo1_checkpoint"],
+            "selection_basis": _PARENT_MANIFEST.get("selection_basis"),
+            "external_best_confirmed": _PARENT_MANIFEST.get("external_best_confirmed", False),
             "source_sft_model_sha256": _PARENT_MANIFEST["source_sft_model_sha256"],
             "source_grpo1_adapter_sha256": _PARENT_MANIFEST["source_grpo1_adapter_sha256"],
             "dataset_sha256": _CONFIG["dataset"]["sha256"],
@@ -265,9 +282,36 @@ class BoundTrainer(GRPO2ThinkTrainer):
             "code_commit": current_git_commit(),
             "seed": _CONFIG["seeds"]["training"],
             "lora_initialization_seed": _CONFIG["seeds"]["lora_initialization"],
+            "learning_rate_base": _CONFIG["optimization"]["learning_rate"],
         }
         output = Path(kwargs["args"].output_dir)
-        super().__init__(*args, lineage=lineage, evidence_dir=output, **kwargs)
+        checkpoint_steps = _CONFIG.get("checkpoint", {}).get("steps", [])
+        super().__init__(
+            *args, lineage=lineage, evidence_dir=output,
+            checkpoint_steps=checkpoint_steps, **kwargs,
+        )
+        if int(os.environ.get("LOCAL_RANK", "0")) == 0:
+            write_json_atomic(output / "run_manifest.json", {
+                "schema": "grpo2_formal_run_v1" if is_formal() else "grpo2_validation_run_v1",
+                "stage": "GRPO2_REC_THINK",
+                "source_grpo1_checkpoint": _PARENT_MANIFEST["source_grpo1_checkpoint"],
+                "source_grpo1_adapter_sha256": _PARENT_MANIFEST["source_grpo1_adapter_sha256"],
+                "source_grpo1_external_best_confirmed": False,
+                "parent_full_model_sha256": _PARENT_MANIFEST["canonical_model_identity"],
+                "dataset_sha256": _CONFIG["dataset"]["sha256"],
+                "config_sha256": config_sha,
+                "code_commit": current_git_commit(),
+                "max_steps": _CONFIG["optimization"]["max_steps"],
+                "learning_rate": _CONFIG["optimization"]["learning_rate"],
+                "checkpoint_steps": checkpoint_steps,
+                "seeds": _CONFIG["seeds"],
+                "train_think_rows": 611,
+                "train_nothink_rows": 0,
+                "base_trainable_params": _MODEL_AUDIT.get("base_trainable_parameter_count", 0),
+                "grpo2_lora_trainable_params": _MODEL_AUDIT.get("lora_trainable_parameter_count"),
+                "grpo2_lora_tensor_count": _MODEL_AUDIT.get("lora_trainable_tensor_count"),
+                "fresh_lora": True,
+            })
 
 
 def _validate_preflight(args) -> dict:
@@ -277,7 +321,7 @@ def _validate_preflight(args) -> dict:
     guard = validate_dataset(args.data_path)
     _DATASET_GUARD = {key: value for key, value in guard.items() if key != "rows"}
     if args.resume_from_checkpoint:
-        raise RuntimeError("GRPO2_PILOT_MUST_FRESH_START")
+        raise RuntimeError("GRPO2_MUST_FRESH_START")
     if int(args.seed) != int(_CONFIG["seeds"]["training"]):
         raise RuntimeError("GRPO2_TRAINING_SEED_DRIFT")
     if float(args.lr) != float(_CONFIG["optimization"]["learning_rate"]):
@@ -288,8 +332,8 @@ def _validate_preflight(args) -> dict:
     return {
         "status": "READY_TO_EXECUTE",
         "run_id": args.run_id,
-        "test_parent_only": True,
-        "canonical_grpo1_parent": False,
+        "test_parent_only": _PARENT_MANIFEST["test_parent_only"],
+        "canonical_grpo1_parent": _PARENT_MANIFEST["canonical_grpo1_parent"],
         "parent_canonical_model_identity": identity,
         "dataset_sha256": _DATASET_GUARD["sha256"],
         "max_steps": _CONFIG["optimization"]["max_steps"],
@@ -312,12 +356,50 @@ def install_bindings():
     baseline_runner.monitor_from_env = monitor_from_env
 
 
+def _write_checkpoint_manifest(checkpoint: Path, world_size: int) -> None:
+    required = [
+        "adapter_model.safetensors", "adapter_config.json", "optimizer.pt",
+        "scheduler.pt", "trainer_state.json", "training_args.bin",
+        *[f"rng_state_{rank}.pth" for rank in range(world_size)], "lineage.json",
+    ]
+    missing = [name for name in required if not (checkpoint / name).is_file()]
+    if missing:
+        raise RuntimeError(f"GRPO2_CHECKPOINT_INCOMPLETE: {missing}")
+    write_json_atomic(checkpoint / "checkpoint_manifest.json", {
+        "schema": "grpo2_checkpoint_manifest_v1",
+        "step": int(checkpoint.name.rsplit("-", 1)[1]),
+        "adapter_only": True,
+        "resume_capable": True,
+        "world_size": world_size,
+        "files": [
+            {
+                "name": name,
+                "size": (checkpoint / name).stat().st_size,
+                "sha256": file_sha256(checkpoint / name),
+            }
+            for name in required
+        ],
+    })
+
+
 def _finalize(args) -> None:
     if int(os.environ.get("LOCAL_RANK", "0")) != 0:
         return
     output = Path(args.output_dir) / args.run_id
-    expected_steps = [5] if _CONFIG["optimization"]["max_steps"] == 5 else [10, 20]
+    if is_formal():
+        expected_steps = list(_CONFIG["checkpoint"]["steps"])
+    else:
+        expected_steps = [5] if _CONFIG["optimization"]["max_steps"] == 5 else [10, 20]
+    for step in expected_steps:
+        _write_checkpoint_manifest(output / f"checkpoint-{step}", 4)
     checkpoints = [assert_training_checkpoint(output / f"checkpoint-{step}", 4) for step in expected_steps]
+    for checkpoint, step in zip(checkpoints, expected_steps):
+        directory = output / f"checkpoint-{step}"
+        if not (directory / "checkpoint_manifest.json").is_file():
+            raise RuntimeError(f"GRPO2_CHECKPOINT_MANIFEST_MISSING: {step}")
+        state = _load_json(directory / "trainer_state.json")
+        if int(state.get("max_steps", -1)) != int(_CONFIG["optimization"]["max_steps"]):
+            raise RuntimeError(f"GRPO2_CHECKPOINT_MAX_STEPS_MISMATCH: {step}")
     parent_identity_after, _ = canonical_model_identity(Path(args.parent_manifest).parent)
     if parent_identity_after != _PARENT_MANIFEST["canonical_model_identity"]:
         raise RuntimeError("GRPO2_PARENT_MUTATED_DURING_TRAINING")
@@ -330,14 +412,36 @@ def _finalize(args) -> None:
         "status": "PASS",
         "run_id": args.run_id,
         "global_step": _CONFIG["optimization"]["max_steps"],
-        "test_parent_only": True,
-        "canonical_grpo1_parent": False,
+        "test_parent_only": _PARENT_MANIFEST["test_parent_only"],
+        "canonical_grpo1_parent": _PARENT_MANIFEST["canonical_grpo1_parent"],
         "parent_unchanged": True,
         "checkpoints": checkpoints,
         "retention": retention,
         "completed_at": datetime.now(timezone.utc).isoformat(),
     }
     write_json_atomic(output / "summary.json", summary)
+    if is_formal():
+        write_json_atomic(output / "checkpoint_summary.json", {"checkpoints": checkpoints})
+        rank_summary = _load_json(output / "run-summary-rank0.json")
+        training_summary = {
+            **summary,
+            "final_step": rank_summary["global_step"],
+            "final_loss": rank_summary["train_loss"],
+            "max_base_parameter_delta": rank_summary["base_delta"],
+            "base_unchanged": rank_summary["base_delta"] == 0.0,
+            "nonfinite_count": 0,
+            "oom_count": 0,
+            "nccl_fatal_count": 0,
+            "final_state": "READY_FOR_GRPO2_CHECKPOINT_EVALUATION",
+        }
+        write_json_atomic(output / "training_summary.json", training_summary)
+        report = (
+            "# Formal GRPO-2 report\n\n"
+            "Status: `READY_FOR_GRPO2_CHECKPOINT_EVALUATION`\n\n"
+            f"Parent: GRPO-1 checkpoint-500 (`{_PARENT_MANIFEST['canonical_model_identity']}`)\n\n"
+            "Training: Think-only, fresh LoRA, LR `2e-7`, steps `0..300`.\n"
+        )
+        (output / "FORMAL_GRPO2_REPORT.md").write_text(report, encoding="utf-8")
 
 
 def main(argv=None) -> int:

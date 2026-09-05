@@ -10,6 +10,7 @@ from contracts import (
     EXPECTED_DOMAINS,
     EXPECTED_ROWS,
     GRPO1_ADAPTER_SHA256,
+    GRPO1_STEP500_ADAPTER_SHA256,
     SFT_MODEL_SHA256,
     canonical_model_identity,
     validate_config,
@@ -37,6 +38,7 @@ def parent_fixture(tmp_path):
         "canonical_grpo1_parent": False,
         "source_sft_model_sha256": SFT_MODEL_SHA256,
         "source_grpo1_adapter_sha256": GRPO1_ADAPTER_SHA256,
+        "source_grpo1_checkpoint": 300,
         "canonical_model_identity": identity,
         "weight_files": files,
         "auxiliary_files": [],
@@ -185,3 +187,27 @@ def test_smoke_comparator_ignores_only_timing_telemetry():
         "adapter_sha256": "frozen",
     }
     assert _stable(value) == {"adapter_sha256": "frozen", "loss": 0.25}
+
+
+def test_formal_contract_freezes_step500_and_exact_schedule():
+    values = validate_config(config("formal_300.json"))
+    assert values["optimization"]["max_steps"] == 300
+    assert values["checkpoint"]["steps"] == [100, 150, 200, 250, 300]
+    assert values["retention_probe"]["enabled"] is False
+    assert GRPO1_STEP500_ADAPTER_SHA256 == "274d4cc0a54bb9921e1576b8338d1d439ac625d00e3de0ca2aa8c4e7311057c8"
+
+
+def test_formal_launcher_does_not_repeat_smoke_or_enable_inline_probe():
+    source = (PACKAGE / "scripts" / "run_formal_300.sh").read_text(encoding="utf-8")
+    assert "run_smokes_and_pilot" not in source
+    assert "--probe-every-steps 0" in source
+    assert "--source-grpo1-step 500" in source
+    assert "--canonical-for-this-run" in source
+
+
+def test_exact_checkpoint_callback_is_wired_for_formal_runs():
+    trainer = (PACKAGE / "scripts" / "trainer.py").read_text(encoding="utf-8")
+    runner = (PACKAGE / "scripts" / "run_grpo2_think.py").read_text(encoding="utf-8")
+    assert "class ExactCheckpointScheduleCallback" in trainer
+    assert '"save_strategy": "no" if is_formal()' in runner
+    assert "checkpoint_steps=checkpoint_steps" in runner

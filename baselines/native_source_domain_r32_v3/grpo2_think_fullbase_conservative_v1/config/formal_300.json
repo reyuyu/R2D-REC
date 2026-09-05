@@ -1,0 +1,48 @@
+{
+  "run_kind": "grpo2_formal_300",
+  "test_parent_only": false,
+  "canonical_grpo1_parent": true,
+  "dataset": {
+    "name": "grpo_tk_positive_groups_1946_20260829",
+    "sha256": "e5a78e4e051dde3f8ec95d8564c6af094dd657e8608f84a31a310c3b749ff693",
+    "rows": 611,
+    "route": "think"
+  },
+  "seeds": {
+    "training": 20260816,
+    "dataset": 20260816,
+    "sampler": 20260816,
+    "generation": 20260816,
+    "lora_initialization": 20260905,
+    "probe": 20260818
+  },
+  "optimization": {
+    "learning_rate": 2e-7,
+    "historical_learning_rate": 1e-6,
+    "max_steps": 300,
+    "weight_decay": 0.0,
+    "lr_scheduler_type": "constant",
+    "max_grad_norm": 1.0,
+    "beta": 0.0,
+    "num_iterations": 2
+  },
+  "checkpoint": {
+    "steps": [100, 150, 200, 250, 300],
+    "save_total_limit": 5,
+    "adapter_only": true,
+    "resume_state": true
+  },
+  "retention_probe": {
+    "enabled": false,
+    "milestones": [],
+    "group_ids": []
+  },
+  "lora": {
+    "r": 32,
+    "alpha": 64,
+    "dropout": 0.05,
+    "disable_dropout": true,
+    "bias": "none",
+    "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  }
+}

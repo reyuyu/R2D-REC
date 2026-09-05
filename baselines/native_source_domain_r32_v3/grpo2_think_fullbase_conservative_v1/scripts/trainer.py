@@ -19,6 +19,15 @@ from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import (
 from contracts import file_sha256
 
 
+class ExactCheckpointScheduleCallback(TrainerCallback):
+    def __init__(self, steps):
+        self.steps = frozenset(int(step) for step in steps)
+
+    def on_step_end(self, args, state, control, **kwargs):
+        control.should_save = int(state.global_step) in self.steps
+        return control
+
+
 def _write_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -38,6 +47,10 @@ class GRPO2LineageCallback(TrainerCallback):
             "schema": "grpo2_adapter_lineage_v1",
             "recipe": "grpo2_think_fullbase_conservative_v1",
             "step": int(state.global_step),
+            "grpo2_optimizer_step": int(state.global_step),
+            "adapter_only": True,
+            "learning_rate_base": self.payload["learning_rate_base"],
+            "external_best_parent_confirmed": False,
             "adapter_sha256": None,
             "resume_supported": int(state.global_step) % 2 == 0,
         }
@@ -46,12 +59,14 @@ class GRPO2LineageCallback(TrainerCallback):
 
 
 class GRPO2ThinkTrainer(EvidenceRecGRPOTrainerMixin, ThinkSample8FullSIDTrainer):
-    def __init__(self, *args, lineage: dict, evidence_dir: Path, **kwargs):
+    def __init__(self, *args, lineage: dict, evidence_dir: Path, checkpoint_steps=(), **kwargs):
         self._grpo2_lineage = dict(lineage)
         self._grpo2_evidence_dir = Path(evidence_dir)
         super().__init__(*args, **kwargs)
         self.add_callback(StepEvidenceCallback(self._grpo2_evidence_dir, int(os.environ.get("LOCAL_RANK", "0"))))
         self.add_callback(GRPO2LineageCallback(self._grpo2_lineage))
+        if checkpoint_steps:
+            self.add_callback(ExactCheckpointScheduleCallback(checkpoint_steps))
 
     def create_optimizer(self):
         result = super().create_optimizer()

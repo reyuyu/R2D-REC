@@ -1,4 +1,4 @@
-"""Fail-closed contracts for the GRPO-2 test parent and Think-only data."""
+"""Fail-closed contracts for GRPO-2 parents and Think-only data."""
 from __future__ import annotations
 
 import hashlib
@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 DATASET_SHA256 = "e5a78e4e051dde3f8ec95d8564c6af094dd657e8608f84a31a310c3b749ff693"
-GRPO1_ADAPTER_SHA256 = "fbae37f3892c414a7c86f2285a4568f2a5bb526c8d249616f0445bd9b90f6c19"
+GRPO1_STEP300_ADAPTER_SHA256 = "fbae37f3892c414a7c86f2285a4568f2a5bb526c8d249616f0445bd9b90f6c19"
+GRPO1_STEP500_ADAPTER_SHA256 = "274d4cc0a54bb9921e1576b8338d1d439ac625d00e3de0ca2aa8c4e7311057c8"
+GRPO1_ADAPTER_SHA256 = GRPO1_STEP300_ADAPTER_SHA256
 SFT_MODEL_SHA256 = "8be8b4d08f2eaa295159f2333e20949aa71ed552c3646a80380485c2efa2eb59"
 EXPECTED_ROWS = 611
 EXPECTED_DOMAINS = {"ad": 160, "living": 73, "prod": 118, "video": 260}
@@ -58,13 +60,32 @@ def validate_dataset(path: str | Path) -> dict[str, Any]:
 def validate_parent_manifest(path: str | Path, *, allow_test_parent: bool) -> dict[str, Any]:
     manifest_path = Path(path)
     value = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if value.get("test_parent_only") is not True or value.get("canonical_grpo1_parent") is not False:
-        raise RuntimeError("GRPO2_TEST_PARENT_LINEAGE_FLAGS_INVALID")
-    if not allow_test_parent:
-        raise RuntimeError("GRPO2_NONCANONICAL_PARENT_REQUIRES_ALLOW_TEST_PARENT")
+    test_parent = value.get("test_parent_only") is True
+    if test_parent:
+        if value.get("canonical_grpo1_parent") is not False or value.get("canonical") is not False:
+            raise RuntimeError("GRPO2_TEST_PARENT_LINEAGE_FLAGS_INVALID")
+        if not allow_test_parent:
+            raise RuntimeError("GRPO2_NONCANONICAL_PARENT_REQUIRES_ALLOW_TEST_PARENT")
+        expected_step = 300
+        expected_adapter = GRPO1_STEP300_ADAPTER_SHA256
+    else:
+        if allow_test_parent:
+            raise RuntimeError("GRPO2_CANONICAL_PARENT_MUST_NOT_USE_ALLOW_TEST_PARENT")
+        if not all((
+            value.get("canonical") is True,
+            value.get("canonical_for_this_run") is True,
+            value.get("canonical_grpo1_parent") is True,
+            value.get("external_best_confirmed") is False,
+            value.get("selection_basis") == "user_provisional_selection",
+        )):
+            raise RuntimeError("GRPO2_CANONICAL_PARENT_LINEAGE_FLAGS_INVALID")
+        expected_step = 500
+        expected_adapter = GRPO1_STEP500_ADAPTER_SHA256
+    if value.get("source_grpo1_checkpoint") != expected_step:
+        raise RuntimeError("GRPO2_GRPO1_CHECKPOINT_SELECTION_MISMATCH")
     if value.get("source_sft_model_sha256") != SFT_MODEL_SHA256:
         raise RuntimeError("GRPO2_SFT_PARENT_SHA_MISMATCH")
-    if value.get("source_grpo1_adapter_sha256") != GRPO1_ADAPTER_SHA256:
+    if value.get("source_grpo1_adapter_sha256") != expected_adapter:
         raise RuntimeError("GRPO2_GRPO1_ADAPTER_SHA_MISMATCH")
     model_dir = manifest_path.parent
     identity, files = canonical_model_identity(model_dir)
@@ -72,8 +93,8 @@ def validate_parent_manifest(path: str | Path, *, allow_test_parent: bool) -> di
         raise RuntimeError("GRPO2_MERGED_PARENT_IDENTITY_MISMATCH")
     if value.get("functional_parity", {}).get("status") != "PASS":
         raise RuntimeError("GRPO2_PARENT_FUNCTIONAL_PARITY_NOT_PASS")
-    if value.get("standalone_reload") != "PASS" or value.get("canonical") is not False:
-        raise RuntimeError("GRPO2_PARENT_STANDALONE_OR_CANONICAL_FLAG_INVALID")
+    if value.get("standalone_reload") != "PASS":
+        raise RuntimeError("GRPO2_PARENT_STANDALONE_RELOAD_NOT_PASS")
     expected_auxiliary = []
     for record in value.get("auxiliary_files", []):
         artifact = model_dir / record["name"]
@@ -91,7 +112,9 @@ def validate_parent_manifest(path: str | Path, *, allow_test_parent: bool) -> di
 
 
 def validate_config(config: dict[str, Any]) -> dict[str, Any]:
-    if config.get("test_parent_only") is not True or config.get("canonical_grpo1_parent") is not False:
+    formal = config.get("run_kind") == "grpo2_formal_300"
+    expected_flags = (False, True) if formal else (True, False)
+    if (config.get("test_parent_only"), config.get("canonical_grpo1_parent")) != expected_flags:
         raise RuntimeError("GRPO2_CONFIG_PARENT_FLAGS_INVALID")
     if config["dataset"] != {
         "name": "grpo_tk_positive_groups_1946_20260829",
@@ -111,6 +134,13 @@ def validate_config(config: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("GRPO2_LEARNING_RATE_CONTRACT_DRIFT")
     if optimization.get("beta") != 0.0 or optimization.get("num_iterations") != 2:
         raise RuntimeError("GRPO2_PPO_CONTRACT_DRIFT")
+    if formal:
+        if optimization.get("max_steps") != 300:
+            raise RuntimeError("GRPO2_FORMAL_MAX_STEPS_DRIFT")
+        if config.get("checkpoint", {}).get("steps") != [100, 150, 200, 250, 300]:
+            raise RuntimeError("GRPO2_FORMAL_CHECKPOINT_SCHEDULE_DRIFT")
+        if config.get("retention_probe", {}).get("enabled") is not False:
+            raise RuntimeError("GRPO2_FORMAL_INLINE_PROBE_FORBIDDEN")
     lora = config["lora"]
     if (lora["r"], lora["alpha"], lora["bias"], lora["disable_dropout"]) != (32, 64, "none", True):
         raise RuntimeError("GRPO2_LORA_CONTRACT_DRIFT")
