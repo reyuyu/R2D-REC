@@ -326,6 +326,69 @@ with tempfile.TemporaryDirectory() as temporary:
         json={**request, "confirmation": "wrong"},
     )
     assert rejected.status_code == 400
+
+    grpo2_run = additional_runs / "formal-grpo2-publish-run"
+    grpo2_run.mkdir(parents=True)
+    grpo1_adapter_sha = "a" * 64
+    (grpo2_run / "manifest.json").write_text(json.dumps({
+        "run_id": grpo2_run.name,
+        "schema": "grpo2_think_continued_adapter_v1",
+        "base_full_model_sha256": parent_sha,
+        "grpo1_parent_adapter_sha256": grpo1_adapter_sha,
+        "grpo1_parent_checkpoint": 500,
+        "adapter_inheritance": "CONTINUE_PARENT_ADAPTER",
+    }), encoding="utf-8")
+    grpo2_checkpoint = extra_outputs / grpo2_run.name / "checkpoint-200"
+    grpo2_checkpoint.mkdir(parents=True)
+    (grpo2_checkpoint / "adapter_config.json").write_text('{"r":32}', encoding="utf-8")
+    (grpo2_checkpoint / "adapter_model.safetensors").write_bytes(b"grpo1-plus-grpo2-adapter")
+    grpo2_adapter_sha = hashlib.sha256(
+        (grpo2_checkpoint / "adapter_model.safetensors").read_bytes()
+    ).hexdigest()
+    (grpo2_checkpoint / "lineage.json").write_text(json.dumps({
+        "schema": "grpo2_continued_adapter_lineage_v1",
+        "adapter_only": True,
+        "adapter_continuation": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "contains_grpo1_and_grpo2_effect": True,
+        "base_full_model_sha256": parent_sha,
+        "adapter_initialization_source_stage": "GRPO1_REC_BILATERAL",
+        "adapter_initialization_source_checkpoint": 500,
+        "adapter_initialization_source_sha256": grpo1_adapter_sha,
+        "adapter_weight_parent": "GRPO1 checkpoint-500",
+        "grpo2_step": 200,
+        "grpo2_optimizer_step": 200,
+        "adapter_sha256": grpo2_adapter_sha,
+    }), encoding="utf-8")
+    grpo2_capability = publish_client.get(
+        f"/api/model-publish/capabilities?run_id={grpo2_run.name}"
+    ).json()
+    assert grpo2_capability["enabled"] is True
+    assert grpo2_capability["parent_mode"] == "continued_single_adapter"
+    grpo2_request = {
+        "checkpoint": "checkpoint-200",
+        "model_id": "owner/grpo2-step200",
+        "visibility": "private",
+        "confirmation": f"PUBLISH {grpo2_run.name} checkpoint-200 owner/grpo2-step200",
+    }
+    with patch("monitor.server.subprocess.Popen", return_value=Mock(pid=os.getpid())) as grpo2_launch:
+        grpo2_response = publish_client.post(
+            f"/api/model-publish/jobs?run_id={grpo2_run.name}", json=grpo2_request,
+        )
+    assert grpo2_response.status_code == 200
+    grpo2_command = grpo2_launch.call_args.args[0]
+    assert str(parent) in grpo2_command and str(grpo2_checkpoint) in grpo2_command
+    assert grpo1_adapter_sha not in " ".join(grpo2_command)
+
+    (grpo2_checkpoint / "lineage.json").write_text(json.dumps({
+        "schema": "grpo2_continued_adapter_lineage_v1",
+        "contains_grpo1_and_grpo2_effect": False,
+        "adapter_sha256": grpo2_adapter_sha,
+    }), encoding="utf-8")
+    invalid_grpo2 = publish_client.post(
+        f"/api/model-publish/jobs?run_id={grpo2_run.name}", json=grpo2_request,
+    )
+    assert invalid_grpo2.status_code == 409
     print("[PASS] additional run roots and fail-closed ModelScope publish launch")
     print("[PASS] experiment list and run-scoped APIs keep datasets isolated")
 

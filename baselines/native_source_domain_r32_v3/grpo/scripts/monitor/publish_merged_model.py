@@ -89,7 +89,24 @@ def main() -> int:
         if file_sha256(adapter_weight) != args.expected_adapter_sha256:
             raise RuntimeError("adapter SHA256 mismatch")
         lineage = json.loads((adapter / "lineage.json").read_text(encoding="utf-8"))
-        if lineage.get("parent_mode") != "full_model" or lineage.get("parent_base_sha256") != args.expected_base_sha256:
+        lineage_schema = lineage.get("schema")
+        if lineage_schema == "grpo_adapter_lineage_v1":
+            lineage_matches = (
+                lineage.get("parent_mode") == "full_model"
+                and lineage.get("parent_base_sha256") == args.expected_base_sha256
+            )
+        elif lineage_schema == "grpo2_continued_adapter_lineage_v1":
+            lineage_matches = (
+                lineage.get("adapter_only") is True
+                and lineage.get("adapter_continuation") is True
+                and lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
+                and lineage.get("contains_grpo1_and_grpo2_effect") is True
+                and lineage.get("base_full_model_sha256") == args.expected_base_sha256
+                and lineage.get("adapter_initialization_source_stage") == "GRPO1_REC_BILATERAL"
+            )
+        else:
+            lineage_matches = False
+        if not lineage_matches:
             raise RuntimeError("adapter lineage does not match the full-SFT parent")
 
         token = read_token(Path(args.token_file).resolve())
@@ -133,6 +150,8 @@ def main() -> int:
             "checkpoint": args.checkpoint,
             "parent_model_sha256": args.expected_base_sha256,
             "adapter_sha256": args.expected_adapter_sha256,
+            "adapter_lineage_schema": lineage_schema,
+            "adapter_semantics": lineage.get("adapter_semantics", "FRESH_LORA"),
             "merged_weight_sha256": weight_hashes,
         }
         write_json_atomic(merged_dir / "MERGE_MANIFEST.json", public_manifest)

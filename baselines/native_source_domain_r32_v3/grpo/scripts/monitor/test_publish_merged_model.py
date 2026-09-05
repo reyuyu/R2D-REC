@@ -77,6 +77,7 @@ class HubApi:
     base_sha = sha256(base / "model.safetensors")
     adapter_sha = sha256(adapter / "adapter_model.safetensors")
     (adapter / "lineage.json").write_text(json.dumps({
+        "schema": "grpo_adapter_lineage_v1",
         "parent_mode": "full_model",
         "parent_base_sha256": base_sha,
     }), encoding="utf-8")
@@ -115,4 +116,43 @@ class HubApi:
     assert uploaded["repo_id"] == "owner/model"
     assert {"configuration.json", "MERGE_MANIFEST.json", "model-00001-of-00001.safetensors"} <= set(uploaded["files"])
     assert "secret-test-token" not in status.read_text(encoding="utf-8")
+
+    continued_adapter = root / "continued-adapter"
+    continued_adapter.mkdir()
+    (continued_adapter / "adapter_model.safetensors").write_bytes(b"grpo1-plus-grpo2-adapter")
+    (continued_adapter / "adapter_config.json").write_text("{}", encoding="utf-8")
+    continued_sha = sha256(continued_adapter / "adapter_model.safetensors")
+    (continued_adapter / "lineage.json").write_text(json.dumps({
+        "schema": "grpo2_continued_adapter_lineage_v1",
+        "adapter_only": True,
+        "adapter_continuation": True,
+        "adapter_semantics": "CONTINUED_SINGLE_ADAPTER",
+        "contains_grpo1_and_grpo2_effect": True,
+        "base_full_model_sha256": base_sha,
+        "adapter_initialization_source_stage": "GRPO1_REC_BILATERAL",
+    }), encoding="utf-8")
+    continued_status = root / "continued-status.json"
+    continued_upload_record = root / "continued-upload.json"
+    continued_command = [
+        sys.executable, str(HERE / "publish_merged_model.py"),
+        "--base-model", str(base),
+        "--adapter", str(continued_adapter),
+        "--expected-base-sha256", base_sha,
+        "--expected-adapter-sha256", continued_sha,
+        "--run-id", "grpo2-continued-run",
+        "--checkpoint", "checkpoint-200",
+        "--model-id", "owner/grpo2-continued",
+        "--visibility", "private",
+        "--token-file", str(token_file),
+        "--work-dir", str(root / "continued-work"),
+        "--status-file", str(continued_status),
+    ]
+    continued_environment = {**environment, "FAKE_UPLOAD_RECORD": str(continued_upload_record)}
+    continued = subprocess.run(continued_command, env=continued_environment, text=True, capture_output=True)
+    assert continued.returncode == 0, continued.stderr
+    continued_result = json.loads(continued_status.read_text(encoding="utf-8"))
+    assert continued_result["state"] == "completed"
+    continued_uploaded = json.loads(continued_upload_record.read_text(encoding="utf-8"))
+    assert continued_uploaded["repo_id"] == "owner/grpo2-continued"
+    assert "secret-test-token" not in continued_status.read_text(encoding="utf-8")
     print("ALL MODEL PUBLISH WORKER CPU TESTS PASSED")

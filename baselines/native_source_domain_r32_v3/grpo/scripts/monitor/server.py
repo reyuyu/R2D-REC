@@ -771,10 +771,26 @@ def create_app(
             raise HTTPException(status_code=400, detail="invalid publish run")
         return candidate
 
-    def model_publish_capability(selected: Path) -> dict[str, Any]:
+    def model_publish_parent_contract(selected: Path) -> dict[str, Any]:
         manifest_data = read_json(selected / "manifest.json", {})
+        if manifest_data.get("schema") == GRPO2_CONTINUED_SCHEMA:
+            return {
+                "mode": "continued_single_adapter",
+                "base_sha256": manifest_data.get("base_full_model_sha256"),
+                "source_adapter_sha256": manifest_data.get("grpo1_parent_adapter_sha256"),
+                "source_checkpoint": manifest_data.get("grpo1_parent_checkpoint"),
+                "manifest": manifest_data,
+            }
         parent = manifest_data.get("parent") if isinstance(manifest_data.get("parent"), dict) else {}
-        parent_sha = parent.get("base_model_sha256")
+        return {
+            "mode": parent.get("parent_mode"),
+            "base_sha256": parent.get("base_model_sha256"),
+            "manifest": manifest_data,
+        }
+
+    def model_publish_capability(selected: Path) -> dict[str, Any]:
+        contract = model_publish_parent_contract(selected)
+        parent_sha = contract.get("base_sha256")
         base_path = model_publish_bases.get(str(parent_sha))
         reasons = []
         if model_publish_root is None:
@@ -787,12 +803,21 @@ def create_app(
             reasons.append("ModelScope 凭据权限不安全")
         if not isinstance(parent_sha, str) or re.fullmatch(r"[0-9a-f]{64}", parent_sha) is None:
             reasons.append("实验未声明完整父模型 SHA256")
+        if contract.get("mode") == "continued_single_adapter":
+            source_sha = contract.get("source_adapter_sha256")
+            source_checkpoint = contract.get("source_checkpoint")
+            if not isinstance(source_sha, str) or re.fullmatch(r"[0-9a-f]{64}", source_sha) is None:
+                reasons.append("实验未声明 GRPO1 父 adapter SHA256")
+            if not isinstance(source_checkpoint, int) or source_checkpoint < 1:
+                reasons.append("实验未声明 GRPO1 父 checkpoint")
+            if contract["manifest"].get("adapter_inheritance") != "CONTINUE_PARENT_ADAPTER":
+                reasons.append("实验不是续接单一 adapter 合同")
         if base_path is None or not (base_path / "model.safetensors").is_file():
             reasons.append("父模型未注册到发布服务")
         return {
             "enabled": not reasons,
             "reason": "可以融合并上传" if not reasons else "；".join(reasons),
-            "parent_mode": parent.get("parent_mode"),
+            "parent_mode": contract.get("mode"),
             "parent_sha256": parent_sha,
             "credential_configured": model_publish_token is not None and model_publish_token.is_file(),
             "default_visibility": "private",
@@ -810,17 +835,46 @@ def create_app(
         if forbidden:
             raise HTTPException(status_code=409, detail="checkpoint contains unexpected base weights")
         lineage = read_json(checkpoint_dir / "lineage.json", {})
-        manifest_data = read_json(selected / "manifest.json", {})
-        parent = manifest_data.get("parent") if isinstance(manifest_data.get("parent"), dict) else {}
-        parent_sha = parent.get("base_model_sha256")
+        contract = model_publish_parent_contract(selected)
+        parent_sha = contract.get("base_sha256")
         adapter_sha = hashlib.sha256((checkpoint_dir / "adapter_model.safetensors").read_bytes()).hexdigest()
-        if lineage.get("schema") != "grpo_adapter_lineage_v1":
+        if lineage.get("schema") == "grpo_adapter_lineage_v1":
+            if contract.get("mode") != "full_model":
+                raise HTTPException(status_code=409, detail="checkpoint lineage mode does not match this run")
+            if lineage.get("parent_mode") != "full_model" or lineage.get("parent_base_sha256") != parent_sha:
+                raise HTTPException(status_code=409, detail="checkpoint parent lineage does not match this run")
+        elif lineage.get("schema") == "grpo2_continued_adapter_lineage_v1":
+            checkpoint_match = CHECKPOINT_NAME_RE.fullmatch(checkpoint)
+            checkpoint_step_value = int(checkpoint_match.group(1)) if checkpoint_match else None
+            expected_source_checkpoint = contract.get("source_checkpoint")
+            expected_source_sha = contract.get("source_adapter_sha256")
+            expected_weight_parent = f"GRPO1 checkpoint-{expected_source_checkpoint}"
+            continued_contract = (
+                contract.get("mode") == "continued_single_adapter"
+                and lineage.get("adapter_only") is True
+                and lineage.get("adapter_continuation") is True
+                and lineage.get("adapter_semantics") == "CONTINUED_SINGLE_ADAPTER"
+                and lineage.get("contains_grpo1_and_grpo2_effect") is True
+                and lineage.get("base_full_model_sha256") == parent_sha
+                and lineage.get("adapter_initialization_source_stage") == "GRPO1_REC_BILATERAL"
+                and lineage.get("adapter_initialization_source_checkpoint") == expected_source_checkpoint
+                and lineage.get("adapter_initialization_source_sha256") == expected_source_sha
+                and lineage.get("adapter_weight_parent") == expected_weight_parent
+                and lineage.get("grpo2_step") == checkpoint_step_value
+                and lineage.get("grpo2_optimizer_step") == checkpoint_step_value
+            )
+            if not continued_contract:
+                raise HTTPException(status_code=409, detail="continued adapter lineage does not match this GRPO2 run")
+        else:
             raise HTTPException(status_code=409, detail="checkpoint lineage is missing or unsupported")
-        if lineage.get("parent_mode") != "full_model" or lineage.get("parent_base_sha256") != parent_sha:
-            raise HTTPException(status_code=409, detail="checkpoint parent lineage does not match this run")
         if lineage.get("adapter_sha256") != adapter_sha:
             raise HTTPException(status_code=409, detail="checkpoint adapter SHA256 does not match lineage")
-        return checkpoint_dir, {**lineage, "adapter_sha256": adapter_sha}
+        return checkpoint_dir, {
+            **lineage,
+            "adapter_sha256": adapter_sha,
+            "parent_base_sha256": parent_sha,
+            "publish_lineage_mode": contract.get("mode"),
+        }
 
     def model_publish_job_payload(job_dir: Path) -> dict[str, Any]:
         job = read_json(job_dir / "job.json", {})
