@@ -40,8 +40,13 @@ export NCCL_SOCKET_IFNAME=lo
 export GLOO_SOCKET_IFNAME=lo
 export NCCL_IB_DISABLE=1
 
+gpus_busy() {
+  nvidia-smi --query-compute-apps=gpu_uuid,pid --format=csv,noheader,nounits \
+    2>/dev/null | grep -Eq '[0-9]'
+}
+
 write_state WAITING_FOR_GPUS "waiting for existing work to release GPU0-3"
-while nvidia-smi --query-compute-apps=pid --format=csv,noheader,nounits 2>/dev/null | grep -Eq '[0-9]'; do
+while gpus_busy; do
   sleep 60
 done
 
