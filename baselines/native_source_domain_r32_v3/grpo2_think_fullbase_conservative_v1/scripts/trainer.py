@@ -13,7 +13,9 @@ from modeling import (
     base_tensor_fingerprints,
     sampled_parameter_fingerprint,
 )
-from sample8_fullsid_trainer import ThinkSample8FullSIDTrainer
+from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import (
+    ThinkSample8FullSIDTrainer,
+)
 from contracts import file_sha256
 
 

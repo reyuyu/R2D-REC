@@ -163,3 +163,5 @@ def test_runner_adds_historical_ablation_import_root():
     source = (PACKAGE / "scripts" / "run_grpo2_think.py").read_text(encoding="utf-8")
     assert 'GRPO_DIR = NATIVE_DIR / "grpo"' in source
     assert "(FULLBASE_SCRIPTS, GRPO_SCRIPTS, GRPO_DIR)" in source
+    trainer_source = (PACKAGE / "scripts" / "trainer.py").read_text(encoding="utf-8")
+    assert "from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import" in trainer_source
