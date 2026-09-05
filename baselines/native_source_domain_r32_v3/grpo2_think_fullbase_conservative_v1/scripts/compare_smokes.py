@@ -9,7 +9,11 @@ from typing import Any
 
 from contracts import file_sha256
 
-VOLATILE_KEYS = {"sample8_wall_sec", "timestamp", "created_at", "elapsed", "wall_time"}
+VOLATILE_KEYS = {"timestamp", "created_at", "elapsed", "wall_time", "rollout_sec"}
+
+
+def _is_volatile_key(key: str) -> bool:
+    return key in VOLATILE_KEYS or key.endswith("_wall_sec")
 
 
 def _load(path: Path) -> Any:
@@ -22,7 +26,11 @@ def _jsonl(path: Path) -> list[dict]:
 
 def _stable(value: Any) -> Any:
     if isinstance(value, dict):
-        return {key: _stable(item) for key, item in sorted(value.items()) if key not in VOLATILE_KEYS}
+        return {
+            key: _stable(item)
+            for key, item in sorted(value.items())
+            if not _is_volatile_key(key)
+        }
     if isinstance(value, list):
         return [_stable(item) for item in value]
     return value

@@ -14,6 +14,7 @@ from contracts import (
     validate_config,
     validate_parent_manifest,
 )
+from compare_smokes import _stable
 
 PACKAGE = Path(__file__).resolve().parents[1]
 
@@ -166,3 +167,16 @@ def test_runner_adds_historical_ablation_import_root():
     assert "(FULLBASE_SCRIPTS, GRPO_SCRIPTS, GRPO_DIR)" in source
     trainer_source = (PACKAGE / "scripts" / "trainer.py").read_text(encoding="utf-8")
     assert "from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import" in trainer_source
+
+
+# 19. Determinism comparison ignores timing telemetry but preserves model evidence.
+def test_smoke_comparator_ignores_only_timing_telemetry():
+    value = {
+        "gen_wall_sec": 1.2,
+        "beam_global_wall_sec": 3.4,
+        "rollout_sec": 5.6,
+        "timestamp": "now",
+        "loss": 0.25,
+        "adapter_sha256": "frozen",
+    }
+    assert _stable(value) == {"adapter_sha256": "frozen", "loss": 0.25}
