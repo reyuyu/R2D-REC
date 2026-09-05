@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import contracts
 from contracts import (
     DATASET_SHA256,
     EXPECTED_DOMAINS,
@@ -17,6 +18,10 @@ from contracts import (
 from compare_smokes import _stable
 
 PACKAGE = Path(__file__).resolve().parents[1]
+
+
+def test_contract_imports_resolve_to_grpo2_package():
+    assert Path(contracts.__file__).resolve().parent == PACKAGE / "scripts"
 
 
 def config(name="pilot_20.json"):
