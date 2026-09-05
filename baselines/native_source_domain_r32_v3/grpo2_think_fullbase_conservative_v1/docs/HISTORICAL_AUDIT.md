@@ -22,3 +22,9 @@ Frozen historical semantics:
 
 Current pilot-only differences are the standalone merged test parent, a fresh
 R32 LoRA, deterministic evidence, lineage gates, and learning rate 2e-7.
+
+The BF16 parent-export parity gate requires exact prompt IDs, greedy generated
+IDs, and selected Top-32 token IDs on four fixed data rows. It additionally
+requires selected-logit max absolute difference at most 0.25 and mean absolute
+difference at most 0.125. These bounds account for PEFT runtime-vs-merged BF16
+rounding while remaining fail-closed on behavioral or ranking drift.

@@ -61,7 +61,7 @@ def _render_prompt(tokenizer, prompt):
     return tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True)
 
 
-def _compare(left: list[dict], right: list[dict], tolerance: float) -> dict:
+def _compare(left: list[dict], right: list[dict], max_tolerance: float, mean_tolerance: float) -> dict:
     tokenization_exact = all(a["prompt_ids"] == b["prompt_ids"] for a, b in zip(left, right))
     greedy_exact = all(a["greedy_ids"] == b["greedy_ids"] for a, b in zip(left, right))
     selected_ids_exact = all(a["selected_ids"] == b["selected_ids"] for a, b in zip(left, right))
@@ -71,15 +71,21 @@ def _compare(left: list[dict], right: list[dict], tolerance: float) -> dict:
         for x, y in zip(a["selected_logits"], b["selected_logits"])
     ]
     max_abs = max(differences)
-    passed = tokenization_exact and greedy_exact and selected_ids_exact and max_abs <= tolerance
+    mean_abs = sum(differences) / len(differences)
+    passed = (
+        tokenization_exact and greedy_exact and selected_ids_exact
+        and max_abs <= max_tolerance and mean_abs <= mean_tolerance
+    )
     return {
         "status": "PASS" if passed else "FAIL",
         "tokenization_exact": tokenization_exact,
         "greedy_ids_exact": greedy_exact,
         "selected_logit_ids_exact": selected_ids_exact,
         "selected_logits_max_abs": max_abs,
-        "selected_logits_mean_abs": sum(differences) / len(differences),
-        "selected_logits_tolerance": tolerance,
+        "selected_logits_mean_abs": mean_abs,
+        "selected_logits_max_abs_tolerance": max_tolerance,
+        "selected_logits_mean_abs_tolerance": mean_tolerance,
+        "tolerance_basis": "BF16 PEFT runtime-vs-merged path; exact greedy IDs and Top-32 IDs remain mandatory",
     }
 
 
@@ -104,7 +110,8 @@ def main() -> int:
     tokenizer = AutoTokenizer.from_pretrained(
         args.sft_model, local_files_only=True, trust_remote_code=True,
     )
-    prompts = [_render_prompt(tokenizer, rows[index]["prompt"]) for index in (0, len(rows) // 2)]
+    indices = (0, len(rows) // 3, (2 * len(rows)) // 3, len(rows) - 1)
+    prompts = [_render_prompt(tokenizer, rows[index]["prompt"]) for index in indices]
     source = _load_base(args.sft_model, args.device)
     source = PeftModel.from_pretrained(source, args.grpo1_adapter, is_trainable=False)
     source_probe = _probe(source, tokenizer, prompts)
@@ -121,7 +128,13 @@ def main() -> int:
     )
     reloaded = _load_base(args.output, args.device)
     merged_probe = _probe(reloaded, reloaded_tokenizer, prompts)
-    parity = _compare(source_probe, merged_probe, tolerance=0.05)
+    parity = _compare(source_probe, merged_probe, max_tolerance=0.25, mean_tolerance=0.125)
+    write_json(args.output / "functional_parity_details.json", {
+        "dataset_row_indices": list(indices),
+        "source": source_probe,
+        "merged": merged_probe,
+        "result": parity,
+    })
     del reloaded
     gc.collect()
     if torch.cuda.is_available():
