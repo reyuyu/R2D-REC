@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,7 +37,6 @@ from checkpointing import assert_training_checkpoint, write_json_atomic
 from modeling import enforce_lora_only_trainable, fresh_lora_config
 from retention import summarize_retention
 from run_grpo_trl_smoke import current_git_commit
-from parent_contract import working_tree_clean
 from ablations.gr_rec_think_sample8_fullsid_positive_a0_v3.a0_reward import q_reward_without_a_only
 from ablations.gr_rec_think_sample8_fullsid_v3 import sample8_fullsid_trainer as historical_trainer
 from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import (
@@ -55,6 +55,15 @@ _DATASET_GUARD: dict = {}
 _RUNTIME_MODEL = None
 _RUNTIME_TOKENIZER = None
 _PARSED = None
+
+
+def working_tree_clean() -> bool:
+    root = Path(__file__).resolve().parents[4]
+    result = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=root,
+        check=True, capture_output=True, text=True,
+    )
+    return not result.stdout.strip()
 
 
 def _load_json(path: str | Path) -> dict:
@@ -349,7 +358,11 @@ def main(argv=None) -> int:
     os.environ.setdefault("GRPO_PARITY_AUDIT", "1")
     os.environ.setdefault("GRPO_TRACE_EVERY", "1")
     baseline_runner.main(argv)
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.barrier()
     _finalize(args)
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.barrier()
     return 0
 
 

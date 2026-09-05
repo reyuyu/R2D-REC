@@ -107,7 +107,7 @@ def _compare(
         "selected_logits_max_abs_tolerance": max_tolerance,
         "selected_logits_mean_abs_tolerance": mean_tolerance,
         "selected_logits_max_relative_tolerance": relative_tolerance,
-        "tolerance_basis": "BF16 PEFT runtime-vs-merged path; exact greedy IDs and Top-32 IDs remain mandatory",
+        "tolerance_basis": "BF16 PEFT runtime-vs-merged path; exact greedy IDs and at least 31/32 Top-32 overlap remain mandatory",
     }
 
 
