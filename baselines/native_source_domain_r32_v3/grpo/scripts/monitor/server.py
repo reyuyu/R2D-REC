@@ -103,6 +103,28 @@ USER_RUN_KIND = "user_grpo"
 MC_USER_ALGORITHM = "mc_user_v1"
 MC_USER_HYBRID_ALGORITHM = "mc_user_hybrid_grpo_v1"
 MC_USER_ALGORITHMS = {MC_USER_ALGORITHM, MC_USER_HYBRID_ALGORITHM}
+GRPO2_CONTINUED_SCHEMA = "grpo2_think_continued_adapter_v1"
+GRPO2_CHECKPOINT_FILES = (
+    "adapter_model.safetensors",
+    "adapter_config.json",
+    "optimizer.pt",
+    "scheduler.pt",
+    "trainer_state.json",
+    "training_args.bin",
+    "rng_state_0.pth",
+    "rng_state_1.pth",
+    "rng_state_2.pth",
+    "rng_state_3.pth",
+    "lineage.json",
+)
+GRPO2_OFFLINE_MODELS = (
+    ("GRPO1-step500", 0),
+    ("GRPO2-step100", 100),
+    ("GRPO2-step150", 150),
+    ("GRPO2-step200", 200),
+    ("GRPO2-step250", 250),
+    ("GRPO2-step300", 300),
+)
 CHECKPOINT_NAME_RE = re.compile(r"checkpoint-(?:step)?(\d+)")
 PROMPT_CHECKPOINT_NAME_RE = re.compile(r"prompt-step-(\d+)")
 FINAL_CHECKPOINT_NAME = "full-epoch-final"
@@ -446,7 +468,11 @@ def create_app(
                 "run_id": path.name,
                 "run_kind": normalized_run_kind(manifest),
                 "algorithm": normalized_algorithm(manifest),
-                "display_name": manifest.get("display_name", "MC_USER_v1" if mc_user else None),
+                "display_name": manifest.get(
+                    "display_name",
+                    "GRPO-2 推荐 Think-only" if manifest.get("schema") == GRPO2_CONTINUED_SCHEMA
+                    else ("MC_USER_v1" if mc_user else None),
+                ),
                 "demo": bool(manifest.get("demo", False)),
                 "start_time": manifest.get("start_time", manifest.get("started_at")),
                 "max_steps": manifest.get(
@@ -1287,6 +1313,8 @@ def create_app(
                 data.setdefault("display_name", "GRPO-1 推荐双侧")
                 data.setdefault("max_steps", data.get("optimization", {}).get("max_steps"))
                 data.setdefault("start_time", data.get("started_at"))
+            if data.get("schema") == GRPO2_CONTINUED_SCHEMA:
+                data.setdefault("display_name", "GRPO-2 推荐 Think-only")
             if "effective_max_steps" in data:
                 data["max_steps"] = data["effective_max_steps"]
             return data
@@ -1813,6 +1841,138 @@ def create_app(
                 "metrics": {},
             }
         return {**report, "current_step": current_step}
+
+    @app.get("/api/grpo2-formal/status")
+    def grpo2_formal_status(run_id: str | None = None):
+        """Return a path-free stage view for the formal continued-adapter run."""
+        selected = selected_run(run_id)
+        manifest_data = read_json(selected / "manifest.json", {})
+        if manifest_data.get("schema") != GRPO2_CONTINUED_SCHEMA:
+            raise HTTPException(status_code=404, detail="GRPO-2 formal status is unavailable for this run")
+
+        metrics_rows = read_jsonl(selected / "metrics.jsonl")
+        latest = metrics_rows[-1] if metrics_rows else {}
+        schedule = [
+            int(step) for step in manifest_data.get("checkpoint_steps", [])
+            if isinstance(step, int) and step >= 0
+        ]
+        output_candidates = checkpoint_run_dirs(selected)
+        run_output = next(
+            (
+                path for path in output_candidates
+                if (path / "startup-audit-rank0.json").is_file()
+                or (path / "training_summary.json").is_file()
+                or any((path / f"checkpoint-{step}").is_dir() for step in schedule)
+            ),
+            output_candidates[0] if output_candidates else None,
+        )
+
+        checkpoint_rows = []
+        for step in schedule:
+            checkpoint = run_output / f"checkpoint-{step}" if run_output is not None else None
+            file_state = {
+                name: bool(checkpoint is not None and (checkpoint / name).is_file())
+                for name in GRPO2_CHECKPOINT_FILES
+            }
+            lineage = read_json(checkpoint / "lineage.json", {}) if checkpoint is not None else {}
+            trainer_state = read_json(checkpoint / "trainer_state.json", {}) if checkpoint is not None else {}
+            checkpoint_rows.append({
+                "step": step,
+                "checkpoint": f"checkpoint-{step}",
+                "exists": bool(checkpoint is not None and checkpoint.is_dir()),
+                "complete": all(file_state.values()),
+                "files": file_state,
+                "global_step": trainer_state.get("global_step"),
+                "adapter_sha256": lineage.get("adapter_sha256"),
+            })
+
+        training_summary = read_json(run_output / "training_summary.json", {}) if run_output is not None else {}
+        comparison = read_json(run_output / "offline_checkpoint_comparison.json", {}) if run_output is not None else {}
+        formal_report = read_json(run_output / "FORMAL_GRPO2_REPORT.json", {}) if run_output is not None else {}
+        offline_rows = []
+        for label, step in GRPO2_OFFLINE_MODELS:
+            probe_file = (
+                run_output / "evidence" / "offline-monitor" / f"OFFLINE-{label}" / "probes.jsonl"
+                if run_output is not None else None
+            )
+            probe_rows = read_jsonl(probe_file) if probe_file is not None else []
+            offline_rows.append({
+                "model": label,
+                "step": step,
+                "complete": bool(probe_rows),
+                "probe_rows": len(probe_rows),
+            })
+
+        comparison_rows = []
+        for record in comparison.get("models", []):
+            if not isinstance(record, dict):
+                continue
+            metrics = record.get("metrics", {})
+            think = metrics.get("think", {}) if isinstance(metrics, dict) else {}
+            nothink = metrics.get("nothink", {}) if isinstance(metrics, dict) else {}
+
+            def value(block: dict[str, Any], key: str) -> Any:
+                result = block.get(key)
+                return result.get("value") if isinstance(result, dict) else result
+
+            comparison_rows.append({
+                "model": record.get("model"),
+                "think_mean_reward": value(think, "mean_reward"),
+                "think_success_at_k": value(think, "success_at_k"),
+                "think_success_at_32": value(think, "success_at_32"),
+                "nothink_mean_reward": value(nothink, "mean_reward"),
+                "nothink_success_at_k": value(nothink, "success_at_k"),
+                "nothink_positive_rate": value(nothink, "positive_candidate_rate"),
+            })
+
+        stopped = bool(run_output is not None and any(run_output.glob("*STOPPED*")))
+        final_status = formal_report.get("STATUS")
+        if stopped or final_status == "FAIL":
+            phase = "failed"
+        elif final_status == "READY_FOR_GRPO2_CHECKPOINT_EVALUATION":
+            phase = "ready"
+        elif comparison.get("status") == "PASS":
+            phase = "finalizing"
+        elif training_summary.get("status") == "PASS":
+            phase = "offline_probes"
+        elif int(latest.get("step", 0) or 0) >= int(manifest_data.get("effective_max_steps", 300)):
+            phase = "saving_training"
+        else:
+            phase = "training"
+
+        gpu = gpu_state()
+        return {
+            "available": True,
+            "run_id": selected.name,
+            "phase": phase,
+            "final_status": final_status,
+            "current_step": int(latest.get("step", training_summary.get("global_step", 0)) or 0),
+            "max_steps": int(manifest_data.get("effective_max_steps", 300)),
+            "latest": {
+                key: latest.get(key)
+                for key in ("loss", "grad_norm", "reward_mean", "reward_std", "learning_rate", "timestamp")
+            },
+            "contract": {
+                "mode": manifest_data.get("adapter_inheritance"),
+                "adapter_initialization": manifest_data.get("adapter_initialization"),
+                "fresh_lora": manifest_data.get("fresh_lora"),
+                "fresh_optimizer": manifest_data.get("fresh_optimizer"),
+                "base_sha256": manifest_data.get("base_full_model_sha256"),
+                "parent_checkpoint": manifest_data.get("grpo1_parent_checkpoint"),
+                "parent_adapter_sha256": manifest_data.get("grpo1_parent_adapter_sha256"),
+                "code_commit": manifest_data.get("git_commit"),
+                "training_routes": manifest_data.get("training_routes", []),
+                "automatic_best_selection": False,
+            },
+            "checkpoints": checkpoint_rows,
+            "offline_probes": offline_rows,
+            "comparison": comparison_rows,
+            "gpu": {
+                "released": bool(gpu.get("available")),
+                "gpus": gpu.get("gpus", []),
+                "process_count": len(gpu.get("processes", [])),
+            },
+        }
 
     @app.get("/api/health")
     def health():
