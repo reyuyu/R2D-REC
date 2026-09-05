@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from adapter_identity import canonical_tensor_hash
-from contracts import (
+from continued_contracts import (
     DATASET_SHA256,
     EXPECTED_DOMAINS,
     EXPECTED_ROWS,

@@ -12,7 +12,7 @@ from transformers import TrainerCallback
 from evidence import EvidenceRecGRPOTrainerMixin, StepEvidenceCallback
 from modeling import assert_optimizer_lora_only, base_tensor_fingerprints
 from ablations.gr_rec_think_sample8_fullsid_v3.sample8_fullsid_trainer import ThinkSample8FullSIDTrainer
-from contracts import file_sha256
+from continued_contracts import file_sha256
 
 
 def _write_json(path: Path, value: dict) -> None:

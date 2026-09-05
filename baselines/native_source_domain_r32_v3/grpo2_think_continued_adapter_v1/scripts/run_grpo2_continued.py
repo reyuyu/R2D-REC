@@ -39,7 +39,7 @@ from trl import GRPOConfig
 from adapter_identity import audit_loaded_adapter
 from checkpointing import assert_training_checkpoint, write_json_atomic
 from continued_retention import summarize as summarize_retention
-from contracts import (
+from continued_contracts import (
     GRPO1_STEP500_ADAPTER_SHA256,
     SFT_MODEL_SHA256,
     file_sha256,
