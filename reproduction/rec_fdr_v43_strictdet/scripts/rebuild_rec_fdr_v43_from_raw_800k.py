@@ -119,8 +119,8 @@ def parquet(source: Path, target: Path) -> int:
 
 def make_training_data(package_root: Path, v3: Path, v43: Path, output: Path) -> None:
     expected = json.loads((package_root / "PARQUET_MANIFEST.json").read_text(encoding="utf-8"))["files"]
-    base_names = sorted(path.stem for path in (package_root / "data/base").glob("*.parquet"))
-    rec_names = sorted(path.stem for path in (package_root / "data/recommendation").glob("*.parquet"))
+    base_names = sorted(Path(name).stem for name in expected if name.startswith("base/"))
+    rec_names = sorted(Path(name).stem for name in expected if name.startswith("recommendation/"))
     generated = [(v3 / f"{name}.jsonl", output / "base" / f"{name}.parquet", f"base/{name}.parquet") for name in base_names]
     generated += [(v43 / f"{name}.jsonl", output / "recommendation" / f"{name}.parquet", f"recommendation/{name}.parquet") for name in rec_names]
     failures = []
@@ -135,11 +135,42 @@ def make_training_data(package_root: Path, v3: Path, v43: Path, output: Path) ->
             failures.append(f"generated row mismatch: {source.name}")
     if failures:
         raise RuntimeError("final dataset differs from reference:\n" + "\n".join(failures))
-    shutil.copy2(package_root / "data/dataset_info.json", output / "dataset_info.json")
-    for path in (package_root / "data/recommendation").iterdir():
-        if path.is_file() and path.suffix != ".parquet":
-            source = v43 / path.name if path.name in {"hcr_group_metadata.json", "rec_group_catalog.json"} else path
-            shutil.copy2(source, output / "recommendation" / path.name)
+    dataset_order = (
+        "material_no_think_semantic_to_sid_train", "material_no_think_semantic_to_sid_val",
+        "material_no_think_sid_to_semantic_train", "material_no_think_sid_to_semantic_val",
+        "material_think_semantic_to_sid_train", "material_think_semantic_to_sid_val",
+        "material_think_sid_to_semantic_train", "material_think_sid_to_semantic_val",
+        "user_clean_train", "user_clean_val", "rec_r1_train", "rec_full_val", "rec_r1_val",
+        "rec_r2_val", "rec_full_k1_train", "rec_full_k2_train", "rec_full_k3_train",
+        "rec_r2_k1_train", "rec_r2_k2_train", "rec_r2_k3_train",
+        "rec_r2_k1_pack_seed_0_train", "rec_r2_k1_pack_seed_1_train",
+        "rec_r2_k1_pack_seed_2_train", "rec_r2_k1_pack_seed_3_train",
+    )
+    by_stem = {Path(name).stem: name for name in expected}
+    if set(dataset_order) != set(by_stem):
+        raise RuntimeError("dataset_info contract no longer covers the generated Parquet set")
+    dataset_info = {
+        name: {
+            "file_name": by_stem[name],
+            "columns": {"prompt": "prompt", "response": "response", "system": "system"},
+        }
+        for name in dataset_order
+    }
+    dataset_info_path = output / "dataset_info.json"
+    dataset_info_path.write_text(
+        json.dumps(dataset_info, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    for name in ("hcr_group_metadata.json", "rec_group_catalog.json"):
+        shutil.copy2(v43 / name, output / "recommendation" / name)
+    package_files = json.loads(
+        (package_root / "PACKAGE_MANIFEST.json").read_text(encoding="utf-8")
+    )["files"]
+    expected_dataset_info = package_files["data/dataset_info.json"]
+    if (
+        dataset_info_path.stat().st_size != expected_dataset_info["bytes"]
+        or sha256(dataset_info_path) != expected_dataset_info["sha256"]
+    ):
+        raise RuntimeError("generated dataset_info.json differs from reference")
     print(json.dumps({"event": "training_data_rebuilt", "output": str(output), "files": len(generated)}))
 
 
@@ -221,17 +252,17 @@ def main() -> None:
     v43.build(v42.OUT_A, v43_out, None, "preserve")
     generated_hcr = v43_out / "hcr_group_metadata.json"
     hcr = json.loads(generated_hcr.read_text(encoding="utf-8"))
-    reference_hcr = json.loads(
-        (package_root / "data/recommendation/hcr_group_metadata.json").read_text(encoding="utf-8")
-    )
-    hcr["source_dataset"] = reference_hcr["source_dataset"]
+    hcr["source_dataset"] = "/data/LLm-8B/code/train/data/rec_fdr_v42_interestonly"
     generated_hcr.write_text(
         json.dumps(hcr, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8"
     )
+    package_files = json.loads(
+        (package_root / "PACKAGE_MANIFEST.json").read_text(encoding="utf-8")
+    )["files"]
     for name in ("hcr_group_metadata.json", "rec_group_catalog.json"):
         generated = v43_out / name
-        reference = package_root / "data/recommendation" / name
-        if generated.stat().st_size != reference.stat().st_size or sha256(generated) != sha256(reference):
+        expected = package_files[f"data/recommendation/{name}"]
+        if generated.stat().st_size != expected["bytes"] or sha256(generated) != expected["sha256"]:
             raise RuntimeError(f"generated training metadata differs from reference: {name}")
     make_training_data(package_root, v3.OUT, v43_out, work / "rebuilt_data")
 

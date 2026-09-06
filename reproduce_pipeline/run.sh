@@ -13,8 +13,7 @@ RUN_GRPO3="${RUN_GRPO3:-1}"
 DRY_RUN="${DRY_RUN:-0}"
 
 BASE_MODEL="${BASE_MODEL:-/data/models/onereason-8b-pretrain-competition}"
-SFT_DATA_ROOT="${SFT_DATA_ROOT:-/root/rec_fdr_v43_runs/REC-FDR-V43-STRICTDET-20260904-173024/package/data}"
-SFT_DATASET_KEY="${SFT_DATASET_KEY:-rec_fdr_v43_strictdet}"
+SFT_DATASET_KEY="${SFT_DATASET_KEY:-rec_fdr_v43_full_sft_raw_800k}"
 REPRO_DATA_ROOT="${REPRO_DATA_ROOT:-}"
 RUN_ROOT="${RUN_ROOT:-/root/onereason_deterministic_pipeline_$(date -u +%Y%m%d-%H%M%S)}"
 SFT_PORT="${SFT_PORT:-29759}"
@@ -27,6 +26,10 @@ REPO_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
 CONTROL="$SCRIPT_DIR/scripts/pipeline_control.py"
 RESOLVER="$SCRIPT_DIR/scripts/resolve_repro_dataset.py"
 SFT_PACKAGE="$REPO_ROOT/reproduction/rec_fdr_v43_strictdet"
+SFT_RAW_MANIFEST="$SFT_PACKAGE/RAW_800K_MANIFEST.json"
+if [[ "$DRY_RUN" == 1 && -n "${REPRO_TEST_SFT_MANIFEST:-}" ]]; then
+  SFT_RAW_MANIFEST="$REPRO_TEST_SFT_MANIFEST"
+fi
 GRPO1_PACKAGE="$REPO_ROOT/baselines/native_source_domain_r32_v3/grpo_fullbase_conservative_v1"
 GRPO2_PACKAGE="$REPO_ROOT/baselines/native_source_domain_r32_v3/grpo2_think_continued_adapter_v1"
 GRPO3_PACKAGE="$REPO_ROOT/baselines/native_source_domain_r32_v3/grpo/user"
@@ -47,6 +50,19 @@ resolve_dataset() {
   python3 "$RESOLVER" "${args[@]}"
 }
 
+resolve_sft_dataset() {
+  local args=(--key "$SFT_DATASET_KEY" --manifest "$SFT_RAW_MANIFEST" --format lines)
+  [[ -z "$REPRO_DATA_ROOT" ]] || args+=(--root "$REPRO_DATA_ROOT")
+  python3 "$RESOLVER" "${args[@]}"
+}
+
+if [[ "$RUN_SFT" == 1 ]]; then
+  mapfile -t SFT_DATASET < <(resolve_sft_dataset)
+  [[ "${SFT_DATASET[6]}" == raw_parquet_directory ]] || {
+    echo "SFT registry entry must be kind=raw_parquet_directory" >&2
+    exit 2
+  }
+fi
 if [[ "$RUN_GRPO1" == 1 ]]; then
   mapfile -t GRPO1_DATASET < <(resolve_dataset recommendation_grpo_bilateral)
 fi
@@ -66,6 +82,10 @@ if [[ "$DRY_RUN" == 1 ]]; then
   printf 'DRY_RUN=PASS\n'
   printf 'PIPELINE=%s\n' "$PIPELINE"
   printf 'SFT_EPOCHS=%s\nGRPO1_STEPS=%s\n' "$SFT_EPOCHS" "$GRPO1_STEPS"
+  printf 'SFT_REGISTERED_DATASET=%s\n' "${SFT_DATASET[0]}"
+  printf 'SFT_REGISTERED_RAW_PATH=%s\n' "${SFT_DATASET[1]}"
+  printf 'SFT_REGISTERED_RAW_SHA256=%s\n' "${SFT_DATASET[2]}"
+  printf 'SFT_RAW_TO_TRAINING_DATA=AUTOMATIC_TMPFS\n'
   if [[ "$RUN_GRPO2" == 1 ]]; then
     printf 'GRPO2_STATUS=ENABLED\nGRPO2_STEPS=%s\n' "$GRPO2_STEPS"
   else
@@ -77,10 +97,6 @@ fi
 
 [[ "$RUN_SFT" == 1 && "$RUN_GRPO1" == 1 && "$RUN_GRPO3" == 1 ]] || {
   echo "execution currently requires SFT, GRPO1, and GRPO3" >&2
-  exit 2
-}
-[[ -d "$SFT_DATA_ROOT/base" && -d "$SFT_DATA_ROOT/recommendation" ]] || {
-  echo "SFT_DATA_ROOT must contain base/ and recommendation/" >&2
   exit 2
 }
 [[ ! -e "$RUN_ROOT" ]] || { echo "RUN_ROOT already exists" >&2; exit 2; }
@@ -144,12 +160,16 @@ export TOKENIZERS_PARALLELISM=false
 
 echo "[1] Full-parameter SFT: 1 epoch"
 CUDA_VISIBLE_DEVICES=0,1,2,3 MASTER_PORT="$SFT_PORT" \
-  bash "$SFT_PACKAGE/scripts/launch_rec_fdr_v43_reproduction.sh" \
-    --base-model "$BASE_MODEL" --data-root "$SFT_DATA_ROOT" \
+  bash "$SFT_PACKAGE/scripts/launch_rec_fdr_v43_from_registered_raw.sh" \
+    --base-model "$BASE_MODEL" --raw-root "${SFT_DATASET[1]}" \
+    --dataset-key "${SFT_DATASET[0]}" --dataset-sha256 "${SFT_DATASET[2]}" \
     --work-root "$RUN_ROOT/work/sft" 2>&1 | tee "$RUN_ROOT/logs/01_sft.log"
 SFT_FINAL="$RUN_ROOT/work/sft/output"
 python3 "$CONTROL" verify-sft --output "$SFT_FINAL" --epochs "$SFT_EPOCHS" \
   --expected-model-sha256 "$EXPECTED_SFT_MODEL_SHA256" \
+  --dataset-key "${SFT_DATASET[0]}" --dataset-sha256 "${SFT_DATASET[2]}" \
+  --dataset-rows "${SFT_DATASET[3]}" --dataset-split "${SFT_DATASET[4]}" \
+  --derivation-report "$RUN_ROOT/work/sft/RAW_TO_SFT_RESULT.json" \
   --report "$RUN_ROOT/reports/sft.json"
 ln -s "$SFT_FINAL" "$RUN_ROOT/01_sft_final"
 wait_for_gpu_release
@@ -266,7 +286,7 @@ wait_for_gpu_release
 assert_source_unchanged
 
 REPORT_ARGS=(--output "$RUN_ROOT/PIPELINE_REPORT.json" --source-commit "$SOURCE_COMMIT" \
-  --repro-data-root "${GRPO3_DATASET[5]}" --sft-epochs "$SFT_EPOCHS" \
+  --repro-data-root "${SFT_DATASET[5]}" --sft-epochs "$SFT_EPOCHS" \
   --sft-dataset-key "$SFT_DATASET_KEY" \
   --grpo1-steps "$GRPO1_STEPS" --grpo2-steps "$GRPO2_STEPS" \
   --grpo3-steps "$GRPO3_STEPS" --run-sft "$RUN_SFT" --run-grpo1 "$RUN_GRPO1" \

@@ -47,17 +47,23 @@ tags:
 
 ## 数据准备
 
-GitHub 不提供数据。先将 ModelScope 完整数据包中的 `data/` 下载到独立目录，例如：
+GitHub 不提供数据。完整 pipeline 只接受在 `REPRO_DATA_ROOT/registry.json` 中登记的
+原始数据目录，默认 key 为 `rec_fdr_v43_full_sft_raw_800k`。该目录只能包含
+`RAW_800K_MANIFEST.json` 锁定的 1,069 个原始 Parquet：
 
 ```text
-/path/to/rec_fdr_v43_data/
-  base/
-  recommendation/
+/root/reproduce_datasets/
+  registry.json
+  rec_fdr_v43_raw_800k_20260906/
+    <11 个原始数据组>/0.0.0/*.parquet
 ```
 
 `PARQUET_MANIFEST.json` 锁定实际训练分片，`RAW_800K_MANIFEST.json` 锁定上游原始
-Parquet；它们仅含文件合同和哈希，不含样本正文。数据生成链位于
-`scripts/data_generation/`，从原始约 80 万条数据重建的入口是：
+Parquet；它们仅含文件合同和哈希，不含样本正文。`reproduce_pipeline/run.sh`
+先验证注册原始目录，再在独立 `/dev/shm` 目录中生成并校验 24 个历史训练分片，
+训练退出后清理派生数据。`/root/reproduce_datasets` 不保存成品训练分片或缓存。
+
+底层数据生成链位于 `scripts/data_generation/`，单独调试重建过程的入口是：
 
 ```bash
 python3 scripts/rebuild_rec_fdr_v43_from_raw_800k.py \
@@ -68,7 +74,26 @@ python3 scripts/rebuild_rec_fdr_v43_from_raw_800k.py \
 
 ## 启动
 
-使用外置数据目录启动：
+推荐从仓库根目录运行完整 pipeline：
+
+```bash
+REPRO_DATA_ROOT=/root/reproduce_datasets \
+RUN_ROOT=/root/onereason-deterministic-run \
+bash reproduce_pipeline/run.sh
+```
+
+SFT-only 的注册原始数据启动器为：
+
+```bash
+bash scripts/launch_rec_fdr_v43_from_registered_raw.sh \
+  --base-model /path/to/OneReason-8B-pretrain-competition \
+  --raw-root /root/reproduce_datasets/rec_fdr_v43_raw_800k_20260906 \
+  --dataset-key rec_fdr_v43_full_sft_raw_800k \
+  --dataset-sha256 986743ffbfff02f619d187971f3e15513f12f4c8b442a593599c158236443137 \
+  --work-root /root/new-sft-run
+```
+
+下面的成品数据启动器仅保留用于低层调试，不是完整 pipeline 的数据入口：
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \

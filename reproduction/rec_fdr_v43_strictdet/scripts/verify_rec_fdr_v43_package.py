@@ -41,6 +41,7 @@ def main() -> None:
             failures.append(f"sha256 mismatch: {relative}")
     package_manifest = json.loads((root / "PACKAGE_MANIFEST.json").read_text(encoding="utf-8"))["files"]
     for relative in (
+        "dataset_info.json",
         "recommendation/hcr_group_metadata.json",
         "recommendation/rec_group_catalog.json",
     ):

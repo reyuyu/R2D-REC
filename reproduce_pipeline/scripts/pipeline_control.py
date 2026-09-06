@@ -189,6 +189,22 @@ def verify_sft(args: argparse.Namespace) -> dict[str, Any]:
             "SFT final model SHA256 mismatch: "
             f"expected={args.expected_model_sha256} actual={identity['model_sha256']}"
         )
+    derivation = load_json(args.derivation_report)
+    expected_derivation = {
+        "status": "PASS",
+        "registered_dataset_used_by_trainer": True,
+        "registered_dataset_key": args.dataset_key,
+        "registered_dataset_sha256": args.dataset_sha256,
+        "derived_parquet_files": 24,
+        "derived_rows": 270970,
+        "temporary_data_removed": True,
+    }
+    for key, expected in expected_derivation.items():
+        if derivation.get(key) != expected:
+            raise RuntimeError(
+                f"SFT raw-data derivation contract mismatch for {key}: "
+                f"expected={expected!r} actual={derivation.get(key)!r}"
+            )
     record = {
         "status": "PASS",
         "stage": "SFT",
@@ -197,6 +213,15 @@ def verify_sft(args: argparse.Namespace) -> dict[str, Any]:
         **identity,
         "final_artifact": str(output),
         "intermediate_checkpoints_disabled": True,
+        "dataset_registry_key": args.dataset_key,
+        "dataset_sha256": args.dataset_sha256,
+        "dataset_rows": args.dataset_rows,
+        "dataset_split": args.dataset_split,
+        "registered_dataset_used_by_trainer": True,
+        "raw_to_training_data": "AUTOMATIC_TMPFS",
+        "derived_parquet_files": derivation["derived_parquet_files"],
+        "derived_rows": derivation["derived_rows"],
+        "temporary_data_removed": True,
         "verified_at": utc_now(),
     }
     write_json(args.report, record)
@@ -314,6 +339,13 @@ def final_report(args: argparse.Namespace) -> dict[str, Any]:
         "source_commit": args.source_commit,
         "sft_epochs": args.sft_epochs,
         "sft_dataset_key": args.sft_dataset_key,
+        "sft_dataset_registry_key": reports.get("sft", {}).get("dataset_registry_key"),
+        "sft_dataset_sha256": reports.get("sft", {}).get("dataset_sha256"),
+        "sft_dataset_rows": reports.get("sft", {}).get("dataset_rows"),
+        "sft_registered_dataset_used_by_trainer": reports.get("sft", {}).get(
+            "registered_dataset_used_by_trainer"
+        ),
+        "sft_raw_to_training_data": reports.get("sft", {}).get("raw_to_training_data"),
         "grpo1_steps": args.grpo1_steps,
         "grpo2_steps": args.grpo2_steps,
         "grpo2_enabled": bool(args.run_grpo2),
@@ -392,6 +424,8 @@ def build_parser() -> argparse.ArgumentParser:
     sft.add_argument("--output", type=Path, required=True)
     sft.add_argument("--epochs", type=float, required=True)
     sft.add_argument("--expected-model-sha256")
+    add_dataset_args(sft)
+    sft.add_argument("--derivation-report", type=Path, required=True)
     sft.add_argument("--report", type=Path, required=True)
     sft.set_defaults(handler=verify_sft)
     adapter = commands.add_parser("verify-adapter")
