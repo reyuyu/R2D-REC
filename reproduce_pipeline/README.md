@@ -49,6 +49,19 @@ DRY_RUN=1 ./run.sh
 RUN_GRPO2=1 DRY_RUN=1 ./run.sh
 ```
 
+The checkout and registry can be moved independently of the output. For
+example, after a future data migration the same code can read registered data
+from `/data` while retaining all run artifacts under `/root`:
+
+```bash
+REPRO_DATA_ROOT=/data/reproduce_datasets \
+RUN_ROOT=/root/onereason-deterministic-run \
+bash /data/onereason-reproduction/reproduce_pipeline/run.sh
+```
+
+No training stage derives its dataset path from `RUN_ROOT` or the checkout
+location. All four stage inputs are resolved from the selected registry.
+
 The pipeline fails closed on source mutation, dataset identity mismatch,
 unexpected parent lineage, non-final checkpoints, incomplete resume state, or
 GPU release timeout. It does not run external evaluation, merge models, upload
