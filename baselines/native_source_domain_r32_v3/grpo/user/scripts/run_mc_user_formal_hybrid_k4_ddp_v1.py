@@ -798,7 +798,81 @@ def _load_execute_contract(args: argparse.Namespace) -> tuple[dict[str, Any], di
     return preflight, config, rows, run_dir
 
 
-def load_beta_for_rank(config: Mapping[str, Any], local_rank: int) -> torch.nn.Module:
+def validate_resume_checkpoint(
+    checkpoint: Path,
+    config: Mapping[str, Any],
+    rows: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    checkpoint = checkpoint.expanduser().resolve()
+    required = [
+        "adapter_model.safetensors", "adapter_config.json", "optimizer.pt",
+        "scheduler.pt", "trainer_state.json", "training_args.bin",
+        "formal_state.json", "lineage.json", "checkpoint_manifest.json",
+        *[f"rng_state_{rank}.pth" for rank in range(WORLD_SIZE)],
+    ]
+    missing = [name for name in required if not (checkpoint / name).is_file()]
+    if missing:
+        raise MCK4Error(f"resume checkpoint missing files: {missing}")
+    trainer_state = json.loads((checkpoint / "trainer_state.json").read_text(encoding="utf-8"))
+    formal_state = json.loads((checkpoint / "formal_state.json").read_text(encoding="utf-8"))
+    lineage = json.loads((checkpoint / "lineage.json").read_text(encoding="utf-8"))
+    checkpoint_manifest = json.loads((checkpoint / "checkpoint_manifest.json").read_text(encoding="utf-8"))
+    prompt_step = int(trainer_state.get("prompt_step", -1))
+    optimizer_step = int(trainer_state.get("optimizer_step", -1))
+    expected_ids = [str(row["sample_id"]) for row in rows[:prompt_step]]
+    checks = {
+        "checkpoint_status": checkpoint_manifest.get("status") == "PASS",
+        "resume_capable": checkpoint_manifest.get("resume_capable") is True,
+        "prompt_step": prompt_step == checkpoint_manifest.get("prompt_step") == formal_state.get("prompt_step"),
+        "optimizer_step": optimizer_step == checkpoint_manifest.get("global_step") == formal_state.get("optimizer_step"),
+        "step_range": 0 < prompt_step < int(config["prompt_count"]),
+        "max_steps": trainer_state.get("max_steps") == int(config["prompt_count"]),
+        "processed_ids": formal_state.get("processed_sample_ids") == expected_ids,
+        "selection_seed": formal_state.get("selection_seed") == int(config["selection_seed"]),
+        "train_sha": formal_state.get("train_sha256") == config["train_sha256"],
+        "lineage_schema": lineage.get("schema") == "grpo3_user_continued_adapter_lineage_v1",
+        "lineage_parent": (
+            lineage.get("parent_stage") == config.get("parent_stage")
+            and lineage.get("parent_checkpoint_step") == config.get("parent_checkpoint_step")
+            and lineage.get("parent_adapter_sha256") == config.get("parent_adapter_sha256")
+        ),
+        "adapter_sha": lineage.get("adapter_sha256") == file_sha256(checkpoint / "adapter_model.safetensors"),
+    }
+    failed = sorted(name for name, passed in checks.items() if not passed)
+    if failed:
+        raise MCK4Error(f"resume checkpoint contract mismatch: {failed}")
+    return {
+        "path": checkpoint,
+        "prompt_step": prompt_step,
+        "optimizer_step": optimizer_step,
+        "records": list(trainer_state.get("log_history", [])),
+        "adapter_sha256": lineage["adapter_sha256"],
+    }
+
+
+def restore_resume_state(
+    checkpoint: Path,
+    rank: int,
+    device: torch.device,
+    optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler,
+) -> None:
+    import numpy as np
+
+    optimizer.load_state_dict(torch.load(checkpoint / "optimizer.pt", map_location=device, weights_only=True))
+    scheduler.load_state_dict(torch.load(checkpoint / "scheduler.pt", map_location="cpu", weights_only=True))
+    rng = torch.load(checkpoint / f"rng_state_{rank}.pth", map_location="cpu", weights_only=False)
+    random.setstate(rng["python"])
+    np.random.set_state(rng["numpy"])
+    torch.set_rng_state(rng["torch_cpu"])
+    torch.cuda.set_rng_state(rng["torch_cuda"], device)
+
+
+def load_beta_for_rank(
+    config: Mapping[str, Any],
+    local_rank: int,
+    adapter_path: Path | None = None,
+) -> torch.nn.Module:
     from peft import PeftModel
     from transformers import AutoModelForCausalLM
 
@@ -809,7 +883,12 @@ def load_beta_for_rank(config: Mapping[str, Any], local_rank: int) -> torch.nn.M
         local_files_only=True,
         attn_implementation="flash_attention_2",
     )
-    model = PeftModel.from_pretrained(base, config["adapter"], is_trainable=True, local_files_only=True)
+    model = PeftModel.from_pretrained(
+        base,
+        str(adapter_path or config["adapter"]),
+        is_trainable=True,
+        local_files_only=True,
+    )
     for module in model.modules():
         if isinstance(module, torch.nn.Dropout):
             module.p = 0.0
@@ -1106,7 +1185,11 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
         seed_deterministic_runtime(int(config["runtime_seed"]))
     dist.barrier()
     tokenizer = load_tokenizer(config["base_model"])
-    model = load_beta_for_rank(config, local_rank)
+    resume = (
+        validate_resume_checkpoint(args.resume_from_checkpoint, config, rows)
+        if args.resume_from_checkpoint is not None else None
+    )
+    model = load_beta_for_rank(config, local_rank, resume["path"] if resume else None)
     trainable = validate_trainable(model)
     if len(trainable) != 504:
         raise MCK4Error("K4 formal requires 504 LoRA trainable tensors")
@@ -1119,8 +1202,13 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     scheduler = None
     if config.get("scheduler") == "constant":
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda _step: 1.0)
-    records: list[dict[str, Any]] = []
-    optimizer_step = 0
+    if resume is not None:
+        if scheduler is None:
+            raise MCK4Error("resume requires a checkpointed scheduler")
+        restore_resume_state(resume["path"], rank, device, optimizer, scheduler)
+    records: list[dict[str, Any]] = list(resume["records"]) if resume else []
+    optimizer_step = int(resume["optimizer_step"]) if resume else 0
+    starting_prompt_step = int(resume["prompt_step"]) if resume else 0
     started = time.perf_counter()
     metrics_path, rollouts_path = run_dir / "metrics.jsonl", run_dir / "rollouts.jsonl"
     evidence_path = run_dir / "determinism_evidence.jsonl"
@@ -1128,7 +1216,7 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
     queue_path = run_dir / "evaluations" / "user_light_probe" / "probe_queue.json"
     queue = json.loads(queue_path.read_text(encoding="utf-8"))
     try:
-        for prompt_step, row in enumerate(rows, 1):
+        for prompt_step, row in enumerate(rows[starting_prompt_step:], starting_prompt_step + 1):
             assert_ddp_gpu_process_owned(owner)
             seed = candidate_seed(int(config["selection_seed"]), prompt_step, str(row["sample_id"]), rank)
             prompt = render_prompt(tokenizer, row)
@@ -1390,6 +1478,8 @@ def execute_distributed(args: argparse.Namespace) -> dict[str, Any] | None:
                 "determinism_evidence_row_count": len(records) if args.determinism_evidence else 0,
                 "initial_lora_fingerprint": initial_lora_fingerprint,
                 "final_adapter_sha256": final_adapter_sha256,
+                "resumed_from_checkpoint": str(resume["path"]) if resume else None,
+                "resume_start_prompt_step": starting_prompt_step,
             })
             if not summary["base_hash_unchanged"]:
                 raise MCK4Error("base parameters changed")
@@ -1413,6 +1503,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--determinism-evidence", action="store_true")
     parser.add_argument("--output-root", type=Path, default=OUTPUT_ROOT)
     parser.add_argument("--checkpoint-root", type=Path, required=True)
+    parser.add_argument("--resume-from-checkpoint", type=Path)
     parser.add_argument("--memory-threshold-mib", type=int, default=MEMORY_THRESHOLD_MIB)
     return parser
 

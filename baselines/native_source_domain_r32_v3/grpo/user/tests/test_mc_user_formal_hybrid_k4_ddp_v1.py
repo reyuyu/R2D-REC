@@ -24,6 +24,7 @@ from run_mc_user_formal_hybrid_k4_ddp_v1 import (  # noqa: E402
     validate_grpo3_parent_lineage,
     validate_pipeline_k4_config,
     validate_checkpoint_root,
+    validate_resume_checkpoint,
 )
 from compare_grpo3_user_determinism import compare  # noqa: E402
 from run_mc_user_formal_probe_sidecar_v1 import checkpoint_spec  # noqa: E402
@@ -218,6 +219,43 @@ class HybridFormalRunnerTests(unittest.TestCase):
             validate_checkpoint_root(Path("/data/checkpoints"))
         with tempfile.TemporaryDirectory() as temporary:
             self.assertEqual(validate_checkpoint_root(Path(temporary), minimum_free_bytes=0), Path(temporary).resolve())
+
+    def test_resume_checkpoint_requires_complete_consistent_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            checkpoint = Path(temporary)
+            config = dict(GRPO3_FROM_GRPO1_STEP300_FORMAL_CONFIG)
+            rows = [{"sample_id": f"sample-{index}"} for index in range(1, 201)]
+            for name in (
+                "adapter_config.json", "optimizer.pt", "scheduler.pt", "training_args.bin",
+                *[f"rng_state_{rank}.pth" for rank in range(4)],
+            ):
+                (checkpoint / name).write_bytes(b"state")
+            (checkpoint / "adapter_model.safetensors").write_bytes(b"adapter")
+            adapter_sha = __import__("hashlib").sha256(b"adapter").hexdigest()
+            (checkpoint / "trainer_state.json").write_text(json.dumps({
+                "prompt_step": 75, "optimizer_step": 75, "max_steps": 200,
+                "log_history": [{"step": step} for step in range(1, 76)],
+            }), encoding="utf-8")
+            (checkpoint / "formal_state.json").write_text(json.dumps({
+                "prompt_step": 75, "optimizer_step": 75,
+                "processed_sample_ids": [row["sample_id"] for row in rows[:75]],
+                "selection_seed": config["selection_seed"], "train_sha256": config["train_sha256"],
+            }), encoding="utf-8")
+            (checkpoint / "lineage.json").write_text(json.dumps({
+                "schema": "grpo3_user_continued_adapter_lineage_v1",
+                "parent_stage": "GRPO1", "parent_checkpoint_step": 300,
+                "parent_adapter_sha256": config["parent_adapter_sha256"],
+                "adapter_sha256": adapter_sha,
+            }), encoding="utf-8")
+            (checkpoint / "checkpoint_manifest.json").write_text(json.dumps({
+                "status": "PASS", "resume_capable": True,
+                "prompt_step": 75, "global_step": 75,
+            }), encoding="utf-8")
+            result = validate_resume_checkpoint(checkpoint, config, rows)
+            self.assertEqual((result["prompt_step"], result["optimizer_step"]), (75, 75))
+            (checkpoint / "rng_state_3.pth").unlink()
+            with self.assertRaisesRegex(RuntimeError, "resume checkpoint missing files"):
+                validate_resume_checkpoint(checkpoint, config, rows)
 
     def test_rank0_only_artifact_logging(self):
         with tempfile.TemporaryDirectory() as temporary:

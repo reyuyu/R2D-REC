@@ -1303,6 +1303,12 @@ def create_app(
     @app.post("/api/model-publish/jobs")
     def start_model_publish(request: ModelPublishRequest, run_id: str | None = None):
         selected = selected_run(run_id)
+        gpu = gpu_state()
+        if gpu.get("processes"):
+            raise HTTPException(
+                status_code=409,
+                detail="GPU 训练或评测正在运行，须待四卡释放后再融合上传",
+            )
         capability = model_publish_capability(selected)
         if not capability["enabled"]:
             raise HTTPException(status_code=503, detail=capability["reason"])
