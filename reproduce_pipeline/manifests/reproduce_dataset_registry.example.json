@@ -3,7 +3,7 @@
   "datasets": {
     "rec_fdr_v43_full_sft_raw_800k": {
       "kind": "raw_parquet_directory",
-      "path": "rec_fdr_v43_raw_800k_20260906",
+      "path": "onereason_final_chain_20260901/00官方数据集",
       "sha256": "986743ffbfff02f619d187971f3e15513f12f4c8b442a593599c158236443137",
       "files": 1069,
       "rows": 792797,

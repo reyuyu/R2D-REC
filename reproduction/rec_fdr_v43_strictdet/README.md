@@ -54,8 +54,9 @@ GitHub 不提供数据。完整 pipeline 只接受在 `REPRO_DATA_ROOT/registry.
 ```text
 /root/reproduce_datasets/
   registry.json
-  rec_fdr_v43_raw_800k_20260906/
-    <11 个原始数据组>/0.0.0/*.parquet
+  onereason_final_chain_20260901/
+    00官方数据集/
+      <11 个原始数据组>/0.0.0/*.parquet
 ```
 
 `PARQUET_MANIFEST.json` 锁定实际训练分片，`RAW_800K_MANIFEST.json` 锁定上游原始
@@ -87,7 +88,7 @@ SFT-only 的注册原始数据启动器为：
 ```bash
 bash scripts/launch_rec_fdr_v43_from_registered_raw.sh \
   --base-model /path/to/OneReason-8B-pretrain-competition \
-  --raw-root /root/reproduce_datasets/rec_fdr_v43_raw_800k_20260906 \
+  --raw-root /root/reproduce_datasets/onereason_final_chain_20260901/00官方数据集 \
   --dataset-key rec_fdr_v43_full_sft_raw_800k \
   --dataset-sha256 986743ffbfff02f619d187971f3e15513f12f4c8b442a593599c158236443137 \
   --work-root /root/new-sft-run

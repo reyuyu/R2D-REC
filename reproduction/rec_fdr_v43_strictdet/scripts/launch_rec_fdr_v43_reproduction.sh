@@ -62,7 +62,7 @@ if [[ ! -d "$data_root/base" || ! -d "$data_root/recommendation" ]]; then
 fi
 python3 "$package_root/scripts/verify_rec_fdr_v43_package.py" "$package_root" --data-root "$data_root"
 python3 "$package_root/scripts/verify_base_model.py" "$package_root/BASE_MODEL_MANIFEST.json" "$base_model"
-python3 -m unittest -v "$package_root/training/test_rec_fdr_v43_hcr.py"
+python3 -m unittest -v test_rec_fdr_v43_hcr
 python3 "$package_root/scripts/materialize_rec_fdr_v43_config.py" \
   --package-root "$package_root" --base-model "$base_model" \
   --data-root "$data_root" \

@@ -29,7 +29,7 @@ class PipelineTests(unittest.TestCase):
                 "rows": rows,
                 "split": "train",
             }
-        raw = root / "rec_fdr_v43_raw_800k"
+        raw = root / "onereason_final_chain_20260901" / "00官方数据集"
         (raw / "group_a/0.0.0").mkdir(parents=True)
         raw_file = raw / "group_a/0.0.0/rank0-0.parquet"
         raw_file.write_bytes(b"test raw parquet contract")
@@ -48,7 +48,7 @@ class PipelineTests(unittest.TestCase):
         }), encoding="utf-8")
         datasets["rec_fdr_v43_full_sft_raw_800k"] = {
             "kind": "raw_parquet_directory",
-            "path": raw.name,
+            "path": raw.relative_to(root).as_posix(),
             "sha256": hashlib.sha256(raw_manifest.read_bytes()).hexdigest(),
             "files": 1,
             "rows": 7,
@@ -94,7 +94,9 @@ class PipelineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             manifest = self.make_registry(root)
-            (root / "rec_fdr_v43_raw_800k/README.md").write_text("not raw")
+            (root / "onereason_final_chain_20260901/00官方数据集/README.md").write_text(
+                "not raw"
+            )
             result = subprocess.run(
                 [
                     "python3", str(RESOLVER), "--root", str(root),
@@ -116,6 +118,14 @@ class PipelineTests(unittest.TestCase):
         self.assertNotIn("SFT_DATA_ROOT", run_source)
         self.assertNotIn('package_root / "data', rebuild_source)
         self.assertIn("launch_rec_fdr_v43_from_registered_raw.sh", run_source)
+
+    def test_sft_launcher_runs_unittest_by_importable_module_name(self):
+        launcher = (
+            REPOSITORY
+            / "reproduction/rec_fdr_v43_strictdet/scripts/launch_rec_fdr_v43_reproduction.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("python3 -m unittest -v test_rec_fdr_v43_hcr", launcher)
+        self.assertNotIn('unittest -v "$package_root/training/', launcher)
 
 
 if __name__ == "__main__":
