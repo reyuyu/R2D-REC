@@ -24,6 +24,11 @@ valid links and traceable claims; they do not require launching training.
 For training code, include the relevant regression or deterministic replay
 results and their environment. Record checks actually run in the pull request.
 
+Accelerator CI requires repository-owned runners with the labels configured in
+the CUDA/NPU workflows. Set the repository variable ENABLE_ACCELERATOR_CI=true
+only after provisioning those runners. CPU checks and documentation builds do
+not depend on that variable.
+
 ## Files and attribution
 
 Do not commit credentials, tokens, private connection details, raw datasets,
