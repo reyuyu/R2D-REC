@@ -75,7 +75,7 @@ The SID branch uses deterministic Beam-selected candidates. It must be described
 
 `FORMAL TRAINING APPROVED = NO`
 
-Codex must complete the contracts in `CODEX_IMPLEMENTATION_HANDOFF.md`, especially:
+Implementation validation must cover the following contracts:
 
 - exact Probe4 retention / zero overlap;
 - CPU contract tests;

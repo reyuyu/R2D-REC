@@ -2,7 +2,7 @@
 
 ## 目的
 
-这是将同学提供的 material-domain 路线隔离复刻到当前 OneReason 数据上的原生 SFT 对照实验。它刻意不使用当前工程的 macro trainer、GradNorm、Action 辅助损失、推荐 Trie、多任务 coverage 调度或 BFD packing；其价值是提供一个可归因的基线，而不是叠加新的多任务算法。
+本实验将 material-domain 训练路线作为 OneReason 数据上的独立原生 SFT 对照。它不启用 macro trainer、GradNorm、Action 辅助损失、推荐 Trie、多任务 coverage 调度或 BFD packing，用于区分基础训练配置与各项扩展的影响。
 
 ## 训练配置
 

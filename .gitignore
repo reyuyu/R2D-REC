@@ -17,5 +17,15 @@ monitor/metrics.jsonl
 *.log
 .env
 .env.*
+.secrets/
+*.token
+id_rsa
+id_ed25519
+# Distribute datasets and release archives outside the source repository.
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
 __pycache__/
 *.py[cod]

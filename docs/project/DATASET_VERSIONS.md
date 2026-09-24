@@ -1,5 +1,9 @@
 # OneReason Dataset Versions
 
+[项目文档](../README.md) · [当前复现入口](../r2d-rec/REPRODUCTION.md)
+
+此处记录早期数据版本管理机制。各复现路线使用自己的 manifest 和 registry；下文的历史路径不是全仓库统一的数据目录。命令从仓库根目录执行。
+
 ## Policy
 
 - `/data/lf_data/onereason_*.jsonl` is the immutable, full-training raw source. It is the canonical **all-train** source; no validation split is consumed by new experiments.
@@ -48,7 +52,7 @@ python scripts/create_recommendation_v3_multi_positive.py
 python scripts/audit_recommendation_v3_multi_positive.py
 ```
 
-详细分组键、字段、统计和训练接入见 [`docs/zh/recommendation_v3_multi_positive.md`](docs/zh/recommendation_v3_multi_positive.md)。训练配置通过 `multitask_dataset_version: v3_recommendation_multi_positive` 选择该版本。
+详细分组键、字段、统计和训练接入见[多正例数据说明](../zh/recommendation_v3_multi_positive.md)。训练配置通过 `multitask_dataset_version: v3_recommendation_multi_positive` 选择该版本。
 
 ## Clean Only One Subdataset
 

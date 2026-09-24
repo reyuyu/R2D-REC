@@ -21,6 +21,8 @@ on:
 
 jobs:
   tests:
+    # Enable only after this repository has a compatible GPU runner.
+    if: ${{ vars.ENABLE_ACCELERATOR_CI == 'true' }}
     strategy:
       fail-fast: false
       matrix:

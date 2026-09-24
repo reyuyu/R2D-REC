@@ -1,6 +1,10 @@
-# OneReason 多任务 SFT（比赛工作区）
+# OneReason 早期多任务 SFT 工程说明
 
-这是一个基于 [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) 的私有比赛工作区，用于微调 `OpenOneRec/OneReason-8B-pretrain-competition`。仓库的目标不是重新发布上游框架，而是沉淀当前比赛中可复现的多任务 SFT 训练、监控、评测和断点恢复改动，方便人或 AI 快速理解现状并继续迭代。
+[项目文档](../README.md) · [当前方案](../r2d-rec/METHODS.md)
+
+历史快照：2026-08-02。本文描述早期两卡宏步实验，不表示当前运行状态或最终方案。代码和命令中的路径相对于仓库根目录。
+
+本工程基于 [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory)，用于微调 `OpenOneRec/OneReason-8B-pretrain-competition`，记录多任务 SFT 训练、监控、评测和断点恢复的实现。
 
 > 代码基线：LLaMA-Factory commit `01398eb`。模型权重、原始数据、预测文件、训练日志、checkpoint 与凭据均不会提交到本仓库。
 
@@ -17,7 +21,7 @@
 
 数据在训练前按 **98% train / 2% dev** 切分；训练注册表位于 `data/dataset_info.json`。本仓库只保存注册信息，不保存实际 JSONL 文件。
 
-## 当前服务器进展（最后整理：2026-08-02）
+## 历史运行快照（2026-08-02）
 
 - 基座模型已部署在服务器：`/data/models/onereason-8b-pretrain-competition`。
 - 两组 2-GPU LoRA 实验已启动并行对比：
@@ -140,9 +144,9 @@ llamafactory-cli train configs/onereason/onereason_lora_2gpu_balanced40_r16.yaml
 
 后续若实现任务梯度方法，应基于宏步 Trainer 已保留的 task 边界，在 `compute_task_microbatches(task_name, microbatches)` 周围采集或归一化梯度；任务专属定位应通过 `sample_metadata` 或明确的新字段接入，避免改变既有 tokenize/loss 语义。
 
-## 给后续 AI / 协作者的工作约束
+## 维护约束
 
-1. 先读取本 README、`ONEREASON_MULTITASK.md`、两份 YAML 与 `src/llamafactory/data/multitask.py`，再改变训练语义。
+1. 调整训练语义前，核对[框架说明](MULTITASK.md)、对应 YAML 与 `src/llamafactory/data/multitask.py`。
 2. `multitask_macro_training: false` 必须严格保持上游 LLaMA-Factory 行为；不要把新 loader、packing 或 Trainer 泄漏到关闭路径。
 3. 修改调度时始终保证 DDP 各 rank 的任务顺序、microbatch 总数和 optimizer step 边界一致。
 4. 不提交模型、adapter、数据集、原始预测、监控日志或任何凭据；`.gitignore` 已覆盖这些内容。
@@ -150,4 +154,4 @@ llamafactory-cli train configs/onereason/onereason_lora_2gpu_balanced40_r16.yaml
 
 ## 上游与许可证
 
-本项目保留 LLaMA-Factory 的 Apache-2.0 许可证与上游代码。具体多任务扩展摘要见 [ONEREASON_MULTITASK.md](ONEREASON_MULTITASK.md)。模型与比赛数据的使用须分别遵循其原始许可证与赛事规则。
+本项目保留 LLaMA-Factory 的 Apache-2.0 许可证与上游代码。具体多任务扩展摘要见[多任务框架扩展](MULTITASK.md)。模型与比赛数据的使用须分别遵循其原始许可证与赛事规则。
