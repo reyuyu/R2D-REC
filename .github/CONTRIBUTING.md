@@ -2,7 +2,7 @@
 
 Start with the [project documentation](../docs/README.md) and the
 [method-to-code map](../docs/r2d-rec/METHODS.md). Open project issues and pull
-requests in [this repository](https://github.com/reyuyu/onereason-multitask-sft).
+requests in [this repository](https://github.com/reyuyu/R2D-REC).
 
 ## Scope and evidence
 

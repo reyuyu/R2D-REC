@@ -7,6 +7,7 @@
 | 层次 | 内容 | 入口 |
 | --- | --- | --- |
 | 方案 | 方法机制、源码对应、最终结果 | [R2D-REC](r2d-rec/README.md) |
+| 探索 | 独立 tricks、诊断与验证状态 | [探索清单](r2d-rec/EXPLORATIONS.md) |
 | 复现 | 实际训练顺序、parent、环境与数据合同 | [复现指南](r2d-rec/REPRODUCTION.md) |
 | 工程 | 多任务宏步训练、早期数据版本管理 | [训练框架扩展](project/MULTITASK.md)、[数据版本](project/DATASET_VERSIONS.md) |
 | 历史 | 早期工程快照与独立对照实验 | [早期 SFT 工程](project/EARLY_SFT_WORKSPACE.md)、[实验记录](../实验记录/README.md)、[基线记录](../baselines/native_source_domain_r32_v3/docs) |

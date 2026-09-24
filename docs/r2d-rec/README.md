@@ -31,6 +31,7 @@ OneReason 的任务覆盖懂物料、懂用户、懂推荐和懂世界。R2D-REC
 - 准备运行：看[复现指南](REPRODUCTION.md)，先区分历史 adapter 链与后续 full-SFT 路线。
 - 查目录：看[仓库目录索引](REPOSITORY_MAP.md)，区分方案主线、实验分支、框架代码和工具。
 - 核对模型：看[最终结果说明](FINAL_RESULT.md)，使用明确的运行身份和原始评测记录。
+- 查阅补充实验：看[探索与诊断](EXPLORATIONS.md)，逐项区分代码实现、短程验证与收益证据。
 
 ## 文档与版本边界
 

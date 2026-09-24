@@ -1,70 +1,124 @@
+<p align="center">
+  <img src="assets/r2d-rec/banner.svg" alt="R2D-REC：从推理到决策；决赛技术创新专项奖；最终排名第14名" width="100%">
+</p>
+
+<p align="center">
+  <strong>🏆 决赛「技术创新专项奖」 &nbsp; · &nbsp; 最终排名第 14 名</strong>
+</p>
+
+<p align="center">
+  <a href="#progressive-learning">方案特色</a> ·
+  <a href="#methods">方法与架构</a> ·
+  <a href="#final-result">最终结果</a> ·
+  <a href="#explorations">探索 Tricks</a> ·
+  <a href="docs/r2d-rec/REPRODUCTION.md">复现指南</a> ·
+  <a href="docs/README.md">项目文档</a>
+</p>
+
 # R2D-REC：从推理到决策的生成式推荐学习
 
 **Reasoning-to-Decision Enhancement for Recommendation**
 
-R2D-REC 基于 OneReason-8B，围绕生成式推荐的两个问题展开：**兴趣推理是否可靠，以及推理能否转化为准确的推荐决策。** 项目通过物料语义对齐、行为证据定位、结果奖励驱动的推理优化，以及推理与决策的联合优化，连接“理解物料、理解用户、形成兴趣推理、生成推荐 SID”四种能力。
+**先学会基于证据推理，再学会把推理转化为准确的推荐决策。**
 
-本页按最终答辩的逻辑介绍方案。代码继续使用已有工程名称；[方法与代码映射](docs/r2d-rec/METHODS.md)说明每个模块的对应实现，[复现指南](docs/r2d-rec/REPRODUCTION.md)说明实际 checkpoint 继承顺序。
+R2D-REC 基于 OneReason-8B，将生成式推荐中的“理解物料、定位行为、归纳兴趣、生成 SID”组织为渐进式学习过程。我们关注两个相互关联的问题：兴趣推理是否可靠，以及可靠推理能否转化为全面、准确的推荐候选。
 
-## 方案总览
+<a id="progressive-learning"></a>
 
-```mermaid
-flowchart LR
-    A["识物 · Semantic Alignment SFT<br/>对齐物料 SID 与稳定语义"]
-    B["察行 · MCH-GRPO<br/>定位主题相关的行为证据"]
-    C["推意 · ORR-GRPO<br/>用推荐结果奖励兴趣推理"]
-    D["择物 · Joint-GRPO<br/>联合优化推理与 SID 决策"]
-    A --> B --> C --> D
-```
+## 方案特色：Reasoning → Decision
 
-上图表示答辩中的能力组织逻辑。历史复现实验的阶段顺序由各自配置和 parent 合同定义，见[复现入口与模型来源](docs/r2d-rec/REPRODUCTION.md)。
+我们的核心思路是**先增强推理能力，再推进推理与决策的联合优化**。前一阶段为后一阶段建立可用的语义与证据基础；后一阶段进一步学习如何利用这些信息完成 SID 选择。
 
-| 模块 | 解决的问题 | 核心方法 | 阅读入口 |
-| --- | --- | --- | --- |
-| **识物：Semantic Alignment SFT** | 同一 SID 的多条描述含偶然属性，容易造成语义对齐偏差 | 聚合物料共享语义，结合 canonical / reverse 表达建立多任务 SFT 基础 | [语义对齐](docs/r2d-rec/METHODS.md#semantic-alignment-sft) |
-| **察行：MCH-GRPO** | 长历史中的无关行为干扰兴趣推理，序列奖励难以定位具体行为的贡献 | 结合全局结果信号与行为单元的边际信用，优化相关行为及其关系的提取 | [边际信用混合目标](docs/r2d-rec/METHODS.md#mch-grpo) |
-| **推意：ORR-GRPO** | 推理文字合理，不代表能支持准确推荐；结果奖励可能稀疏 | 以 CoT 后的 Beam32 推荐结果评价推理，对不同正确程度提供分层反馈 | [结果驱动推理](docs/r2d-rec/METHODS.md#orr-grpo) |
-| **择物：Joint-GRPO** | 高质量 CoT 与准确 SID 生成之间仍存在差距 | 对 CoT 与其后独立采样的 SID 分别分配信用，联合优化两个动作阶段 | [推理与决策联合优化](docs/r2d-rec/METHODS.md#joint-grpo) |
+| 学习阶段 | 关键动作 | 希望建立的能力 |
+| --- | --- | --- |
+| 语义与证据基础 | Semantic Alignment SFT 对齐物料语义；MCH-GRPO 定位主题相关行为及其关系 | 理解 SID 的含义，并从长历史中找到可信依据 |
+| **Reasoning Enhancement** | ORR-GRPO 用 CoT 后的推荐结果评价推理，把候选命中反馈传回推理过程 | 生成对推荐结果有帮助的 CoT |
+| **Decision Enhancement** | Joint-GRPO 在已有推理基础上，对 CoT 与其后的 SID 动作分别分配信用、联合更新 | 将兴趣推理转化为准确且有覆盖性的候选 |
 
-## 最终结果
+![R2D-REC 渐进式推理与决策学习框架](assets/r2d-rec/progressive-framework.png)
 
-只展示最终选中模型的结果；本页不展开各组件的中间成绩或消融表。
+*最终答辩整体方案图。图中的训练标记表示各阶段训练信号的组织；实际路由、参数共享和 checkpoint 继承关系见[方法映射](docs/r2d-rec/METHODS.md)与[复现指南](docs/r2d-rec/REPRODUCTION.md)。*
+
+这一设计有三个重点：
+
+- **让推理有依据。** 物料语义对齐与行为边际信用共同提供支撑，减少偶然属性和无关历史对兴趣判断的干扰。
+- **让推理接受结果检验。** 用后续推荐候选的命中情况评价 CoT，使训练信号直接关联推荐目标。
+- **区分推理信用与决策信用。** 在 Joint 阶段，先采样 CoT，再为每条 CoT 独立采样 SID，分别构造训练信号。该阶段继续优化推理，并同时学习答案动作。
+
+<a id="methods"></a>
+
+## 四个方法模块
+
+| 模块 | 核心方法 | 代码与说明 |
+| --- | --- | --- |
+| **识物 · Semantic Alignment SFT** | 聚合同一 SID 的稳定共享语义，结合 canonical / reverse 表达建立语义基础 | [语义对齐](docs/r2d-rec/METHODS.md#semantic-alignment-sft) |
+| **察行 · MCH-GRPO** | 结合全局结果信号与行为单元的边际信用，定位相关行为和关系 | [边际信用混合目标](docs/r2d-rec/METHODS.md#mch-grpo) |
+| **推意 · ORR-GRPO** | 以 CoT 后的 Beam32 推荐结果评价推理，提供分层结果反馈 | [结果驱动推理](docs/r2d-rec/METHODS.md#orr-grpo) |
+| **择物 · Joint-GRPO** | 对 CoT 与独立采样的 SID 分别分配信用，联合优化推理和决策 | [联合优化](docs/r2d-rec/METHODS.md#joint-grpo) |
+
+![Joint-GRPO：分别向 CoT 与 SID 动作分配信用](assets/r2d-rec/joint-grpo.png)
+
+*最终答辩 Joint-GRPO 机制图。示意奖励数值用于解释信用分配，并非组件评测成绩。图示与代码入口见[图片来源说明](assets/r2d-rec/README.md)。*
+
+上述顺序描述方案的能力组织逻辑。仓库保留不同时间、不同 parent 的实验，历史训练顺序以各版本配置和 lineage 为准；例如 `GR_REC_v1` 同时包含 Think / NoThink 路由，Joint 的双目标实现位于 `GRPO-TK / GR_REC_ThinkSample8_FullSID_v3`。
+
+<a id="final-result"></a>
+
+## 最终结果与竞赛荣誉
+
+**决赛获得「技术创新专项奖」，最终排名第 14 名。**
 
 | 模型 | 懂物料 | 懂用户 | 懂推荐 | 懂世界 | 总分 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | **R2D-REC 最终模型** | **0.1818** | **0.2572** | **0.6892** | **0.2357** | **1.3639** |
 
-这是最终答辩采用的一次外部评测结果，可与仓库已有的原始记录核对，不表示多次评测均值或跨环境复现保证。模型身份、评测口径及来源见[最终结果说明](docs/r2d-rec/FINAL_RESULT.md)。
+以上为最终答辩采用的一次外部评测结果。首页仅展示最终选中模型成绩；模型身份、评测口径和原始记录见[最终结果说明](docs/r2d-rec/FINAL_RESULT.md)。
 
-## 从哪里开始
+<a id="explorations"></a>
+
+## 剩余探索 Tricks
+
+除最终方案外，仓库还保留以下独立探索。**实现、训练完成与收益验证是不同状态**；这些方案不自动加入默认复现链，也不代表都参与了最终模型。详细机制、源码和证据见[探索清单](docs/r2d-rec/EXPLORATIONS.md)。
+
+| 方向 | 主要想法 | 当前证据 |
+| --- | --- | --- |
+| 兴趣覆盖复合奖励 | 将 CoT 兴趣覆盖/质量与推荐结果结合 | 固定域短程验证通过，最终收益待验证 |
+| SID 逐层信用分配 | A/B/C 分别构造优势，按前缀正确性分配信用 | CPU 实现，未正式 GPU 训练 |
+| DSR 稀疏奖励补救 | 为低信号或全零奖励组补充训练信号 | Pilot 完成，收益证据不足 |
+| Exact-Clamp | 避免完整命中候选收到负优势 | 最新版本仅 CPU 验证 |
+| 历史复制惩罚课程 | 对历史内候选采用阶段化奖励折扣 | 已实现，未正式训练 |
+| 双接口 SID 优化 | 同时覆盖自由生成与官方固定前缀 | Code-only |
+| Frontier 首错归因 | 将惩罚定位到 SID 首个错误层级 | 完整训练完成，观察到跨路干扰 |
+| Bridge-Inside 边界适配 | 将自然语言 Bridge 移到 think 结束前 | 已有实现，收益待验证 |
+| Bridge-to-Bare 蒸馏 | 按 SID token family 迁移带 Bridge 的分布 | 已实验，未解决目标接口差距 |
+| 重复 CoT 降权 | 按组归一重复推理文本的监督权重 | 已训练，外部表现未同步改善 |
+| Action 历史 Trie 与长度约束 | 抑制非法 SID、重复和提前停止 | 已有实现与验证入口 |
+| GradNorm-lite / 局部 LoRA 投影 | 平衡任务梯度并缓解冲突 | 已有实验，未确立收益 |
+| Positive A0 | 降低只命中粗粒度前缀的奖励 | 已实现，缺正式实验 |
+| 固定 CoT 交叉诊断 | 分离推理、解码排序与 Bridge 接口影响 | 已有诊断与记录 |
+
+Bridge 的候选重构与潜在正则化是这些探索的重要研究背景，相关观察和假设见 [Bridge 研究入口](docs/r2d-rec/METHODS.md#bridge)。
+
+## 复现与项目导航
+
+复现前固定 base、adapter、数据版本、采样配置与训练环境，再选择对应版本入口。
 
 | 目的 | 入口 |
 | --- | --- |
-| 了解方案、术语与阅读顺序 | [R2D-REC 文档导航](docs/r2d-rec/README.md) |
-| 按方案、复现、工程、历史和上游查阅文档 | [项目文档总览](docs/README.md) |
-| 找到四个模块的 runner、loss、reward 和配置 | [方法与代码映射](docs/r2d-rec/METHODS.md) |
-| 选择历史 adapter 链或后续全参数 SFT 复现路线 | [复现指南](docs/r2d-rec/REPRODUCTION.md) |
-| 了解代码、数据合同、监控、历史实验的位置 | [仓库目录索引](docs/r2d-rec/REPOSITORY_MAP.md) |
-| 核对最终模型成绩 | [最终结果说明](docs/r2d-rec/FINAL_RESULT.md) |
+| 了解方法、源码和术语 | [方法与代码映射](docs/r2d-rec/METHODS.md) |
+| 查阅实际训练顺序与模型继承 | [复现指南](docs/r2d-rec/REPRODUCTION.md) |
+| 运行历史四阶段 adapter 链 | [历史复现入口](reproduction/final_chain_20260901/README.md) |
+| 查阅后续全参数 SFT 路线 | [Rec FDR V4.3 strict-deterministic](reproduction/rec_fdr_v43_strictdet/README.md) |
+| 查阅 CoT G4 + 独立 FullSID G8 的双目标实现 | [GRPO-TK 指南](docs/reproduce_GRPO_TK.md) |
+| 查找工程、历史和上游框架文档 | [文档总览](docs/README.md) · [目录索引](docs/r2d-rec/REPOSITORY_MAP.md) |
 
-## 关于复现
-
-仓库保留了不同时间、不同 parent 的实验。**方法名称、历史实验代号和训练阶段编号并非一一对应**：例如 Joint-GRPO 的相关双目标实现叫作 `GRPO-TK / GR_REC_ThinkSample8_FullSID_v3`，而 `GR_REC_v1` 同时包含 Think 和 NoThink 路由。
-
-复现前应固定 base、adapter、数据版本、采样配置与训练环境，再选择对应入口：
-
-- [历史四阶段 adapter 链](reproduction/final_chain_20260901/README.md)：保存选中 checkpoints 的实际继承关系。
-- [Rec FDR V4.3 全参数 SFT](reproduction/rec_fdr_v43_strictdet/README.md)：另一条独立的确定性复现路线，输出为完整模型。
-- [GRPO-TK 复现指南](docs/reproduce_GRPO_TK.md)：CoT G4 与每条 CoT 后独立 FullSID G8 的双目标实现。
-
-训练实现和配置沿用各复现版本的原路径；项目文档按方案、工程与上游说明分层组织。
-
-## 探索：推理与答案之间的 Bridge
-
-训练数据中的自然语言 Bridge 与评测时直接给定域前缀的接口差异，可能改变 Beam32 候选分布。项目保留了相关边界诊断与对照实验，作为理解模型行为的研究线索；它不是默认训练链中的额外阶段。见[Bridge 研究入口](docs/r2d-rec/METHODS.md#bridge)。
+```bash
+git clone https://github.com/reyuyu/R2D-REC.git
+cd R2D-REC
+```
 
 ## 数据与许可证
 
-本仓库用于存放代码、配置、测试及可审计的结果摘要。训练数据、模型权重、tokenized cache 和运行凭据使用外部存储，按各复现入口的数据合同准备。
+仓库存放代码、配置、测试及可审计的结果摘要。训练数据、模型权重、tokenized cache 和运行凭据使用外部存储，按各复现入口的数据合同准备。
 
 训练框架基于 LLaMA-Factory，沿用 [Apache-2.0 许可证](LICENSE)，上游[说明](docs/upstream/LLAMA_FACTORY_ZH.md)与[引用信息](docs/upstream/LLAMA_FACTORY.cff)单独保留；基础模型及竞赛数据遵守各自许可证和赛事要求。

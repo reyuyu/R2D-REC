@@ -176,8 +176,8 @@ PY
 ## 8. 获取代码
 
 ```bash
-git clone git@github.com:reyuyu/onereason-multitask-sft.git
-cd onereason-multitask-sft
+git clone git@github.com:reyuyu/R2D-REC.git
+cd R2D-REC
 git fetch origin
 git checkout main
 git pull --ff-only origin main
