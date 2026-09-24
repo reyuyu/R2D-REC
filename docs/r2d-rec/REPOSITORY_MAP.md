@@ -11,10 +11,12 @@ README.md                         R2D-REC 项目首页与最终结果
 docs/README.md                    项目文档总览
 docs/project/                     多任务框架、数据版本与早期工程
 docs/upstream/                    基础框架说明与引用
+assets/r2d-rec/                   项目横幅与精选答辩图
 docs/r2d-rec/
   README.md                       答辩逻辑与阅读导航
   METHODS.md                      四个方法及实际代码入口
   FINAL_RESULT.md                 最终模型的一行结果与来源
+  EXPLORATIONS.md                 独立探索、验证状态与证据
   REPRODUCTION.md                 复现路线、parent 与版本边界
   REPOSITORY_MAP.md               本目录索引
 ```

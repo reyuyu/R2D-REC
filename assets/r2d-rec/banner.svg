@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+  <title id="title">R2D-REC：从推理到决策</title>
+  <desc id="desc">渐进式推理与决策训练。决赛技术创新专项奖，最终排名第14名。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b102b"/><stop offset="1" stop-color="#211342"/></linearGradient>
+    <linearGradient id="accent"><stop stop-color="#97f2ed"/><stop offset="1" stop-color="#fbe4a0"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#4680b8" stop-opacity=".23"/><stop offset="1" stop-color="#4680b8" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#a1b9dc" stroke-opacity=".06"/></pattern>
+  </defs>
+  <rect width="1280" height="420" rx="22" fill="url(#bg)"/>
+  <rect width="1280" height="420" rx="22" fill="url(#grid)"/>
+  <ellipse cx="1050" cy="175" rx="320" ry="260" fill="url(#glow)"/>
+  <path d="M56 39H1224" stroke="url(#accent)" stroke-width="2" opacity=".65"/>
+  <g font-family="Inter, Segoe UI, Microsoft YaHei, Arial, sans-serif">
+    <text x="58" y="81" font-size="14" letter-spacing="3.2" fill="#9bcbd9">GENERATIVE RECOMMENDATION · ONEREASON-8B</text>
+    <text x="52" y="176" font-size="90" font-weight="800" letter-spacing="-3" fill="url(#accent)">R2D-REC</text>
+    <text x="58" y="222" font-size="29" font-weight="600" fill="#f6f4ec">从推理到决策的生成式推荐学习</text>
+    <text x="58" y="253" font-size="17" fill="#a8b6d0">Reasoning-to-Decision Enhancement for Recommendation</text>
+    <g transform="translate(800 116)">
+      <circle cx="64" cy="46" r="56" fill="none" stroke="#97f2ed" stroke-opacity=".2"/>
+      <circle cx="64" cy="46" r="42" fill="#152a43" stroke="#97f2ed" stroke-width="1.5"/>
+      <path d="M49 46L60 57L79 33" fill="none" stroke="#97f2ed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M126 46H244M235 37L245 46L235 55" stroke="url(#accent)" stroke-width="2" fill="none"/>
+      <circle cx="306" cy="46" r="56" fill="none" stroke="#fbe4a0" stroke-opacity=".2"/>
+      <circle cx="306" cy="46" r="42" fill="#342b39" stroke="#fbe4a0" stroke-width="1.5"/>
+      <path d="M291 31H304V44H291ZM309 31H322V44H309ZM291 49H304V62H291Z" fill="none" stroke="#fbe4a0" stroke-width="2"/>
+      <path d="M310 55L314 59L322 49" fill="none" stroke="#fbe4a0" stroke-width="2" stroke-linecap="round"/>
+      <text x="64" y="128" text-anchor="middle" font-size="19" font-weight="600" fill="#a5eeea">REASONING</text>
+      <text x="306" y="128" text-anchor="middle" font-size="19" font-weight="600" fill="#fbe4a0">DECISION</text>
+      <text x="185" y="163" text-anchor="middle" font-size="14" letter-spacing="2" fill="#9eaac7">PROGRESSIVE LEARNING</text>
+    </g>
+    <rect x="58" y="314" width="430" height="58" rx="12" fill="#fff0b9" fill-opacity=".08" stroke="#e2c77e" stroke-opacity=".65"/>
+    <path d="M83 333H99V344Q99 352 91 354Q83 352 83 344ZM83 336H78V340Q78 346 84 346M99 336H104V340Q104 346 98 346M91 355V361M85 361H97" fill="none" stroke="#fbe4a0" stroke-width="1.8" stroke-linejoin="round"/>
+    <text x="123" y="351" font-size="22" font-weight="600" fill="#fff0b9">决赛 · 技术创新专项奖</text>
+    <rect x="508" y="314" width="278" height="58" rx="12" fill="#97f2ed" fill-opacity=".06" stroke="#97f2ed" stroke-opacity=".4"/>
+    <text x="533" y="351" font-size="22" font-weight="600" fill="#b1f3ef">最终排名 · 第 14 名</text>
+    <text x="1222" y="348" text-anchor="end" font-size="15" letter-spacing="2" fill="#a5b2cd">REASON BETTER. DECIDE BETTER.</text>
+  </g>
+</svg>

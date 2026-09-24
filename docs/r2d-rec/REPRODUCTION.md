@@ -69,7 +69,7 @@ bash run.sh --no-monitor
 
 整理时核对的主分支代码点为 `da1331f`，其中没有根级 `reproduce_pipeline/`。后续全链条入口保存在另一个已存在的分支快照中：
 
-[reproduce_pipeline，固定到 878723e 的 README](https://github.com/reyuyu/onereason-multitask-sft/blob/878723e/reproduce_pipeline/README.md)。
+[reproduce_pipeline，固定到 878723e 的 README](https://github.com/reyuyu/R2D-REC/blob/878723e/reproduce_pipeline/README.md)。
 
 它的阶段开关、预算、数据 registry 与 parent resolver 属于该版本的运行合同。本次不将整条开发分支并入主分支，也不把该入口描述为本分支已经具备的一键 R2D-REC 答辩顺序复现。
 
