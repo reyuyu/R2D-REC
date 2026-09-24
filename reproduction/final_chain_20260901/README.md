@@ -147,5 +147,5 @@ small JSON file at `evaluations/<stage-id>.json`, for example:
 ```
 
 The dashboard will then display the reproduced score and delta without changing
-the training run. See `docs/REPRODUCTION_QUALITY.md` for status semantics and
-`docs/GPT_REVIEW_PROMPT.md` for the independent review request.
+the training run. See [reproduction quality](docs/REPRODUCTION_QUALITY.md) for
+status semantics and verification requirements.

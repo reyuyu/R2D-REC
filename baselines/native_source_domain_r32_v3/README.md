@@ -1,6 +1,6 @@
 # Native Source-Domain R32 V3 Baseline
 
-该目录是同学 material-domain 训练路线的隔离复刻基线，不和当前多任务工程共享 Trainer 或输出目录。
+该目录提供 material-domain 训练路线的隔离对照基线，Trainer 与输出目录独立管理。
 
 ## 目录约定
 

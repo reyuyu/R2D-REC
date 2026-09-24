@@ -2,12 +2,15 @@
 
 [项目首页](../../README.md) · [文档导航](README.md)
 
-本轮用文档导航统一展示结构，训练文件保留原路径，以兼容旧配置、import、脚本和已记录的复现合同。
+项目文档按方案、工程与上游框架分层；训练文件保留历史路径，以兼容配置、导入关系和复现合同。统一入口见[项目文档总览](../README.md)。
 
 ## 展示与阅读层
 
 ```text
 README.md                         R2D-REC 项目首页与最终结果
+docs/README.md                    项目文档总览
+docs/project/                     多任务框架、数据版本与早期工程
+docs/upstream/                    基础框架说明与引用
 docs/r2d-rec/
   README.md                       答辩逻辑与阅读导航
   METHODS.md                      四个方法及实际代码入口
@@ -37,8 +40,8 @@ docs/r2d-rec/
 | [reproduction/rec_fdr_v43_strictdet](../../reproduction/rec_fdr_v43_strictdet) | 后续 full-SFT 的代码快照、数据重建、环境及 SHA 合同 |
 | [baselines/native_source_domain_r32_v3/grpo_fullbase_conservative_v1](../../baselines/native_source_domain_r32_v3/grpo_fullbase_conservative_v1) | full-model parent 接入推荐 GRPO 的独立路线 |
 | [grpo/scripts/monitor](../../baselines/native_source_domain_r32_v3/grpo/scripts/monitor) | 推荐与用户实验的监控服务和前端 |
-| [ONEREASON_DATASET_VERSIONS.md](../../ONEREASON_DATASET_VERSIONS.md) | 既有数据版本索引 |
-| [ONEREASON_MULTITASK.md](../../ONEREASON_MULTITASK.md) | 多任务设计与训练框架接入说明 |
+| [数据版本管理](../project/DATASET_VERSIONS.md) | 既有数据版本索引 |
+| [多任务框架扩展](../project/MULTITASK.md) | 多任务设计与训练框架接入说明 |
 
 数据目录中的 manifest 和 registry 描述数据合同，不等于已经附带训练样本。实际数据与权重仍需在运行环境中独立准备。
 
@@ -52,6 +55,6 @@ docs/r2d-rec/
 | [实验记录](../../实验记录) | 早期阶段记录 |
 | [src/llamafactory](../../src/llamafactory) | 训练框架实现 |
 | [examples](../../examples)、[configs](../../configs)、[requirements](../../requirements) | 框架示例、配置及依赖 |
-| [README_zh.md](../../README_zh.md) | 沿用的 LLaMA-Factory 文档，不是 R2D-REC 项目首页 |
+| [基础框架说明](../upstream/LLAMA_FACTORY_ZH.md) | 沿用的 LLaMA-Factory 文档 |
 
-旧首页的完整实验叙述保留在 Git 历史中。原有实验文档与原始结果摘要保持不变；新项目入口只展示方案和最终结果。
+旧首页的完整实验叙述保留在 Git 历史中。历史技术记录和原始结果摘要用于追溯，项目展示入口只列方案和最终结果。

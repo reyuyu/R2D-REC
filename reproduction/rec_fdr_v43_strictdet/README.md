@@ -115,7 +115,7 @@ NVIDIA_TF32_OVERRIDE=0
 `docs/GRPO_COMPATIBILITY.md`：将它作为新的只读 base model，第一段 GRPO 创建新的
 LoRA；禁止将历史上基于另一 base 的 adapter 直接套到该权重上。
 
-供 ChatGPT 网页版审查新方案的完整提示词见 `docs/CHATGPT_REVIEW_PROMPT.md`。
+后续 GRPO 的模型加载与 parent 约束见[兼容性说明](docs/GRPO_COMPATIBILITY.md)。
 
 ## 目录
 

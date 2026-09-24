@@ -1,67 +1,36 @@
-# Contributing to LLaMA Factory
+# Contributing to R2D-REC
 
-Everyone is welcome to contribute, and we value everybody's contribution. Code contributions are not the only way to help the community. Answering questions, helping others, and improving the documentation are also immensely valuable.
+Start with the [project documentation](../docs/README.md) and the
+[method-to-code map](../docs/r2d-rec/METHODS.md). Open project issues and pull
+requests in [this repository](https://github.com/reyuyu/onereason-multitask-sft).
 
-It also helps us if you spread the word! Reference the library in blog posts about the awesome projects it made possible, shout out on Twitter every time it has helped you, or simply ⭐️ the repository to say thank you.
+## Scope and evidence
 
-However you choose to contribute, please be mindful and respect our [code of conduct](CODE_OF_CONDUCT.md).
+- Keep changes focused on the selected training or documentation route.
+- For training changes, identify the dataset registry, split and digest, parent
+  checkpoint, configuration and runtime. State whether the objective, sampler,
+  adapter lineage or deterministic behavior changes.
+- Preserve frozen reproduction sources and manifests. A new experiment should
+  use a separate configuration and output location.
+- Separate implementation checks, diagnostic probes and external evaluation.
+  Do not present an unrun proposal or a small probe as a verified improvement.
+- Public project summaries show the final selected model result. Historical
+  evidence remains in the experiment records.
 
-**This guide was heavily inspired by [transformers guide to contributing](https://github.com/huggingface/transformers/blob/main/CONTRIBUTING.md).**
+## Validation
 
-## Ways to contribute
+Run checks appropriate to the changed behavior. Documentation changes need
+valid links and traceable claims; they do not require launching training.
+For training code, include the relevant regression or deterministic replay
+results and their environment. Record checks actually run in the pull request.
 
-There are several ways you can contribute to LLaMA Factory:
+## Files and attribution
 
-* Fix outstanding issues with the existing code.
-* Submit issues related to bugs or desired new features.
-* Contribute to the examples or to the documentation.
+Do not commit credentials, tokens, private connection details, raw datasets,
+model weights, caches or temporary archives. Provide external artifact paths
+through runtime configuration.
 
-### Style guide
-
-LLaMA Factory follows the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html), check it for details.
-
-### Create a Pull Request
-
-1. Fork the [repository](https://github.com/hiyouga/LLaMA-Factory) by clicking on the [Fork](https://github.com/hiyouga/LLaMA-Factory/fork) button on the repository's page. This creates a copy of the code under your GitHub user account.
-
-2. Clone your fork to your local disk, and add the base repository as a remote:
-
-```bash
-git clone git@github.com:[username]/LLaMA-Factory.git
-cd LLaMA-Factory
-git remote add upstream https://github.com/hiyouga/LLaMA-Factory.git
-```
-
-3. Create a new branch to hold your development changes:
-
-```bash
-git checkout -b dev_your_branch
-```
-
-4. Set up a development environment by running the following command in a virtual environment:
-
-```bash
-pip install -e ".[dev]"
-```
-
-If LLaMA Factory was already installed in the virtual environment, remove it with `pip uninstall llamafactory` before reinstalling it in editable mode with the -e flag.
-
-5. Check code before commit:
-
-```bash
-make commit
-make style && make quality
-make test
-```
-
-6. Submit changes:
-
-```bash
-git add .
-git commit -m "commit message"
-git fetch upstream
-git rebase upstream/main
-git push -u origin dev_your_branch
-```
-
-7. Create a merge request from your branch `dev_your_branch` at [origin repo](https://github.com/hiyouga/LLaMA-Factory).
+Retain the [Apache-2.0 license](../LICENSE) and necessary upstream copyright
+notices. The base framework is LLaMA-Factory; its
+[documentation and citation](../docs/upstream/LLAMA_FACTORY_ZH.md) are kept
+separately from the R2D-REC project presentation.

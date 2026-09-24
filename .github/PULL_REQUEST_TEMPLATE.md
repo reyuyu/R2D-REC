@@ -1,8 +1,11 @@
-# What does this PR do?
+# 问题与变更
 
-Fixes # (issue)
+说明触发场景、变更后的行为，以及涉及的 R2D-REC 模块。
 
-## Before submitting
+## 验证
 
-- [ ] Did you read the [contributor guideline](https://github.com/hiyouga/LLaMA-Factory/blob/main/.github/CONTRIBUTING.md)?
-- [ ] Did you write any new necessary tests?
+记录实际运行的检查及结果。训练改动需说明数据版本、parent、目标函数和确定性合同是否改变；文档改动检查链接与证据来源。
+
+- [ ] 保留上游许可证与来源说明。
+- [ ] 未提交连接凭据、令牌、数据集、权重或临时压缩包。
+- [ ] 实现状态、实验结果和研究假设分别说明；项目展示页仅列最终结果。

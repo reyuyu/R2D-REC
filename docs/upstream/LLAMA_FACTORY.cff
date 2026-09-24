@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 date-released: 2024-03
-message: "If you use this software, please cite it as below."
+message: "Citation for the upstream LLaMA-Factory framework, not the R2D-REC project."
 authors:
 - family-names: "Zheng"
   given-names: "Yaowei"

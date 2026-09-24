@@ -18,7 +18,7 @@
 | 来源、行数、哈希与路由构成 | [物料对齐数据 manifest](../../baselines/native_source_domain_r32_v3/dataset_beta_material_aligned_v1/manifest.json) |
 | 多任务 LoRA SFT 配置 | [train_beta_material_aligned_sid8_4gpu_gc04_2epoch.yaml](../../baselines/native_source_domain_r32_v3/config/train_beta_material_aligned_sid8_4gpu_gc04_2epoch.yaml) |
 | 启动入口 | [launch_beta_material_aligned_sid8_4gpu_gc04_2epoch.sh](../../baselines/native_source_domain_r32_v3/scripts/launch_beta_material_aligned_sid8_4gpu_gc04_2epoch.sh) |
-| 数据版本导航 | [ONEREASON_DATASET_VERSIONS.md](../../ONEREASON_DATASET_VERSIONS.md) |
+| 数据版本导航 | [数据版本管理](../project/DATASET_VERSIONS.md) |
 
 **实现边界。** 当前构建脚本接收已有的对齐物料数据，并保留其 system、prompt、response 与顺序；它不是完整的上游 LLM-judge caption 生成器。不要把答辩中的处理示意直接解释为该脚本会重新生成全部语义描述。实际训练的数据数量、来源与版本以 manifest 为准。
 

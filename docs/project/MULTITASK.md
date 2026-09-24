@@ -1,4 +1,8 @@
-# OneReason multi-task SFT extension
+# OneReason 多任务训练框架扩展
+
+[项目文档](../README.md) · [当前方案](../r2d-rec/METHODS.md)
+
+本文件记录早期宏步 SFT 框架扩展，路径和命令均相对于仓库根目录。具体实验以对应配置为准。
 
 This repository is a private, reproducible LLaMA-Factory-based implementation for the OneReason multi-task SFT workflow.
 

@@ -38,7 +38,6 @@ baselines/native_source_domain_r32_v3/grpo/
     gr_rec_think_sample8_fullsid_v3/
       README.md
       CHANGELOG.md
-      CODEX_IMPLEMENTATION_HANDOFF.md
       run_sample8_fullsid_train.py
       sample8_fullsid_trainer.py
       launch_sample8_fullsid_train.sh

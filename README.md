@@ -41,6 +41,7 @@ flowchart LR
 | 目的 | 入口 |
 | --- | --- |
 | 了解方案、术语与阅读顺序 | [R2D-REC 文档导航](docs/r2d-rec/README.md) |
+| 按方案、复现、工程、历史和上游查阅文档 | [项目文档总览](docs/README.md) |
 | 找到四个模块的 runner、loss、reward 和配置 | [方法与代码映射](docs/r2d-rec/METHODS.md) |
 | 选择历史 adapter 链或后续全参数 SFT 复现路线 | [复现指南](docs/r2d-rec/REPRODUCTION.md) |
 | 了解代码、数据合同、监控、历史实验的位置 | [仓库目录索引](docs/r2d-rec/REPOSITORY_MAP.md) |
@@ -56,7 +57,7 @@ flowchart LR
 - [Rec FDR V4.3 全参数 SFT](reproduction/rec_fdr_v43_strictdet/README.md)：另一条独立的确定性复现路线，输出为完整模型。
 - [GRPO-TK 复现指南](docs/reproduce_GRPO_TK.md)：CoT G4 与每条 CoT 后独立 FullSID G8 的双目标实现。
 
-此轮整理仅更新项目介绍与文档导航，训练实现、数据、已有配置和 checkpoint 选择合同保持原样。
+训练实现和配置沿用各复现版本的原路径；项目文档按方案、工程与上游说明分层组织。
 
 ## 探索：推理与答案之间的 Bridge
 
@@ -66,4 +67,4 @@ flowchart LR
 
 本仓库用于存放代码、配置、测试及可审计的结果摘要。训练数据、模型权重、tokenized cache 和运行凭据使用外部存储，按各复现入口的数据合同准备。
 
-训练框架基于 LLaMA-Factory，沿用 [Apache-2.0 许可证](LICENSE)；基础模型及竞赛数据遵守各自许可证和赛事要求。
+训练框架基于 LLaMA-Factory，沿用 [Apache-2.0 许可证](LICENSE)，上游[说明](docs/upstream/LLAMA_FACTORY_ZH.md)与[引用信息](docs/upstream/LLAMA_FACTORY.cff)单独保留；基础模型及竞赛数据遵守各自许可证和赛事要求。
