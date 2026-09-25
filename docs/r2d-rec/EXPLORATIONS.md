@@ -15,14 +15,14 @@
 | 5 | 历史复制惩罚课程（OfficialAntiCopy） | 在官方域前缀生成接口下，对历史内候选采用阶段化折扣，尝试释放候选容量 | CPU 实现，未正式训练；历史内 Gold 真实存在，降低复用率不自动等于提高正确召回 | 候选分布控制 |
 | 6 | 双接口 SID 优化（ExactSharpen v4） | 同一 CoT 后分别生成 Free 与 Official SID 组，显式覆盖训练自由边界和评测固定前缀 | Code-only，README 明确无 GPU 预检产物 | 双接口训练实现，效果待验证 |
 
-对应入口：
+对应文件入口：
 
-1. [Composite Interest 实现](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1)；[固定域 Smoke12 结果](../../baselines/native_source_domain_r32_v3/grpo/results/gr_rec_think_composite_interest_v1_fixed_domain_smoke12_20260823.json)。
-2. [FineGrained v6](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_finegrained_v6)。
-3. [DSR 及其法证报告入口](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1)。
-4. [Exact-Clamp 最新合同](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1)。
-5. [OfficialAntiCopy Mixed v5](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_anticopy_mixed_v5)。
-6. [ExactSharpen v4](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_sharpen_v4)。
+1. Composite Interest：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/README.md) · [Trainer](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/composite_trainer.py) · [兴趣匹配](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/interest_metric.py) · [固定域 Smoke12 结果](../../baselines/native_source_domain_r32_v3/grpo/results/gr_rec_think_composite_interest_v1_fixed_domain_smoke12_20260823.json)。
+2. FineGrained v6：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_finegrained_v6/README.md) · [Trainer](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_finegrained_v6/official_finegrained_trainer.py)。
+3. DSR：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/README.md) · [训练目标](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/dsr_objectives.py) · [Pilot200 法证报告](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/results/pilot200_forensic_20260818/GR_REC_DSR_PILOT200_FORENSIC_REPORT.md)。
+4. Exact-Clamp：[最新合同](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/README.md) · [优势约束](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/think_exact_clamp.py) · [Trainer](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/think_exact_clamp_trainer.py)。
+5. OfficialAntiCopy Mixed v5：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_anticopy_mixed_v5/README.md) · [Trainer](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_anticopy_mixed_v5/official_anticopy_mixed_trainer.py)。
+6. ExactSharpen v4：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_sharpen_v4/README.md) · [Trainer](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_sharpen_v4/exact_sharpen_trainer.py)。
 
 ## 边界适配、约束与历史对照
 
@@ -38,14 +38,14 @@
 | 14 | Positive A0 | 保留正信号 Think 子集，将仅 A 命中的奖励降为零，尝试减少粗粒度前缀捷径 | 有独立配置与实现，未核到正式运行；可能进一步增加奖励稀疏性 |
 | 15 | 固定 CoT 的生成器/解码器交叉诊断 | 固定推理文本，分别交换模型与答案边界，区分推理变化、解码排序和 Bridge 接口影响 | 已有诊断脚本和记录，是分析方法，不直接构成一个训练收益组件 |
 
-对应入口：
+对应文件入口：
 
-7. [Frontier 完整训练法证](../../baselines/native_source_domain_r32_v3/grpo/results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.md)。
-8. [Bridge-Inside SFT](../../baselines/native_source_domain_r32_v3/boundary_adapt/bridge_inside_sft)。
-9. [Bridge-to-Bare KD](../../baselines/native_source_domain_r32_v3/boundary_adapt/kd)。
-10. [CoT 重复降权实验](../../baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md)。
-11. [Action 约束实现](../../src/llamafactory/train/sft/user_action_auxiliary.py)。
-12. [多任务梯度控制器](../../src/llamafactory/train/sft/multitask_gradient_controller.py)。
-13. 同上控制器；历史记录见仓库“实验 B：GradNorm-lite + 局部 LoRA 梯度冲突投影”。
-14. [Positive A0 v3](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_positive_a0_v3)。
-15. [边界诊断脚本](../../baselines/native_source_domain_r32_v3/boundary_adapt/diagnostics)。
+7. Frontier：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/README.md) · [信用分配](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_credit.py) · [完整训练法证](../../baselines/native_source_domain_r32_v3/grpo/results/gr_rec_nothink_frontier_v1_formal_e1_forensic_20260822.md)。
+8. Bridge-Inside SFT：[说明](../../baselines/native_source_domain_r32_v3/boundary_adapt/bridge_inside_sft/README.md) · [训练入口](../../baselines/native_source_domain_r32_v3/boundary_adapt/bridge_inside_sft/train_transition.py)。
+9. Bridge-to-Bare KD：[说明](../../baselines/native_source_domain_r32_v3/boundary_adapt/kd/README.md) · [蒸馏损失](../../baselines/native_source_domain_r32_v3/boundary_adapt/kd/bridge_to_bare_kd_loss.py) · [训练入口](../../baselines/native_source_domain_r32_v3/boundary_adapt/kd/train_bridge_to_bare_kd.py)。
+10. CoT 重复降权：[实验说明](../../baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md) · [配置](../../baselines/native_source_domain_r32_v3/config/train_alpha_cot_repeat05n_4gpu_gc04_2epoch.yaml) · [缓存构建入口](../../baselines/native_source_domain_r32_v3/scripts/build_alpha_cot_repeat_cache.py)。
+11. Action 约束：[实验说明](../../实验记录/实验C_Action-Select历史约束.md) · [辅助目标](../../src/llamafactory/train/sft/user_action_auxiliary.py) · [SID Trie](../../src/llamafactory/data/action_select.py)。
+12. GradNorm-lite：[实验说明](../../实验记录/实验A_GradNorm-lite.md) · [多任务梯度控制器](../../src/llamafactory/train/sft/multitask_gradient_controller.py)。
+13. 局部 LoRA 冲突投影：[实验说明](../../实验记录/实验B_GradNorm-Ortho-LoRA.md) · [投影与梯度控制实现](../../src/llamafactory/train/sft/multitask_gradient_controller.py)。
+14. Positive A0：[说明](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_positive_a0_v3/README.md) · [奖励实现](../../baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_positive_a0_v3/a0_reward.py)。
+15. 固定 CoT 交叉诊断：[生成器/解码器交叉](../../baselines/native_source_domain_r32_v3/boundary_adapt/diagnostics/controlled_generator_decoder_crossover.py) · [官方提示与 Bare 边界对照](../../baselines/native_source_domain_r32_v3/boundary_adapt/diagnostics/recommendation_official_prompt_bare_crossover.py) · [Self-CoT 对照](../../baselines/native_source_domain_r32_v3/boundary_adapt/diagnostics/recommendation_self_cot_crossover.py)。
