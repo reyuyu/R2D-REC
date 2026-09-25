@@ -56,6 +56,16 @@ R2D-REC 基于 OneReason-8B，将生成式推荐中的“理解物料、定位�
 | **推意 · ORR-GRPO** | 以 CoT 后的 Beam32 推荐结果评价推理，提供分层结果反馈 | [结果驱动推理](docs/r2d-rec/METHODS.md#orr-grpo) |
 | **择物 · Joint-GRPO** | 对 CoT 与独立采样的 SID 分别分配信用，联合优化推理和决策 | [联合优化](docs/r2d-rec/METHODS.md#joint-grpo) |
 
+### 识物阶段：Semantic Alignment & Rec Bootstrapping
+
+SFT 为后续推理与决策训练构建**稳定的语义空间与可继续优化的推荐表示**。推荐侧从多正例集合监督出发，用 FDR 在 SID 路径的首个分歧处比较正负候选，再通过 Top-16/32 HCR 优化候选排序区间。
+
+![SFT 推荐初始化：多正例集合监督、首分歧排序与 Top-16/32 HCR](assets/r2d-rec/sft-rec-bootstrapping.png)
+
+*补充答辩页的方法区：Multi-positive Set Loss 避免同组正例相互抑制；FDR 将排序监督定位到首个分歧；HCR 关注正确 SID 在候选空间中的排序。图片已移除组件成绩，首页统一展示最终模型得分。对应版本入口见 [Rec FDR V4.3](reproduction/rec_fdr_v43_strictdet/README.md)。*
+
+### 择物阶段：Joint-GRPO
+
 ![Joint-GRPO：分别向 CoT 与 SID 动作分配信用](assets/r2d-rec/joint-grpo.png)
 
 *最终答辩 Joint-GRPO 机制图。示意奖励数值用于解释信用分配，并非组件评测成绩。图示与代码入口见[图片来源说明](assets/r2d-rec/README.md)。*
