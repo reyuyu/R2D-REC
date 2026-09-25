@@ -80,22 +80,25 @@ R2D-REC 基于 OneReason-8B，将生成式推荐中的“理解物料、定位�
 
 除最终方案外，仓库还保留以下独立探索。**实现、训练完成与收益验证是不同状态**；这些方案不自动加入默认复现链，也不代表都参与了最终模型。详细机制、源码和证据见[探索清单](docs/r2d-rec/EXPLORATIONS.md)。
 
-| 方向 | 主要想法 | 当前证据 |
-| --- | --- | --- |
-| 兴趣覆盖复合奖励 | 将 CoT 兴趣覆盖/质量与推荐结果结合 | 固定域短程验证通过，最终收益待验证 |
-| SID 逐层信用分配 | A/B/C 分别构造优势，按前缀正确性分配信用 | CPU 实现，未正式 GPU 训练 |
-| DSR 稀疏奖励补救 | 为低信号或全零奖励组补充训练信号 | Pilot 完成，收益证据不足 |
-| Exact-Clamp | 避免完整命中候选收到负优势 | 最新版本仅 CPU 验证 |
-| 历史复制惩罚课程 | 对历史内候选采用阶段化奖励折扣 | 已实现，未正式训练 |
-| 双接口 SID 优化 | 同时覆盖自由生成与官方固定前缀 | Code-only |
-| Frontier 首错归因 | 将惩罚定位到 SID 首个错误层级 | 完整训练完成，观察到跨路干扰 |
-| Bridge-Inside 边界适配 | 将自然语言 Bridge 移到 think 结束前 | 已有实现，收益待验证 |
-| Bridge-to-Bare 蒸馏 | 按 SID token family 迁移带 Bridge 的分布 | 已实验，未解决目标接口差距 |
-| 重复 CoT 降权 | 按组归一重复推理文本的监督权重 | 已训练，外部表现未同步改善 |
-| Action 历史 Trie 与长度约束 | 抑制非法 SID、重复和提前停止 | 已有实现与验证入口 |
-| GradNorm-lite / 局部 LoRA 投影 | 平衡任务梯度并缓解冲突 | 已有实验，未确立收益 |
-| Positive A0 | 降低只命中粗粒度前缀的奖励 | 已实现，缺正式实验 |
-| 固定 CoT 交叉诊断 | 分离推理、解码排序与 Bridge 接口影响 | 已有诊断与记录 |
+点击方向名称查看说明，最后一列直接打开对应源码或配置文件。
+
+| 方向与说明 | 主要想法 | 当前证据 | 文件入口 |
+| --- | --- | --- | --- |
+| [兴趣覆盖复合奖励](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/README.md) | 将 CoT 兴趣覆盖/质量与推荐结果结合 | 固定域短程验证通过，最终收益待验证 | [Trainer](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/composite_trainer.py) · [兴趣匹配](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_composite_interest_v1/interest_metric.py) |
+| [SID 逐层信用分配](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_finegrained_v6/README.md) | A/B/C 分别构造优势，按前缀正确性分配信用 | CPU 实现，未正式 GPU 训练 | [Trainer](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_finegrained_v6/official_finegrained_trainer.py) |
+| [DSR 稀疏奖励补救](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/README.md) | 为低信号或全零奖励组补充训练信号 | Pilot 完成，收益证据不足 | [训练目标](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_dsr_v1/dsr_objectives.py) |
+| [Exact-Clamp](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/README.md) | 避免完整命中候选收到负优势 | 最新版本仅 CPU 验证 | [优势约束](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_clamp_v1/think_exact_clamp.py) |
+| [历史复制惩罚课程](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_anticopy_mixed_v5/README.md) | 对历史内候选采用阶段化奖励折扣 | 已实现，未正式训练 | [Trainer](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_official_anticopy_mixed_v5/official_anticopy_mixed_trainer.py) |
+| [双接口 SID 优化](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_sharpen_v4/README.md) | 同时覆盖自由生成与官方固定前缀 | Code-only | [Trainer](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_exact_sharpen_v4/exact_sharpen_trainer.py) |
+| [Frontier 首错归因](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/README.md) | 将惩罚定位到 SID 首个错误层级 | 完整训练完成，观察到跨路干扰 | [信用分配](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_nothink_only_frontier_v1/frontier_credit.py) |
+| [Bridge-Inside 边界适配](baselines/native_source_domain_r32_v3/boundary_adapt/bridge_inside_sft/README.md) | 将自然语言 Bridge 移到 think 结束前 | 已有实现，收益待验证 | [训练入口](baselines/native_source_domain_r32_v3/boundary_adapt/bridge_inside_sft/train_transition.py) |
+| [Bridge-to-Bare 蒸馏](baselines/native_source_domain_r32_v3/boundary_adapt/kd/README.md) | 按 SID token family 迁移带 Bridge 的分布 | 已实验，未解决目标接口差距 | [蒸馏损失](baselines/native_source_domain_r32_v3/boundary_adapt/kd/bridge_to_bare_kd_loss.py) |
+| [重复 CoT 降权](baselines/native_source_domain_r32_v3/docs/experiment_alpha_cot_repeat05n.md) | 按组归一重复推理文本的监督权重 | 已训练，外部表现未同步改善 | [配置](baselines/native_source_domain_r32_v3/config/train_alpha_cot_repeat05n_4gpu_gc04_2epoch.yaml) · [缓存构建](baselines/native_source_domain_r32_v3/scripts/build_alpha_cot_repeat_cache.py) |
+| [Action 历史 Trie 与长度约束](实验记录/实验C_Action-Select历史约束.md) | 抑制非法 SID、重复和提前停止 | 已有实现与验证入口 | [辅助目标](src/llamafactory/train/sft/user_action_auxiliary.py) |
+| [GradNorm-lite](实验记录/实验A_GradNorm-lite.md) | 平衡多任务梯度贡献 | 已有实验，未确立收益 | [梯度控制器](src/llamafactory/train/sft/multitask_gradient_controller.py) |
+| [局部 LoRA 冲突投影](实验记录/实验B_GradNorm-Ortho-LoRA.md) | 在部分 LoRA 参数上缓解任务梯度冲突 | 已有实验，未确立收益 | [梯度控制器](src/llamafactory/train/sft/multitask_gradient_controller.py) |
+| [Positive A0](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_positive_a0_v3/README.md) | 降低只命中粗粒度前缀的奖励 | 已实现，缺正式实验 | [奖励实现](baselines/native_source_domain_r32_v3/grpo/ablations/gr_rec_think_sample8_fullsid_positive_a0_v3/a0_reward.py) |
+| [固定 CoT 交叉诊断](docs/r2d-rec/EXPLORATIONS.md#边界适配约束与历史对照) | 分离推理、解码排序与 Bridge 接口影响 | 已有诊断与记录 | [交叉诊断](baselines/native_source_domain_r32_v3/boundary_adapt/diagnostics/controlled_generator_decoder_crossover.py) |
 
 Bridge 的候选重构与潜在正则化是这些探索的重要研究背景，相关观察和假设见 [Bridge 研究入口](docs/r2d-rec/METHODS.md#bridge)。
 
